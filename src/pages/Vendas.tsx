@@ -162,21 +162,15 @@ export default function Vendas() {
                 ))}
               </div>
 
-              {/* 2. Para quem vendeu */}
+              {/* 2. Cliente */}
               <div>
-                <Label>Cliente (para quem)</Label>
+                <Label>Cliente</Label>
                 <Select value={clienteId} onValueChange={setClienteId}>
                   <SelectTrigger><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
                   <SelectContent>
                     {clientes.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
                   </SelectContent>
                 </Select>
-              </div>
-
-              {/* 3. Quem vendeu */}
-              <div>
-                <Label>Vendedor (quem vendeu)</Label>
-                <Input value={operador} onChange={(e) => setOperador(e.target.value)} placeholder="Nome do vendedor" />
               </div>
 
               {/* 4. Forma de pagamento */}
