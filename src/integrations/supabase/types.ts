@@ -609,6 +609,7 @@ export type Database = {
         Row: {
           cliente_id: string
           created_at: string
+          forma_pagamento: string
           id: string
           observacoes: string | null
           operador: string
@@ -619,6 +620,7 @@ export type Database = {
         Insert: {
           cliente_id: string
           created_at?: string
+          forma_pagamento?: string
           id?: string
           observacoes?: string | null
           operador?: string
@@ -629,6 +631,7 @@ export type Database = {
         Update: {
           cliente_id?: string
           created_at?: string
+          forma_pagamento?: string
           id?: string
           observacoes?: string | null
           operador?: string
