@@ -21,7 +21,7 @@ export default function Producao() {
   const [modo, setModo] = useState<"lote" | "unidade">("lote");
   const [qtdLotes, setQtdLotes] = useState(1);
   const [qtdTotal, setQtdTotal] = useState(84);
-  const [operador, setOperador] = useState("sistema");
+  
   const [observacoes, setObservacoes] = useState("");
   const [funcList, setFuncList] = useState<{ funcionario_id: string; quantidade_produzida: number }[]>([]);
   const [loading, setLoading] = useState(false);
@@ -67,6 +67,11 @@ export default function Producao() {
     const soma = funcList.reduce((s, f) => s + f.quantidade_produzida, 0);
     if (soma !== qtdTotal) return toast({ title: `Soma dos funcionários (${soma}) ≠ total (${qtdTotal})`, variant: "destructive" });
 
+    const nomesFuncionarios = funcList
+      .map(f => funcionarios.find(fn => fn.id === f.funcionario_id)?.nome)
+      .filter(Boolean)
+      .join(", ");
+
     setLoading(true);
     try {
       await realizarProducao({
@@ -74,7 +79,7 @@ export default function Producao() {
         p_modo: modo,
         p_quantidade_lotes: modo === "lote" ? qtdLotes : 0,
         p_quantidade_total: qtdTotal,
-        p_operador: operador,
+        p_operador: nomesFuncionarios || "sistema",
         p_observacoes: observacoes,
         p_funcionarios: funcList,
       });
@@ -95,7 +100,7 @@ export default function Producao() {
     setQtdLotes(1);
     setQtdTotal(84);
     setObservacoes("");
-    setFuncList([]);
+    setFuncList([{ funcionario_id: "", quantidade_produzida: 0 }]);
   }
 
   return (
@@ -140,10 +145,6 @@ export default function Producao() {
                   <Input type="number" min={1} value={qtdTotal} onChange={(e) => setQtdTotal(Number(e.target.value))} />
                 </div>
               )}
-              <div>
-                <Label>Operador</Label>
-                <Input value={operador} onChange={(e) => setOperador(e.target.value)} />
-              </div>
               <div>
                 <Label>Observações</Label>
                 <Input value={observacoes} onChange={(e) => setObservacoes(e.target.value)} />
