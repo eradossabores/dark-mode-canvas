@@ -23,7 +23,7 @@ export default function Producao() {
   const [qtdTotal, setQtdTotal] = useState(84);
   
   const [observacoes, setObservacoes] = useState("");
-  const [funcList, setFuncList] = useState<{ funcionario_id: string; quantidade_produzida: number }[]>([]);
+  const [funcList, setFuncList] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -48,27 +48,26 @@ export default function Producao() {
   }
 
   function addFunc() {
-    setFuncList([...funcList, { funcionario_id: "", quantidade_produzida: 0 }]);
+    setFuncList([...funcList, ""]);
   }
 
   function removeFunc(i: number) {
     setFuncList(funcList.filter((_, idx) => idx !== i));
   }
 
-  function updateFunc(i: number, field: string, val: any) {
+  function updateFunc(i: number, val: string) {
     const list = [...funcList];
-    (list[i] as any)[field] = field === "quantidade_produzida" ? Number(val) : val;
+    list[i] = val;
     setFuncList(list);
   }
 
   async function handleSubmit() {
     if (!saborId) return toast({ title: "Selecione um sabor", variant: "destructive" });
-    if (funcList.length === 0) return toast({ title: "Adicione funcionários", variant: "destructive" });
-    const soma = funcList.reduce((s, f) => s + f.quantidade_produzida, 0);
-    if (soma !== qtdTotal) return toast({ title: `Soma dos funcionários (${soma}) ≠ total (${qtdTotal})`, variant: "destructive" });
+    const validFuncs = funcList.filter(f => f !== "");
+    if (validFuncs.length === 0) return toast({ title: "Adicione ao menos um responsável", variant: "destructive" });
 
-    const nomesFuncionarios = funcList
-      .map(f => funcionarios.find(fn => fn.id === f.funcionario_id)?.nome)
+    const nomesFuncionarios = validFuncs
+      .map(f => funcionarios.find(fn => fn.id === f)?.nome)
       .filter(Boolean)
       .join(", ");
 
@@ -81,7 +80,7 @@ export default function Producao() {
         p_quantidade_total: qtdTotal,
         p_operador: nomesFuncionarios || "sistema",
         p_observacoes: observacoes,
-        p_funcionarios: funcList,
+        p_funcionarios: validFuncs.map(f => ({ funcionario_id: f, quantidade_produzida: 0 })),
       });
       toast({ title: "Produção registrada com sucesso!" });
       setOpen(false);
@@ -100,7 +99,7 @@ export default function Producao() {
     setQtdLotes(1);
     setQtdTotal(84);
     setObservacoes("");
-    setFuncList([{ funcionario_id: "", quantidade_produzida: 0 }]);
+    setFuncList([""]);
   }
 
   return (
@@ -151,34 +150,22 @@ export default function Producao() {
               </div>
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <Label>Funcionários</Label>
+                  <Label>Responsáveis pela Produção</Label>
                   <Button size="sm" variant="outline" onClick={addFunc}><Plus className="h-3 w-3 mr-1" />Add</Button>
                 </div>
                 {funcList.map((f, i) => (
                   <div key={i} className="flex gap-2 mb-2">
-                    <Select value={f.funcionario_id} onValueChange={(v) => updateFunc(i, "funcionario_id", v)}>
+                    <Select value={f} onValueChange={(v) => updateFunc(i, v)}>
                       <SelectTrigger className="flex-1"><SelectValue placeholder="Funcionário" /></SelectTrigger>
                       <SelectContent>
                         {funcionarios.map((fn) => <SelectItem key={fn.id} value={fn.id}>{fn.nome}</SelectItem>)}
                       </SelectContent>
                     </Select>
-                    <Input
-                      type="number"
-                      className="w-24"
-                      placeholder="Qtd"
-                      value={f.quantidade_produzida || ""}
-                      onChange={(e) => updateFunc(i, "quantidade_produzida", e.target.value)}
-                    />
                     <Button size="icon" variant="ghost" onClick={() => removeFunc(i)}>
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
                 ))}
-                {funcList.length > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    Soma: {funcList.reduce((s, f) => s + f.quantidade_produzida, 0)} / {qtdTotal}
-                  </p>
-                )}
               </div>
               <Button className="w-full" onClick={handleSubmit} disabled={loading}>
                 {loading ? "Processando..." : "Registrar Produção"}
