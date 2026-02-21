@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Package, Users, ShoppingCart, Factory,
-  Warehouse, ClipboardList, UserCog, ChevronLeft, ChevronRight, IceCream2
+  Warehouse, ClipboardList, UserCog, ChevronLeft, ChevronRight, IceCream2, BarChart3
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +14,7 @@ const menuItems = [
   { path: "/clientes", label: "Clientes", icon: Users },
   { path: "/funcionarios", label: "Funcionários", icon: UserCog },
   { path: "/sabores", label: "Sabores", icon: Package },
+  { path: "/relatorios", label: "Relatórios", icon: BarChart3 },
   { path: "/auditoria", label: "Auditoria", icon: ClipboardList },
 ];
 
