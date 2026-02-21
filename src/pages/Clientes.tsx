@@ -1,0 +1,135 @@
+import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { insertRow } from "@/lib/supabase-helpers";
+import { toast } from "@/hooks/use-toast";
+import { Plus } from "lucide-react";
+
+export default function Clientes() {
+  const [clientes, setClientes] = useState<any[]>([]);
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({
+    nome: "", telefone: "", email: "", endereco: "", bairro: "", cidade: "",
+    estado: "SP", cep: "", cpf_cnpj: "", possui_freezer: false,
+    freezer_identificacao: "", preco_padrao_personalizado: "",
+    observacoes: "",
+  });
+
+  useEffect(() => { loadData(); }, []);
+
+  async function loadData() {
+    const { data } = await (supabase as any).from("clientes").select("*").order("nome");
+    setClientes(data || []);
+  }
+
+  async function handleSubmit() {
+    if (!form.nome) return toast({ title: "Nome obrigatório", variant: "destructive" });
+    try {
+      const payload: any = { ...form };
+      if (!payload.preco_padrao_personalizado) delete payload.preco_padrao_personalizado;
+      else payload.preco_padrao_personalizado = Number(payload.preco_padrao_personalizado);
+      if (!payload.cpf_cnpj) delete payload.cpf_cnpj;
+      await insertRow("clientes", payload);
+      toast({ title: "Cliente cadastrado!" });
+      setOpen(false);
+      setForm({ nome: "", telefone: "", email: "", endereco: "", bairro: "", cidade: "", estado: "SP", cep: "", cpf_cnpj: "", possui_freezer: false, freezer_identificacao: "", preco_padrao_personalizado: "", observacoes: "" });
+      loadData();
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+  }
+
+  function diasSemComprar(ultima: string | null) {
+    if (!ultima) return null;
+    return Math.floor((Date.now() - new Date(ultima).getTime()) / 86400000);
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Clientes</h1>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button><Plus className="h-4 w-4 mr-2" />Novo Cliente</Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader><DialogTitle>Novo Cliente</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <div><Label>Nome *</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><Label>Telefone</Label><Input value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })} /></div>
+                <div><Label>Email</Label><Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
+              </div>
+              <div><Label>CPF/CNPJ</Label><Input value={form.cpf_cnpj} onChange={(e) => setForm({ ...form, cpf_cnpj: e.target.value })} /></div>
+              <div><Label>Endereço</Label><Input value={form.endereco} onChange={(e) => setForm({ ...form, endereco: e.target.value })} /></div>
+              <div className="grid grid-cols-3 gap-2">
+                <div><Label>Bairro</Label><Input value={form.bairro} onChange={(e) => setForm({ ...form, bairro: e.target.value })} /></div>
+                <div><Label>Cidade</Label><Input value={form.cidade} onChange={(e) => setForm({ ...form, cidade: e.target.value })} /></div>
+                <div><Label>Estado</Label><Input value={form.estado} onChange={(e) => setForm({ ...form, estado: e.target.value })} /></div>
+              </div>
+              <div><Label>CEP</Label><Input value={form.cep} onChange={(e) => setForm({ ...form, cep: e.target.value })} /></div>
+              <div className="flex items-center gap-3">
+                <Switch checked={form.possui_freezer} onCheckedChange={(v) => setForm({ ...form, possui_freezer: v })} />
+                <Label>Possui freezer em comodato</Label>
+              </div>
+              {form.possui_freezer && (
+                <div><Label>ID do Freezer</Label><Input value={form.freezer_identificacao} onChange={(e) => setForm({ ...form, freezer_identificacao: e.target.value })} /></div>
+              )}
+              <div><Label>Preço Padrão Personalizado (R$)</Label><Input type="number" step="0.01" value={form.preco_padrao_personalizado} onChange={(e) => setForm({ ...form, preco_padrao_personalizado: e.target.value })} /></div>
+              <div><Label>Observações</Label><Input value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} /></div>
+              <Button className="w-full" onClick={handleSubmit}>Cadastrar</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <Card>
+        <CardContent className="pt-6">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nome</TableHead>
+                <TableHead>Telefone</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Freezer</TableHead>
+                <TableHead>Preço Pers.</TableHead>
+                <TableHead>Dias s/ comprar</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {clientes.map((c) => {
+                const dias = diasSemComprar(c.ultima_compra);
+                return (
+                  <TableRow key={c.id}>
+                    <TableCell className="font-medium">{c.nome}</TableCell>
+                    <TableCell>{c.telefone || "-"}</TableCell>
+                    <TableCell>
+                      <Badge variant={c.status === "ativo" ? "default" : "destructive"}>{c.status}</Badge>
+                    </TableCell>
+                    <TableCell>{c.possui_freezer ? c.freezer_identificacao || "Sim" : "Não"}</TableCell>
+                    <TableCell>{c.preco_padrao_personalizado ? `R$ ${Number(c.preco_padrao_personalizado).toFixed(2)}` : "-"}</TableCell>
+                    <TableCell>
+                      {dias !== null ? (
+                        <span className={dias > 30 ? "text-destructive font-semibold" : ""}>{dias}d</span>
+                      ) : "Nunca comprou"}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {clientes.length === 0 && (
+                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Nenhum cliente.</TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
