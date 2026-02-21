@@ -377,7 +377,7 @@ export type Database = {
           funcionario_id: string
           id?: string
           producao_id: string
-          quantidade_produzida: number
+          quantidade_produzida?: number
         }
         Update: {
           funcionario_id?: string
