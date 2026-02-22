@@ -51,6 +51,9 @@ export default function ImportarPlanilha() {
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
 
   const [file, setFile] = useState<File | null>(null);
+  const [workbook, setWorkbook] = useState<XLSX.WorkBook | null>(null);
+  const [availableSheetNames, setAvailableSheetNames] = useState<string[]>([]);
+  const [sheetSelectionPending, setSheetSelectionPending] = useState(false);
   const [sheets, setSheets] = useState<SheetData[]>([]);
   const [activeSheet, setActiveSheet] = useState<string>("");
   const [importing, setImporting] = useState(false);
@@ -70,7 +73,8 @@ export default function ImportarPlanilha() {
   }, []);
 
   function resetAll() {
-    setFile(null); setSheets([]); setActiveSheet("");
+    setFile(null); setWorkbook(null); setAvailableSheetNames([]);
+    setSheetSelectionPending(false); setSheets([]); setActiveSheet("");
     setImportDone(false); setImportSummary(null);
   }
 
@@ -108,22 +112,42 @@ export default function ImportarPlanilha() {
       return;
     }
     setFile(f); setImportDone(false); setImportSummary(null); setSheets([]);
+    setSheetSelectionPending(false); setWorkbook(null); setAvailableSheetNames([]);
 
     f.arrayBuffer().then(buf => {
       const wb = XLSX.read(buf, { type: "array", cellDates: false });
-      const foundSheets: SheetData[] = [];
 
-      for (const target of TARGET_SHEETS) {
-        const sheetName = findTargetSheet(wb.SheetNames, target);
-        if (sheetName) {
-          const sd = processSheet(wb, sheetName, target.tipo);
-          if (sd && sd.rows.length > 0) foundSheets.push(sd);
-        }
+      if (wb.SheetNames.length > 1) {
+        // Multiple sheets — ask the user to pick (show up to first 3)
+        setWorkbook(wb);
+        setAvailableSheetNames(wb.SheetNames.slice(0, 3));
+        setSheetSelectionPending(true);
+        toast({
+          title: `${wb.SheetNames.length} aba(s) encontrada(s)`,
+          description: "Selecione a aba que deseja importar.",
+        });
+      } else {
+        // Single sheet — process directly
+        processAndSetSheets(wb, wb.SheetNames[0]);
       }
+    });
+  }
 
-      // Fallback: if no named sheets found, try first sheet with auto-detection
-      if (foundSheets.length === 0 && wb.SheetNames.length > 0) {
-        const ws = wb.Sheets[wb.SheetNames[0]];
+  function processAndSetSheets(wb: XLSX.WorkBook, selectedSheetName: string) {
+    // Try named target sheets first
+    const foundSheets: SheetData[] = [];
+    for (const target of TARGET_SHEETS) {
+      if (selectedSheetName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() ===
+          target.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")) {
+        const sd = processSheet(wb, selectedSheetName, target.tipo);
+        if (sd && sd.rows.length > 0) foundSheets.push(sd);
+      }
+    }
+
+    // Fallback: auto-detect
+    if (foundSheets.length === 0) {
+      const ws = wb.Sheets[selectedSheetName];
+      if (ws) {
         const raw: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
         if (raw.length >= 2) {
           const detected = detectLayout(raw, sabores);
@@ -142,29 +166,35 @@ export default function ImportarPlanilha() {
           const rows = parseRows(tipo, headers, dataRows, sabores, clientes);
           if (rows.length > 0) {
             foundSheets.push({
-              sheetName: wb.SheetNames[0], tipo, layoutType: detected.layout,
+              sheetName: selectedSheetName, tipo, layoutType: detected.layout,
               headers, dataRows, rows, analise: buildAnalise(rows),
             });
           }
         }
       }
+    }
 
-      if (foundSheets.length === 0) {
-        toast({
-          title: "Nenhuma aba válida encontrada",
-          description: `Procurei abas "PRODUÇÃO" e "VENDAS". Abas disponíveis: ${wb.SheetNames.join(", ")}`,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      setSheets(foundSheets);
-      setActiveSheet(foundSheets[0].sheetName);
+    if (foundSheets.length === 0) {
       toast({
-        title: `${foundSheets.length} aba(s) encontrada(s)`,
-        description: foundSheets.map(s => `${s.sheetName} (${s.rows.length} registros)`).join(", "),
+        title: "Nenhum dado válido encontrado",
+        description: `A aba "${selectedSheetName}" não contém dados reconhecíveis.`,
+        variant: "destructive",
       });
+      return;
+    }
+
+    setSheetSelectionPending(false);
+    setSheets(foundSheets);
+    setActiveSheet(foundSheets[0].sheetName);
+    toast({
+      title: `Aba "${selectedSheetName}" carregada`,
+      description: `${foundSheets[0].rows.length} registros encontrados.`,
     });
+  }
+
+  function handleSelectSheet(sheetName: string) {
+    if (!workbook) return;
+    processAndSetSheets(workbook, sheetName);
   }
 
   const currentSheet = sheets.find(s => s.sheetName === activeSheet);
@@ -337,6 +367,36 @@ export default function ImportarPlanilha() {
               )}
             </CardContent>
           </Card>
+
+          {/* Sheet Selection */}
+          {sheetSelectionPending && availableSheetNames.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileSpreadsheet className="h-5 w-5" /> Selecione a Aba
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  A planilha possui múltiplas abas. Selecione qual deseja importar:
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {availableSheetNames.map((name, idx) => (
+                    <Button
+                      key={name}
+                      variant="outline"
+                      className="h-auto py-4 flex flex-col items-center gap-1"
+                      onClick={() => handleSelectSheet(name)}
+                    >
+                      <FileSpreadsheet className="h-5 w-5 text-primary" />
+                      <span className="font-semibold">{name}</span>
+                      <span className="text-xs text-muted-foreground">Aba {idx + 1}</span>
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Sheet Tabs */}
           {sheets.length > 0 && (
