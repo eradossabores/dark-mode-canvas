@@ -444,11 +444,15 @@ export function unpivotWide(
     }
 
     if (hasAnyFlavor) {
+      let isFirstFlavor = true;
       for (const fc of flavorCols) {
         const qty = parseQuantity(row[fc]);
         if (qty == null || qty <= 0) continue;
         const flavorName = String(headerRow[fc] || "").trim();
-        rows.push([semanaVal, dateVal, flavorName, qty, clienteVal, pagVal, statusVal, fPagtoVal, obsVal]);
+        // Only the first flavor row carries the payment value to avoid duplication in totals
+        const rowPagVal = isFirstFlavor ? pagVal : "";
+        rows.push([semanaVal, dateVal, flavorName, qty, clienteVal, rowPagVal, statusVal, fPagtoVal, obsVal]);
+        isFirstFlavor = false;
       }
     } else {
       const totalQty = qtdTotalCol ? parseQuantity(row[qtdTotalCol.idx]) : null;
