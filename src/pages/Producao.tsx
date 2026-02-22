@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,12 +10,14 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from "@/integrations/supabase/client";
 import { realizarProducao } from "@/lib/supabase-helpers";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Trash2, Pencil, Eye } from "lucide-react";
+import { Plus, Trash2, Pencil, Eye, TrendingUp } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 export default function Producao() {
   const [sabores, setSabores] = useState<any[]>([]);
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
   const [producoes, setProducoes] = useState<any[]>([]);
+  const [topVendidos, setTopVendidos] = useState<{ nome: string; total: number }[]>([]);
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -53,6 +55,19 @@ export default function Producao() {
     setSabores(s.data || []);
     setFuncionarios(f.data || []);
     setProducoes(p.data || []);
+
+    // Load top 5 most sold flavors
+    const { data: vendaItens } = await (supabase as any)
+      .from("venda_itens")
+      .select("sabor_id, quantidade, sabores(nome)");
+    const saborMap: Record<string, { nome: string; total: number }> = {};
+    (vendaItens || []).forEach((item: any) => {
+      const id = item.sabor_id;
+      if (!saborMap[id]) saborMap[id] = { nome: item.sabores?.nome || "?", total: 0 };
+      saborMap[id].total += item.quantidade;
+    });
+    const sorted = Object.values(saborMap).sort((a, b) => b.total - a.total).slice(0, 5);
+    setTopVendidos(sorted);
   }
 
   function addFunc() { setFuncList([...funcList, ""]); }
@@ -135,6 +150,42 @@ export default function Producao() {
 
   return (
     <div>
+      {/* Top 5 Sabores Mais Vendidos */}
+      {topVendidos.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              Top 5 Sabores Mais Vendidos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
+              <div className="space-y-2">
+                {topVendidos.map((s, i) => (
+                  <div key={i} className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-muted-foreground w-5">{i + 1}º</span>
+                      <span className="font-medium text-sm">{s.nome}</span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">{s.total.toLocaleString("pt-BR")} un.</span>
+                  </div>
+                ))}
+              </div>
+              <ResponsiveContainer width="100%" height={160}>
+                <BarChart data={topVendidos} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" fontSize={11} />
+                  <YAxis dataKey="nome" type="category" width={90} fontSize={11} />
+                  <Tooltip />
+                  <Bar dataKey="total" name="Vendidos" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Produção</h1>
         <Dialog open={open} onOpenChange={setOpen}>
