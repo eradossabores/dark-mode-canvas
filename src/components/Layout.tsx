@@ -2,9 +2,10 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Package, Users, ShoppingCart, Factory,
-  Warehouse, ClipboardList, UserCog, ChevronLeft, ChevronRight, IceCream2, BarChart3, FileUp
+  Warehouse, ClipboardList, UserCog, ChevronLeft, ChevronRight, BarChart3, FileUp
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import logo from "@/assets/logo.png";
 
 const menuItems = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -31,8 +32,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           collapsed ? "w-16" : "w-60"
         )}
       >
-        <div className="flex items-center gap-2 px-4 py-4 border-b border-sidebar-border">
-          <IceCream2 className="h-7 w-7 text-sidebar-primary shrink-0" />
+        <div className="flex items-center gap-2 px-3 py-3 border-b border-sidebar-border">
+          <img src={logo} alt="A Era dos Sabores" className="h-9 w-9 shrink-0 rounded" />
           {!collapsed && (
             <span className="font-bold text-sm whitespace-nowrap">A Era dos Sabores</span>
           )}
