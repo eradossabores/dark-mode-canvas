@@ -134,7 +134,35 @@ export default function Dashboard() {
   ];
 
   return (
-    <div>
+    <div className="relative min-h-screen">
+      {/* Ice-themed background */}
+      <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-br from-sky-50/40 via-transparent to-cyan-50/30 dark:from-sky-950/20 dark:to-cyan-950/15" />
+        
+        <svg className="absolute top-10 right-10 w-32 h-32 text-sky-200/30 dark:text-sky-400/10 animate-pulse" viewBox="0 0 100 100" fill="none">
+          <path d="M50 5 L50 95 M5 50 L95 50 M20 20 L80 80 M80 20 L20 80" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+          <circle cx="50" cy="50" r="8" stroke="currentColor" strokeWidth="1"/>
+          <circle cx="50" cy="5" r="3" fill="currentColor" opacity="0.5"/>
+          <circle cx="50" cy="95" r="3" fill="currentColor" opacity="0.5"/>
+          <circle cx="5" cy="50" r="3" fill="currentColor" opacity="0.5"/>
+          <circle cx="95" cy="50" r="3" fill="currentColor" opacity="0.5"/>
+        </svg>
+
+        <svg className="absolute bottom-20 left-16 w-20 h-20 text-cyan-200/25 dark:text-cyan-400/10" viewBox="0 0 100 100" fill="none">
+          <path d="M50 10 L50 90 M15 30 L85 70 M15 70 L85 30" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          <path d="M50 10 L40 25 M50 10 L60 25 M50 90 L40 75 M50 90 L60 75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        </svg>
+
+        <svg className="absolute top-1/3 left-1/2 w-16 h-16 text-sky-300/15 dark:text-sky-500/8" viewBox="0 0 60 60" fill="none">
+          <path d="M30 5 L30 55 M10 20 L50 40 M10 40 L50 20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        </svg>
+
+        <div className="absolute top-32 left-1/4 w-2 h-2 rounded-full bg-sky-300/20 dark:bg-sky-400/10" />
+        <div className="absolute top-48 right-1/3 w-1.5 h-1.5 rounded-full bg-cyan-300/25 dark:bg-cyan-400/10" />
+        <div className="absolute bottom-40 right-1/4 w-2.5 h-2.5 rounded-full bg-sky-200/20 dark:bg-sky-400/10" />
+        <div className="absolute top-2/3 left-10 w-1.5 h-1.5 rounded-full bg-cyan-200/30 dark:bg-cyan-400/10" />
+      </div>
+
       <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
 
       {/* 4 Post-its por categoria */}
