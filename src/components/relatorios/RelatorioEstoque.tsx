@@ -22,8 +22,11 @@ export default function RelatorioEstoque() {
   );
   const [endDate, setEndDate] = useState<Date | undefined>(new Date());
   const [filtroTipo, setFiltroTipo] = useState("todos");
+  const [previewLoaded, setPreviewLoaded] = useState(false);
 
   useEffect(() => { loadData(); }, []);
+
+  useEffect(() => { setPreviewLoaded(false); }, [startDate, endDate, filtroTipo]);
 
   async function loadData() {
     const [g, m, e, mv] = await Promise.all([
@@ -78,6 +81,8 @@ export default function RelatorioEstoque() {
     m.operador,
   ]);
 
+  const periodoLabel = `${startDate?.toLocaleDateString("pt-BR") || "—"} a ${endDate?.toLocaleDateString("pt-BR") || "—"}`;
+
   return (
     <div className="space-y-6">
       <DateRangeFilter startDate={startDate} endDate={endDate} onStartChange={setStartDate} onEndChange={setEndDate}>
@@ -93,113 +98,135 @@ export default function RelatorioEstoque() {
           </Select>
         </div>
         <ExportButtons
+          onPreview={() => setPreviewLoaded(true)}
+          previewLoaded={previewLoaded}
           onPDF={() => exportToPDF("Relatório de Estoque", movHeaders, movRows, "relatorio-estoque")}
           onExcel={() => exportToExcel(movHeaders, movRows, "Estoque", "relatorio-estoque")}
         />
       </DateRangeFilter>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard title="Gelos em Estoque" value={totalGelos.toLocaleString("pt-BR")} icon={Package} subtitle="unidades" />
-        <KpiCard title="Entradas (período)" value={entradas.toLocaleString("pt-BR")} icon={Warehouse} />
-        <KpiCard title="Saídas (período)" value={saidas.toLocaleString("pt-BR")} icon={ArrowDownUp} />
-        <KpiCard title="Itens com Estoque Baixo" value={totalBaixo.toString()} icon={AlertTriangle} subtitle={totalBaixo > 0 ? "Atenção!" : "OK"} />
-      </div>
+      {!previewLoaded ? (
+        <Card>
+          <CardContent className="py-16 text-center text-muted-foreground">
+            <p className="text-lg font-medium">Selecione os filtros e clique em "Visualizar Relatório"</p>
+            <p className="text-sm mt-1">A pré-visualização será exibida aqui.</p>
+          </CardContent>
+        </Card>
+      ) : filteredMov.length === 0 && totalGelos === 0 ? (
+        <Card>
+          <CardContent className="py-16 text-center text-muted-foreground">
+            <p className="text-lg font-medium">Nenhum registro encontrado</p>
+            <p className="text-sm mt-1">Não há dados de estoque no período de {periodoLabel}.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <div className="text-sm text-muted-foreground font-medium">Período: {periodoLabel}</div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Estoque de Gelos por Sabor</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={gelosPorSabor}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" fontSize={11} angle={-20} textAnchor="end" height={60} />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="value" name="Qtd" fill="hsl(142,71%,45%)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Movimentações por Dia</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
-              <LineChart data={movPorDia}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" fontSize={10} />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="entrada" name="Entradas" stroke="hsl(142,71%,45%)" strokeWidth={2} />
-                <Line type="monotone" dataKey="saida" name="Saídas" stroke="hsl(0,72%,50%)" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <KpiCard title="Gelos em Estoque" value={totalGelos.toLocaleString("pt-BR")} icon={Package} subtitle="unidades" />
+            <KpiCard title="Entradas (período)" value={entradas.toLocaleString("pt-BR")} icon={Warehouse} />
+            <KpiCard title="Saídas (período)" value={saidas.toLocaleString("pt-BR")} icon={ArrowDownUp} />
+            <KpiCard title="Itens com Estoque Baixo" value={totalBaixo.toString()} icon={AlertTriangle} subtitle={totalBaixo > 0 ? "Atenção!" : "OK"} />
+          </div>
 
-      {totalBaixo > 0 && (
-        <Card>
-          <CardHeader><CardTitle className="text-sm text-destructive">⚠ Itens com Estoque Baixo</CardTitle></CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Item</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Atual</TableHead>
-                  <TableHead>Mínimo</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {baixoEstoqueMP.map((m) => (
-                  <TableRow key={m.id}>
-                    <TableCell>{m.nome}</TableCell>
-                    <TableCell>Matéria-prima</TableCell>
-                    <TableCell className="text-destructive font-semibold">{m.estoque_atual}</TableCell>
-                    <TableCell>{m.estoque_minimo}</TableCell>
-                  </TableRow>
-                ))}
-                {baixoEstoqueEmb.map((e) => (
-                  <TableRow key={e.id}>
-                    <TableCell>{e.nome}</TableCell>
-                    <TableCell>Embalagem</TableCell>
-                    <TableCell className="text-destructive font-semibold">{e.estoque_atual}</TableCell>
-                    <TableCell>{e.estoque_minimo}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader><CardTitle className="text-sm">Estoque de Gelos por Sabor</CardTitle></CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={gelosPorSabor}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" fontSize={11} angle={-20} textAnchor="end" height={60} />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="value" name="Qtd" fill="hsl(142,71%,45%)" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle className="text-sm">Movimentações por Dia</CardTitle></CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={280}>
+                  <LineChart data={movPorDia}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" fontSize={10} />
+                    <YAxis />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="entrada" name="Entradas" stroke="hsl(142,71%,45%)" strokeWidth={2} />
+                    <Line type="monotone" dataKey="saida" name="Saídas" stroke="hsl(0,72%,50%)" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+
+          {totalBaixo > 0 && (
+            <Card>
+              <CardHeader><CardTitle className="text-sm text-destructive">⚠ Itens com Estoque Baixo</CardTitle></CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Item</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Atual</TableHead>
+                      <TableHead>Mínimo</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {baixoEstoqueMP.map((m) => (
+                      <TableRow key={m.id}>
+                        <TableCell>{m.nome}</TableCell>
+                        <TableCell>Matéria-prima</TableCell>
+                        <TableCell className="text-destructive font-semibold">{m.estoque_atual}</TableCell>
+                        <TableCell>{m.estoque_minimo}</TableCell>
+                      </TableRow>
+                    ))}
+                    {baixoEstoqueEmb.map((e) => (
+                      <TableRow key={e.id}>
+                        <TableCell>{e.nome}</TableCell>
+                        <TableCell>Embalagem</TableCell>
+                        <TableCell className="text-destructive font-semibold">{e.estoque_atual}</TableCell>
+                        <TableCell>{e.estoque_minimo}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card>
+            <CardHeader><CardTitle className="text-sm">Movimentações Detalhadas</CardTitle></CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>{movHeaders.map((h) => <TableHead key={h}>{h}</TableHead>)}</TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredMov.slice(0, 100).map((m) => (
+                    <TableRow key={m.id}>
+                      <TableCell>{new Date(m.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                      <TableCell className="capitalize">{m.tipo_item.replace("_", " ")}</TableCell>
+                      <TableCell>
+                        <Badge variant={m.tipo_movimentacao === "entrada" ? "default" : "destructive"}>{m.tipo_movimentacao}</Badge>
+                      </TableCell>
+                      <TableCell>{Number(m.quantidade)}</TableCell>
+                      <TableCell className="capitalize">{m.referencia || "-"}</TableCell>
+                      <TableCell>{m.operador}</TableCell>
+                    </TableRow>
+                  ))}
+                  {filteredMov.length === 0 && (
+                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Nenhuma movimentação.</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </>
       )}
-
-      <Card>
-        <CardHeader><CardTitle className="text-sm">Movimentações Detalhadas</CardTitle></CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>{movHeaders.map((h) => <TableHead key={h}>{h}</TableHead>)}</TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredMov.slice(0, 100).map((m) => (
-                <TableRow key={m.id}>
-                  <TableCell>{new Date(m.created_at).toLocaleDateString("pt-BR")}</TableCell>
-                  <TableCell className="capitalize">{m.tipo_item.replace("_", " ")}</TableCell>
-                  <TableCell>
-                    <Badge variant={m.tipo_movimentacao === "entrada" ? "default" : "destructive"}>{m.tipo_movimentacao}</Badge>
-                  </TableCell>
-                  <TableCell>{Number(m.quantidade)}</TableCell>
-                  <TableCell className="capitalize">{m.referencia || "-"}</TableCell>
-                  <TableCell>{m.operador}</TableCell>
-                </TableRow>
-              ))}
-              {filteredMov.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Nenhuma movimentação.</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
     </div>
   );
 }
