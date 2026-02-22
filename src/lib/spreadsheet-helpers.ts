@@ -226,14 +226,14 @@ function matchSabor(name: string, sabores: { id: string; nome: string }[]): bool
   const norm = normalizeText(name);
   if (!norm || norm.length < 2) return false;
 
-  // Skip known non-flavor column names and single-letter headers (e.g. W, X, Y)
+  // Skip known non-flavor column names, single-letter headers, and extra columns
   const trimmed = name.trim();
   if (trimmed.length <= 2 && /^[A-Za-z]{1,2}$/.test(trimmed)) return false;
 
   const skipNames = ["semana", "data", "cliente", "quantidade", "pagamento", "status", "total",
     "observacoes", "observações", "fpagto", "formapagamento", "outros", "totalsemanal",
-    "w", "x", "y", "z", "col", "column"];
-  if (skipNames.some(s => norm === normalizeText(s))) return false;
+    "w", "x", "y", "z", "col", "column", "coluna", "coluna1", "nf", "valor", "vaalor"];
+  if (skipNames.some(s => norm === normalizeText(s) || norm.startsWith("coluna") || norm.startsWith("total"))) return false;
 
   for (const s of sabores) {
     const sNorm = normalizeText(s.nome);
@@ -308,10 +308,15 @@ export function unpivotWide(
   const headerRow = raw[0];
   const nonFlavorCols: { idx: number; name: string }[] = [];
   const flavorSet = new Set(flavorCols);
+  const ignoreCols = ["totalsemanal", "coluna1", "coluna", "total", "w", "x", "y", "z", "nf", "valor", "vaalor"];
 
   for (let c = 0; c < headerRow.length; c++) {
     if (!flavorSet.has(c)) {
-      nonFlavorCols.push({ idx: c, name: String(headerRow[c] || "").trim() });
+      const colName = String(headerRow[c] || "").trim();
+      const norm = normalizeText(colName);
+      // Skip extra/summary columns
+      if (ignoreCols.some(ig => norm === ig || norm.startsWith("coluna") || (norm.startsWith("total") && norm !== "")) && norm !== "quantidade" && norm !== "pagamento" && norm !== "status") continue;
+      nonFlavorCols.push({ idx: c, name: colName });
     }
   }
 
