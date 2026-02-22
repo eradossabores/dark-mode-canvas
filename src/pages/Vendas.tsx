@@ -11,7 +11,12 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { realizarVenda } from "@/lib/supabase-helpers";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Trash2, ShoppingCart, Pencil, Eye } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Plus, Trash2, ShoppingCart, Pencil, Eye, CalendarIcon } from "lucide-react";
 
 const FORMAS_PAGAMENTO = [
   { value: "dinheiro", label: "Dinheiro" },
@@ -36,6 +41,7 @@ export default function Vendas() {
   const [formaPagamento, setFormaPagamento] = useState("dinheiro");
   const [observacoes, setObservacoes] = useState("");
   const [itens, setItens] = useState<{ sabor_id: string; quantidade: number }[]>([]);
+  const [dataVenda, setDataVenda] = useState<Date>(new Date());
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 20;
@@ -91,8 +97,19 @@ export default function Vendas() {
         await (supabase as any).from("vendas").update({ forma_pagamento: formaPagamento }).eq("id", latestVenda[0].id);
       }
 
+      // Atualizar a data se diferente de hoje
+      const hoje = new Date();
+      if (dataVenda.toDateString() !== hoje.toDateString()) {
+        const { data: latestVendaData } = await (supabase as any)
+          .from("vendas").select("id").eq("cliente_id", clienteId)
+          .order("created_at", { ascending: false }).limit(1);
+        if (latestVendaData?.[0]) {
+          await (supabase as any).from("vendas").update({ created_at: dataVenda.toISOString() }).eq("id", latestVendaData[0].id);
+        }
+      }
+
       toast({ title: "Venda registrada com sucesso!" });
-      setOpen(false); setItens([]); setClienteId(""); setFormaPagamento("dinheiro"); setObservacoes("");
+      setOpen(false); setItens([]); setClienteId(""); setFormaPagamento("dinheiro"); setObservacoes(""); setDataVenda(new Date());
       loadData();
     } catch (e: any) {
       toast({ title: "Erro na venda", description: e.message, variant: "destructive" });
@@ -159,6 +176,29 @@ export default function Vendas() {
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>Nova Venda</DialogTitle></DialogHeader>
             <div className="space-y-4">
+              <div>
+                <Label>Data da Venda</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn("w-full justify-start text-left font-normal", !dataVenda && "text-muted-foreground")}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dataVenda ? format(dataVenda, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dataVenda}
+                      onSelect={(d) => d && setDataVenda(d)}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <Label className="text-base font-semibold flex items-center gap-2"><ShoppingCart className="h-4 w-4" /> Gelos</Label>
