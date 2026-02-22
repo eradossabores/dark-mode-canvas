@@ -6,6 +6,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.png";
+import sidImg from "@/assets/sid.png";
+import buckImg from "@/assets/buck.png";
 
 const menuItems = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -278,6 +280,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               {/* Wing */}
               <path d="M18,45 Q5,40 10,55 Q15,60 20,55" opacity="0.6" />
             </svg>
+
+            {/* Real character images */}
+            <img src={sidImg} alt="" aria-hidden className="absolute bottom-[5%] right-[3%] w-36 h-36 object-contain opacity-[0.10] dark:opacity-[0.06] pointer-events-none select-none" />
+            <img src={buckImg} alt="" aria-hidden className="absolute top-[8%] left-[2%] w-32 h-32 object-contain opacity-[0.10] dark:opacity-[0.06] pointer-events-none select-none" />
           </div>
         </div>
 
