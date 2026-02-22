@@ -458,8 +458,8 @@ export function parseRows(
     if (tipo === "vendas" && clienteCol !== -1) {
       clienteRaw = String(row[clienteCol] || "").trim();
       clienteId = clienteMap.get(clienteRaw.toLowerCase());
-      if (!clienteRaw) errors.push("Cliente vazio");
-      else if (!clienteId) errors.push(`Cliente "${clienteRaw}" não encontrado`);
+      if (!clienteRaw) warnings.push("Cliente vazio");
+      else if (!clienteId) warnings.push(`Cliente "${clienteRaw}" será criado automaticamente`);
     }
 
     const valor = valorCol !== -1 ? parseNumericValue(row[valorCol]) : undefined;

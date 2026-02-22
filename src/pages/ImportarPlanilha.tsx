@@ -209,8 +209,35 @@ export default function ImportarPlanilha() {
         }
       }
     } else {
+      // Auto-create missing clients
+      const missingClients = new Set<string>();
+      for (const row of validRows) {
+        if (row.cliente && !row.clienteId) missingClients.add(row.cliente.trim());
+      }
+      const createdClientMap = new Map<string, string>();
+      for (const nome of missingClients) {
+        try {
+          const { data: newClient, error: clientErr } = await (supabase as any)
+            .from("clientes")
+            .insert({ nome, status: "ativo" })
+            .select("id")
+            .single();
+          if (clientErr) throw clientErr;
+          createdClientMap.set(nome.toLowerCase(), newClient.id);
+        } catch (e: any) {
+          console.error(`Erro ao criar cliente "${nome}":`, e.message);
+        }
+      }
+      // Assign created client IDs
+      for (const row of validRows) {
+        if (row.cliente && !row.clienteId) {
+          row.clienteId = createdClientMap.get(row.cliente.toLowerCase());
+        }
+      }
+
       const groups = new Map<string, ImportRow[]>();
       for (const row of validRows) {
+        if (!row.clienteId) { fail++; continue; }
         const key = `${row.data}|${row.clienteId}`;
         if (!groups.has(key)) groups.set(key, []);
         groups.get(key)!.push(row);
