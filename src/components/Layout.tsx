@@ -59,9 +59,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </nav>
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="flex items-center justify-center py-3 border-t border-sidebar-border hover:bg-sidebar-accent transition-colors"
+          className={cn(
+            "flex items-center gap-2 py-3 border-t border-sidebar-border hover:bg-sidebar-accent transition-colors",
+            collapsed ? "justify-center px-2" : "px-4"
+          )}
         >
-          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          {collapsed ? <ChevronRight className="h-5 w-5" /> : (
+            <>
+              <ChevronLeft className="h-5 w-5" />
+              <span className="text-xs text-sidebar-foreground/70">Recolher menu</span>
+            </>
+          )}
         </button>
       </aside>
       <main className="flex-1 overflow-auto">
