@@ -4,6 +4,7 @@ import * as XLSX from "xlsx";
 export interface ImportRow {
   rowNum: number;
   data: string;
+  semana?: string;
   sabor: string;
   quantidade: number;
   valor?: number;
@@ -310,32 +311,61 @@ export function unpivotWide(
     }
   }
 
-  // Output: data, sabor, quantidade, cliente, pagamento, status, f_pagto, observacoes, semana
-  const outHeaders = ["data", "sabor", "quantidade", "cliente", "pagamento", "status", "f. pagto", "observações"];
-  const dataCol = nonFlavorCols.find(c => ["data", "date", "dia"].includes(normalizeText(c.name)));
-  // Client column: look for named "cliente" OR unnamed column that has text data (not dates, not numbers)
-  let clienteCol = nonFlavorCols.find(c => normalizeText(c.name) === "cliente");
-  if (!clienteCol) {
-    // Check if there's an unnamed column (empty header) that contains text in the data rows
+  // Output: semana, data, sabor, quantidade, cliente, pagamento, status, f_pagto, observacoes
+  const outHeaders = ["semana", "data", "sabor", "quantidade", "cliente", "pagamento", "status", "f. pagto", "observações"];
+  
+  // Detect SEMANA column: named "semana" or unnamed column with small integers
+  let semanaCol = nonFlavorCols.find(c => normalizeText(c.name) === "semana");
+  if (!semanaCol) {
     for (const col of nonFlavorCols) {
       if (col.name === "" || col.name === " ") {
-        // Verify it contains text (client names) by checking a few data rows
+        let intCount = 0;
+        const checkRows = Math.min(raw.length - 1, 20);
+        for (let r = 1; r <= checkRows; r++) {
+          const val = raw[r]?.[col.idx];
+          if (val != null && val !== "" && typeof val === "number" && val > 0 && val <= 52 && Number.isInteger(val)) intCount++;
+        }
+        if (intCount >= 2) { semanaCol = col; break; }
+      }
+    }
+  }
+
+  const dataCol = nonFlavorCols.find(c => ["data", "date", "dia"].includes(normalizeText(c.name)));
+  
+  // Client column: look for named "cliente" OR unnamed column that has text data
+  let clienteCol = nonFlavorCols.find(c => normalizeText(c.name) === "cliente");
+  if (!clienteCol) {
+    for (const col of nonFlavorCols) {
+      if (col === semanaCol || col === dataCol) continue;
+      if (col.name === "" || col.name === " ") {
         let textCount = 0;
         const checkRows = Math.min(raw.length - 1, 20);
         for (let r = 1; r <= checkRows; r++) {
           const val = String(raw[r]?.[col.idx] || "").trim();
           if (val && isNaN(Number(val)) && parseDate(val) === null) textCount++;
         }
-        if (textCount >= 2) {
-          clienteCol = col;
-          break;
-        }
+        if (textCount >= 2) { clienteCol = col; break; }
       }
     }
   }
+  
+  // Also detect unnamed DATA column (has date values)
+  let effectiveDataCol = dataCol;
+  if (!effectiveDataCol) {
+    for (const col of nonFlavorCols) {
+      if (col === semanaCol || col === clienteCol) continue;
+      let dateCount = 0;
+      const checkRows = Math.min(raw.length - 1, 10);
+      for (let r = 1; r <= checkRows; r++) {
+        if (parseDate(raw[r]?.[col.idx]) !== null) dateCount++;
+      }
+      if (dateCount >= 2) { effectiveDataCol = col; break; }
+    }
+  }
+
   const qtdTotalCol = nonFlavorCols.find(c => normalizeText(c.name) === "quantidade");
   const pagCol = nonFlavorCols.find(c => normalizeText(c.name).includes("pagamento") && !normalizeText(c.name).includes("fpagto") && !normalizeText(c.name).includes("forma"));
-  const statusCol = nonFlavorCols.find(c => normalizeText(c.name) === "status");
+  const statusCol = nonFlavorCols.find(c => normalizeText(c.name) === "status" || normalizeText(c.name) === "pago");
   const fPagtoCol = nonFlavorCols.find(c => {
     const n = normalizeText(c.name);
     return n === "fpagto" || n.includes("formapag") || n.includes("fpag");
@@ -345,17 +375,53 @@ export function unpivotWide(
     return n.includes("observa");
   });
 
+  // Detect unnamed status/payment columns by content analysis
+  let effectiveStatusCol = statusCol;
+  let effectiveFPagtoCol = fPagtoCol;
+  if (!effectiveStatusCol || !effectiveFPagtoCol) {
+    const usedCols = new Set([semanaCol?.idx, effectiveDataCol?.idx, clienteCol?.idx, qtdTotalCol?.idx, pagCol?.idx, statusCol?.idx, fPagtoCol?.idx, obsCol?.idx, ...flavorCols]);
+    for (const col of nonFlavorCols) {
+      if (usedCols.has(col.idx)) continue;
+      const checkRows = Math.min(raw.length - 1, 10);
+      let statusHits = 0, pagHits = 0;
+      for (let r = 1; r <= checkRows; r++) {
+        const val = normalizeText(String(raw[r]?.[col.idx] || ""));
+        if (["pago", "paga", "pendente", "fiado", "parcial", "atrasado"].some(s => val.includes(s))) statusHits++;
+        if (["pix", "dinheiro", "cartao", "boleto", "credito", "debito", "transferencia"].some(s => val.includes(s))) pagHits++;
+      }
+      if (!effectiveStatusCol && statusHits >= 2) { effectiveStatusCol = col; usedCols.add(col.idx); continue; }
+      if (!effectiveFPagtoCol && pagHits >= 2) { effectiveFPagtoCol = col; usedCols.add(col.idx); continue; }
+    }
+  }
+
   const rows: any[][] = [];
+  let lastDate: any = null;
+  let lastSemana: any = null;
 
   for (let r = 1; r < raw.length; r++) {
     const row = raw[r];
     if (!row || row.every((c: any) => c === "" || c == null || c === 0)) continue;
 
-    const dateVal = dataCol ? row[dataCol.idx] : null;
+    // Date fill-down: inherit from previous row if empty
+    let dateVal = effectiveDataCol ? row[effectiveDataCol.idx] : null;
+    if (dateVal != null && dateVal !== "" && dateVal !== 0) {
+      lastDate = dateVal;
+    } else {
+      dateVal = lastDate;
+    }
+
+    // Semana fill-down
+    let semanaVal = semanaCol ? row[semanaCol.idx] : null;
+    if (semanaVal != null && semanaVal !== "" && semanaVal !== 0) {
+      lastSemana = semanaVal;
+    } else {
+      semanaVal = lastSemana;
+    }
+
     const clienteVal = clienteCol ? String(row[clienteCol.idx] || "").trim() : "";
     const pagVal = pagCol ? row[pagCol.idx] : "";
-    const statusVal = statusCol ? String(row[statusCol.idx] || "").trim() : "";
-    const fPagtoVal = fPagtoCol ? String(row[fPagtoCol.idx] || "").trim() : "";
+    const statusVal = effectiveStatusCol ? String(row[effectiveStatusCol.idx] || "").trim() : "";
+    const fPagtoVal = effectiveFPagtoCol ? String(row[effectiveFPagtoCol.idx] || "").trim() : "";
     const obsVal = obsCol ? String(row[obsCol.idx] || "").trim() : "";
 
     // Skip rows with no date and no client (likely summary rows)
@@ -369,18 +435,16 @@ export function unpivotWide(
     }
 
     if (hasAnyFlavor) {
-      // Create one row per flavor
       for (const fc of flavorCols) {
         const qty = parseQuantity(row[fc]);
         if (qty == null || qty <= 0) continue;
         const flavorName = String(headerRow[fc] || "").trim();
-        rows.push([dateVal, flavorName, qty, clienteVal, pagVal, statusVal, fPagtoVal, obsVal]);
+        rows.push([semanaVal, dateVal, flavorName, qty, clienteVal, pagVal, statusVal, fPagtoVal, obsVal]);
       }
     } else {
-      // Row has QUANTIDADE total but no per-flavor breakdown — use total qty with "Não especificado"
       const totalQty = qtdTotalCol ? parseQuantity(row[qtdTotalCol.idx]) : null;
       if (totalQty && totalQty > 0) {
-        rows.push([dateVal, "(sem detalhe sabor)", totalQty, clienteVal, pagVal, statusVal, fPagtoVal, obsVal]);
+        rows.push([semanaVal, dateVal, "(sem detalhe sabor)", totalQty, clienteVal, pagVal, statusVal, fPagtoVal, obsVal]);
       }
     }
   }
@@ -399,6 +463,7 @@ export function parseRows(
   const normalizedHeaders = headers.map(h => normalizeText(h));
 
   // Flexible column detection
+  const semanaCol = findColumnIndex(headers, ["semana", "sem", "week"]);
   const dataCol = findColumnIndex(headers, ["data", "date", "dia", "datas", "dt", "periodo", "mes"]);
   const saborCol = findColumnIndex(headers, ["sabor", "produto", "item", "flavor", "gelo", "tipo", "descricao"]);
   const qtdCol = findColumnIndex(headers, ["quantidade", "qtd", "qty", "quantity", "quant", "un", "unidade", "unidades"]);
@@ -494,9 +559,12 @@ export function parseRows(
     if (seen.has(dupeKey)) warnings.push("Possível duplicidade");
     seen.add(dupeKey);
 
+    const semanaRaw = semanaCol !== -1 ? String(row[semanaCol] || "").trim() : undefined;
+
     parsed.push({
       rowNum: r + 1,
       data: dateVal || String(row[dataCol]),
+      semana: semanaRaw || undefined,
       sabor: saborRaw,
       quantidade: qtd ?? 0,
       valor: valor ?? undefined,
