@@ -18,6 +18,7 @@ const menuItems = [
   { path: "/painel/producao", label: "Produção", icon: Factory },
   { path: "/painel/vendas", label: "Vendas", icon: ShoppingCart },
   { path: "/painel/a-receber", label: "A Receber", icon: DollarSign },
+  { path: "/painel/contas-a-pagar", label: "Contas a Pagar", icon: ClipboardList },
   { path: "/painel/estoque", label: "Estoque", icon: Warehouse },
   { path: "/painel/clientes", label: "Clientes", icon: Users },
   { path: "/painel/funcionarios", label: "Funcionários", icon: UserCog },
@@ -65,8 +66,8 @@ const positionSets = [
 
 const routeToIndex: Record<string, number> = {
   "/painel": 0, "/painel/producao": 1, "/painel/vendas": 2, "/painel/a-receber": 3,
-  "/painel/estoque": 4, "/painel/clientes": 5, "/painel/funcionarios": 6,
-  "/painel/sabores": 7, "/painel/relatorios": 8, "/painel/importar-planilha": 9, "/painel/auditoria": 10,
+  "/painel/contas-a-pagar": 4, "/painel/estoque": 5, "/painel/clientes": 6, "/painel/funcionarios": 7,
+  "/painel/sabores": 8, "/painel/relatorios": 9, "/painel/importar-planilha": 10, "/painel/auditoria": 11,
 };
 
 function getPageCharacters(pathname: string) {
