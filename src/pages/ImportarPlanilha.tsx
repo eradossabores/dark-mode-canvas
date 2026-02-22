@@ -316,8 +316,15 @@ export default function ImportarPlanilha() {
         }
       }
 
+      // Filter out rows without sabor (sem detalhe sabor) - can't import without knowing the sabor
+      const importableRows = validRows.filter(r => r.saborId);
+      const skippedNoSabor = validRows.filter(r => !r.saborId);
+      if (skippedNoSabor.length > 0) {
+        errors.push(`${skippedNoSabor.length} registro(s) sem detalhe de sabor foram ignorados`);
+      }
+
       const groups = new Map<string, ImportRow[]>();
-      for (const row of validRows) {
+      for (const row of importableRows) {
         if (!row.clienteId) { fail++; continue; }
         const key = `${row.data}|${row.clienteId}`;
         if (!groups.has(key)) groups.set(key, []);
@@ -325,15 +332,52 @@ export default function ImportarPlanilha() {
       }
       for (const [, items] of groups) {
         try {
-          const vendaId = await realizarVenda({
-            p_cliente_id: items[0].clienteId!, p_operador: "importação planilha",
-            p_observacoes: `Importado via planilha - ${file?.name || ""}`,
-            p_itens: items.map(i => ({ sabor_id: i.saborId!, quantidade: i.quantidade })),
+          // Direct insert to bypass stock validation for historical imports
+          const totalVenda = items.reduce((s, i) => s + (i.valorTotal || i.quantidade * 1.99), 0);
+          const formaPag = items[0].formaPagamento || "dinheiro";
+          const statusVenda = items[0].statusPagamento === "Pago" ? "paga" : "pendente";
+
+          const { data: venda, error: vendaErr } = await (supabase as any)
+            .from("vendas")
+            .insert({
+              cliente_id: items[0].clienteId!,
+              total: totalVenda,
+              operador: "importação planilha",
+              observacoes: `Importado via planilha - ${file?.name || ""}. ${items[0].observacoes || ""}`.trim(),
+              forma_pagamento: formaPag,
+              status: statusVenda,
+              created_at: items[0].data ? `${items[0].data}T12:00:00Z` : new Date().toISOString(),
+            })
+            .select("id")
+            .single();
+
+          if (vendaErr) throw vendaErr;
+          const vendaId = venda.id;
+          vendaIds.push(vendaId);
+
+          // Insert venda_itens
+          const itensToInsert = items.map(i => {
+            const precoUnit = i.valor || (i.valorTotal ? i.valorTotal / i.quantidade : 1.99);
+            return {
+              venda_id: vendaId,
+              sabor_id: i.saborId!,
+              quantidade: i.quantidade,
+              preco_unitario: precoUnit,
+              subtotal: precoUnit * i.quantidade,
+              regra_preco_aplicada: "importacao_planilha",
+            };
           });
-          if (vendaId) vendaIds.push(vendaId as string);
+          await (supabase as any).from("venda_itens").insert(itensToInsert);
+
           for (const i of items) {
             stockChanges.push({ saborId: i.saborId!, quantidade: i.quantidade });
           }
+
+          // Update client last purchase
+          await (supabase as any).from("clientes")
+            .update({ ultima_compra: items[0].data ? `${items[0].data}T12:00:00Z` : new Date().toISOString() })
+            .eq("id", items[0].clienteId!);
+
           ok += items.length;
         } catch (e: any) {
           fail += items.length;
