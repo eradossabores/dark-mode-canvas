@@ -226,9 +226,13 @@ function matchSabor(name: string, sabores: { id: string; nome: string }[]): bool
   const norm = normalizeText(name);
   if (!norm || norm.length < 2) return false;
 
-  // Skip known non-flavor column names
+  // Skip known non-flavor column names and single-letter headers (e.g. W, X, Y)
+  const trimmed = name.trim();
+  if (trimmed.length <= 2 && /^[A-Za-z]{1,2}$/.test(trimmed)) return false;
+
   const skipNames = ["semana", "data", "cliente", "quantidade", "pagamento", "status", "total",
-    "observacoes", "observações", "fpagto", "formapagamento", "outros", "totalsemanal"];
+    "observacoes", "observações", "fpagto", "formapagamento", "outros", "totalsemanal",
+    "w", "x", "y", "z", "col", "column"];
   if (skipNames.some(s => norm === normalizeText(s))) return false;
 
   for (const s of sabores) {
