@@ -138,8 +138,8 @@ export default function MonitorProducao() {
     return (
       <Card
         key={pedido.id}
-        className={`border-l-[6px] ${statusBorderColors[pedido.status]} shadow-md animate-fade-in transition-all duration-300 ${isExpanded ? "fixed inset-0 z-50 border-l-8 rounded-none overflow-auto" : ""}`}
-        style={{ animationDelay: `${index * 80}ms` }}
+        className={`border-l-[6px] ${statusBorderColors[pedido.status]} shadow-md animate-fade-in transition-all duration-300 ${isExpanded ? "fixed inset-0 z-50 border-l-8 rounded-none overflow-auto bg-gradient-to-br from-sky-50 via-blue-50 to-sky-100 dark:from-sky-950 dark:via-blue-950 dark:to-sky-900" : ""}`}
+        style={{ animationDelay: `${index * 80}ms`, ...(isExpanded ? { backgroundImage: "radial-gradient(circle at 20% 50%, rgba(186,230,253,0.4) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(147,197,253,0.3) 0%, transparent 50%), radial-gradient(circle at 50% 80%, rgba(186,230,253,0.2) 0%, transparent 50%)" } : {}) }}
       >
         <CardContent className={`p-5 md:p-6 ${isExpanded ? "max-w-4xl mx-auto py-10" : ""}`}>
           <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-5">
