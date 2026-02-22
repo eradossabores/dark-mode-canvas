@@ -191,14 +191,6 @@ export default function MonitorProducao() {
               )}
             </div>
             <div className="flex flex-col gap-3 min-w-[200px]">
-              <Select value={pedido.status} onValueChange={(val) => updateStatus.mutate({ id: pedido.id, status: val })}>
-                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {statusOrder.map((s) => (
-                    <SelectItem key={s} value={s}>{statusLabels[s]}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
               {pedido.status !== "separado_para_entrega" && pedido.status !== "enviado" && (
                 <Button
                   variant="outline"
