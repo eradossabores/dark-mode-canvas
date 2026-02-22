@@ -60,10 +60,10 @@ export default function Dashboard() {
 
   const cards = [
     { title: "Gelos em Estoque", value: stats.totalGelos.toLocaleString(), icon: Package, color: "text-primary" },
-    { title: "Clientes Ativos", value: stats.totalClientes, icon: Users, color: "text-emerald-500" },
-    { title: "Total Vendas", value: stats.totalVendas, icon: ShoppingCart, color: "text-amber-500" },
-    { title: "Faturamento", value: `R$ ${stats.faturamento.toFixed(2)}`, icon: TrendingUp, color: "text-emerald-500" },
-    { title: "Produções", value: stats.totalProducoes, icon: Factory, color: "text-blue-500" },
+    { title: "Clientes Ativos", value: stats.totalClientes, icon: Users, color: "text-secondary-foreground" },
+    { title: "Total Vendas", value: stats.totalVendas, icon: ShoppingCart, color: "text-accent" },
+    { title: "Faturamento", value: `R$ ${stats.faturamento.toFixed(2)}`, icon: TrendingUp, color: "text-primary" },
+    { title: "Produções", value: stats.totalProducoes, icon: Factory, color: "text-secondary-foreground" },
     { title: "Clientes Inativos", value: stats.clientesInativos, icon: AlertTriangle, color: "text-destructive" },
   ];
 
