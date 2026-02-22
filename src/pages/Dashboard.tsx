@@ -137,12 +137,12 @@ export default function Dashboard() {
     <div>
       <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
 
-      {/* 3 Post-its por categoria com rotação automática */}
+      {/* Painel de alertas compacto */}
       {alertasEstoque.length > 0 && (() => {
         const categorias = [
-          { tipo: "Matéria-prima", cor: "linear-gradient(135deg, hsl(45, 100%, 80%), hsl(45, 100%, 72%))", fita: "hsl(45, 30%, 85%)", rotate: "-rotate-1" },
-          { tipo: "Embalagem", cor: "linear-gradient(135deg, hsl(120, 60%, 82%), hsl(120, 60%, 74%))", fita: "hsl(120, 20%, 85%)", rotate: "rotate-1" },
-          { tipo: "Gelo", cor: "linear-gradient(135deg, hsl(200, 80%, 82%), hsl(200, 80%, 74%))", fita: "hsl(200, 30%, 85%)", rotate: "-rotate-2" },
+          { tipo: "Matéria-prima", icon: "🧪", accent: "hsl(0, 70%, 55%)" },
+          { tipo: "Embalagem", icon: "📦", accent: "hsl(38, 90%, 50%)" },
+          { tipo: "Gelo", icon: "🧊", accent: "hsl(200, 70%, 50%)" },
         ];
         const grouped = categorias.map(cat => ({
           ...cat,
@@ -150,51 +150,54 @@ export default function Dashboard() {
         })).filter(cat => cat.items.length > 0);
 
         return (
-          <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {grouped.map((cat) => {
-              const visibleIndex = alertaIndex % cat.items.length;
-              return (
-                <div
-                  key={cat.tipo}
-                  className={`relative min-h-[150px] rounded-sm p-4 shadow-lg transform ${cat.rotate}`}
-                  style={{
-                    background: cat.cor,
-                    boxShadow: "2px 4px 12px hsl(0 0% 0% / 0.15)",
-                  }}
-                >
-                  <div
-                    className="absolute -top-2 left-1/2 -translate-x-1/2 w-14 h-4 rounded-sm opacity-60"
-                    style={{ background: cat.fita }}
-                  />
-                  <div className="mt-2">
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
-                      <span className="text-[10px] font-bold text-destructive uppercase tracking-wide">{cat.tipo}</span>
-                      <span className="text-[10px] text-muted-foreground ml-auto">{cat.items.length} alerta{cat.items.length > 1 ? "s" : ""}</span>
-                    </div>
-
-                    <div key={visibleIndex} className="animate-fade-in">
-                      <p className="text-base font-extrabold text-foreground">{cat.items[visibleIndex]?.nome}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Atual: <span className="font-bold text-destructive">{cat.items[visibleIndex]?.atual}</span> / Mín: {cat.items[visibleIndex]?.minimo}
-                      </p>
-                    </div>
-
-                    {cat.items.length > 1 && (
-                      <div className="flex items-center gap-1 mt-3">
-                        {cat.items.map((_, i) => (
-                          <div
-                            key={i}
-                            className={`w-1.5 h-1.5 rounded-full transition-all ${i === visibleIndex ? "bg-destructive scale-125" : "bg-foreground/25"}`}
-                          />
-                        ))}
+          <Card className="mb-6 border-destructive/30 overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-destructive/10 border-b border-destructive/20">
+              <Bell className="h-4 w-4 text-destructive" />
+              <span className="text-sm font-bold text-destructive">
+                {alertasEstoque.length} Alerta{alertasEstoque.length > 1 ? "s" : ""} de Estoque
+              </span>
+            </div>
+            <CardContent className="p-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {grouped.map((cat) => {
+                  const visibleIndex = alertaIndex % cat.items.length;
+                  return (
+                    <div key={cat.tipo} className="rounded-lg border p-3 bg-card hover:shadow-sm transition-shadow">
+                      <div className="flex items-center gap-2 mb-2 pb-2 border-b">
+                        <span className="text-base">{cat.icon}</span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{cat.tipo}</span>
+                        <Badge variant="destructive" className="ml-auto text-[10px] px-1.5 py-0">{cat.items.length}</Badge>
                       </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                      <div key={visibleIndex} className="animate-fade-in space-y-1.5">
+                        <p className="text-sm font-bold truncate">{cat.items[visibleIndex]?.nome}</p>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 bg-muted rounded-full h-1.5 overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{
+                                width: `${Math.min(100, (cat.items[visibleIndex]?.atual / Math.max(cat.items[visibleIndex]?.minimo, 1)) * 100)}%`,
+                                background: cat.accent,
+                              }}
+                            />
+                          </div>
+                          <span className="text-[10px] font-mono text-muted-foreground whitespace-nowrap">
+                            {cat.items[visibleIndex]?.atual}/{cat.items[visibleIndex]?.minimo}
+                          </span>
+                        </div>
+                      </div>
+                      {cat.items.length > 1 && (
+                        <div className="flex gap-1 mt-2 justify-center">
+                          {cat.items.map((_, i) => (
+                            <div key={i} className={`w-1 h-1 rounded-full transition-all ${i === visibleIndex ? "bg-foreground scale-150" : "bg-foreground/20"}`} />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
         );
       })()}
 
