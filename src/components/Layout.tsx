@@ -84,6 +84,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
 
+  // Pick a character for the sidebar based on route
+  const sidebarCharIdx = (routeToIndex[location.pathname] ?? 0) % allCharacters.length;
+  const sidebarChar = allCharacters[sidebarCharIdx];
+
   const sidebarContent = (
     <>
       <div className="flex items-center gap-2 px-3 py-3 border-b border-sidebar-border">
@@ -113,6 +117,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           );
         })}
       </nav>
+      {/* Ice Age character at bottom of sidebar */}
+      <div className="flex justify-center py-2 border-t border-sidebar-border">
+        <img
+          src={sidebarChar.src}
+          alt=""
+          aria-hidden
+          className={cn(
+            "object-contain opacity-30 pointer-events-none select-none",
+            collapsed ? "w-10 h-10" : "w-24 h-24"
+          )}
+        />
+      </div>
     </>
   );
 
