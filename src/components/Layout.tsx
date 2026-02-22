@@ -15,7 +15,7 @@ const menuItems = [
   { path: "/funcionarios", label: "Funcionários", icon: UserCog },
   { path: "/sabores", label: "Sabores", icon: Package },
   { path: "/relatorios", label: "Relatórios", icon: BarChart3 },
-  { path: "/importar-planilha", label: "Importar Planilha", icon: FileUp },
+  { path: "/importar-planilha", label: "Upload Planilha", icon: FileUp },
   { path: "/auditoria", label: "Auditoria", icon: ClipboardList },
 ];
 
