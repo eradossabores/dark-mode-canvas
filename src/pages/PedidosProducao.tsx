@@ -46,7 +46,6 @@ export default function PedidosProducao() {
   const [tipoEmbalagem, setTipoEmbalagem] = useState("padrão");
   const [dataEntrega, setDataEntrega] = useState("");
   const [observacoes, setObservacoes] = useState("");
-  const [operador, setOperador] = useState("");
   const [itens, setItens] = useState<ItemPedido[]>([]);
   const [saborSel, setSaborSel] = useState("");
   const [qtdSel, setQtdSel] = useState("");
@@ -90,7 +89,6 @@ export default function PedidosProducao() {
           tipo_embalagem: tipoEmbalagem,
           data_entrega: dataEntrega,
           observacoes: observacoes || null,
-          operador,
         })
         .select()
         .single();
@@ -122,7 +120,6 @@ export default function PedidosProducao() {
     setTipoEmbalagem("padrão");
     setDataEntrega("");
     setObservacoes("");
-    setOperador("");
     setItens([]);
   }
 
@@ -143,7 +140,7 @@ export default function PedidosProducao() {
     setItens(itens.filter((_, i) => i !== idx));
   }
 
-  const canSubmit = clienteId && dataEntrega && operador && itens.length > 0;
+  const canSubmit = clienteId && dataEntrega && itens.length > 0;
 
   return (
     <div className="space-y-6">
@@ -172,10 +169,6 @@ export default function PedidosProducao() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Operador *</Label>
-                  <Input value={operador} onChange={(e) => setOperador(e.target.value)} placeholder="Nome do operador" />
                 </div>
                 <div className="space-y-2">
                   <Label>Data/Hora da Entrega *</Label>
@@ -325,7 +318,6 @@ export default function PedidosProducao() {
                 <div><span className="text-muted-foreground">Pedido:</span> {format(new Date(detailOrder.created_at), "dd/MM/yy HH:mm", { locale: ptBR })}</div>
                 <div><span className="text-muted-foreground">Entrega:</span> {format(new Date(detailOrder.data_entrega), "dd/MM/yy HH:mm", { locale: ptBR })}</div>
                 <div><span className="text-muted-foreground">Embalagem:</span> {detailOrder.tipo_embalagem}</div>
-                <div><span className="text-muted-foreground">Operador:</span> {detailOrder.operador}</div>
               </div>
               {detailOrder.observacoes && (
                 <div className="text-sm"><span className="text-muted-foreground">Obs:</span> {detailOrder.observacoes}</div>
