@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import {
-  type ImportRow, type TipoImportacao, type LayoutType,
+  type ImportRow, type TipoImportacao, type LayoutType, type MatrixOrientation,
   detectLayout, detectTipo, unpivotMatrix, parseRows, buildAnalise,
 } from "@/lib/spreadsheet-helpers";
 import AnaliseResumoCard from "@/components/importar/AnaliseResumoCard";
@@ -76,12 +76,12 @@ export default function ImportarPlanilha() {
       const raw: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
       if (raw.length < 2) { toast({ title: "Planilha vazia", variant: "destructive" }); return; }
 
-      const layout = detectLayout(raw);
-      setLayoutType(layout);
+      const detected = detectLayout(raw);
+      setLayoutType(detected.layout);
 
       let headers: string[], dataRows: any[][];
-      if (layout === "matrix") {
-        const u = unpivotMatrix(raw);
+      if (detected.layout === "matrix" && detected.orientation) {
+        const u = unpivotMatrix(raw, detected.orientation);
         headers = u.headers; dataRows = u.dataRows;
       } else {
         headers = raw[0].map(String); dataRows = raw.slice(1);
@@ -89,7 +89,7 @@ export default function ImportarPlanilha() {
 
       setParsedHeaders(headers); setParsedDataRows(dataRows);
 
-      if (layout === "matrix") {
+      if (detected.layout === "matrix") {
         setDetectedTipo("producao"); setDetectedConfidence("high"); setConfirmedTipo("producao");
       } else {
         const d = detectTipo(headers);
