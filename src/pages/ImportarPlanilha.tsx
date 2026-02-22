@@ -294,6 +294,19 @@ export default function ImportarPlanilha() {
         }
       }
     } else {
+      // Reload fresh client list to catch any recently added clients
+      const { data: freshClientes } = await (supabase as any).from("clientes").select("id, nome");
+      const freshClienteMap = new Map<string, string>();
+      (freshClientes || []).forEach((c: any) => freshClienteMap.set(c.nome.toLowerCase().trim(), c.id));
+
+      // Re-map clienteId using fresh data
+      for (const row of validRows) {
+        if (row.cliente) {
+          const found = freshClienteMap.get(row.cliente.toLowerCase().trim());
+          if (found) row.clienteId = found;
+        }
+      }
+
       // Auto-create missing clients
       const missingClients = new Set<string>();
       for (const row of validRows) {
@@ -316,6 +329,28 @@ export default function ImportarPlanilha() {
         }
       }
 
+      // Fallback: assign to "AVULSO" client for rows without any client info
+      let fallbackClientId: string | null = null;
+      const rowsWithoutClient = validRows.filter(r => !r.clienteId);
+      if (rowsWithoutClient.length > 0) {
+        // Find or create AVULSO client
+        const avulsoName = "AVULSO";
+        fallbackClientId = freshClienteMap.get(avulsoName.toLowerCase()) || createdClientMap.get(avulsoName.toLowerCase()) || null;
+        if (!fallbackClientId) {
+          try {
+            const { data: avulso } = await (supabase as any)
+              .from("clientes").insert({ nome: avulsoName, status: "ativo" }).select("id").single();
+            if (avulso) fallbackClientId = avulso.id;
+          } catch {}
+        }
+        if (fallbackClientId) {
+          for (const row of rowsWithoutClient) {
+            row.clienteId = fallbackClientId;
+            row.cliente = avulsoName;
+          }
+        }
+      }
+
       // Filter out rows without sabor (sem detalhe sabor) - can't import without knowing the sabor
       const importableRows = validRows.filter(r => r.saborId);
       const skippedNoSabor = validRows.filter(r => !r.saborId);
@@ -325,7 +360,11 @@ export default function ImportarPlanilha() {
 
       const groups = new Map<string, ImportRow[]>();
       for (const row of importableRows) {
-        if (!row.clienteId) { fail++; continue; }
+        if (!row.clienteId) {
+          fail++;
+          errors.push(`Linha ${row.rowNum} (${row.sabor}): Cliente "${row.cliente || '?'}" não pôde ser atribuído`);
+          continue;
+        }
         const key = `${row.data}|${row.clienteId}`;
         if (!groups.has(key)) groups.set(key, []);
         groups.get(key)!.push(row);
