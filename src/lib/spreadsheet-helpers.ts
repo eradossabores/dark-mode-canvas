@@ -213,16 +213,29 @@ export function parseRows(
   const normalizedHeaders = headers.map(h => normalizeText(h));
 
   // Flexible column detection
-  const dataCol = findColumnIndex(headers, ["data", "date", "dia"]);
-  const saborCol = findColumnIndex(headers, ["sabor", "produto", "item", "flavor"]);
-  const qtdCol = findColumnIndex(headers, ["quantidade", "qtd", "qty", "quantity"]);
+  const dataCol = findColumnIndex(headers, ["data", "date", "dia", "datas", "dt", "periodo", "mes"]);
+  const saborCol = findColumnIndex(headers, ["sabor", "produto", "item", "flavor", "gelo", "tipo", "descricao", "nome"]);
+  const qtdCol = findColumnIndex(headers, ["quantidade", "qtd", "qty", "quantity", "quant", "un", "unidade", "unidades", "total"]);
   const clienteCol = findColumnIndex(headers, ["cliente", "client", "comprador"]);
   const valorCol = findColumnIndex(headers, ["valor", "preco", "preço", "valor unitario", "preco unitario", "unit"]);
   const totalCol = findColumnIndex(headers, ["total", "valor total", "subtotal"]);
   const statusCol = findColumnIndex(headers, ["status", "pagamento", "status pagamento", "pago"]);
   const respCol = findColumnIndex(headers, ["responsavel", "responsável", "operador"]);
 
-  if (dataCol === -1 || saborCol === -1 || qtdCol === -1) return [];
+  // If qty column not found but we have data+sabor, try to use the first numeric-looking column
+  let effectiveQtdCol = qtdCol;
+  if (effectiveQtdCol === -1 && dataCol !== -1 && saborCol !== -1) {
+    for (let c = 0; c < headers.length; c++) {
+      if (c === dataCol || c === saborCol) continue;
+      // Check if first data row has a number in this column
+      if (dataRows.length > 0 && parseNumericValue(dataRows[0][c]) != null) {
+        effectiveQtdCol = c;
+        break;
+      }
+    }
+  }
+
+  if (dataCol === -1 || saborCol === -1 || effectiveQtdCol === -1) return [];
 
   const saborMap = new Map<string, string>();
   sabores.forEach(s => saborMap.set(s.nome.toLowerCase().trim(), s.id));
@@ -273,7 +286,7 @@ export function parseRows(
     if (!saborRaw) errors.push("Sabor vazio");
     else if (!saborId) errors.push(`Sabor "${saborRaw}" não encontrado`);
 
-    const qtd = parseQuantity(row[qtdCol]);
+    const qtd = parseQuantity(row[effectiveQtdCol]);
     if (qtd == null) errors.push("Quantidade inválida");
     else if (qtd <= 0) errors.push("Quantidade deve ser positiva");
 
