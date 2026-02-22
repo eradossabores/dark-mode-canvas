@@ -546,9 +546,14 @@ export function parseRows(
       else if (!clienteId) warnings.push(`Cliente "${clienteRaw}" será criado automaticamente`);
     }
 
-    const valor = valorCol !== -1 ? parseNumericValue(row[valorCol]) : undefined;
-    let valorTotal = totalCol !== -1 ? parseNumericValue(row[totalCol]) : undefined;
-    if (!valorTotal && valor && qtd) valorTotal = valor * qtd;
+    const valorRaw = valorCol !== -1 ? row[valorCol] : undefined;
+    const valor = valorRaw != null && String(valorRaw).trim() !== "" && String(valorRaw).trim() !== "-"
+      ? parseNumericValue(valorRaw) : undefined;
+    const totalRaw = totalCol !== -1 ? row[totalCol] : undefined;
+    const totalCellIsEmpty = totalRaw == null || String(totalRaw).trim() === "" || String(totalRaw).trim() === "-";
+    let valorTotal = !totalCellIsEmpty ? parseNumericValue(totalRaw) : undefined;
+    // Only calculate from valor*qtd if there's an explicit unit price AND total column is absent
+    if (!valorTotal && valor && qtd && totalCol === -1) valorTotal = valor * qtd;
 
     const statusPag = statusCol !== -1 ? normalizeStatus(row[statusCol]) : undefined;
     const respRaw = respCol !== -1 ? String(row[respCol] || "").trim() : "";
