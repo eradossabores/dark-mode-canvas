@@ -125,8 +125,10 @@ export default function ImportarPlanilha() {
     if (hasBlockingErrors || !tipoImportacao) return;
     setImporting(true);
     let ok = 0, fail = 0;
+    const errors: string[] = [];
 
     if (tipoImportacao === "producao") {
+      // For imports, insert directly to avoid stock validation (historical data)
       for (const row of validRows) {
         try {
           let funcId = funcionarios[0]?.id;
@@ -134,14 +136,68 @@ export default function ImportarPlanilha() {
             const found = funcionarios.find(f => f.nome.toLowerCase() === row.responsavel!.toLowerCase());
             if (found) funcId = found.id;
           }
-          await realizarProducao({
-            p_sabor_id: row.saborId!, p_modo: "unidade", p_quantidade_lotes: 0,
-            p_quantidade_total: row.quantidade, p_operador: row.responsavel || "importação planilha",
-            p_observacoes: `Importado via planilha - ${file?.name || ""}`,
-            p_funcionarios: funcId ? [{ funcionario_id: funcId, quantidade_produzida: 0 }] : [],
+
+          // Insert production record directly
+          const { data: prod, error: prodErr } = await (supabase as any)
+            .from("producoes")
+            .insert({
+              sabor_id: row.saborId!,
+              modo: "unidade",
+              quantidade_lotes: 0,
+              quantidade_total: row.quantidade,
+              operador: row.responsavel || "importação planilha",
+              observacoes: `Importado via planilha - ${file?.name || ""}`,
+              created_at: row.data ? `${row.data}T12:00:00Z` : new Date().toISOString(),
+            })
+            .select("id")
+            .single();
+
+          if (prodErr) throw prodErr;
+
+          // Link funcionário if available
+          if (funcId && prod?.id) {
+            await (supabase as any).from("producao_funcionarios").insert({
+              producao_id: prod.id,
+              funcionario_id: funcId,
+              quantidade_produzida: 0,
+            });
+          }
+
+          // Update stock (estoque_gelos) - upsert
+          const { data: estoque } = await (supabase as any)
+            .from("estoque_gelos")
+            .select("quantidade")
+            .eq("sabor_id", row.saborId!)
+            .maybeSingle();
+
+          if (estoque) {
+            await (supabase as any)
+              .from("estoque_gelos")
+              .update({ quantidade: estoque.quantidade + row.quantidade })
+              .eq("sabor_id", row.saborId!);
+          } else {
+            await (supabase as any)
+              .from("estoque_gelos")
+              .insert({ sabor_id: row.saborId!, quantidade: row.quantidade });
+          }
+
+          // Register stock movement
+          await (supabase as any).from("movimentacoes_estoque").insert({
+            tipo_item: "gelo_pronto",
+            item_id: row.saborId!,
+            tipo_movimentacao: "entrada",
+            quantidade: row.quantidade,
+            operador: row.responsavel || "importação planilha",
+            referencia: "producao",
+            referencia_id: prod?.id,
           });
+
           ok++;
-        } catch (e: any) { fail++; console.error(`Erro linha ${row.rowNum}:`, e.message); }
+        } catch (e: any) {
+          fail++;
+          errors.push(`Linha ${row.rowNum} (${row.sabor}): ${e.message}`);
+          console.error(`Erro linha ${row.rowNum}:`, e.message);
+        }
       }
     } else {
       const groups = new Map<string, ImportRow[]>();
@@ -158,7 +214,11 @@ export default function ImportarPlanilha() {
             p_itens: items.map(i => ({ sabor_id: i.saborId!, quantidade: i.quantidade })),
           });
           ok += items.length;
-        } catch (e: any) { fail += items.length; console.error("Erro venda:", e.message); }
+        } catch (e: any) {
+          fail += items.length;
+          errors.push(`Venda ${items[0].data} - ${items[0].cliente}: ${e.message}`);
+          console.error("Erro venda:", e.message);
+        }
       }
     }
 
@@ -172,7 +232,11 @@ export default function ImportarPlanilha() {
     } catch {}
 
     setImportSummary({ ok, fail }); setImportDone(true); setImporting(false);
-    toast({ title: "Importação concluída", description: `${ok} importados, ${fail} erros.` });
+    if (fail > 0 && errors.length > 0) {
+      toast({ title: "Importação com erros", description: errors.slice(0, 3).join("; "), variant: "destructive" });
+    } else {
+      toast({ title: "Importação concluída!", description: `${ok} registros importados com sucesso.` });
+    }
   }
 
   const needsManualConfirmation = file && parsedHeaders.length > 0 && !confirmedTipo;
