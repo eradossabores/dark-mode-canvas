@@ -3,13 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Plus } from "lucide-react";
+import { Plus, Settings2 } from "lucide-react";
 
 export default function Estoque() {
   const [gelos, setGelos] = useState<any[]>([]);
@@ -26,6 +28,13 @@ export default function Estoque() {
   const [embId, setEmbId] = useState("");
   const [embQtd, setEmbQtd] = useState(0);
 
+  // Ajuste de estoque
+  const [openAjuste, setOpenAjuste] = useState(false);
+  const [ajusteTipo, setAjusteTipo] = useState<"gelo" | "mp" | "emb">("gelo");
+  const [ajusteItemId, setAjusteItemId] = useState("");
+  const [ajusteNovaQtd, setAjusteNovaQtd] = useState(0);
+  const [ajusteMotivo, setAjusteMotivo] = useState("");
+
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
@@ -41,13 +50,80 @@ export default function Estoque() {
     setMovimentacoes(mov.data || []);
   }
 
+  function openAjusteDialog(tipo: "gelo" | "mp" | "emb", itemId: string, qtdAtual: number) {
+    setAjusteTipo(tipo);
+    setAjusteItemId(itemId);
+    setAjusteNovaQtd(qtdAtual);
+    setAjusteMotivo("");
+    setOpenAjuste(true);
+  }
+
+  async function handleAjuste() {
+    if (!ajusteItemId || ajusteNovaQtd < 0) return toast({ title: "Quantidade inválida", variant: "destructive" });
+    if (!ajusteMotivo.trim()) return toast({ title: "Informe o motivo do ajuste", variant: "destructive" });
+
+    try {
+      let itemNome = "";
+      let qtdAnterior = 0;
+      let tipoItem: string;
+
+      if (ajusteTipo === "gelo") {
+        const item = gelos.find(g => g.id === ajusteItemId);
+        qtdAnterior = item?.quantidade || 0;
+        itemNome = item?.sabores?.nome || "Desconhecido";
+        tipoItem = "gelo_pronto";
+        await (supabase as any).from("estoque_gelos").update({ quantidade: ajusteNovaQtd }).eq("id", ajusteItemId);
+      } else if (ajusteTipo === "mp") {
+        const item = materias.find(m => m.id === ajusteItemId);
+        qtdAnterior = item?.estoque_atual || 0;
+        itemNome = item?.nome || "Desconhecido";
+        tipoItem = "materia_prima";
+        await (supabase as any).from("materias_primas").update({ estoque_atual: ajusteNovaQtd }).eq("id", ajusteItemId);
+      } else {
+        const item = embalagens.find(e => e.id === ajusteItemId);
+        qtdAnterior = item?.estoque_atual || 0;
+        itemNome = item?.nome || "Desconhecido";
+        tipoItem = "embalagem";
+        await (supabase as any).from("embalagens").update({ estoque_atual: ajusteNovaQtd }).eq("id", ajusteItemId);
+      }
+
+      const diff = ajusteNovaQtd - qtdAnterior;
+      const movTipo = diff >= 0 ? "entrada" : "saida";
+      const itemIdForMov = ajusteTipo === "gelo"
+        ? gelos.find(g => g.id === ajusteItemId)?.sabor_id
+        : ajusteItemId;
+
+      await (supabase as any).from("movimentacoes_estoque").insert({
+        tipo_item: tipoItem!,
+        item_id: itemIdForMov,
+        tipo_movimentacao: movTipo,
+        quantidade: Math.abs(diff),
+        referencia: "ajuste_manual",
+        operador: "sistema",
+      });
+
+      await (supabase as any).from("auditoria").insert({
+        usuario_nome: "sistema",
+        modulo: "estoque",
+        acao: "ajuste_estoque",
+        registro_afetado: ajusteItemId,
+        descricao: `Ajuste de ${itemNome}: ${qtdAnterior} → ${ajusteNovaQtd} (${diff >= 0 ? "+" : ""}${diff}). Motivo: ${ajusteMotivo}`,
+      });
+
+      toast({ title: "Estoque ajustado!", description: `${itemNome}: ${qtdAnterior} → ${ajusteNovaQtd}` });
+      setOpenAjuste(false);
+      loadData();
+    } catch (e: any) {
+      toast({ title: "Erro ao ajustar", description: e.message, variant: "destructive" });
+    }
+  }
+
+// ... keep existing code (addEstoqueMP function)
   async function addEstoqueMP() {
     if (!mpId || mpQtd <= 0) return toast({ title: "Preencha todos os campos", variant: "destructive" });
     try {
       const mp = materias.find((m) => m.id === mpId);
-      // Convert kg to g if needed
       const qtdEmGramas = mpUnidade === "kg" ? mpQtd * 1000 : mpQtd;
-
       await (supabase as any).from("materias_primas").update({ estoque_atual: mp.estoque_atual + qtdEmGramas }).eq("id", mpId);
       await (supabase as any).from("movimentacoes_estoque").insert({
         tipo_item: "materia_prima", item_id: mpId, tipo_movimentacao: "entrada",
@@ -66,6 +142,7 @@ export default function Estoque() {
     }
   }
 
+// ... keep existing code (addEstoqueEmb function)
   async function addEstoqueEmb() {
     if (!embId || embQtd <= 0) return toast({ title: "Preencha todos os campos", variant: "destructive" });
     try {
@@ -91,6 +168,34 @@ export default function Estoque() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Estoque</h1>
+
+      {/* Dialog de Ajuste */}
+      <Dialog open={openAjuste} onOpenChange={setOpenAjuste}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Ajustar Estoque</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Nova Quantidade</Label>
+              <Input
+                type="number"
+                min={0}
+                value={ajusteNovaQtd || ""}
+                onChange={(e) => setAjusteNovaQtd(Number(e.target.value))}
+              />
+            </div>
+            <div>
+              <Label>Motivo do Ajuste <span className="text-destructive">*</span></Label>
+              <Textarea
+                placeholder="Ex: Contagem física, correção de erro, perda..."
+                value={ajusteMotivo}
+                onChange={(e) => setAjusteMotivo(e.target.value)}
+              />
+            </div>
+            <Button className="w-full" onClick={handleAjuste}>Confirmar Ajuste</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Tabs defaultValue="gelos">
         <TabsList>
           <TabsTrigger value="gelos">Gelos Prontos</TabsTrigger>
@@ -107,6 +212,7 @@ export default function Estoque() {
                   <TableRow>
                     <TableHead>Sabor</TableHead>
                     <TableHead>Quantidade</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -114,6 +220,15 @@ export default function Estoque() {
                     <TableRow key={g.id}>
                       <TableCell>{g.sabores?.nome}</TableCell>
                       <TableCell>{g.quantidade} un.</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openAjusteDialog("gelo", g.id, g.quantidade)}
+                        >
+                          <Settings2 className="h-3 w-3 mr-1" /> Ajustar
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -169,6 +284,7 @@ export default function Estoque() {
                     <TableHead>Nome</TableHead>
                     <TableHead>Estoque</TableHead>
                     <TableHead>Unidade</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -177,6 +293,15 @@ export default function Estoque() {
                       <TableCell>{m.nome}</TableCell>
                       <TableCell>{Number(m.estoque_atual).toLocaleString()}</TableCell>
                       <TableCell>{m.unidade}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openAjusteDialog("mp", m.id, m.estoque_atual)}
+                        >
+                          <Settings2 className="h-3 w-3 mr-1" /> Ajustar
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -219,6 +344,7 @@ export default function Estoque() {
                   <TableRow>
                     <TableHead>Nome</TableHead>
                     <TableHead>Estoque</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -226,6 +352,15 @@ export default function Estoque() {
                     <TableRow key={e.id}>
                       <TableCell>{e.nome}</TableCell>
                       <TableCell>{e.estoque_atual} un.</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openAjusteDialog("emb", e.id, e.estoque_atual)}
+                        >
+                          <Settings2 className="h-3 w-3 mr-1" /> Ajustar
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
