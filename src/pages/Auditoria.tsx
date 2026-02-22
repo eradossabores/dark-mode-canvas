@@ -14,6 +14,8 @@ export default function Auditoria() {
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
@@ -152,9 +154,51 @@ export default function Auditoria() {
     }
   }
 
+  async function handleDeleteAll() {
+    setDeletingAll(true);
+    try {
+      await (supabase as any).from("auditoria").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      toast({ title: "Auditoria limpa", description: "Todos os registros foram excluídos." });
+      loadData();
+    } catch (e: any) {
+      toast({ title: "Erro ao limpar", description: e.message, variant: "destructive" });
+    } finally {
+      setDeletingAll(false);
+      setConfirmDeleteAll(false);
+    }
+  }
+
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Auditoria</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Auditoria</h1>
+        {logs.length > 0 && (
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setConfirmDeleteAll(true)}
+          >
+            <Trash2 className="h-4 w-4 mr-1" /> Apagar Tudo
+          </Button>
+        )}
+      </div>
+
+      {confirmDeleteAll && (
+        <Alert className="mb-4 border-destructive/30 bg-destructive/5">
+          <AlertTriangle className="h-4 w-4 text-destructive" />
+          <AlertDescription className="flex items-center justify-between">
+            <span className="text-sm font-medium">
+              Tem certeza que deseja apagar TODOS os {logs.length} registros de auditoria?
+            </span>
+            <div className="flex gap-2 ml-4 shrink-0">
+              <Button size="sm" variant="outline" onClick={() => setConfirmDeleteAll(false)}>Cancelar</Button>
+              <Button size="sm" variant="destructive" disabled={deletingAll} onClick={handleDeleteAll}>
+                {deletingAll ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Apagando...</> : "Confirmar"}
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {confirmId && (
         <Alert className="mb-4 border-destructive/30 bg-destructive/5">
