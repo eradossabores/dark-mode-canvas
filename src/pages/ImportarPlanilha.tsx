@@ -361,7 +361,7 @@ export default function ImportarPlanilha() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>#</TableHead>
-                          <TableHead>Data</TableHead>
+                          <TableHead className="bg-primary/10 font-semibold">📅 Data</TableHead>
                           <TableHead>Sabor</TableHead>
                           <TableHead>Qtd</TableHead>
                           {hasValor && <TableHead>Valor Un.</TableHead>}
@@ -376,7 +376,7 @@ export default function ImportarPlanilha() {
                         {rows.map((row) => (
                           <TableRow key={row.rowNum} className={row.errors.length > 0 ? "bg-destructive/5" : ""}>
                             <TableCell>{row.rowNum}</TableCell>
-                            <TableCell>{row.data}</TableCell>
+                            <TableCell className="bg-primary/5 font-medium whitespace-nowrap">{row.data}</TableCell>
                             <TableCell>{row.sabor}</TableCell>
                             <TableCell>{row.quantidade}</TableCell>
                             {hasValor && <TableCell>{row.valor != null ? `R$ ${row.valor.toFixed(2)}` : "-"}</TableCell>}
