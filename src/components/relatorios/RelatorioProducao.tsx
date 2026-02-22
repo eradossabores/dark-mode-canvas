@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { Factory, Package, Users, TrendingUp } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import DateRangeFilter from "./DateRangeFilter";
 import KpiCard from "./KpiCard";
 import ExportButtons from "./ExportButtons";
@@ -182,26 +183,53 @@ export default function RelatorioProducao() {
 
           <Card>
             <CardHeader><CardTitle className="text-sm">Histórico de Produções</CardTitle></CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    {headers.map((h) => <TableHead key={h}>{h}</TableHead>)}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map((p) => (
-                    <TableRow key={p.id}>
-                      <TableCell>{new Date(p.created_at).toLocaleDateString("pt-BR")}</TableCell>
-                      <TableCell>{p.sabores?.nome}</TableCell>
-                      <TableCell className="capitalize">{p.modo}</TableCell>
-                      <TableCell>{p.quantidade_lotes}</TableCell>
-                      <TableCell>{p.quantidade_total}</TableCell>
-                      <TableCell>{p.operador}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <CardContent className="space-y-4">
+              {(() => {
+                const grouped: Record<string, typeof filtered> = {};
+                filtered.forEach((p) => {
+                  const day = new Date(p.created_at).toLocaleDateString("pt-BR");
+                  if (!grouped[day]) grouped[day] = [];
+                  grouped[day].push(p);
+                });
+                const days = Object.keys(grouped);
+                return days.length > 0 ? days.map((day) => {
+                  const dayItems = grouped[day];
+                  const dayTotal = dayItems.reduce((s, p) => s + p.quantidade_total, 0);
+                  return (
+                    <div key={day} className="space-y-2">
+                      <div className="flex items-center justify-between bg-muted/60 rounded-lg px-4 py-2">
+                        <span className="font-bold text-sm text-foreground">{day}</span>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span>{dayItems.length} produção(ões)</span>
+                          <Badge variant="secondary" className="font-bold">{dayTotal.toLocaleString("pt-BR")} un</Badge>
+                        </div>
+                      </div>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Sabor</TableHead>
+                            <TableHead>Modo</TableHead>
+                            <TableHead>Lotes</TableHead>
+                            <TableHead>Total</TableHead>
+                            <TableHead>Operador</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {dayItems.map((p) => (
+                            <TableRow key={p.id}>
+                              <TableCell>{p.sabores?.nome}</TableCell>
+                              <TableCell className="capitalize">{p.modo}</TableCell>
+                              <TableCell>{p.quantidade_lotes}</TableCell>
+                              <TableCell>{p.quantidade_total}</TableCell>
+                              <TableCell>{p.operador}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  );
+                }) : <p className="text-center text-muted-foreground py-4">Nenhum registro.</p>;
+              })()}
             </CardContent>
           </Card>
         </>
