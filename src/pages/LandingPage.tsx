@@ -9,38 +9,36 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import logo from "@/assets/logo.png";
-import heroImg from "@/assets/hero-gelos.jpg";
-import saborMorango from "@/assets/sabor-morango.jpg";
-import saborManga from "@/assets/sabor-manga.jpg";
-import saborMaracuja from "@/assets/sabor-maracuja.jpg";
-import saborLimao from "@/assets/sabor-limao.jpg";
+import geloBobMarley from "@/assets/gelo-bob-marley.png";
+import geloMelanciaMaca from "@/assets/gelo-melancia-maca.png";
+import geloMaracujaCoco from "@/assets/gelo-maracuja-coco.png";
+import geloMorango from "@/assets/gelo-morango.png";
+import geloMaracuja from "@/assets/gelo-maracuja.png";
+import geloMacaVerde from "@/assets/gelo-maca-verde.png";
+import geloProducao from "@/assets/gelo-producao.png";
+import geloBobMarleyDetalhe from "@/assets/gelo-bob-marley-detalhe.png";
 import sidImg from "@/assets/sid.png";
-import scratStandingImg from "@/assets/scrat-standing.png";
 
 const sabores = [
   {
-    nome: "Morango Intenso",
-    desc: "Feito com morangos frescos selecionados, trazendo doçura natural e cor vibrante para suas bebidas.",
-    img: saborMorango,
-    cor: "from-red-500/20 to-pink-500/20",
+    nome: "Gelo de Morango 🍓",
+    desc: "Feito com morango de verdade, cor vibrante e sabor intenso. Perfeito para drinks e sucos.",
+    img: geloMorango,
   },
   {
-    nome: "Manga Tropical",
-    desc: "O sabor exótico da manga madura, perfeito para drinks tropicais e sucos refrescantes.",
-    img: saborManga,
-    cor: "from-amber-400/20 to-orange-400/20",
+    nome: "Gelo de Maracujá 🔥",
+    desc: "Maracujá concentrado com acidez equilibrada. Ideal para coquetéis e águas saborizadas.",
+    img: geloMaracuja,
   },
   {
-    nome: "Maracujá Premium",
-    desc: "A acidez equilibrada do maracujá com um toque de doçura, ideal para coquetéis e águas saborizadas.",
-    img: saborMaracuja,
-    cor: "from-yellow-400/20 to-orange-300/20",
+    nome: "Gelo Maçã Verde 🍏",
+    desc: "Refrescante e com aroma marcante. Surpreende em qualquer bebida com seu toque especial.",
+    img: geloMacaVerde,
   },
   {
-    nome: "Limão com Hortelã",
-    desc: "A combinação clássica e refrescante de limão com hortelã fresca, perfeita para qualquer momento.",
-    img: saborLimao,
-    cor: "from-lime-400/20 to-emerald-400/20",
+    nome: "Gelo Bob Marley 🇯🇲",
+    desc: "Três camadas: melancia, maracujá e maçã verde. 220ml de pura explosão de sabores!",
+    img: geloBobMarley,
   },
 ];
 
@@ -127,14 +125,16 @@ export default function LandingPage() {
       </header>
 
       {/* ─── HERO ─── */}
-      <section className="relative">
+      <section className="relative min-h-[90vh] flex items-center">
+        {/* Background with real product photo */}
         <div className="absolute inset-0 overflow-hidden">
-          <img src={heroImg} alt="Gelos Saborizados" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/85 to-background/40" />
+          <img src={geloMelanciaMaca} alt="Gelos Saborizados" className="w-full h-full object-cover object-top" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/30" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
         </div>
-        <div className="relative max-w-7xl mx-auto px-6 py-24 md:py-36 lg:py-44">
+        <div className="relative max-w-7xl mx-auto px-6 py-24 md:py-36 w-full">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/15 text-primary text-sm font-semibold mb-6 backdrop-blur-sm">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/15 text-primary text-sm font-semibold mb-6 backdrop-blur-sm border border-primary/20">
               <IceCream className="h-4 w-4" />
               Gelos Saborizados Artesanais
             </div>
@@ -152,29 +152,80 @@ export default function LandingPage() {
                 </Button>
               </a>
               <a href="#contato">
-                <Button size="lg" variant="outline" className="gap-2 text-base px-8">
+                <Button size="lg" variant="outline" className="gap-2 text-base px-8 backdrop-blur-sm">
                   Entre em Contato
                 </Button>
               </a>
             </div>
           </div>
         </div>
-        {/* Decorative character */}
-        <img src={sidImg} alt="" aria-hidden className="absolute bottom-4 right-8 w-32 h-32 object-contain opacity-20 pointer-events-none select-none hidden xl:block" />
       </section>
 
-      {/* ─── SOBRE ─── */}
+      {/* ─── SOBRE + GALERIA ─── */}
       <section id="sobre" className="py-20 md:py-28 bg-gradient-to-b from-secondary/10 to-background">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Sobre a <span className="text-primary">Era dos Sabores</span>
-          </h2>
-          <p className="text-lg text-muted-foreground leading-relaxed max-w-3xl mx-auto">
-            Somos uma empresa apaixonada por transformar momentos simples em experiências saborosas.
-            Nossos gelos saborizados são produzidos artesanalmente com ingredientes frescos e naturais,
-            pensados para adicionar cor, sabor e diversão a qualquer bebida. Do happy hour em família
-            ao evento corporativo, nossos produtos fazem a diferença.
-          </p>
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                Sobre a <span className="text-primary">Era dos Sabores</span>
+              </h2>
+              <p className="text-lg text-muted-foreground leading-relaxed mb-6">
+                Somos uma empresa apaixonada por transformar momentos simples em experiências saborosas.
+                Nossos gelos saborizados são produzidos artesanalmente com ingredientes frescos e naturais,
+                pensados para adicionar cor, sabor e diversão a qualquer bebida.
+              </p>
+              <p className="text-muted-foreground leading-relaxed">
+                Do happy hour em família ao evento corporativo, nossos produtos fazem a diferença.
+                Cada gelo é produzido com cuidado e dedicação, garantindo qualidade e sabor em cada cubo.
+              </p>
+            </div>
+            {/* Real production photos grid */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="rounded-2xl overflow-hidden shadow-lg border border-border row-span-2">
+                <img src={geloBobMarleyDetalhe} alt="Gelo Bob Marley - detalhes dos sabores" className="w-full h-full object-cover" loading="lazy" />
+              </div>
+              <div className="rounded-2xl overflow-hidden shadow-lg border border-border">
+                <img src={geloProducao} alt="Produção artesanal" className="w-full h-full object-cover" loading="lazy" />
+              </div>
+              <div className="rounded-2xl overflow-hidden shadow-lg border border-border">
+                <img src={geloMaracujaCoco} alt="Gelo de maracujá e coco" className="w-full h-full object-cover" loading="lazy" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── DESTAQUE BOB MARLEY ─── */}
+      <section className="py-16 md:py-24 relative overflow-hidden">
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/90 via-yellow-500/90 to-red-500/90" />
+        </div>
+        <div className="relative max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="text-white">
+              <span className="text-sm font-bold uppercase tracking-widest opacity-80">Novidade!!</span>
+              <h2 className="text-4xl md:text-5xl font-bold mt-2 mb-4">Gelo Bob Marley</h2>
+              <p className="text-xl opacity-90 mb-2">220ml de pura explosão de sabores</p>
+              <ul className="space-y-2 mt-6 text-lg">
+                <li className="flex items-center gap-3">🍉 <span>Melancia — frescor tropical</span></li>
+                <li className="flex items-center gap-3">🥭 <span>Maracujá — acidez equilibrada</span></li>
+                <li className="flex items-center gap-3">🍏 <span>Maçã Verde — toque refrescante</span></li>
+              </ul>
+              <a href="#contato">
+                <Button size="lg" variant="secondary" className="mt-8 gap-2 text-base px-10 shadow-lg">
+                  Faça Seu Pedido <ArrowRight className="h-5 w-5" />
+                </Button>
+              </a>
+            </div>
+            <div className="flex justify-center">
+              <img
+                src={geloBobMarley}
+                alt="Gelo Bob Marley"
+                className="max-h-[500px] object-contain rounded-3xl shadow-2xl"
+                loading="lazy"
+              />
+            </div>
+          </div>
         </div>
       </section>
 
@@ -193,7 +244,7 @@ export default function LandingPage() {
                 key={s.nome}
                 className="group rounded-2xl overflow-hidden bg-card border border-border shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
               >
-                <div className={`relative h-56 overflow-hidden bg-gradient-to-br ${s.cor}`}>
+                <div className="relative h-72 overflow-hidden bg-muted">
                   <img
                     src={s.img}
                     alt={s.nome}
@@ -204,19 +255,14 @@ export default function LandingPage() {
                 <div className="p-5">
                   <h3 className="text-lg font-bold mb-2">{s.nome}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed mb-4">{s.desc}</p>
-                  <Button size="sm" variant="outline" className="w-full gap-1.5">
-                    Saiba Mais <ArrowRight className="h-3.5 w-3.5" />
-                  </Button>
+                  <a href="#contato">
+                    <Button size="sm" variant="outline" className="w-full gap-1.5">
+                      Faça seu Pedido <ArrowRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </a>
                 </div>
               </div>
             ))}
-          </div>
-          <div className="text-center mt-12">
-            <a href="#contato">
-              <Button size="lg" className="gap-2 px-10">
-                Compre Agora <ArrowRight className="h-5 w-5" />
-              </Button>
-            </a>
           </div>
         </div>
       </section>
@@ -274,48 +320,20 @@ export default function LandingPage() {
       <section id="contato" className="py-20 md:py-28 bg-gradient-to-b from-secondary/10 to-background">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-            {/* Form */}
             <div>
               <h2 className="text-3xl md:text-4xl font-bold mb-4">Entre em Contato</h2>
               <p className="text-muted-foreground mb-8">
                 Faça seu pedido ou tire suas dúvidas. Responderemos o mais rápido possível!
               </p>
               <form onSubmit={handleSubmitContato} className="space-y-5">
-                <div>
-                  <Input
-                    placeholder="Seu nome"
-                    value={formNome}
-                    onChange={(e) => setFormNome(e.target.value)}
-                    className="h-12"
-                    maxLength={100}
-                  />
-                </div>
-                <div>
-                  <Input
-                    type="email"
-                    placeholder="Seu e-mail"
-                    value={formEmail}
-                    onChange={(e) => setFormEmail(e.target.value)}
-                    className="h-12"
-                    maxLength={255}
-                  />
-                </div>
-                <div>
-                  <Textarea
-                    placeholder="Sua mensagem ou pedido..."
-                    value={formMsg}
-                    onChange={(e) => setFormMsg(e.target.value)}
-                    className="min-h-[120px]"
-                    maxLength={1000}
-                  />
-                </div>
+                <Input placeholder="Seu nome" value={formNome} onChange={(e) => setFormNome(e.target.value)} className="h-12" maxLength={100} />
+                <Input type="email" placeholder="Seu e-mail" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} className="h-12" maxLength={255} />
+                <Textarea placeholder="Sua mensagem ou pedido..." value={formMsg} onChange={(e) => setFormMsg(e.target.value)} className="min-h-[120px]" maxLength={1000} />
                 <Button type="submit" size="lg" className="gap-2 w-full sm:w-auto px-10">
                   Enviar Mensagem <Send className="h-5 w-5" />
                 </Button>
               </form>
             </div>
-
-            {/* Info */}
             <div className="flex flex-col justify-center space-y-8">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
@@ -344,9 +362,7 @@ export default function LandingPage() {
                   <p className="text-muted-foreground">São Paulo, SP - Brasil</p>
                 </div>
               </div>
-
-              {/* Map placeholder */}
-              <div className="rounded-2xl overflow-hidden border border-border h-48 bg-muted flex items-center justify-center">
+              <div className="rounded-2xl overflow-hidden border border-border h-48 bg-muted">
                 <iframe
                   title="Localização"
                   src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d467692.0488684!2d-46.87529!3d-23.6821!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce448183a461d1%3A0x9ba94b08ff335bae!2sS%C3%A3o%20Paulo%2C%20SP!5e0!3m2!1spt-BR!2sbr!4v1"
@@ -355,17 +371,15 @@ export default function LandingPage() {
                   referrerPolicy="no-referrer-when-downgrade"
                 />
               </div>
-
-              {/* Character decoration */}
-              <img src={scratStandingImg} alt="" aria-hidden className="w-20 h-20 object-contain opacity-20 pointer-events-none select-none mx-auto" />
             </div>
           </div>
         </div>
       </section>
 
       {/* ─── CTA FINAL ─── */}
-      <section className="py-16 bg-primary text-primary-foreground">
-        <div className="max-w-4xl mx-auto px-6 text-center">
+      <section className="py-16 bg-primary text-primary-foreground relative overflow-hidden">
+        <img src={sidImg} alt="" aria-hidden className="absolute right-8 top-1/2 -translate-y-1/2 w-32 h-32 object-contain opacity-15 pointer-events-none select-none hidden lg:block" />
+        <div className="relative max-w-4xl mx-auto px-6 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Pronto para experimentar?</h2>
           <p className="text-primary-foreground/80 text-lg mb-8 max-w-xl mx-auto">
             Adicione sabor e cor às suas bebidas. Faça seu pedido agora e receba em casa!
@@ -403,20 +417,10 @@ export default function LandingPage() {
             <div>
               <h4 className="font-semibold mb-4">Redes Sociais</h4>
               <div className="flex gap-3">
-                <a
-                  href="https://instagram.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors"
-                >
+                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors">
                   <Instagram className="h-5 w-5 text-primary" />
                 </a>
-                <a
-                  href="https://facebook.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors"
-                >
+                <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors">
                   <Facebook className="h-5 w-5 text-primary" />
                 </a>
               </div>
