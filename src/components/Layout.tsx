@@ -163,23 +163,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
             {/* === ICE AGE CHARACTERS (real images) === */}
             
-            {/* Sid - bottom right */}
-            <img src={sidImg} alt="" aria-hidden className="absolute bottom-[3%] right-[2%] w-40 h-40 object-contain opacity-[0.10] dark:opacity-[0.06] pointer-events-none select-none" />
+            {/* Sid - bottom right corner */}
+            <img src={sidImg} alt="" aria-hidden className="absolute bottom-[2%] right-[3%] w-44 h-44 object-contain opacity-[0.18] dark:opacity-[0.10] pointer-events-none select-none" />
             
-            {/* Buck - top left */}
-            <img src={buckImg} alt="" aria-hidden className="absolute top-[5%] left-[2%] w-32 h-32 object-contain opacity-[0.10] dark:opacity-[0.06] pointer-events-none select-none" />
+            {/* Buck - top left corner */}
+            <img src={buckImg} alt="" aria-hidden className="absolute top-[3%] left-[3%] w-36 h-36 object-contain opacity-[0.18] dark:opacity-[0.10] pointer-events-none select-none" />
             
-            {/* Scrat 3D (glasses) - top right */}
-            <img src={scrat3dImg} alt="" aria-hidden className="absolute top-[3%] right-[5%] w-28 h-28 object-contain opacity-[0.08] dark:opacity-[0.05] pointer-events-none select-none" />
+            {/* Scrat 3D (glasses) - top right corner */}
+            <img src={scrat3dImg} alt="" aria-hidden className="absolute top-[2%] right-[4%] w-32 h-32 object-contain opacity-[0.16] dark:opacity-[0.09] pointer-events-none select-none" />
             
-            {/* Scrat with acorn - bottom left */}
-            <img src={scratAcornImg} alt="" aria-hidden className="absolute bottom-[5%] left-[3%] w-32 h-32 object-contain opacity-[0.09] dark:opacity-[0.05] pointer-events-none select-none" />
+            {/* Scrat with acorn - bottom left corner */}
+            <img src={scratAcornImg} alt="" aria-hidden className="absolute bottom-[2%] left-[4%] w-36 h-36 object-contain opacity-[0.17] dark:opacity-[0.09] pointer-events-none select-none" />
             
-            {/* Scrat standing - middle right */}
-            <img src={scratStandingImg} alt="" aria-hidden className="absolute top-[40%] right-[1%] w-36 h-28 object-contain opacity-[0.07] dark:opacity-[0.04] pointer-events-none select-none" />
+            {/* Scrat standing - far right, vertically centered */}
+            <img src={scratStandingImg} alt="" aria-hidden className="absolute top-[50%] right-[2%] w-40 h-32 object-contain opacity-[0.14] dark:opacity-[0.08] pointer-events-none select-none -translate-y-1/2" />
             
-            {/* Scrat hanging - middle left */}
-            <img src={scratHangingImg} alt="" aria-hidden className="absolute top-[35%] left-[1%] w-24 h-36 object-contain opacity-[0.08] dark:opacity-[0.05] pointer-events-none select-none" />
+            {/* Scrat hanging - far left, vertically centered */}
+            <img src={scratHangingImg} alt="" aria-hidden className="absolute top-[55%] left-[2%] w-28 h-40 object-contain opacity-[0.15] dark:opacity-[0.08] pointer-events-none select-none" />
           </div>
         </div>
 
