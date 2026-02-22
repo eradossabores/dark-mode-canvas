@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Package, Users, ShoppingCart, Factory,
-  Warehouse, ClipboardList, UserCog, ChevronLeft, ChevronRight, IceCream2, BarChart3
+  Warehouse, ClipboardList, UserCog, ChevronLeft, ChevronRight, IceCream2, BarChart3, FileUp
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +15,7 @@ const menuItems = [
   { path: "/funcionarios", label: "Funcionários", icon: UserCog },
   { path: "/sabores", label: "Sabores", icon: Package },
   { path: "/relatorios", label: "Relatórios", icon: BarChart3 },
+  { path: "/importar-planilha", label: "Importar Planilha", icon: FileUp },
   { path: "/auditoria", label: "Auditoria", icon: ClipboardList },
 ];
 
