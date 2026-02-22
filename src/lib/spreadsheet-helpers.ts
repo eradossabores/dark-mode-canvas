@@ -182,6 +182,32 @@ export function parseRows(
 
   const saborMap = new Map<string, string>();
   sabores.forEach(s => saborMap.set(s.nome.toLowerCase().trim(), s.id));
+
+  // Fuzzy sabor matching helper
+  function findSaborId(raw: string): string | undefined {
+    const key = raw.toLowerCase().trim();
+    // Exact match
+    const exact = saborMap.get(key);
+    if (exact) return exact;
+    // Normalize: remove accents, special chars for comparison
+    const norm = normalizeText(raw);
+    for (const s of sabores) {
+      const sNorm = normalizeText(s.nome);
+      // Normalized exact
+      if (sNorm === norm) return s.id;
+      // One starts with the other
+      if (sNorm.startsWith(norm) || norm.startsWith(sNorm)) return s.id;
+      // Handle abbreviations like "c/" -> "com", "hort." -> "hortela"
+      const expanded = key.replace(/c\//g, "com").replace(/\./g, "").replace(/\s+/g, " ").trim();
+      const sLower = s.nome.toLowerCase().trim();
+      const sExpanded = sLower.replace(/ã/g, "a").replace(/á/g, "a").replace(/é/g, "e").replace(/ç/g, "c");
+      const eExpanded = expanded.replace(/ã/g, "a").replace(/á/g, "a").replace(/é/g, "e").replace(/ç/g, "c");
+      if (sExpanded.startsWith(eExpanded) || eExpanded.startsWith(sExpanded)) return s.id;
+      // Contains check on normalized
+      if (sNorm.includes(norm) || norm.includes(sNorm)) return s.id;
+    }
+    return undefined;
+  }
   const clienteMap = new Map<string, string>();
   clientes.forEach(c => clienteMap.set(c.nome.toLowerCase().trim(), c.id));
 
@@ -199,7 +225,7 @@ export function parseRows(
     if (!dateVal) errors.push("Data inválida");
 
     const saborRaw = String(row[saborCol] || "").trim();
-    const saborId = saborMap.get(saborRaw.toLowerCase());
+    const saborId = findSaborId(saborRaw);
     if (!saborRaw) errors.push("Sabor vazio");
     else if (!saborId) errors.push(`Sabor "${saborRaw}" não encontrado`);
 
