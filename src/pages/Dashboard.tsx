@@ -137,52 +137,65 @@ export default function Dashboard() {
     <div>
       <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
 
-      {/* Alerta estilo Post-it com rotação automática */}
-      {alertasEstoque.length > 0 && (
-        <div className="mb-6 flex items-start gap-4">
-          <div
-            className="relative w-72 min-h-[140px] rounded-sm p-4 shadow-lg transform -rotate-1 transition-all duration-500"
-            style={{
-              background: "linear-gradient(135deg, hsl(45, 100%, 80%), hsl(45, 100%, 72%))",
-              boxShadow: "2px 4px 12px hsl(0 0% 0% / 0.15)",
-            }}
-          >
-            {/* Fita adesiva */}
-            <div
-              className="absolute -top-2 left-1/2 -translate-x-1/2 w-16 h-5 rounded-sm opacity-60"
-              style={{ background: "hsl(45, 30%, 85%)" }}
-            />
+      {/* 3 Post-its com rotação automática */}
+      {alertasEstoque.length > 0 && (() => {
+        const POST_IT_COLORS = [
+          "linear-gradient(135deg, hsl(45, 100%, 80%), hsl(45, 100%, 72%))",
+          "linear-gradient(135deg, hsl(120, 60%, 82%), hsl(120, 60%, 74%))",
+          "linear-gradient(135deg, hsl(200, 80%, 82%), hsl(200, 80%, 74%))",
+        ];
+        const ROTATIONS = ["-rotate-1", "rotate-1", "-rotate-2"];
+        const TAPE_COLORS = ["hsl(45, 30%, 85%)", "hsl(120, 20%, 85%)", "hsl(200, 30%, 85%)"];
+        const pageSize = 3;
+        const totalPages = Math.ceil(alertasEstoque.length / pageSize);
+        const pageIndex = alertaIndex % totalPages;
+        const pageItems = alertasEstoque.slice(pageIndex * pageSize, pageIndex * pageSize + pageSize);
 
-            <div className="mt-3">
-              <div className="flex items-center gap-1.5 mb-2">
-                <AlertTriangle className="h-4 w-4 text-destructive" />
-                <span className="text-xs font-bold text-destructive uppercase tracking-wide">Estoque Baixo</span>
-              </div>
-
-              <div key={alertaIndex} className="animate-fade-in">
-                <p className="text-sm font-bold text-foreground">{alertasEstoque[alertaIndex]?.tipo}</p>
-                <p className="text-lg font-extrabold text-foreground mt-0.5">{alertasEstoque[alertaIndex]?.nome}</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Atual: <span className="font-bold text-destructive">{alertasEstoque[alertaIndex]?.atual}</span> / Mín: {alertasEstoque[alertaIndex]?.minimo}
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between mt-3">
-                <div className="flex gap-1">
-                  {alertasEstoque.map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setAlertaIndex(i)}
-                      className={`w-1.5 h-1.5 rounded-full transition-all ${i === alertaIndex ? "bg-destructive scale-125" : "bg-foreground/30"}`}
-                    />
-                  ))}
+        return (
+          <div className="mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {pageItems.map((a, i) => (
+                <div
+                  key={`${pageIndex}-${i}`}
+                  className={`relative min-h-[130px] rounded-sm p-4 shadow-lg transform ${ROTATIONS[i]} animate-fade-in`}
+                  style={{
+                    background: POST_IT_COLORS[i],
+                    boxShadow: "2px 4px 12px hsl(0 0% 0% / 0.15)",
+                  }}
+                >
+                  <div
+                    className="absolute -top-2 left-1/2 -translate-x-1/2 w-14 h-4 rounded-sm opacity-60"
+                    style={{ background: TAPE_COLORS[i] }}
+                  />
+                  <div className="mt-2">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
+                      <span className="text-[10px] font-bold text-destructive uppercase tracking-wide">Estoque Baixo</span>
+                    </div>
+                    <p className="text-xs font-bold text-foreground">{a.tipo}</p>
+                    <p className="text-base font-extrabold text-foreground mt-0.5">{a.nome}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Atual: <span className="font-bold text-destructive">{a.atual}</span> / Mín: {a.minimo}
+                    </p>
+                  </div>
                 </div>
-                <span className="text-[10px] text-muted-foreground">{alertaIndex + 1}/{alertasEstoque.length}</span>
-              </div>
+              ))}
             </div>
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-1.5 mt-3">
+                {Array.from({ length: totalPages }).map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setAlertaIndex(i)}
+                    className={`w-2 h-2 rounded-full transition-all ${i === pageIndex ? "bg-destructive scale-125" : "bg-foreground/25"}`}
+                  />
+                ))}
+                <span className="text-[10px] text-muted-foreground ml-2">{pageIndex + 1}/{totalPages}</span>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
