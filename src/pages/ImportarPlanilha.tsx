@@ -12,7 +12,7 @@ import { realizarProducao, realizarVenda } from "@/lib/supabase-helpers";
 import { toast } from "@/hooks/use-toast";
 import {
   Upload, CheckCircle2, AlertTriangle, XCircle,
-  FileSpreadsheet, Loader2, Factory, ShoppingCart,
+  FileSpreadsheet, Loader2, Factory, ShoppingCart, Undo2,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import {
@@ -58,7 +58,14 @@ export default function ImportarPlanilha() {
   const [activeSheet, setActiveSheet] = useState<string>("");
   const [importing, setImporting] = useState(false);
   const [importDone, setImportDone] = useState(false);
-  const [importSummary, setImportSummary] = useState<{ ok: number; fail: number; errors: string[] } | null>(null);
+  const [importSummary, setImportSummary] = useState<{
+    ok: number; fail: number; errors: string[];
+    tipo: TipoImportacao;
+    producaoIds: string[];
+    vendaIds: string[];
+    stockChanges: { saborId: string; quantidade: number }[];
+  } | null>(null);
+  const [undoing, setUndoing] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -213,6 +220,10 @@ export default function ImportarPlanilha() {
     let ok = 0, fail = 0;
     const errors: string[] = [];
 
+    const producaoIds: string[] = [];
+    const vendaIds: string[] = [];
+    const stockChanges: { saborId: string; quantidade: number }[] = [];
+
     if (tipoImportacao === "producao") {
       for (const row of validRows) {
         try {
@@ -237,6 +248,7 @@ export default function ImportarPlanilha() {
             .single();
 
           if (prodErr) throw prodErr;
+          if (prod?.id) producaoIds.push(prod.id);
 
           if (funcId && prod?.id) {
             await (supabase as any).from("producao_funcionarios").insert({
@@ -254,6 +266,8 @@ export default function ImportarPlanilha() {
             await (supabase as any).from("estoque_gelos")
               .insert({ sabor_id: row.saborId!, quantidade: row.quantidade });
           }
+
+          stockChanges.push({ saborId: row.saborId!, quantidade: row.quantidade });
 
           await (supabase as any).from("movimentacoes_estoque").insert({
             tipo_item: "gelo_pronto", item_id: row.saborId!, tipo_movimentacao: "entrada",
@@ -299,11 +313,15 @@ export default function ImportarPlanilha() {
       }
       for (const [, items] of groups) {
         try {
-          await realizarVenda({
+          const vendaId = await realizarVenda({
             p_cliente_id: items[0].clienteId!, p_operador: "importação planilha",
             p_observacoes: `Importado via planilha - ${file?.name || ""}`,
             p_itens: items.map(i => ({ sabor_id: i.saborId!, quantidade: i.quantidade })),
           });
+          if (vendaId) vendaIds.push(vendaId as string);
+          for (const i of items) {
+            stockChanges.push({ saborId: i.saborId!, quantidade: i.quantidade });
+          }
           ok += items.length;
         } catch (e: any) {
           fail += items.length;
@@ -321,11 +339,75 @@ export default function ImportarPlanilha() {
       });
     } catch {}
 
-    setImportSummary({ ok, fail, errors }); setImportDone(true); setImporting(false);
+    setImportSummary({ ok, fail, errors, tipo: tipoImportacao, producaoIds, vendaIds, stockChanges });
+    setImportDone(true); setImporting(false);
     if (fail > 0 && errors.length > 0) {
       toast({ title: "Importação com erros", description: errors.slice(0, 3).join("; "), variant: "destructive" });
     } else {
       toast({ title: "Importação concluída!", description: `${ok} registros importados com sucesso.` });
+    }
+  }
+
+  async function handleUndo() {
+    if (!importSummary) return;
+    setUndoing(true);
+    try {
+      const { tipo, producaoIds, vendaIds, stockChanges } = importSummary;
+
+      if (tipo === "producao" && producaoIds.length > 0) {
+        // Delete related records first
+        await (supabase as any).from("producao_funcionarios")
+          .delete().in("producao_id", producaoIds);
+        await (supabase as any).from("movimentacoes_estoque")
+          .delete().in("referencia_id", producaoIds);
+        await (supabase as any).from("producoes")
+          .delete().in("id", producaoIds);
+      }
+
+      if (tipo === "vendas" && vendaIds.length > 0) {
+        // Delete venda items first, then vendas
+        await (supabase as any).from("venda_itens")
+          .delete().in("venda_id", vendaIds);
+        await (supabase as any).from("venda_parcelas")
+          .delete().in("venda_id", vendaIds);
+        await (supabase as any).from("vendas")
+          .delete().in("id", vendaIds);
+      }
+
+      // Reverse stock changes
+      const saborTotals = new Map<string, number>();
+      for (const sc of stockChanges) {
+        saborTotals.set(sc.saborId, (saborTotals.get(sc.saborId) || 0) + sc.quantidade);
+      }
+      for (const [saborId, qtd] of saborTotals) {
+        const { data: estoque } = await (supabase as any)
+          .from("estoque_gelos").select("quantidade").eq("sabor_id", saborId).maybeSingle();
+        if (estoque) {
+          const novaQtd = Math.max(0, estoque.quantidade - qtd);
+          await (supabase as any).from("estoque_gelos")
+            .update({ quantidade: novaQtd }).eq("sabor_id", saborId);
+        }
+        // Add reverse movimentacao
+        await (supabase as any).from("movimentacoes_estoque").insert({
+          tipo_item: "gelo_pronto", item_id: saborId, tipo_movimentacao: "saida",
+          quantidade: qtd, operador: "desfazer importação",
+          referencia: "rollback_importacao",
+        });
+      }
+
+      await (supabase as any).from("auditoria").insert({
+        usuario_nome: "importação planilha",
+        modulo: tipo === "producao" ? "producao" : "vendas",
+        acao: "desfazer_importacao",
+        descricao: `Importação desfeita: ${producaoIds.length + vendaIds.length} registros removidos, estoque revertido.`,
+      });
+
+      toast({ title: "Importação desfeita!", description: "Todos os registros foram removidos e o estoque revertido." });
+      resetAll();
+    } catch (e: any) {
+      toast({ title: "Erro ao desfazer", description: e.message, variant: "destructive" });
+    } finally {
+      setUndoing(false);
     }
   }
 
@@ -355,7 +437,22 @@ export default function ImportarPlanilha() {
                 </div>
               </div>
             )}
-            <Button onClick={resetAll} variant="outline">Nova Importação</Button>
+            <div className="flex justify-center gap-3">
+              <Button onClick={resetAll} variant="outline">Nova Importação</Button>
+              {importSummary.ok > 0 && (
+                <Button
+                  onClick={handleUndo}
+                  variant="destructive"
+                  disabled={undoing}
+                >
+                  {undoing ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Desfazendo...</>
+                  ) : (
+                    <><Undo2 className="h-4 w-4 mr-2" /> Desfazer Importação</>
+                  )}
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
       ) : (
