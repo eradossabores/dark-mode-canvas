@@ -468,8 +468,8 @@ export function parseRows(
   const saborCol = findColumnIndex(headers, ["sabor", "produto", "item", "flavor", "gelo", "tipo", "descricao"]);
   const qtdCol = findColumnIndex(headers, ["quantidade", "qtd", "qty", "quantity", "quant", "un", "unidade", "unidades"]);
   const clienteCol = findColumnIndex(headers, ["cliente", "client", "comprador"]);
-  const valorCol = findColumnIndex(headers, ["valor", "preco", "preço", "valor unitario", "preco unitario", "unit", "pagamento"]);
-  const totalCol = findColumnIndex(headers, ["total", "valor total", "subtotal"]);
+  const valorCol = findColumnIndex(headers, ["valor unitario", "preco unitario", "preco", "preço", "unit"]);
+  const totalCol = findColumnIndex(headers, ["total", "valor total", "subtotal", "valor", "pagamento"]);
   const statusCol = findColumnIndex(headers, ["status"]);
   const respCol = findColumnIndex(headers, ["responsavel", "responsável", "operador"]);
   const fPagtoCol = findColumnIndex(headers, ["f. pagto", "f pagto", "forma pagamento", "forma de pagamento", "fpagto"]);
