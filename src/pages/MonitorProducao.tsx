@@ -44,7 +44,7 @@ function getUrgencyLabel(dataEntrega: string) {
 export default function MonitorProducao() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [fullscreenPedidoId, setFullscreenPedidoId] = useState<string | null>(null);
 
   const { data: pedidos, isLoading } = useQuery({
     queryKey: ["monitor-pedidos"],
@@ -69,21 +69,13 @@ export default function MonitorProducao() {
     return () => { supabase.removeChannel(channel); };
   }, [queryClient]);
 
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-      setIsFullscreen(true);
+  const toggleFullscreen = (pedidoId: string) => {
+    if (fullscreenPedidoId === pedidoId) {
+      setFullscreenPedidoId(null);
     } else {
-      document.exitFullscreen();
-      setIsFullscreen(false);
+      setFullscreenPedidoId(pedidoId);
     }
   };
-
-  useEffect(() => {
-    const handler = () => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener("fullscreenchange", handler);
-    return () => document.removeEventListener("fullscreenchange", handler);
-  }, []);
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
@@ -108,13 +100,14 @@ export default function MonitorProducao() {
 
   const renderCard = (pedido: any, index: number) => {
     const urgency = getUrgencyLabel(pedido.data_entrega);
+    const isExpanded = fullscreenPedidoId === pedido.id;
     return (
       <Card
         key={pedido.id}
-        className={`border-l-[6px] ${statusBorderColors[pedido.status]} shadow-md animate-fade-in`}
+        className={`border-l-[6px] ${statusBorderColors[pedido.status]} shadow-md animate-fade-in transition-all duration-300 ${isExpanded ? "fixed inset-0 z-50 border-l-8 rounded-none overflow-auto" : ""}`}
         style={{ animationDelay: `${index * 80}ms` }}
       >
-        <CardContent className="p-5 md:p-6">
+        <CardContent className={`p-5 md:p-6 ${isExpanded ? "max-w-4xl mx-auto py-10" : ""}`}>
           <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-5">
             <div className="flex-1 space-y-4">
               <div className="flex flex-wrap items-center gap-2">
@@ -124,6 +117,9 @@ export default function MonitorProducao() {
                 {urgency && (
                   <Badge className={`${urgency.className} text-sm px-3 py-1 font-bold`}>⚠ {urgency.label}</Badge>
                 )}
+                <Button variant="ghost" size="sm" onClick={() => toggleFullscreen(pedido.id)} className="ml-auto">
+                  {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                </Button>
               </div>
               <div className="flex items-center gap-2">
                 <User className="h-5 w-5 text-primary" />
@@ -194,17 +190,14 @@ export default function MonitorProducao() {
   };
 
   return (
-    <div className={`space-y-6 ${isFullscreen ? "p-6 bg-background min-h-screen" : ""}`}>
+    <div className="space-y-6">
+      {fullscreenPedidoId && <div className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm" onClick={() => setFullscreenPedidoId(null)} />}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Monitor className="h-7 w-7 text-primary" />
           <h1 className="text-2xl font-bold text-foreground">Monitor da Produção</h1>
           <Badge variant="secondary" className="ml-2 text-base px-3 py-1">{activeOrders.length} pedido(s)</Badge>
         </div>
-        <Button variant="outline" size="sm" onClick={toggleFullscreen} className="gap-2">
-          {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-          {isFullscreen ? "Sair Tela Cheia" : "Tela Cheia"}
-        </Button>
       </div>
 
       {isLoading ? (
