@@ -66,6 +66,17 @@ export default function ImportarPlanilha() {
     stockChanges: { saborId: string; quantidade: number }[];
   } | null>(null);
   const [undoing, setUndoing] = useState(false);
+  const [lastImport, setLastImport] = useState<{ id: string; descricao: string; created_at: string; modulo: string } | null>(null);
+
+  function loadLastImport() {
+    (supabase as any).from("auditoria")
+      .select("id, descricao, created_at, modulo")
+      .eq("acao", "importar_planilha")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }: any) => setLastImport(data || null));
+  }
 
   useEffect(() => {
     Promise.all([
@@ -77,6 +88,7 @@ export default function ImportarPlanilha() {
       setClientes(c.data || []);
       setFuncionarios(f.data || []);
     });
+    loadLastImport();
   }, []);
 
   function resetAll() {
@@ -330,14 +342,16 @@ export default function ImportarPlanilha() {
       }
     }
 
+    const rollbackData = JSON.stringify({ producaoIds, vendaIds, stockChanges });
     try {
       await (supabase as any).from("auditoria").insert({
         usuario_nome: "importação planilha",
         modulo: tipoImportacao === "producao" ? "producao" : "vendas",
         acao: "importar_planilha",
-        descricao: `Importação ${file?.name} [${currentSheet.sheetName}]: ${ok} OK, ${fail} erros. Total: ${totalQtd} un.`,
+        descricao: `Importação ${file?.name} [${currentSheet.sheetName}]: ${ok} OK, ${fail} erros. Total: ${totalQtd} un. ||ROLLBACK:${rollbackData}`,
       });
     } catch {}
+    loadLastImport();
 
     setImportSummary({ ok, fail, errors, tipo: tipoImportacao, producaoIds, vendaIds, stockChanges });
     setImportDone(true); setImporting(false);
@@ -348,62 +362,75 @@ export default function ImportarPlanilha() {
     }
   }
 
+  async function executeUndo(tipo: string, producaoIds: string[], vendaIds: string[], stockChanges: { saborId: string; quantidade: number }[], auditId?: string) {
+    if (tipo === "producao" && producaoIds.length > 0) {
+      await (supabase as any).from("producao_funcionarios").delete().in("producao_id", producaoIds);
+      await (supabase as any).from("movimentacoes_estoque").delete().in("referencia_id", producaoIds);
+      await (supabase as any).from("producoes").delete().in("id", producaoIds);
+    }
+    if (tipo === "vendas" && vendaIds.length > 0) {
+      await (supabase as any).from("venda_itens").delete().in("venda_id", vendaIds);
+      await (supabase as any).from("venda_parcelas").delete().in("venda_id", vendaIds);
+      await (supabase as any).from("vendas").delete().in("id", vendaIds);
+    }
+    const saborTotals = new Map<string, number>();
+    for (const sc of stockChanges) {
+      saborTotals.set(sc.saborId, (saborTotals.get(sc.saborId) || 0) + sc.quantidade);
+    }
+    for (const [saborId, qtd] of saborTotals) {
+      const { data: estoque } = await (supabase as any)
+        .from("estoque_gelos").select("quantidade").eq("sabor_id", saborId).maybeSingle();
+      if (estoque) {
+        await (supabase as any).from("estoque_gelos")
+          .update({ quantidade: Math.max(0, estoque.quantidade - qtd) }).eq("sabor_id", saborId);
+      }
+      await (supabase as any).from("movimentacoes_estoque").insert({
+        tipo_item: "gelo_pronto", item_id: saborId, tipo_movimentacao: "saida",
+        quantidade: qtd, operador: "desfazer importação", referencia: "rollback_importacao",
+      });
+    }
+    if (auditId) {
+      await (supabase as any).from("auditoria").delete().eq("id", auditId);
+    }
+    await (supabase as any).from("auditoria").insert({
+      usuario_nome: "importação planilha",
+      modulo: tipo === "producao" ? "producao" : "vendas",
+      acao: "desfazer_importacao",
+      descricao: `Importação desfeita: ${producaoIds.length + vendaIds.length} registros removidos, estoque revertido.`,
+    });
+  }
+
   async function handleUndo() {
     if (!importSummary) return;
     setUndoing(true);
     try {
       const { tipo, producaoIds, vendaIds, stockChanges } = importSummary;
-
-      if (tipo === "producao" && producaoIds.length > 0) {
-        // Delete related records first
-        await (supabase as any).from("producao_funcionarios")
-          .delete().in("producao_id", producaoIds);
-        await (supabase as any).from("movimentacoes_estoque")
-          .delete().in("referencia_id", producaoIds);
-        await (supabase as any).from("producoes")
-          .delete().in("id", producaoIds);
-      }
-
-      if (tipo === "vendas" && vendaIds.length > 0) {
-        // Delete venda items first, then vendas
-        await (supabase as any).from("venda_itens")
-          .delete().in("venda_id", vendaIds);
-        await (supabase as any).from("venda_parcelas")
-          .delete().in("venda_id", vendaIds);
-        await (supabase as any).from("vendas")
-          .delete().in("id", vendaIds);
-      }
-
-      // Reverse stock changes
-      const saborTotals = new Map<string, number>();
-      for (const sc of stockChanges) {
-        saborTotals.set(sc.saborId, (saborTotals.get(sc.saborId) || 0) + sc.quantidade);
-      }
-      for (const [saborId, qtd] of saborTotals) {
-        const { data: estoque } = await (supabase as any)
-          .from("estoque_gelos").select("quantidade").eq("sabor_id", saborId).maybeSingle();
-        if (estoque) {
-          const novaQtd = Math.max(0, estoque.quantidade - qtd);
-          await (supabase as any).from("estoque_gelos")
-            .update({ quantidade: novaQtd }).eq("sabor_id", saborId);
-        }
-        // Add reverse movimentacao
-        await (supabase as any).from("movimentacoes_estoque").insert({
-          tipo_item: "gelo_pronto", item_id: saborId, tipo_movimentacao: "saida",
-          quantidade: qtd, operador: "desfazer importação",
-          referencia: "rollback_importacao",
-        });
-      }
-
-      await (supabase as any).from("auditoria").insert({
-        usuario_nome: "importação planilha",
-        modulo: tipo === "producao" ? "producao" : "vendas",
-        acao: "desfazer_importacao",
-        descricao: `Importação desfeita: ${producaoIds.length + vendaIds.length} registros removidos, estoque revertido.`,
-      });
-
+      await executeUndo(tipo, producaoIds, vendaIds, stockChanges);
       toast({ title: "Importação desfeita!", description: "Todos os registros foram removidos e o estoque revertido." });
       resetAll();
+      loadLastImport();
+    } catch (e: any) {
+      toast({ title: "Erro ao desfazer", description: e.message, variant: "destructive" });
+    } finally {
+      setUndoing(false);
+    }
+  }
+
+  async function handleUndoLastImport() {
+    if (!lastImport) return;
+    setUndoing(true);
+    try {
+      const rollbackMatch = lastImport.descricao?.match(/\|\|ROLLBACK:(.+)$/);
+      if (!rollbackMatch) {
+        toast({ title: "Erro", description: "Dados de rollback não encontrados para esta importação.", variant: "destructive" });
+        return;
+      }
+      const rollbackData = JSON.parse(rollbackMatch[1]);
+      const tipo = lastImport.modulo as TipoImportacao;
+      await executeUndo(tipo, rollbackData.producaoIds || [], rollbackData.vendaIds || [], rollbackData.stockChanges || [], lastImport.id);
+      toast({ title: "Importação desfeita!", description: "Todos os registros foram removidos e o estoque revertido." });
+      setLastImport(null);
+      loadLastImport();
     } catch (e: any) {
       toast({ title: "Erro ao desfazer", description: e.message, variant: "destructive" });
     } finally {
@@ -414,6 +441,37 @@ export default function ImportarPlanilha() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Upload Planilha</h1>
+
+      {/* Persistent undo card */}
+      {!importDone && lastImport && lastImport.descricao?.includes("||ROLLBACK:") && (
+        <Card className="mb-6 border-destructive/30 bg-destructive/5">
+          <CardContent className="py-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Undo2 className="h-5 w-5 text-destructive shrink-0" />
+              <div>
+                <p className="text-sm font-medium">Última importação</p>
+                <p className="text-xs text-muted-foreground">
+                  {lastImport.descricao.split("||ROLLBACK:")[0].trim()}
+                  {" — "}
+                  {new Date(lastImport.created_at).toLocaleString("pt-BR")}
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={handleUndoLastImport}
+              variant="destructive"
+              size="sm"
+              disabled={undoing}
+            >
+              {undoing ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Desfazendo...</>
+              ) : (
+                <><Undo2 className="h-4 w-4 mr-2" /> Desfazer</>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {importDone && importSummary ? (
         <Card>
