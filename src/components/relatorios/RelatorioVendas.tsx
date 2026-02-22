@@ -19,8 +19,12 @@ export default function RelatorioVendas() {
     new Date(new Date().getFullYear(), new Date().getMonth(), 1)
   );
   const [endDate, setEndDate] = useState<Date | undefined>(new Date());
+  const [previewLoaded, setPreviewLoaded] = useState(false);
 
   useEffect(() => { loadData(); }, []);
+
+  // Reset preview when filters change
+  useEffect(() => { setPreviewLoaded(false); }, [startDate, endDate]);
 
   async function loadData() {
     const [v, it] = await Promise.all([
@@ -80,94 +84,115 @@ export default function RelatorioVendas() {
     v.operador,
   ]);
 
+  const periodoLabel = `${startDate?.toLocaleDateString("pt-BR") || "—"} a ${endDate?.toLocaleDateString("pt-BR") || "—"}`;
+
   return (
     <div className="space-y-6">
       <DateRangeFilter startDate={startDate} endDate={endDate} onStartChange={setStartDate} onEndChange={setEndDate}>
         <ExportButtons
+          onPreview={() => setPreviewLoaded(true)}
+          previewLoaded={previewLoaded}
           onPDF={() => exportToPDF("Relatório de Vendas", headers, rows, "relatorio-vendas")}
           onExcel={() => exportToExcel(headers, rows, "Vendas", "relatorio-vendas")}
         />
       </DateRangeFilter>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard title="Faturamento" value={`R$ ${faturamento.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={DollarSign} />
-        <KpiCard title="Total de Vendas" value={totalVendas.toString()} icon={ShoppingCart} />
-        <KpiCard title="Ticket Médio" value={`R$ ${ticketMedio.toFixed(2)}`} icon={Target} />
-        <KpiCard title="Unidades Vendidas" value={totalUnidades.toLocaleString("pt-BR")} icon={TrendingUp} />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {!previewLoaded ? (
         <Card>
-          <CardHeader><CardTitle className="text-sm">Ranking - Mais Vendidos</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={porSabor.slice(0, 10)} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" />
-                <YAxis dataKey="name" type="category" width={100} fontSize={11} />
-                <Tooltip />
-                <Bar dataKey="qtd" name="Qtd Vendida" fill="hsl(200,98%,39%)" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          <CardContent className="py-16 text-center text-muted-foreground">
+            <p className="text-lg font-medium">Selecione os filtros e clique em "Visualizar Relatório"</p>
+            <p className="text-sm mt-1">A pré-visualização será exibida aqui.</p>
           </CardContent>
         </Card>
+      ) : filtered.length === 0 ? (
         <Card>
-          <CardHeader><CardTitle className="text-sm">Faturamento por Sabor</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie data={porSabor.slice(0, 6)} dataKey="valor" nameKey="name" cx="50%" cy="50%" outerRadius={90} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                  {porSabor.slice(0, 6).map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                </Pie>
-                <Tooltip formatter={(v: number) => `R$ ${v.toFixed(2)}`} />
-              </PieChart>
-            </ResponsiveContainer>
+          <CardContent className="py-16 text-center text-muted-foreground">
+            <p className="text-lg font-medium">Nenhum registro encontrado</p>
+            <p className="text-sm mt-1">Não há vendas no período de {periodoLabel}.</p>
           </CardContent>
         </Card>
-      </div>
+      ) : (
+        <>
+          <div className="text-sm text-muted-foreground font-medium">Período: {periodoLabel}</div>
 
-      <Card>
-        <CardHeader><CardTitle className="text-sm">Faturamento por Dia</CardTitle></CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={faturamentoPorDia}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" fontSize={10} />
-              <YAxis />
-              <Tooltip formatter={(v: number) => `R$ ${v.toFixed(2)}`} />
-              <Line type="monotone" dataKey="value" name="Faturamento" stroke="hsl(200,98%,39%)" strokeWidth={2} dot={{ r: 3 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <KpiCard title="Faturamento" value={`R$ ${faturamento.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={DollarSign} />
+            <KpiCard title="Total de Vendas" value={totalVendas.toString()} icon={ShoppingCart} />
+            <KpiCard title="Ticket Médio" value={`R$ ${ticketMedio.toFixed(2)}`} icon={Target} />
+            <KpiCard title="Unidades Vendidas" value={totalUnidades.toLocaleString("pt-BR")} icon={TrendingUp} />
+          </div>
 
-      <Card>
-        <CardHeader><CardTitle className="text-sm">Histórico de Vendas</CardTitle></CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>{headers.map((h) => <TableHead key={h}>{h}</TableHead>)}</TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.slice(0, 100).map((v) => (
-                <TableRow key={v.id}>
-                  <TableCell>{new Date(v.created_at).toLocaleDateString("pt-BR")}</TableCell>
-                  <TableCell>{v.clientes?.nome}</TableCell>
-                  <TableCell>R$ {Number(v.total).toFixed(2)}</TableCell>
-                  <TableCell>{v.forma_pagamento || "-"}</TableCell>
-                  <TableCell>
-                    <Badge variant={v.status === "paga" ? "default" : v.status === "cancelada" ? "destructive" : "secondary"}>{v.status}</Badge>
-                  </TableCell>
-                  <TableCell>{v.operador}</TableCell>
-                </TableRow>
-              ))}
-              {filtered.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Nenhuma venda.</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader><CardTitle className="text-sm">Ranking - Mais Vendidos</CardTitle></CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={porSabor.slice(0, 10)} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" />
+                    <YAxis dataKey="name" type="category" width={100} fontSize={11} />
+                    <Tooltip />
+                    <Bar dataKey="qtd" name="Qtd Vendida" fill="hsl(200,98%,39%)" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle className="text-sm">Faturamento por Sabor</CardTitle></CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={280}>
+                  <PieChart>
+                    <Pie data={porSabor.slice(0, 6)} dataKey="valor" nameKey="name" cx="50%" cy="50%" outerRadius={90} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                      {porSabor.slice(0, 6).map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                    </Pie>
+                    <Tooltip formatter={(v: number) => `R$ ${v.toFixed(2)}`} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader><CardTitle className="text-sm">Faturamento por Dia</CardTitle></CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={faturamentoPorDia}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" fontSize={10} />
+                  <YAxis />
+                  <Tooltip formatter={(v: number) => `R$ ${v.toFixed(2)}`} />
+                  <Line type="monotone" dataKey="value" name="Faturamento" stroke="hsl(200,98%,39%)" strokeWidth={2} dot={{ r: 3 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle className="text-sm">Histórico de Vendas</CardTitle></CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>{headers.map((h) => <TableHead key={h}>{h}</TableHead>)}</TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.slice(0, 100).map((v) => (
+                    <TableRow key={v.id}>
+                      <TableCell>{new Date(v.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                      <TableCell>{v.clientes?.nome}</TableCell>
+                      <TableCell>R$ {Number(v.total).toFixed(2)}</TableCell>
+                      <TableCell>{v.forma_pagamento || "-"}</TableCell>
+                      <TableCell>
+                        <Badge variant={v.status === "paga" ? "default" : v.status === "cancelada" ? "destructive" : "secondary"}>{v.status}</Badge>
+                      </TableCell>
+                      <TableCell>{v.operador}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   );
 }

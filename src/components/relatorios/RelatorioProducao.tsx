@@ -24,8 +24,11 @@ export default function RelatorioProducao() {
   const [endDate, setEndDate] = useState<Date | undefined>(new Date());
   const [filtroSabor, setFiltroSabor] = useState("todos");
   const [filtroResp, setFiltroResp] = useState("todos");
+  const [previewLoaded, setPreviewLoaded] = useState(false);
 
   useEffect(() => { loadData(); }, []);
+
+  useEffect(() => { setPreviewLoaded(false); }, [startDate, endDate, filtroSabor, filtroResp]);
 
   async function loadData() {
     const [p, s, f, pf] = await Promise.all([
@@ -88,6 +91,8 @@ export default function RelatorioProducao() {
     p.operador,
   ]);
 
+  const periodoLabel = `${startDate?.toLocaleDateString("pt-BR") || "—"} a ${endDate?.toLocaleDateString("pt-BR") || "—"}`;
+
   return (
     <div className="space-y-6">
       <DateRangeFilter startDate={startDate} endDate={endDate} onStartChange={setStartDate} onEndChange={setEndDate}>
@@ -112,76 +117,95 @@ export default function RelatorioProducao() {
           </Select>
         </div>
         <ExportButtons
+          onPreview={() => setPreviewLoaded(true)}
+          previewLoaded={previewLoaded}
           onPDF={() => exportToPDF("Relatório de Produção", headers, rows, "relatorio-producao")}
           onExcel={() => exportToExcel(headers, rows, "Produção", "relatorio-producao")}
         />
       </DateRangeFilter>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard title="Total Produzido" value={totalProduzido.toLocaleString("pt-BR")} icon={Package} subtitle="unidades" />
-        <KpiCard title="Total de Lotes" value={totalLotes.toLocaleString("pt-BR")} icon={Factory} />
-        <KpiCard title="Produções Registradas" value={filtered.length.toString()} icon={TrendingUp} />
-        <KpiCard title="Média por Produção" value={filtered.length ? Math.round(totalProduzido / filtered.length).toString() : "0"} icon={Users} subtitle="unidades" />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {!previewLoaded ? (
         <Card>
-          <CardHeader><CardTitle className="text-sm">Produção por Sabor</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={porSabor}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" fontSize={11} angle={-20} textAnchor="end" height={60} />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="value" name="Qtd" fill="hsl(200,98%,39%)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          <CardContent className="py-16 text-center text-muted-foreground">
+            <p className="text-lg font-medium">Selecione os filtros e clique em "Visualizar Relatório"</p>
+            <p className="text-sm mt-1">A pré-visualização será exibida aqui.</p>
           </CardContent>
         </Card>
+      ) : filtered.length === 0 ? (
         <Card>
-          <CardHeader><CardTitle className="text-sm">Produções por Responsável</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie data={porResponsavel} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label>
-                  {porResponsavel.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+          <CardContent className="py-16 text-center text-muted-foreground">
+            <p className="text-lg font-medium">Nenhum registro encontrado</p>
+            <p className="text-sm mt-1">Não há produções no período de {periodoLabel}.</p>
           </CardContent>
         </Card>
-      </div>
+      ) : (
+        <>
+          <div className="text-sm text-muted-foreground font-medium">Período: {periodoLabel}</div>
 
-      <Card>
-        <CardHeader><CardTitle className="text-sm">Histórico de Produções</CardTitle></CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {headers.map((h) => <TableHead key={h}>{h}</TableHead>)}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell>{new Date(p.created_at).toLocaleDateString("pt-BR")}</TableCell>
-                  <TableCell>{p.sabores?.nome}</TableCell>
-                  <TableCell className="capitalize">{p.modo}</TableCell>
-                  <TableCell>{p.quantidade_lotes}</TableCell>
-                  <TableCell>{p.quantidade_total}</TableCell>
-                  <TableCell>{p.operador}</TableCell>
-                </TableRow>
-              ))}
-              {filtered.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Nenhum dado.</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <KpiCard title="Total Produzido" value={totalProduzido.toLocaleString("pt-BR")} icon={Package} subtitle="unidades" />
+            <KpiCard title="Total de Lotes" value={totalLotes.toLocaleString("pt-BR")} icon={Factory} />
+            <KpiCard title="Produções Registradas" value={filtered.length.toString()} icon={TrendingUp} />
+            <KpiCard title="Média por Produção" value={filtered.length ? Math.round(totalProduzido / filtered.length).toString() : "0"} icon={Users} subtitle="unidades" />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader><CardTitle className="text-sm">Produção por Sabor</CardTitle></CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={porSabor}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" fontSize={11} angle={-20} textAnchor="end" height={60} />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="value" name="Qtd" fill="hsl(200,98%,39%)" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle className="text-sm">Produções por Responsável</CardTitle></CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={280}>
+                  <PieChart>
+                    <Pie data={porResponsavel} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label>
+                      {porResponsavel.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader><CardTitle className="text-sm">Histórico de Produções</CardTitle></CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    {headers.map((h) => <TableHead key={h}>{h}</TableHead>)}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((p) => (
+                    <TableRow key={p.id}>
+                      <TableCell>{new Date(p.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                      <TableCell>{p.sabores?.nome}</TableCell>
+                      <TableCell className="capitalize">{p.modo}</TableCell>
+                      <TableCell>{p.quantidade_lotes}</TableCell>
+                      <TableCell>{p.quantidade_total}</TableCell>
+                      <TableCell>{p.operador}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   );
 }
