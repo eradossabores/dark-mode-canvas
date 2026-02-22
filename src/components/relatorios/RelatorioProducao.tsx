@@ -183,7 +183,7 @@ export default function RelatorioProducao() {
 
           <Card>
             <CardHeader><CardTitle className="text-sm">Histórico de Produções</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3">
               {(() => {
                 const grouped: Record<string, typeof filtered> = {};
                 filtered.forEach((p) => {
@@ -195,37 +195,26 @@ export default function RelatorioProducao() {
                 return days.length > 0 ? days.map((day) => {
                   const dayItems = grouped[day];
                   const dayTotal = dayItems.reduce((s, p) => s + p.quantidade_total, 0);
+                  // Consolidar por sabor no dia
+                  const saborMap: Record<string, number> = {};
+                  dayItems.forEach((p) => {
+                    const nome = p.sabores?.nome || "?";
+                    saborMap[nome] = (saborMap[nome] || 0) + p.quantidade_total;
+                  });
+                  const saborList = Object.entries(saborMap);
                   return (
-                    <div key={day} className="space-y-2">
-                      <div className="flex items-center justify-between bg-muted/60 rounded-lg px-4 py-2">
-                        <span className="font-bold text-sm text-foreground">{day}</span>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          <span>{dayItems.length} produção(ões)</span>
-                          <Badge variant="secondary" className="font-bold">{dayTotal.toLocaleString("pt-BR")} un</Badge>
-                        </div>
+                    <div key={day} className="rounded-lg border bg-card p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-sm text-foreground">📅 {day}</span>
+                        <Badge variant="default" className="font-bold text-xs">Total: {dayTotal.toLocaleString("pt-BR")} un</Badge>
                       </div>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Sabor</TableHead>
-                            <TableHead>Modo</TableHead>
-                            <TableHead>Lotes</TableHead>
-                            <TableHead>Total</TableHead>
-                            <TableHead>Operador</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {dayItems.map((p) => (
-                            <TableRow key={p.id}>
-                              <TableCell>{p.sabores?.nome}</TableCell>
-                              <TableCell className="capitalize">{p.modo}</TableCell>
-                              <TableCell>{p.quantidade_lotes}</TableCell>
-                              <TableCell>{p.quantidade_total}</TableCell>
-                              <TableCell>{p.operador}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                      <div className="flex flex-wrap gap-2">
+                        {saborList.map(([nome, qtd]) => (
+                          <Badge key={nome} variant="outline" className="text-xs font-medium gap-1">
+                            {nome} <span className="font-bold text-primary">{qtd.toLocaleString("pt-BR")} un</span>
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
                   );
                 }) : <p className="text-center text-muted-foreground py-4">Nenhum registro.</p>;
