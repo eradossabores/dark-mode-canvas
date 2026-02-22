@@ -87,7 +87,7 @@ export default {
   		},
   		fontFamily: {
   			sans: [
-  				'Inter',
+  				'DM Sans',
   				'ui-sans-serif',
   				'system-ui',
   				'-apple-system',
@@ -100,7 +100,7 @@ export default {
   				'sans-serif'
   			],
   			serif: [
-  				'Lora',
+  				'DM Sans',
   				'ui-serif',
   				'Georgia',
   				'Cambria',
