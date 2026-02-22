@@ -4,6 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { Package, ShoppingCart, Factory, Users, AlertTriangle, TrendingUp, DollarSign, Bell } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
+import sidImg from "@/assets/sid.png";
+import buckImg from "@/assets/buck.png";
+import scrat3dImg from "@/assets/scrat-3d.png";
+import scratAcornImg from "@/assets/scrat-acorn.png";
+import scratStandingImg from "@/assets/scrat-standing.png";
+import scratHangingImg from "@/assets/scrat-hanging.png";
+
+const postItCharacters = [sidImg, scratAcornImg, buckImg, scrat3dImg, scratStandingImg, scratHangingImg];
 
 const CHART_COLORS = [
   "hsl(270, 60%, 50%)",
@@ -173,13 +181,13 @@ export default function Dashboard() {
                   <svg className="absolute -top-1 left-0 w-full h-4 opacity-40" viewBox="0 0 200 16" preserveAspectRatio="none" fill="white">
                     <path d="M0,10 Q15,4 30,9 Q45,14 60,7 Q75,2 90,8 Q105,14 120,6 Q135,0 150,8 Q165,14 180,5 Q195,0 200,8 L200,0 L0,0 Z" />
                   </svg>
-                  {/* Tiny snowflakes */}
-                  <svg className="absolute top-6 right-3 w-4 h-4 text-white/30" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round">
-                    <path d="M10 2 L10 18 M3 6 L17 14 M3 14 L17 6" />
-                  </svg>
-                  <svg className="absolute bottom-4 left-3 w-3 h-3 text-white/20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                    <path d="M10 2 L10 18 M3 6 L17 14 M3 14 L17 6" />
-                  </svg>
+                  {/* Character on post-it */}
+                  <img
+                    src={postItCharacters[grouped.indexOf(cat) % postItCharacters.length]}
+                    alt=""
+                    aria-hidden
+                    className="absolute bottom-2 right-1 w-12 h-12 object-contain opacity-20 pointer-events-none select-none"
+                  />
                   <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-14 h-4 rounded-sm opacity-60" style={{ background: cat.fita }} />
                   <div className="mt-2 relative">
                     <div className="flex items-center gap-1.5 mb-2">
@@ -216,9 +224,13 @@ export default function Dashboard() {
               <svg className="absolute -top-1 left-0 w-full h-4 opacity-40" viewBox="0 0 200 16" preserveAspectRatio="none" fill="white">
                 <path d="M0,10 Q15,4 30,9 Q45,14 60,7 Q75,2 90,8 Q105,14 120,6 Q135,0 150,8 Q165,14 180,5 Q195,0 200,8 L200,0 L0,0 Z" />
               </svg>
-              <svg className="absolute top-7 right-2 w-4 h-4 text-white/25" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round">
-                <path d="M10 2 L10 18 M3 6 L17 14 M3 14 L17 6" />
-              </svg>
+              {/* Character on summary post-it */}
+              <img
+                src={postItCharacters[3]}
+                alt=""
+                aria-hidden
+                className="absolute bottom-2 right-1 w-12 h-12 object-contain opacity-20 pointer-events-none select-none"
+              />
               <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-14 h-4 rounded-sm opacity-60" style={{ background: totalCard.fita }} />
               <div className="mt-2 relative">
                 <div className="flex items-center gap-1.5 mb-2">
