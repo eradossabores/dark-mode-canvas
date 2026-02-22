@@ -1,0 +1,1 @@
+ALTER TABLE public.vendas ADD COLUMN numero_nf text DEFAULT NULL;

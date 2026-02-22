@@ -40,6 +40,7 @@ export default function Vendas() {
   const [clienteId, setClienteId] = useState("");
   const [formaPagamento, setFormaPagamento] = useState("dinheiro");
   const [observacoes, setObservacoes] = useState("");
+  const [numeroNf, setNumeroNf] = useState("");
   const [itens, setItens] = useState<{ sabor_id: string; quantidade: number }[]>([]);
   const [dataVenda, setDataVenda] = useState<Date>(new Date());
   const [loading, setLoading] = useState(false);
@@ -51,6 +52,7 @@ export default function Vendas() {
   const [editStatus, setEditStatus] = useState("");
   const [editForma, setEditForma] = useState("");
   const [editObs, setEditObs] = useState("");
+  const [editNf, setEditNf] = useState("");
 
   // Detail state
   const [detailVenda, setDetailVenda] = useState<any>(null);
@@ -94,7 +96,9 @@ export default function Vendas() {
         .from("vendas").select("id").eq("cliente_id", clienteId)
         .order("created_at", { ascending: false }).limit(1);
       if (latestVenda?.[0]) {
-        await (supabase as any).from("vendas").update({ forma_pagamento: formaPagamento }).eq("id", latestVenda[0].id);
+        const updateData: any = { forma_pagamento: formaPagamento };
+        if (numeroNf.trim()) updateData.numero_nf = numeroNf.trim();
+        await (supabase as any).from("vendas").update(updateData).eq("id", latestVenda[0].id);
       }
 
       // Atualizar a data se diferente de hoje
@@ -109,7 +113,7 @@ export default function Vendas() {
       }
 
       toast({ title: "Venda registrada com sucesso!" });
-      setOpen(false); setItens([]); setClienteId(""); setFormaPagamento("dinheiro"); setObservacoes(""); setDataVenda(new Date());
+      setOpen(false); setItens([]); setClienteId(""); setFormaPagamento("dinheiro"); setObservacoes(""); setNumeroNf(""); setDataVenda(new Date());
       loadData();
     } catch (e: any) {
       toast({ title: "Erro na venda", description: e.message, variant: "destructive" });
@@ -123,6 +127,7 @@ export default function Vendas() {
     setEditStatus(v.status);
     setEditForma(v.forma_pagamento || "dinheiro");
     setEditObs(v.observacoes || "");
+    setEditNf(v.numero_nf || "");
     setEditOpen(true);
   }
 
@@ -130,7 +135,7 @@ export default function Vendas() {
     if (!editVenda) return;
     try {
       const { error } = await (supabase as any).from("vendas").update({
-        status: editStatus, forma_pagamento: editForma, observacoes: editObs,
+        status: editStatus, forma_pagamento: editForma, observacoes: editObs, numero_nf: editNf.trim() || null,
       }).eq("id", editVenda.id);
       if (error) throw error;
       toast({ title: "Venda atualizada!" });
@@ -229,6 +234,7 @@ export default function Vendas() {
                 </Select>
               </div>
               <div><Label>Observações</Label><Input value={observacoes} onChange={(e) => setObservacoes(e.target.value)} /></div>
+              <div><Label>Nº NF (opcional)</Label><Input value={numeroNf} onChange={(e) => setNumeroNf(e.target.value)} placeholder="Número da nota fiscal" /></div>
               <Button className="w-full" onClick={handleSubmit} disabled={loading}>{loading ? "Processando..." : "Registrar Venda"}</Button>
             </div>
           </DialogContent>
@@ -257,6 +263,7 @@ export default function Vendas() {
               </Select>
             </div>
             <div><Label>Observações</Label><Input value={editObs} onChange={(e) => setEditObs(e.target.value)} /></div>
+            <div><Label>Nº NF</Label><Input value={editNf} onChange={(e) => setEditNf(e.target.value)} placeholder="Número da nota fiscal" /></div>
             <Button className="w-full" onClick={handleEditSave}>Salvar Alterações</Button>
           </div>
         </DialogContent>
@@ -274,6 +281,7 @@ export default function Vendas() {
               <p><strong>Status:</strong> {detailVenda.status}</p>
               <p><strong>Pagamento:</strong> {getFormaPagamentoLabel(detailVenda)}</p>
               {detailVenda.observacoes && <p><strong>Obs:</strong> {detailVenda.observacoes}</p>}
+              {detailVenda.numero_nf && <p><strong>NF:</strong> {detailVenda.numero_nf}</p>}
               <Table>
                 <TableHeader><TableRow><TableHead>Sabor</TableHead><TableHead>Qtd</TableHead><TableHead>Preço Un.</TableHead><TableHead>Subtotal</TableHead></TableRow></TableHeader>
                 <TableBody>
@@ -316,6 +324,7 @@ export default function Vendas() {
                 <TableHead>Cliente</TableHead>
                 <TableHead>Total</TableHead>
                 <TableHead>Pagamento</TableHead>
+                <TableHead>NF</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -327,6 +336,7 @@ export default function Vendas() {
                   <TableCell>{v.clientes?.nome}</TableCell>
                   <TableCell>R$ {Number(v.total).toFixed(2)}</TableCell>
                   <TableCell>{getFormaPagamentoLabel(v)}</TableCell>
+                  <TableCell>{v.numero_nf || "-"}</TableCell>
                   <TableCell>
                     <Badge variant={v.status === "paga" ? "default" : v.status === "cancelada" ? "destructive" : "secondary"}>{v.status}</Badge>
                   </TableCell>
@@ -340,7 +350,7 @@ export default function Vendas() {
                 </TableRow>
               ))}
               {vendas.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Nenhuma venda.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Nenhuma venda.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
