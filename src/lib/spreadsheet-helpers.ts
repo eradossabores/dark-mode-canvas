@@ -11,6 +11,8 @@ export interface ImportRow {
   statusPagamento?: string;
   responsavel?: string;
   cliente?: string;
+  formaPagamento?: string;
+  observacoes?: string;
   errors: string[];
   warnings: string[];
   saborId?: string;
@@ -18,7 +20,7 @@ export interface ImportRow {
 }
 
 export type TipoImportacao = "producao" | "vendas";
-export type LayoutType = "matrix" | "tabular";
+export type LayoutType = "matrix" | "tabular" | "wide";
 
 export interface AnaliseResumo {
   totalRegistros: number;
@@ -44,7 +46,8 @@ const STATUS_MAP: Record<string, string> = {
   pendente: "Pendente", nao: "Pendente", não: "Pendente", "0": "Pendente",
   fiado: "Fiado", fiar: "Fiado",
   atrasado: "Atrasado", atraso: "Atrasado",
-  parcial: "Parcial", parcialmente: "Parcial",
+  parcelado: "Parcelado", parcial: "Parcial", parcialmente: "Parcial",
+  "ñ pago": "Pendente", "nao pago": "Pendente", "não pago": "Pendente",
 };
 
 /* ───────── Helpers ───────── */
@@ -79,16 +82,41 @@ function findColumnIndex(headers: string[], possibleNames: string[]): number {
 export function parseDate(val: any): string | null {
   if (!val) return null;
   if (typeof val === "number") {
+    // Skip absurd serial numbers (corrupted data)
+    if (val > 50000 || val < 1) return null;
     const d = XLSX.SSF.parse_date_code(val);
-    if (d) return `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
+    if (d && d.y > 2000 && d.y < 2100) return `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
+    return null;
   }
   const str = String(val).trim();
+
+  // DD/MM/YYYY
   const m1 = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (m1) return `${m1[3]}-${m1[2].padStart(2, "0")}-${m1[1].padStart(2, "0")}`;
+  if (m1) {
+    const a = parseInt(m1[1]), b = parseInt(m1[2]), y = parseInt(m1[3]);
+    if (y < 2000 || y > 2100) return null;
+    // If first > 12, it must be day (DD/MM), if second > 12 it must be day (MM/DD)
+    if (a > 12 && b <= 12) return `${y}-${String(b).padStart(2, "0")}-${String(a).padStart(2, "0")}`;
+    if (b > 12 && a <= 12) return `${y}-${String(a).padStart(2, "0")}-${String(b).padStart(2, "0")}`;
+    // Default DD/MM/YYYY
+    return `${y}-${String(b).padStart(2, "0")}-${String(a).padStart(2, "0")}`;
+  }
+
+  // YYYY-MM-DD
   const m2 = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (m2) return str;
+
+  // D/M/YY or DD/MM/YY — also handle M/D/YY
   const m3 = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/);
-  if (m3) return `20${m3[3]}-${m3[2].padStart(2, "0")}-${m3[1].padStart(2, "0")}`;
+  if (m3) {
+    const a = parseInt(m3[1]), b = parseInt(m3[2]), yy = parseInt(m3[3]);
+    const y = yy < 50 ? 2000 + yy : 1900 + yy;
+    if (a > 12 && b <= 12) return `${y}-${String(b).padStart(2, "0")}-${String(a).padStart(2, "0")}`;
+    if (b > 12 && a <= 12) return `${y}-${String(a).padStart(2, "0")}-${String(b).padStart(2, "0")}`;
+    // Default DD/MM/YY
+    return `${y}-${String(b).padStart(2, "0")}-${String(a).padStart(2, "0")}`;
+  }
+
   return null;
 }
 
@@ -112,15 +140,27 @@ export function parseQuantity(val: any): number | null {
 
 function normalizeStatus(val: any): string {
   if (!val || String(val).trim() === "") return "Pendente";
-  const key = normalizeText(String(val));
-  return STATUS_MAP[key] || String(val).trim();
+  const raw = String(val).trim();
+  const key = normalizeText(raw);
+  // Check exact key
+  if (STATUS_MAP[key]) return STATUS_MAP[key];
+  // Check raw lowercase
+  const lower = raw.toLowerCase();
+  if (STATUS_MAP[lower]) return STATUS_MAP[lower];
+  // Contains check
+  for (const [k, v] of Object.entries(STATUS_MAP)) {
+    if (key.includes(k)) return v;
+  }
+  return raw;
 }
 
 /* ───────── Layout Detection ───────── */
-// Returns "matrix" + orientation so unpivot knows how to transform
 export type MatrixOrientation = "dates-as-columns" | "dates-as-rows";
 
-export function detectLayout(raw: any[][]): { layout: LayoutType; orientation?: MatrixOrientation } {
+export function detectLayout(
+  raw: any[][],
+  sabores?: { id: string; nome: string }[]
+): { layout: LayoutType; orientation?: MatrixOrientation; flavorCols?: number[] } {
   if (raw.length < 2 || raw[0].length < 2) return { layout: "tabular" };
   const headerRow = raw[0];
 
@@ -134,22 +174,74 @@ export function detectLayout(raw: any[][]): { layout: LayoutType; orientation?: 
   }
 
   // Case 2: dates in column A (data rows), flavors as column headers (B+)
-  // First header is likely "DATA" or similar, columns B+ are text (flavor names)
   const firstHeaderNorm = normalizeText(String(headerRow[0] || ""));
   const isFirstColDate = ["data", "date", "dia", "datas"].includes(firstHeaderNorm);
   if (isFirstColDate) {
-    // Check if column A of data rows contains dates
     let dateCountRows = 0;
     const checkRows = Math.min(raw.length - 1, 10);
     for (let r = 1; r <= checkRows; r++) {
       if (parseDate(raw[r]?.[0]) !== null) dateCountRows++;
     }
     if (dateCountRows >= checkRows * 0.5) {
+      // Check if this is "wide" format (flavor names as columns, plus other metadata columns)
+      if (sabores && sabores.length > 0) {
+        const flavorCols = detectFlavorColumns(headerRow, sabores);
+        if (flavorCols.length >= 3) {
+          return { layout: "wide", flavorCols };
+        }
+      }
       return { layout: "matrix", orientation: "dates-as-rows" };
     }
   }
 
+  // Case 3: Wide format — headers include SEMANA/DATA/CLIENTE + flavor names as columns
+  if (sabores && sabores.length > 0) {
+    const flavorCols = detectFlavorColumns(headerRow, sabores);
+    if (flavorCols.length >= 3) {
+      return { layout: "wide", flavorCols };
+    }
+  }
+
   return { layout: "tabular" };
+}
+
+/** Detect which header columns match known flavor/sabor names */
+function detectFlavorColumns(
+  headerRow: any[],
+  sabores: { id: string; nome: string }[]
+): number[] {
+  const matched: number[] = [];
+  for (let c = 0; c < headerRow.length; c++) {
+    const h = String(headerRow[c] || "").trim();
+    if (!h) continue;
+    if (matchSabor(h, sabores)) {
+      matched.push(c);
+    }
+  }
+  return matched;
+}
+
+function matchSabor(name: string, sabores: { id: string; nome: string }[]): boolean {
+  const norm = normalizeText(name);
+  if (!norm || norm.length < 2) return false;
+
+  // Skip known non-flavor column names
+  const skipNames = ["semana", "data", "cliente", "quantidade", "pagamento", "status", "total",
+    "observacoes", "observações", "fpagto", "formapagamento", "outros", "totalsemanal"];
+  if (skipNames.some(s => norm === normalizeText(s))) return false;
+
+  for (const s of sabores) {
+    const sNorm = normalizeText(s.nome);
+    if (sNorm === norm) return true;
+    if (sNorm.startsWith(norm) || norm.startsWith(sNorm)) return true;
+    // Handle abbreviations: "c/" -> "com", "hort." -> "hortela"
+    const expanded = name.toLowerCase().replace(/c\//g, "com ").replace(/\./g, "").replace(/\s+/g, " ").trim();
+    const sLower = s.nome.toLowerCase().replace(/\s+/g, " ").trim();
+    if (sLower.startsWith(expanded) || expanded.startsWith(sLower)) return true;
+    // Contains
+    if (sNorm.includes(norm) || norm.includes(sNorm)) return true;
+  }
+  return false;
 }
 
 export function detectTipo(headers: string[]): { tipo: TipoImportacao | null; confidence: "high" | "medium" | "low" } {
@@ -171,7 +263,6 @@ export function unpivotMatrix(raw: any[][], orientation: MatrixOrientation): { h
   const rows: any[][] = [];
 
   if (orientation === "dates-as-columns") {
-    // Columns B+ are dates, rows are flavors
     const dateHeaders = raw[0].slice(1);
     for (let r = 1; r < raw.length; r++) {
       const sabor = String(raw[r][0] || "").trim();
@@ -183,11 +274,9 @@ export function unpivotMatrix(raw: any[][], orientation: MatrixOrientation): { h
       }
     }
   } else {
-    // Column A has dates, columns B+ are flavors
     const flavorHeaders = raw[0].slice(1);
     for (let r = 1; r < raw.length; r++) {
       const dateVal = raw[r][0];
-      // Skip summary/total rows (empty date cell)
       if (dateVal == null || String(dateVal).trim() === "") continue;
       for (let c = 1; c < raw[r].length; c++) {
         const qty = raw[r][c];
@@ -202,6 +291,84 @@ export function unpivotMatrix(raw: any[][], orientation: MatrixOrientation): { h
   return { headers: ["data", "sabor", "quantidade"], dataRows: rows };
 }
 
+/**
+ * Unpivot wide format: each row has date, client, and quantities in flavor columns.
+ * Creates one ImportRow per flavor with qty > 0.
+ */
+export function unpivotWide(
+  raw: any[][],
+  flavorCols: number[],
+  sabores: { id: string; nome: string }[]
+): { headers: string[]; dataRows: any[][] } {
+  const headerRow = raw[0];
+  const nonFlavorCols: { idx: number; name: string }[] = [];
+  const flavorSet = new Set(flavorCols);
+
+  for (let c = 0; c < headerRow.length; c++) {
+    if (!flavorSet.has(c)) {
+      nonFlavorCols.push({ idx: c, name: String(headerRow[c] || "").trim() });
+    }
+  }
+
+  // Output: data, sabor, quantidade, cliente, pagamento, status, f_pagto, observacoes, semana
+  const outHeaders = ["data", "sabor", "quantidade", "cliente", "pagamento", "status", "f. pagto", "observações"];
+  const dataCol = nonFlavorCols.find(c => ["data", "date"].includes(normalizeText(c.name)));
+  const clienteCol = nonFlavorCols.find(c => normalizeText(c.name) === "cliente");
+  const qtdTotalCol = nonFlavorCols.find(c => normalizeText(c.name) === "quantidade");
+  const pagCol = nonFlavorCols.find(c => normalizeText(c.name).includes("pagamento") && !normalizeText(c.name).includes("fpagto") && !normalizeText(c.name).includes("forma"));
+  const statusCol = nonFlavorCols.find(c => normalizeText(c.name) === "status");
+  const fPagtoCol = nonFlavorCols.find(c => {
+    const n = normalizeText(c.name);
+    return n === "fpagto" || n.includes("formapag") || n.includes("fpag");
+  });
+  const obsCol = nonFlavorCols.find(c => {
+    const n = normalizeText(c.name);
+    return n.includes("observa");
+  });
+
+  const rows: any[][] = [];
+
+  for (let r = 1; r < raw.length; r++) {
+    const row = raw[r];
+    if (!row || row.every((c: any) => c === "" || c == null || c === 0)) continue;
+
+    const dateVal = dataCol ? row[dataCol.idx] : null;
+    const clienteVal = clienteCol ? String(row[clienteCol.idx] || "").trim() : "";
+    const pagVal = pagCol ? row[pagCol.idx] : "";
+    const statusVal = statusCol ? String(row[statusCol.idx] || "").trim() : "";
+    const fPagtoVal = fPagtoCol ? String(row[fPagtoCol.idx] || "").trim() : "";
+    const obsVal = obsCol ? String(row[obsCol.idx] || "").trim() : "";
+
+    // Skip rows with no date and no client (likely summary rows)
+    if (!dateVal && !clienteVal) continue;
+
+    // Check if any flavor column has a value
+    let hasAnyFlavor = false;
+    for (const fc of flavorCols) {
+      const v = parseQuantity(row[fc]);
+      if (v != null && v > 0) { hasAnyFlavor = true; break; }
+    }
+
+    if (hasAnyFlavor) {
+      // Create one row per flavor
+      for (const fc of flavorCols) {
+        const qty = parseQuantity(row[fc]);
+        if (qty == null || qty <= 0) continue;
+        const flavorName = String(headerRow[fc] || "").trim();
+        rows.push([dateVal, flavorName, qty, clienteVal, pagVal, statusVal, fPagtoVal, obsVal]);
+      }
+    } else {
+      // Row has QUANTIDADE total but no per-flavor breakdown — use total qty with "Não especificado"
+      const totalQty = qtdTotalCol ? parseQuantity(row[qtdTotalCol.idx]) : null;
+      if (totalQty && totalQty > 0) {
+        rows.push([dateVal, "(sem detalhe sabor)", totalQty, clienteVal, pagVal, statusVal, fPagtoVal, obsVal]);
+      }
+    }
+  }
+
+  return { headers: outHeaders, dataRows: rows };
+}
+
 /* ───────── Row Parsing ───────── */
 export function parseRows(
   tipo: TipoImportacao,
@@ -214,20 +381,21 @@ export function parseRows(
 
   // Flexible column detection
   const dataCol = findColumnIndex(headers, ["data", "date", "dia", "datas", "dt", "periodo", "mes"]);
-  const saborCol = findColumnIndex(headers, ["sabor", "produto", "item", "flavor", "gelo", "tipo", "descricao", "nome"]);
-  const qtdCol = findColumnIndex(headers, ["quantidade", "qtd", "qty", "quantity", "quant", "un", "unidade", "unidades", "total"]);
+  const saborCol = findColumnIndex(headers, ["sabor", "produto", "item", "flavor", "gelo", "tipo", "descricao"]);
+  const qtdCol = findColumnIndex(headers, ["quantidade", "qtd", "qty", "quantity", "quant", "un", "unidade", "unidades"]);
   const clienteCol = findColumnIndex(headers, ["cliente", "client", "comprador"]);
-  const valorCol = findColumnIndex(headers, ["valor", "preco", "preço", "valor unitario", "preco unitario", "unit"]);
+  const valorCol = findColumnIndex(headers, ["valor", "preco", "preço", "valor unitario", "preco unitario", "unit", "pagamento"]);
   const totalCol = findColumnIndex(headers, ["total", "valor total", "subtotal"]);
-  const statusCol = findColumnIndex(headers, ["status", "pagamento", "status pagamento", "pago"]);
+  const statusCol = findColumnIndex(headers, ["status"]);
   const respCol = findColumnIndex(headers, ["responsavel", "responsável", "operador"]);
+  const fPagtoCol = findColumnIndex(headers, ["f. pagto", "f pagto", "forma pagamento", "forma de pagamento", "fpagto"]);
+  const obsCol = findColumnIndex(headers, ["observações", "observacoes", "obs", "notas"]);
 
-  // If qty column not found but we have data+sabor, try to use the first numeric-looking column
+  // If qty column not found but we have data+sabor, try first numeric column
   let effectiveQtdCol = qtdCol;
   if (effectiveQtdCol === -1 && dataCol !== -1 && saborCol !== -1) {
     for (let c = 0; c < headers.length; c++) {
       if (c === dataCol || c === saborCol) continue;
-      // Check if first data row has a number in this column
       if (dataRows.length > 0 && parseNumericValue(dataRows[0][c]) != null) {
         effectiveQtdCol = c;
         break;
@@ -240,31 +408,25 @@ export function parseRows(
   const saborMap = new Map<string, string>();
   sabores.forEach(s => saborMap.set(s.nome.toLowerCase().trim(), s.id));
 
-  // Fuzzy sabor matching helper
   function findSaborId(raw: string): string | undefined {
     const key = raw.toLowerCase().trim();
-    // Exact match
     const exact = saborMap.get(key);
     if (exact) return exact;
-    // Normalize: remove accents, special chars for comparison
     const norm = normalizeText(raw);
     for (const s of sabores) {
       const sNorm = normalizeText(s.nome);
-      // Normalized exact
       if (sNorm === norm) return s.id;
-      // One starts with the other
       if (sNorm.startsWith(norm) || norm.startsWith(sNorm)) return s.id;
-      // Handle abbreviations like "c/" -> "com", "hort." -> "hortela"
       const expanded = key.replace(/c\//g, "com").replace(/\./g, "").replace(/\s+/g, " ").trim();
       const sLower = s.nome.toLowerCase().trim();
       const sExpanded = sLower.replace(/ã/g, "a").replace(/á/g, "a").replace(/é/g, "e").replace(/ç/g, "c");
       const eExpanded = expanded.replace(/ã/g, "a").replace(/á/g, "a").replace(/é/g, "e").replace(/ç/g, "c");
       if (sExpanded.startsWith(eExpanded) || eExpanded.startsWith(sExpanded)) return s.id;
-      // Contains check on normalized
       if (sNorm.includes(norm) || norm.includes(sNorm)) return s.id;
     }
     return undefined;
   }
+
   const clienteMap = new Map<string, string>();
   clientes.forEach(c => clienteMap.set(c.nome.toLowerCase().trim(), c.id));
 
@@ -284,6 +446,7 @@ export function parseRows(
     const saborRaw = String(row[saborCol] || "").trim();
     const saborId = findSaborId(saborRaw);
     if (!saborRaw) errors.push("Sabor vazio");
+    else if (saborRaw === "(sem detalhe sabor)") warnings.push("Sabores não detalhados");
     else if (!saborId) errors.push(`Sabor "${saborRaw}" não encontrado`);
 
     const qtd = parseQuantity(row[effectiveQtdCol]);
@@ -305,6 +468,8 @@ export function parseRows(
 
     const statusPag = statusCol !== -1 ? normalizeStatus(row[statusCol]) : undefined;
     const respRaw = respCol !== -1 ? String(row[respCol] || "").trim() : "";
+    const formaPag = fPagtoCol !== -1 ? String(row[fPagtoCol] || "").trim() : undefined;
+    const obs = obsCol !== -1 ? String(row[obsCol] || "").trim() : undefined;
 
     const dupeKey = `${dateVal}|${saborRaw.toLowerCase()}|${clienteRaw.toLowerCase()}`;
     if (seen.has(dupeKey)) warnings.push("Possível duplicidade");
@@ -320,6 +485,8 @@ export function parseRows(
       statusPagamento: statusPag,
       responsavel: respRaw || undefined,
       cliente: clienteRaw || undefined,
+      formaPagamento: formaPag || undefined,
+      observacoes: obs || undefined,
       errors, warnings, saborId, clienteId,
     });
   }
@@ -335,7 +502,6 @@ export function buildAnalise(rows: ImportRow[]): AnaliseResumo {
   const totalQuantidade = valid.reduce((s, r) => s + r.quantidade, 0);
   const totalValor = valid.reduce((s, r) => s + (r.valorTotal || 0), 0);
 
-  // Por produto
   const prodMap = new Map<string, { quantidade: number; valor: number }>();
   for (const r of valid) {
     const key = r.sabor;
@@ -346,7 +512,6 @@ export function buildAnalise(rows: ImportRow[]): AnaliseResumo {
     .map(([sabor, v]) => ({ sabor, ...v }))
     .sort((a, b) => b.quantidade - a.quantidade);
 
-  // Por status
   const statusMap = new Map<string, { quantidade: number; valor: number; count: number }>();
   for (const r of valid) {
     const key = r.statusPagamento || "Não informado";
