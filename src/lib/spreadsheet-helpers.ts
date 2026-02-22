@@ -312,8 +312,27 @@ export function unpivotWide(
 
   // Output: data, sabor, quantidade, cliente, pagamento, status, f_pagto, observacoes, semana
   const outHeaders = ["data", "sabor", "quantidade", "cliente", "pagamento", "status", "f. pagto", "observações"];
-  const dataCol = nonFlavorCols.find(c => ["data", "date"].includes(normalizeText(c.name)));
-  const clienteCol = nonFlavorCols.find(c => normalizeText(c.name) === "cliente");
+  const dataCol = nonFlavorCols.find(c => ["data", "date", "dia"].includes(normalizeText(c.name)));
+  // Client column: look for named "cliente" OR unnamed column that has text data (not dates, not numbers)
+  let clienteCol = nonFlavorCols.find(c => normalizeText(c.name) === "cliente");
+  if (!clienteCol) {
+    // Check if there's an unnamed column (empty header) that contains text in the data rows
+    for (const col of nonFlavorCols) {
+      if (col.name === "" || col.name === " ") {
+        // Verify it contains text (client names) by checking a few data rows
+        let textCount = 0;
+        const checkRows = Math.min(raw.length - 1, 20);
+        for (let r = 1; r <= checkRows; r++) {
+          const val = String(raw[r]?.[col.idx] || "").trim();
+          if (val && isNaN(Number(val)) && parseDate(val) === null) textCount++;
+        }
+        if (textCount >= 2) {
+          clienteCol = col;
+          break;
+        }
+      }
+    }
+  }
   const qtdTotalCol = nonFlavorCols.find(c => normalizeText(c.name) === "quantidade");
   const pagCol = nonFlavorCols.find(c => normalizeText(c.name).includes("pagamento") && !normalizeText(c.name).includes("fpagto") && !normalizeText(c.name).includes("forma"));
   const statusCol = nonFlavorCols.find(c => normalizeText(c.name) === "status");
