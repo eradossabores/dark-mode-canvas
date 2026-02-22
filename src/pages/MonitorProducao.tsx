@@ -190,22 +190,24 @@ export default function MonitorProducao() {
                 </div>
               )}
             </div>
-            <div className="flex flex-col gap-3 min-w-[200px]">
+            <div className="flex flex-row gap-3 w-full lg:w-auto">
               {pedido.status !== "separado_para_entrega" && pedido.status !== "enviado" && (
                 <Button
                   variant="outline"
-                  className="w-full gap-2 border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-300 dark:hover:bg-purple-950"
+                  size="lg"
+                  className="flex-1 gap-2 h-14 text-base font-bold border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-300 dark:hover:bg-purple-950"
                   onClick={() => updateStatus.mutate({ id: pedido.id, status: "separado_para_entrega" })}
                 >
-                  <PackageCheck className="h-4 w-4" /> Separado p/ Entrega
+                  <PackageCheck className="h-5 w-5" /> Separado p/ Entrega
                 </Button>
               )}
               {pedido.status !== "enviado" && (
                 <Button
-                  className="w-full gap-2 bg-green-600 hover:bg-green-700 text-white"
+                  size="lg"
+                  className="flex-1 gap-2 h-14 text-base font-bold bg-green-600 hover:bg-green-700 text-white"
                   onClick={() => updateStatus.mutate({ id: pedido.id, status: "enviado" })}
                 >
-                  <CheckCircle2 className="h-4 w-4" /> Enviado
+                  <CheckCircle2 className="h-5 w-5" /> Enviado
                 </Button>
               )}
             </div>
