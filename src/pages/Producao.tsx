@@ -6,59 +6,61 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { realizarProducao } from "@/lib/supabase-helpers";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Pencil, Eye } from "lucide-react";
 
 export default function Producao() {
   const [sabores, setSabores] = useState<any[]>([]);
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
   const [producoes, setProducoes] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const [saborId, setSaborId] = useState("");
   const [modo, setModo] = useState<"lote" | "unidade">("lote");
   const [qtdLotes, setQtdLotes] = useState(1);
   const [qtdTotal, setQtdTotal] = useState(84);
-  
   const [observacoes, setObservacoes] = useState("");
-  const [funcList, setFuncList] = useState<string[]>([]);
+  const [funcList, setFuncList] = useState<string[]>([""]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  // Edit state
+  const [editProd, setEditProd] = useState<any>(null);
+  const [editObs, setEditObs] = useState("");
+  const [editOperador, setEditOperador] = useState("");
+
+  // Detail
+  const [detailProd, setDetailProd] = useState<any>(null);
+  const [detailFuncs, setDetailFuncs] = useState<any[]>([]);
+
+  useEffect(() => { loadData(); }, []);
 
   useEffect(() => {
-    if (modo === "lote") {
-      setQtdTotal(qtdLotes * 84);
-    }
+    if (modo === "lote") setQtdTotal(qtdLotes * 84);
   }, [qtdLotes, modo]);
 
   async function loadData() {
     const [s, f, p] = await Promise.all([
       (supabase as any).from("sabores").select("*").eq("ativo", true).order("nome"),
       (supabase as any).from("funcionarios").select("*").eq("ativo", true).order("nome"),
-      (supabase as any).from("producoes").select("*, sabores(nome)").order("created_at", { ascending: false }).limit(50),
+      (supabase as any).from("producoes").select("*, sabores(nome)").order("created_at", { ascending: false }).limit(100),
     ]);
     setSabores(s.data || []);
     setFuncionarios(f.data || []);
     setProducoes(p.data || []);
   }
 
-  function addFunc() {
-    setFuncList([...funcList, ""]);
-  }
+  function addFunc() { setFuncList([...funcList, ""]); }
+  function removeFunc(i: number) { setFuncList(funcList.filter((_, idx) => idx !== i)); }
+  function updateFunc(i: number, val: string) { const list = [...funcList]; list[i] = val; setFuncList(list); }
 
-  function removeFunc(i: number) {
-    setFuncList(funcList.filter((_, idx) => idx !== i));
-  }
-
-  function updateFunc(i: number, val: string) {
-    const list = [...funcList];
-    list[i] = val;
-    setFuncList(list);
+  function resetForm() {
+    setSaborId(""); setModo("lote"); setQtdLotes(1); setQtdTotal(84); setObservacoes(""); setFuncList([""]);
   }
 
   async function handleSubmit() {
@@ -66,16 +68,12 @@ export default function Producao() {
     const validFuncs = funcList.filter(f => f !== "");
     if (validFuncs.length === 0) return toast({ title: "Adicione ao menos um responsável", variant: "destructive" });
 
-    const nomesFuncionarios = validFuncs
-      .map(f => funcionarios.find(fn => fn.id === f)?.nome)
-      .filter(Boolean)
-      .join(", ");
+    const nomesFuncionarios = validFuncs.map(f => funcionarios.find(fn => fn.id === f)?.nome).filter(Boolean).join(", ");
 
     setLoading(true);
     try {
       await realizarProducao({
-        p_sabor_id: saborId,
-        p_modo: modo,
+        p_sabor_id: saborId, p_modo: modo,
         p_quantidade_lotes: modo === "lote" ? qtdLotes : 0,
         p_quantidade_total: qtdTotal,
         p_operador: nomesFuncionarios || "sistema",
@@ -83,9 +81,7 @@ export default function Producao() {
         p_funcionarios: validFuncs.map(f => ({ funcionario_id: f, quantidade_produzida: 0 })),
       });
       toast({ title: "Produção registrada com sucesso!" });
-      setOpen(false);
-      resetForm();
-      loadData();
+      setOpen(false); resetForm(); loadData();
     } catch (e: any) {
       toast({ title: "Erro na produção", description: e.message, variant: "destructive" });
     } finally {
@@ -93,13 +89,48 @@ export default function Producao() {
     }
   }
 
-  function resetForm() {
-    setSaborId("");
-    setModo("lote");
-    setQtdLotes(1);
-    setQtdTotal(84);
-    setObservacoes("");
-    setFuncList([""]);
+  function openEditDialog(p: any) {
+    setEditProd(p);
+    setEditObs(p.observacoes || "");
+    setEditOperador(p.operador || "");
+    setEditOpen(true);
+  }
+
+  async function handleEditSave() {
+    if (!editProd) return;
+    try {
+      const { error } = await (supabase as any).from("producoes").update({
+        observacoes: editObs, operador: editOperador,
+      }).eq("id", editProd.id);
+      if (error) throw error;
+      toast({ title: "Produção atualizada!" });
+      setEditOpen(false);
+      loadData();
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+  }
+
+  async function openDetailDialog(p: any) {
+    setDetailProd(p);
+    const { data } = await (supabase as any).from("producao_funcionarios").select("*, funcionarios(nome)").eq("producao_id", p.id);
+    setDetailFuncs(data || []);
+    setDetailOpen(true);
+  }
+
+  async function handleDelete() {
+    if (!deleteId) return;
+    try {
+      // Delete associated records first
+      await (supabase as any).from("producao_funcionarios").delete().eq("producao_id", deleteId);
+      const { error } = await (supabase as any).from("producoes").delete().eq("id", deleteId);
+      if (error) throw error;
+      toast({ title: "Produção excluída!" });
+      setDeleteId(null);
+      loadData();
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
   }
 
   return (
@@ -107,23 +138,17 @@ export default function Producao() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Produção</h1>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 mr-2" />Nova Produção</Button>
-          </DialogTrigger>
+          <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-2" />Nova Produção</Button></DialogTrigger>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>Nova Produção</DialogTitle></DialogHeader>
             <div className="space-y-4">
-              <div>
-                <Label>Sabor</Label>
+              <div><Label>Sabor</Label>
                 <Select value={saborId} onValueChange={setSaborId}>
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>
-                    {sabores.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}
-                  </SelectContent>
+                  <SelectContent>{sabores.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label>Modo</Label>
+              <div><Label>Modo</Label>
                 <Select value={modo} onValueChange={(v) => setModo(v as any)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -133,47 +158,83 @@ export default function Producao() {
                 </Select>
               </div>
               {modo === "lote" ? (
-                <div>
-                  <Label>Qtd. Lotes</Label>
-                  <Input type="number" min={1} value={qtdLotes} onChange={(e) => setQtdLotes(Number(e.target.value))} />
-                  <p className="text-xs text-muted-foreground mt-1">Total: {qtdLotes * 84} gelos</p>
-                </div>
+                <div><Label>Qtd. Lotes</Label><Input type="number" min={1} value={qtdLotes} onChange={(e) => setQtdLotes(Number(e.target.value))} /><p className="text-xs text-muted-foreground mt-1">Total: {qtdLotes * 84} gelos</p></div>
               ) : (
-                <div>
-                  <Label>Qtd. Total</Label>
-                  <Input type="number" min={1} value={qtdTotal} onChange={(e) => setQtdTotal(Number(e.target.value))} />
-                </div>
+                <div><Label>Qtd. Total</Label><Input type="number" min={1} value={qtdTotal} onChange={(e) => setQtdTotal(Number(e.target.value))} /></div>
               )}
-              <div>
-                <Label>Observações</Label>
-                <Input value={observacoes} onChange={(e) => setObservacoes(e.target.value)} />
-              </div>
+              <div><Label>Observações</Label><Input value={observacoes} onChange={(e) => setObservacoes(e.target.value)} /></div>
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <Label>Responsáveis pela Produção</Label>
+                  <Label>Responsáveis</Label>
                   <Button size="sm" variant="outline" onClick={addFunc}><Plus className="h-3 w-3 mr-1" />Add</Button>
                 </div>
                 {funcList.map((f, i) => (
                   <div key={i} className="flex gap-2 mb-2">
                     <Select value={f} onValueChange={(v) => updateFunc(i, v)}>
                       <SelectTrigger className="flex-1"><SelectValue placeholder="Funcionário" /></SelectTrigger>
-                      <SelectContent>
-                        {funcionarios.map((fn) => <SelectItem key={fn.id} value={fn.id}>{fn.nome}</SelectItem>)}
-                      </SelectContent>
+                      <SelectContent>{funcionarios.map((fn) => <SelectItem key={fn.id} value={fn.id}>{fn.nome}</SelectItem>)}</SelectContent>
                     </Select>
-                    <Button size="icon" variant="ghost" onClick={() => removeFunc(i)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    <Button size="icon" variant="ghost" onClick={() => removeFunc(i)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                   </div>
                 ))}
               </div>
-              <Button className="w-full" onClick={handleSubmit} disabled={loading}>
-                {loading ? "Processando..." : "Registrar Produção"}
-              </Button>
+              <Button className="w-full" onClick={handleSubmit} disabled={loading}>{loading ? "Processando..." : "Registrar Produção"}</Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Editar Produção</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div><Label>Operador</Label><Input value={editOperador} onChange={(e) => setEditOperador(e.target.value)} /></div>
+            <div><Label>Observações</Label><Input value={editObs} onChange={(e) => setEditObs(e.target.value)} /></div>
+            <Button className="w-full" onClick={handleEditSave}>Salvar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Detail Dialog */}
+      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Detalhes da Produção</DialogTitle></DialogHeader>
+          {detailProd && (
+            <div className="space-y-3">
+              <p><strong>Sabor:</strong> {detailProd.sabores?.nome}</p>
+              <p><strong>Data:</strong> {new Date(detailProd.created_at).toLocaleDateString("pt-BR")}</p>
+              <p><strong>Modo:</strong> {detailProd.modo}</p>
+              <p><strong>Lotes:</strong> {detailProd.quantidade_lotes}</p>
+              <p><strong>Total:</strong> {detailProd.quantidade_total} un.</p>
+              <p><strong>Operador:</strong> {detailProd.operador}</p>
+              {detailProd.observacoes && <p><strong>Obs:</strong> {detailProd.observacoes}</p>}
+              {detailFuncs.length > 0 && (
+                <div>
+                  <strong>Funcionários:</strong>
+                  <ul className="list-disc ml-5 mt-1">
+                    {detailFuncs.map(f => <li key={f.id}>{f.funcionarios?.nome}</li>)}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirm */}
+      <AlertDialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir produção?</AlertDialogTitle>
+            <AlertDialogDescription>Esta ação não reverte o estoque automaticamente. Ajuste o estoque manualmente se necessário.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Card>
         <CardHeader><CardTitle>Histórico de Produções</CardTitle></CardHeader>
@@ -187,6 +248,7 @@ export default function Producao() {
                 <TableHead>Lotes</TableHead>
                 <TableHead>Total</TableHead>
                 <TableHead>Operador</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -198,10 +260,15 @@ export default function Producao() {
                   <TableCell>{p.quantidade_lotes}</TableCell>
                   <TableCell>{p.quantidade_total}</TableCell>
                   <TableCell>{p.operador}</TableCell>
+                  <TableCell className="text-right space-x-1">
+                    <Button size="icon" variant="ghost" onClick={() => openDetailDialog(p)}><Eye className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => openEditDialog(p)}><Pencil className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => setDeleteId(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                  </TableCell>
                 </TableRow>
               ))}
               {producoes.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Nenhuma produção.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Nenhuma produção.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>

@@ -5,16 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { insertRow } from "@/lib/supabase-helpers";
 import { toast } from "@/hooks/use-toast";
-import { Plus } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 
 export default function Funcionarios() {
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState({ nome: "", tipo_pagamento: "diaria" as string, valor_pagamento: "" });
 
   useEffect(() => { loadData(); }, []);
@@ -24,18 +27,56 @@ export default function Funcionarios() {
     setFuncionarios(data || []);
   }
 
+  function openNew() {
+    setEditingId(null);
+    setForm({ nome: "", tipo_pagamento: "diaria", valor_pagamento: "" });
+    setOpen(true);
+  }
+
+  function openEdit(f: any) {
+    setEditingId(f.id);
+    setForm({ nome: f.nome, tipo_pagamento: f.tipo_pagamento, valor_pagamento: String(f.valor_pagamento) });
+    setOpen(true);
+  }
+
   async function handleSubmit() {
     if (!form.nome) return toast({ title: "Nome obrigatório", variant: "destructive" });
     if (!form.valor_pagamento) return toast({ title: "Valor obrigatório", variant: "destructive" });
     try {
-      await insertRow("funcionarios", {
-        nome: form.nome,
-        tipo_pagamento: form.tipo_pagamento,
-        valor_pagamento: Number(form.valor_pagamento),
-      });
-      toast({ title: "Funcionário cadastrado!" });
+      const payload = { nome: form.nome, tipo_pagamento: form.tipo_pagamento, valor_pagamento: Number(form.valor_pagamento) };
+      if (editingId) {
+        const { error } = await (supabase as any).from("funcionarios").update(payload).eq("id", editingId);
+        if (error) throw error;
+        toast({ title: "Funcionário atualizado!" });
+      } else {
+        await insertRow("funcionarios", payload);
+        toast({ title: "Funcionário cadastrado!" });
+      }
       setOpen(false);
-      setForm({ nome: "", tipo_pagamento: "diaria", valor_pagamento: "" });
+      setEditingId(null);
+      loadData();
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+  }
+
+  async function handleToggleStatus(f: any) {
+    try {
+      await (supabase as any).from("funcionarios").update({ ativo: !f.ativo }).eq("id", f.id);
+      toast({ title: `Funcionário ${!f.ativo ? "ativado" : "desativado"}!` });
+      loadData();
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+  }
+
+  async function handleDelete() {
+    if (!deleteId) return;
+    try {
+      const { error } = await (supabase as any).from("funcionarios").update({ ativo: false }).eq("id", deleteId);
+      if (error) throw error;
+      toast({ title: "Funcionário desativado!" });
+      setDeleteId(null);
       loadData();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
@@ -46,33 +87,45 @@ export default function Funcionarios() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Funcionários</h1>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 mr-2" />Novo Funcionário</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Novo Funcionário</DialogTitle></DialogHeader>
-            <div className="space-y-4">
-              <div><Label>Nome *</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
-              <div>
-                <Label>Forma de Pagamento</Label>
-                <Select value={form.tipo_pagamento} onValueChange={(v) => setForm({ ...form, tipo_pagamento: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="diaria">Diária</SelectItem>
-                    <SelectItem value="fixo">Valor Fixo</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Valor (R$)</Label>
-                <Input type="number" step="0.01" value={form.valor_pagamento} onChange={(e) => setForm({ ...form, valor_pagamento: e.target.value })} />
-              </div>
-              <Button className="w-full" onClick={handleSubmit}>Cadastrar</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" />Novo Funcionário</Button>
       </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{editingId ? "Editar Funcionário" : "Novo Funcionário"}</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div><Label>Nome *</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
+            <div>
+              <Label>Forma de Pagamento</Label>
+              <Select value={form.tipo_pagamento} onValueChange={(v) => setForm({ ...form, tipo_pagamento: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="diaria">Diária</SelectItem>
+                  <SelectItem value="fixo">Valor Fixo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Valor (R$)</Label>
+              <Input type="number" step="0.01" value={form.valor_pagamento} onChange={(e) => setForm({ ...form, valor_pagamento: e.target.value })} />
+            </div>
+            <Button className="w-full" onClick={handleSubmit}>{editingId ? "Salvar Alterações" : "Cadastrar"}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Desativar funcionário?</AlertDialogTitle>
+            <AlertDialogDescription>O funcionário será marcado como inativo.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>Desativar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Card>
         <CardContent className="pt-6">
@@ -83,6 +136,7 @@ export default function Funcionarios() {
                 <TableHead>Pagamento</TableHead>
                 <TableHead>Valor</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -92,12 +146,20 @@ export default function Funcionarios() {
                   <TableCell className="capitalize">{f.tipo_pagamento === "diaria" ? "Diária" : "Fixo"}</TableCell>
                   <TableCell>R$ {Number(f.valor_pagamento).toFixed(2)}</TableCell>
                   <TableCell>
-                    <Badge variant={f.ativo ? "default" : "destructive"}>{f.ativo ? "Ativo" : "Inativo"}</Badge>
+                    <Badge
+                      variant={f.ativo ? "default" : "destructive"}
+                      className="cursor-pointer"
+                      onClick={() => handleToggleStatus(f)}
+                    >{f.ativo ? "Ativo" : "Inativo"}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right space-x-1">
+                    <Button size="icon" variant="ghost" onClick={() => openEdit(f)}><Pencil className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => setDeleteId(f.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                   </TableCell>
                 </TableRow>
               ))}
               {funcionarios.length === 0 && (
-                <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">Nenhum funcionário.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">Nenhum funcionário.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
