@@ -117,15 +117,39 @@ function normalizeStatus(val: any): string {
 }
 
 /* ───────── Layout Detection ───────── */
-export function detectLayout(raw: any[][]): LayoutType {
-  if (raw.length < 2 || raw[0].length < 2) return "tabular";
+// Returns "matrix" + orientation so unpivot knows how to transform
+export type MatrixOrientation = "dates-as-columns" | "dates-as-rows";
+
+export function detectLayout(raw: any[][]): { layout: LayoutType; orientation?: MatrixOrientation } {
+  if (raw.length < 2 || raw[0].length < 2) return { layout: "tabular" };
   const headerRow = raw[0];
-  let dateCount = 0;
+
+  // Case 1: dates as column headers (B+), flavors as row labels (A)
+  let dateCountCols = 0;
   for (let c = 1; c < headerRow.length; c++) {
-    if (parseDate(headerRow[c]) !== null) dateCount++;
+    if (parseDate(headerRow[c]) !== null) dateCountCols++;
   }
-  if (dateCount > 0 && dateCount >= (headerRow.length - 1) * 0.5) return "matrix";
-  return "tabular";
+  if (dateCountCols > 0 && dateCountCols >= (headerRow.length - 1) * 0.5) {
+    return { layout: "matrix", orientation: "dates-as-columns" };
+  }
+
+  // Case 2: dates in column A (data rows), flavors as column headers (B+)
+  // First header is likely "DATA" or similar, columns B+ are text (flavor names)
+  const firstHeaderNorm = normalizeText(String(headerRow[0] || ""));
+  const isFirstColDate = ["data", "date", "dia", "datas"].includes(firstHeaderNorm);
+  if (isFirstColDate) {
+    // Check if column A of data rows contains dates
+    let dateCountRows = 0;
+    const checkRows = Math.min(raw.length - 1, 10);
+    for (let r = 1; r <= checkRows; r++) {
+      if (parseDate(raw[r]?.[0]) !== null) dateCountRows++;
+    }
+    if (dateCountRows >= checkRows * 0.5) {
+      return { layout: "matrix", orientation: "dates-as-rows" };
+    }
+  }
+
+  return { layout: "tabular" };
 }
 
 export function detectTipo(headers: string[]): { tipo: TipoImportacao | null; confidence: "high" | "medium" | "low" } {
@@ -143,18 +167,38 @@ export function detectTipo(headers: string[]): { tipo: TipoImportacao | null; co
   return { tipo: "producao", confidence: "medium" };
 }
 
-export function unpivotMatrix(raw: any[][]): { headers: string[]; dataRows: any[][] } {
-  const dateHeaders = raw[0].slice(1);
+export function unpivotMatrix(raw: any[][], orientation: MatrixOrientation): { headers: string[]; dataRows: any[][] } {
   const rows: any[][] = [];
-  for (let r = 1; r < raw.length; r++) {
-    const sabor = String(raw[r][0] || "").trim();
-    if (!sabor) continue;
-    for (let c = 1; c < raw[r].length; c++) {
-      const qty = raw[r][c];
-      if (qty == null || qty === "" || qty === 0) continue;
-      rows.push([dateHeaders[c - 1], sabor, qty]);
+
+  if (orientation === "dates-as-columns") {
+    // Columns B+ are dates, rows are flavors
+    const dateHeaders = raw[0].slice(1);
+    for (let r = 1; r < raw.length; r++) {
+      const sabor = String(raw[r][0] || "").trim();
+      if (!sabor) continue;
+      for (let c = 1; c < raw[r].length; c++) {
+        const qty = raw[r][c];
+        if (qty == null || qty === "" || qty === 0) continue;
+        rows.push([dateHeaders[c - 1], sabor, qty]);
+      }
+    }
+  } else {
+    // Column A has dates, columns B+ are flavors
+    const flavorHeaders = raw[0].slice(1);
+    for (let r = 1; r < raw.length; r++) {
+      const dateVal = raw[r][0];
+      // Skip summary/total rows (empty date cell)
+      if (dateVal == null || String(dateVal).trim() === "") continue;
+      for (let c = 1; c < raw[r].length; c++) {
+        const qty = raw[r][c];
+        if (qty == null || qty === "" || qty === 0) continue;
+        const sabor = String(flavorHeaders[c - 1] || "").trim();
+        if (!sabor) continue;
+        rows.push([dateVal, sabor, qty]);
+      }
     }
   }
+
   return { headers: ["data", "sabor", "quantidade"], dataRows: rows };
 }
 
