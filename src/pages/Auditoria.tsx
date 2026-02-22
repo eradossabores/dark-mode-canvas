@@ -15,7 +15,9 @@ export default function Auditoria() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
+  const [confirmDeleteImported, setConfirmDeleteImported] = useState(false);
   const [deletingAll, setDeletingAll] = useState(false);
+  const [deletingImported, setDeletingImported] = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
@@ -168,27 +170,118 @@ export default function Auditoria() {
     }
   }
 
+  async function handleDeleteImported() {
+    setDeletingImported(true);
+    try {
+      // 1. Find all imported productions
+      const { data: importedProds } = await (supabase as any)
+        .from("producoes")
+        .select("id, sabor_id, quantidade_total")
+        .ilike("observacoes", "%Importado via planilha%");
+
+      // 2. Find all imported sales
+      const { data: importedVendas } = await (supabase as any)
+        .from("vendas")
+        .select("id")
+        .ilike("observacoes", "%Importado via planilha%");
+
+      const prodIds = (importedProds || []).map((p: any) => p.id);
+      const vendaIds = (importedVendas || []).map((v: any) => v.id);
+
+      // 3. Delete production related records
+      if (prodIds.length > 0) {
+        await (supabase as any).from("producao_funcionarios").delete().in("producao_id", prodIds);
+        await (supabase as any).from("movimentacoes_estoque").delete().in("referencia_id", prodIds);
+        await (supabase as any).from("producoes").delete().in("id", prodIds);
+      }
+
+      // 4. Revert stock from imported productions
+      const saborTotals = new Map<string, number>();
+      for (const p of (importedProds || [])) {
+        saborTotals.set(p.sabor_id, (saborTotals.get(p.sabor_id) || 0) + p.quantidade_total);
+      }
+      for (const [saborId, qtd] of saborTotals) {
+        const { data: estoque } = await (supabase as any)
+          .from("estoque_gelos").select("quantidade").eq("sabor_id", saborId).maybeSingle();
+        if (estoque) {
+          await (supabase as any).from("estoque_gelos")
+            .update({ quantidade: Math.max(0, estoque.quantidade - qtd) }).eq("sabor_id", saborId);
+        }
+      }
+
+      // 5. Delete sale related records
+      if (vendaIds.length > 0) {
+        await (supabase as any).from("venda_itens").delete().in("venda_id", vendaIds);
+        await (supabase as any).from("venda_parcelas").delete().in("venda_id", vendaIds);
+        await (supabase as any).from("movimentacoes_estoque").delete().in("referencia_id", vendaIds);
+        await (supabase as any).from("vendas").delete().in("id", vendaIds);
+      }
+
+      // 6. Clean audit entries related to imports
+      await (supabase as any).from("auditoria").delete().eq("acao", "importar_planilha");
+      await (supabase as any).from("auditoria").delete().eq("acao", "desfazer_importacao");
+
+      toast({
+        title: "Dados importados removidos",
+        description: `${prodIds.length} produções e ${vendaIds.length} vendas importadas foram apagadas. Estoque revertido.`,
+      });
+      loadData();
+    } catch (e: any) {
+      toast({ title: "Erro ao limpar importações", description: e.message, variant: "destructive" });
+    } finally {
+      setDeletingImported(false);
+      setConfirmDeleteImported(false);
+    }
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Auditoria</h1>
         {logs.length > 0 && (
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => setConfirmDeleteAll(true)}
-          >
-            <Trash2 className="h-4 w-4 mr-1" /> Apagar Tudo
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-destructive/50 text-destructive hover:bg-destructive/10"
+              onClick={() => setConfirmDeleteImported(true)}
+            >
+              <Trash2 className="h-4 w-4 mr-1" /> Apagar Importações
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setConfirmDeleteAll(true)}
+            >
+              <Trash2 className="h-4 w-4 mr-1" /> Apagar Logs
+            </Button>
+          </div>
         )}
       </div>
+
+      {confirmDeleteImported && (
+        <Alert className="mb-4 border-destructive/30 bg-destructive/5">
+          <AlertTriangle className="h-4 w-4 text-destructive" />
+          <AlertDescription className="flex items-center justify-between">
+            <span className="text-sm font-medium">
+              Apagar TODAS as produções e vendas importadas via planilha? O estoque será revertido.
+            </span>
+            <div className="flex gap-2 ml-4 shrink-0">
+              <Button size="sm" variant="outline" onClick={() => setConfirmDeleteImported(false)}>Cancelar</Button>
+              <Button size="sm" variant="destructive" disabled={deletingImported} onClick={handleDeleteImported}>
+                {deletingImported ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Apagando...</> : "Confirmar"}
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {confirmDeleteAll && (
         <Alert className="mb-4 border-destructive/30 bg-destructive/5">
           <AlertTriangle className="h-4 w-4 text-destructive" />
           <AlertDescription className="flex items-center justify-between">
             <span className="text-sm font-medium">
-              Tem certeza que deseja apagar TODOS os {logs.length} registros de auditoria?
+              Apagar TODOS os {logs.length} registros de log da auditoria? (Não apaga produções/vendas)
             </span>
             <div className="flex gap-2 ml-4 shrink-0">
               <Button size="sm" variant="outline" onClick={() => setConfirmDeleteAll(false)}>Cancelar</Button>
