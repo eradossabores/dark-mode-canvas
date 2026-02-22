@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -31,33 +30,13 @@ interface ImportRow {
 }
 
 type TipoImportacao = "producao" | "vendas";
+type LayoutType = "matrix" | "tabular";
 
 /* ───────── helpers ───────── */
 const SALES_INDICATORS = ["valor", "preco", "total", "preço", "unitario", "unitário", "cliente", "faturamento"];
-const PRODUCTION_INDICATORS = ["responsavel", "responsável", "operador", "lote"];
 
-function normalizeHeader(h: string): string {
+function normalizeText(h: string): string {
   return h.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "").trim();
-}
-
-function detectTipo(headers: string[]): { tipo: TipoImportacao | null; confidence: "high" | "medium" | "low" } {
-  const normalized = headers.map(h => h.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim());
-
-  let salesScore = 0;
-  let prodScore = 0;
-
-  for (const h of normalized) {
-    if (SALES_INDICATORS.some(s => h.includes(s))) salesScore++;
-    if (PRODUCTION_INDICATORS.some(s => h.includes(s))) prodScore++;
-  }
-
-  // "cliente" column is a very strong sales indicator
-  if (normalized.some(h => h === "cliente")) salesScore += 3;
-
-  if (salesScore > 0 && prodScore === 0) return { tipo: "vendas", confidence: salesScore >= 2 ? "high" : "medium" };
-  if (prodScore > 0 && salesScore === 0) return { tipo: "producao", confidence: prodScore >= 2 ? "high" : "medium" };
-  if (salesScore === 0 && prodScore === 0) return { tipo: "producao", confidence: "low" };
-  return { tipo: null, confidence: "low" };
 }
 
 function parseDate(val: any): string | null {
@@ -71,6 +50,9 @@ function parseDate(val: any): string | null {
   if (m1) return `${m1[3]}-${m1[2].padStart(2, "0")}-${m1[1].padStart(2, "0")}`;
   const m2 = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (m2) return str;
+  // dd/mm/yy
+  const m3 = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/);
+  if (m3) return `20${m3[3]}-${m3[2].padStart(2, "0")}-${m3[1].padStart(2, "0")}`;
   return null;
 }
 
@@ -80,20 +62,63 @@ function parseQuantity(val: any): number | null {
   return isNaN(n) ? null : Math.round(n);
 }
 
+/** Detect if layout is matrix (dates as columns, flavors as rows) */
+function detectLayout(raw: any[][]): LayoutType {
+  if (raw.length < 2 || raw[0].length < 2) return "tabular";
+  const headerRow = raw[0];
+  // Check if columns B onwards look like dates
+  let dateCount = 0;
+  for (let c = 1; c < headerRow.length; c++) {
+    if (parseDate(headerRow[c]) !== null) dateCount++;
+  }
+  // If most columns (>50%) after the first are dates, it's matrix
+  if (dateCount > 0 && dateCount >= (headerRow.length - 1) * 0.5) return "matrix";
+  return "tabular";
+}
+
+function detectTipo(headers: string[]): { tipo: TipoImportacao | null; confidence: "high" | "medium" | "low" } {
+  const normalized = headers.map(h => h.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim());
+  let salesScore = 0;
+  for (const h of normalized) {
+    if (SALES_INDICATORS.some(s => h.includes(s))) salesScore++;
+  }
+  if (normalized.some(h => h === "cliente")) salesScore += 3;
+  if (salesScore >= 2) return { tipo: "vendas", confidence: "high" };
+  if (salesScore === 1) return { tipo: "vendas", confidence: "medium" };
+  // Default: production (matrix of quantities without price = production)
+  return { tipo: "producao", confidence: "medium" };
+}
+
+/** Unpivot matrix layout into flat rows */
+function unpivotMatrix(raw: any[][]): { headers: string[]; dataRows: any[][] } {
+  const dateHeaders = raw[0].slice(1);
+  const rows: any[][] = [];
+
+  for (let r = 1; r < raw.length; r++) {
+    const sabor = String(raw[r][0] || "").trim();
+    if (!sabor) continue;
+    for (let c = 1; c < raw[r].length; c++) {
+      const qty = raw[r][c];
+      if (qty == null || qty === "" || qty === 0) continue;
+      rows.push([dateHeaders[c - 1], sabor, qty]);
+    }
+  }
+  return { headers: ["data", "sabor", "quantidade"], dataRows: rows };
+}
+
 /* ───────── component ───────── */
 export default function ImportarPlanilha() {
-  // Data sources
   const [sabores, setSabores] = useState<any[]>([]);
   const [clientes, setClientes] = useState<any[]>([]);
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
 
-  // Wizard state
   const [file, setFile] = useState<File | null>(null);
+  const [layoutType, setLayoutType] = useState<LayoutType>("tabular");
   const [detectedTipo, setDetectedTipo] = useState<TipoImportacao | null>(null);
   const [detectedConfidence, setDetectedConfidence] = useState<"high" | "medium" | "low">("low");
   const [confirmedTipo, setConfirmedTipo] = useState<TipoImportacao | null>(null);
-  const [rawHeaders, setRawHeaders] = useState<string[]>([]);
-  const [rawData, setRawData] = useState<any[][]>([]);
+  const [parsedHeaders, setParsedHeaders] = useState<string[]>([]);
+  const [parsedDataRows, setParsedDataRows] = useState<any[][]>([]);
 
   const [rows, setRows] = useState<ImportRow[]>([]);
   const [previewLoaded, setPreviewLoaded] = useState(false);
@@ -117,18 +142,18 @@ export default function ImportarPlanilha() {
 
   function resetAll() {
     setFile(null);
+    setLayoutType("tabular");
     setDetectedTipo(null);
     setDetectedConfidence("low");
     setConfirmedTipo(null);
-    setRawHeaders([]);
-    setRawData([]);
+    setParsedHeaders([]);
+    setParsedDataRows([]);
     setRows([]);
     setPreviewLoaded(false);
     setImportDone(false);
     setImportSummary(null);
   }
 
-  /* ── Step 1: File selection + auto-detect ── */
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
@@ -144,7 +169,6 @@ export default function ImportarPlanilha() {
     setRows([]);
     setConfirmedTipo(null);
 
-    // Read file and auto-detect
     f.arrayBuffer().then(buf => {
       const wb = XLSX.read(buf, { type: "array", cellDates: false });
       const ws = wb.Sheets[wb.SheetNames[0]];
@@ -153,24 +177,44 @@ export default function ImportarPlanilha() {
         toast({ title: "Planilha vazia", description: "A planilha não contém dados.", variant: "destructive" });
         return;
       }
-      const headers = raw[0].map(String);
-      setRawHeaders(headers);
-      setRawData(raw);
+
+      const layout = detectLayout(raw);
+      setLayoutType(layout);
+
+      let headers: string[];
+      let dataRows: any[][];
+
+      if (layout === "matrix") {
+        const unpivoted = unpivotMatrix(raw);
+        headers = unpivoted.headers;
+        dataRows = unpivoted.dataRows;
+      } else {
+        headers = raw[0].map(String);
+        dataRows = raw.slice(1);
+      }
+
+      setParsedHeaders(headers);
+      setParsedDataRows(dataRows);
+
       const detection = detectTipo(headers);
       setDetectedTipo(detection.tipo);
       setDetectedConfidence(detection.confidence);
-      // Auto-confirm if high confidence
-      if (detection.confidence === "high" && detection.tipo) {
+
+      if (layout === "matrix") {
+        // Matrix without price/client columns → production
+        setConfirmedTipo("producao");
+        setDetectedTipo("producao");
+        setDetectedConfidence("high");
+      } else if (detection.confidence === "high" && detection.tipo) {
         setConfirmedTipo(detection.tipo);
       }
     });
   }
 
-  /* ── Step 2: Build preview rows ── */
   const handlePreview = useCallback(() => {
-    if (!tipoImportacao || rawData.length < 2) return;
+    if (!tipoImportacao || parsedDataRows.length === 0) return;
 
-    const headers = rawHeaders.map(h => normalizeHeader(h));
+    const headers = parsedHeaders.map(h => normalizeText(h));
     const expected = tipoImportacao === "producao" ? ["data", "sabor", "quantidade"] : ["data", "sabor", "quantidade", "cliente"];
     const missing = expected.filter(e => !headers.includes(e));
     if (missing.length > 0) {
@@ -189,8 +233,8 @@ export default function ImportarPlanilha() {
     const seen = new Set<string>();
     const parsed: ImportRow[] = [];
 
-    for (let r = 1; r < rawData.length; r++) {
-      const row = rawData[r];
+    for (let r = 0; r < parsedDataRows.length; r++) {
+      const row = parsedDataRows[r];
       if (row.every((c: any) => c === "" || c == null)) continue;
 
       const errors: string[] = [];
@@ -233,21 +277,19 @@ export default function ImportarPlanilha() {
 
     setRows(parsed);
     setPreviewLoaded(true);
-  }, [tipoImportacao, rawHeaders, rawData, sabores, clientes]);
+  }, [tipoImportacao, parsedHeaders, parsedDataRows, sabores, clientes]);
 
-  // Auto-preview when tipo is confirmed
   useEffect(() => {
-    if (confirmedTipo && rawData.length > 1 && !previewLoaded) {
+    if (confirmedTipo && parsedDataRows.length > 0 && !previewLoaded) {
       handlePreview();
     }
-  }, [confirmedTipo, rawData, previewLoaded, handlePreview]);
+  }, [confirmedTipo, parsedDataRows, previewLoaded, handlePreview]);
 
   const validRows = rows.filter(r => r.errors.length === 0);
   const errorRows = rows.filter(r => r.errors.length > 0);
   const totalQtd = validRows.reduce((s, r) => s + r.quantidade, 0);
   const hasBlockingErrors = errorRows.length > 0;
 
-  /* ── Step 3: Import ── */
   async function handleImport() {
     if (hasBlockingErrors || !tipoImportacao) return;
     setImporting(true);
@@ -314,8 +356,7 @@ export default function ImportarPlanilha() {
     toast({ title: "Importação concluída", description: `${ok} registros importados, ${fail} erros.` });
   }
 
-  /* ───────── render ───────── */
-  const needsManualConfirmation = file && rawHeaders.length > 0 && !confirmedTipo;
+  const needsManualConfirmation = file && parsedHeaders.length > 0 && !confirmedTipo;
 
   return (
     <div>
@@ -324,7 +365,7 @@ export default function ImportarPlanilha() {
       {importDone && importSummary ? (
         <Card>
           <CardContent className="py-10 text-center space-y-4">
-            <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto" />
+            <CheckCircle2 className="h-16 w-16 text-primary mx-auto" />
             <h2 className="text-xl font-semibold">Importação Concluída</h2>
             <p className="text-muted-foreground">
               <strong>{importSummary.ok}</strong> registros importados com sucesso
@@ -335,7 +376,7 @@ export default function ImportarPlanilha() {
         </Card>
       ) : (
         <div className="space-y-6">
-          {/* Step 1: File Upload */}
+          {/* File Upload */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><FileSpreadsheet className="h-5 w-5" /> Upload do Arquivo</CardTitle>
@@ -347,19 +388,22 @@ export default function ImportarPlanilha() {
               </div>
               {file && (
                 <p className="text-sm text-muted-foreground">
-                  Arquivo selecionado: <strong>{file.name}</strong> ({(file.size / 1024).toFixed(1)} KB)
+                  Arquivo: <strong>{file.name}</strong> ({(file.size / 1024).toFixed(1)} KB)
+                  {layoutType === "matrix" && (
+                    <Badge variant="secondary" className="ml-2">Layout Matricial Detectado</Badge>
+                  )}
                 </p>
               )}
 
-              {/* Auto-detection result */}
-              {file && rawHeaders.length > 0 && detectedTipo && detectedConfidence === "high" && (
+              {/* Auto-detected with high confidence */}
+              {file && parsedHeaders.length > 0 && confirmedTipo && detectedConfidence === "high" && (
                 <Alert>
                   <CheckCircle2 className="h-4 w-4" />
                   <AlertDescription className="flex items-center gap-2">
                     Tipo identificado automaticamente:
                     <Badge variant="secondary" className="gap-1">
-                      {detectedTipo === "producao" ? <Factory className="h-3 w-3" /> : <ShoppingCart className="h-3 w-3" />}
-                      {detectedTipo === "producao" ? "Produção" : "Vendas"}
+                      {confirmedTipo === "producao" ? <Factory className="h-3 w-3" /> : <ShoppingCart className="h-3 w-3" />}
+                      {confirmedTipo === "producao" ? "Produção" : "Vendas"}
                     </Badge>
                     <Button size="sm" variant="ghost" onClick={() => { setConfirmedTipo(null); setPreviewLoaded(false); setRows([]); }}>
                       Alterar
@@ -375,8 +419,8 @@ export default function ImportarPlanilha() {
                   <AlertDescription>
                     <p className="mb-3">
                       {detectedTipo
-                        ? `O sistema sugere "${detectedTipo === "producao" ? "Produção" : "Vendas"}", mas com baixa confiança. Confirme o tipo:`
-                        : "Não foi possível identificar o tipo automaticamente. Selecione manualmente:"}
+                        ? `O sistema sugere "${detectedTipo === "producao" ? "Produção" : "Vendas"}". Confirme o tipo:`
+                        : "Não foi possível identificar o tipo automaticamente. Selecione:"}
                     </p>
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" className="gap-1" onClick={() => { setConfirmedTipo("producao"); setPreviewLoaded(false); setRows([]); }}>
@@ -393,20 +437,24 @@ export default function ImportarPlanilha() {
               {tipoImportacao && (
                 <Alert>
                   <AlertDescription>
-                    <strong>Colunas obrigatórias:</strong>{" "}
+                    <strong>Colunas esperadas:</strong>{" "}
                     {tipoImportacao === "producao"
                       ? "Data, Sabor, Quantidade (opcional: Responsável)"
                       : "Data, Sabor, Quantidade, Cliente"}
+                    {layoutType === "matrix" && (
+                      <span className="block text-xs mt-1 text-muted-foreground">
+                        Formato matricial: datas nas colunas, sabores nas linhas — convertido automaticamente.
+                      </span>
+                    )}
                   </AlertDescription>
                 </Alert>
               )}
             </CardContent>
           </Card>
 
-          {/* Step 2: Preview */}
+          {/* Preview */}
           {previewLoaded && tipoImportacao && (
             <>
-              {/* Summary Cards */}
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <Card>
                   <CardContent className="py-4 text-center">
@@ -414,18 +462,18 @@ export default function ImportarPlanilha() {
                       {tipoImportacao === "producao" ? <Factory className="h-3 w-3" /> : <ShoppingCart className="h-3 w-3" />}
                       {tipoImportacao === "producao" ? "Produção" : "Vendas"}
                     </Badge>
-                    <p className="text-xs text-muted-foreground">Tipo Identificado</p>
+                    <p className="text-xs text-muted-foreground">Tipo</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="py-4 text-center">
                     <p className="text-2xl font-bold">{rows.length}</p>
-                    <p className="text-xs text-muted-foreground">Total de registros</p>
+                    <p className="text-xs text-muted-foreground">Total registros</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="py-4 text-center">
-                    <p className="text-2xl font-bold text-green-600">{validRows.length}</p>
+                    <p className="text-2xl font-bold text-secondary">{validRows.length}</p>
                     <p className="text-xs text-muted-foreground">Válidos</p>
                   </CardContent>
                 </Card>
@@ -452,7 +500,6 @@ export default function ImportarPlanilha() {
                 </Alert>
               )}
 
-              {/* Data Table */}
               <Card>
                 <CardHeader><CardTitle>Pré-visualização dos Dados</CardTitle></CardHeader>
                 <CardContent>
@@ -463,10 +510,10 @@ export default function ImportarPlanilha() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Linha</TableHead>
+                            <TableHead>#</TableHead>
                             <TableHead>Data</TableHead>
                             <TableHead>Sabor</TableHead>
-                            <TableHead>Quantidade</TableHead>
+                            <TableHead>Qtd</TableHead>
                             {tipoImportacao === "producao" && <TableHead>Responsável</TableHead>}
                             {tipoImportacao === "vendas" && <TableHead>Cliente</TableHead>}
                             <TableHead>Status</TableHead>
@@ -497,7 +544,7 @@ export default function ImportarPlanilha() {
                                     ))}
                                   </div>
                                 ) : (
-                                  <Badge variant="outline" className="text-green-600 border-green-600">
+                                  <Badge variant="outline" className="text-secondary border-secondary">
                                     <CheckCircle2 className="h-3 w-3 mr-1" />OK
                                   </Badge>
                                 )}
@@ -511,7 +558,6 @@ export default function ImportarPlanilha() {
                 </CardContent>
               </Card>
 
-              {/* Confirm Import */}
               <div className="flex justify-end gap-3">
                 <Button variant="outline" onClick={resetAll}>Cancelar</Button>
                 <Button onClick={handleImport} disabled={hasBlockingErrors || importing || validRows.length === 0}>
