@@ -103,7 +103,11 @@ export default function ImportarPlanilha() {
     if (!tipoImportacao || parsedDataRows.length === 0) return;
     const parsed = parseRows(tipoImportacao, parsedHeaders, parsedDataRows, sabores, clientes);
     if (parsed.length === 0) {
-      toast({ title: "Colunas obrigatórias ausentes", description: "Verifique: Data, Sabor, Quantidade", variant: "destructive" });
+      toast({
+        title: "Colunas obrigatórias ausentes",
+        description: `Verifique se a planilha contém colunas como: Data (data, dia, date), Sabor (sabor, produto, item), Quantidade (qtd, qty, unidades). Colunas encontradas: ${parsedHeaders.slice(0, 6).join(", ")}`,
+        variant: "destructive",
+      });
       return;
     }
     setRows(parsed); setPreviewLoaded(true);
