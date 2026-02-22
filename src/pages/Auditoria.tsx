@@ -3,121 +3,170 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Undo2, Loader2 } from "lucide-react";
-import type { TipoImportacao } from "@/lib/spreadsheet-helpers";
+import { Undo2, Loader2, AlertTriangle } from "lucide-react";
 
 export default function Auditoria() {
   const [logs, setLogs] = useState<any[]>([]);
-  const [lastImport, setLastImport] = useState<any | null>(null);
-  const [undoing, setUndoing] = useState(false);
+  const [undoingId, setUndoingId] = useState<string | null>(null);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
 
-  useEffect(() => { loadData(); loadLastImport(); }, []);
+  useEffect(() => { loadData(); }, []);
 
   async function loadData() {
     const { data } = await (supabase as any).from("auditoria").select("*").order("created_at", { ascending: false }).limit(100);
     setLogs(data || []);
   }
 
-  async function loadLastImport() {
-    const { data } = await (supabase as any).from("auditoria")
-      .select("id, descricao, created_at, modulo")
-      .eq("acao", "importar_planilha")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    setLastImport(data || null);
-  }
-
-  async function handleUndoLastImport() {
-    if (!lastImport) return;
-    setUndoing(true);
+  async function handleUndoImport(log: any) {
+    setUndoingId(log.id);
     try {
-      const rollbackMatch = lastImport.descricao?.match(/\|\|ROLLBACK:(.+)$/);
-      if (!rollbackMatch) {
-        toast({ title: "Erro", description: "Dados de rollback não encontrados.", variant: "destructive" });
+      // Strategy 1: Has rollback data embedded
+      const rollbackMatch = log.descricao?.match(/\|\|ROLLBACK:(.+)$/);
+      if (rollbackMatch) {
+        const { producaoIds = [], vendaIds = [], stockChanges = [] } = JSON.parse(rollbackMatch[1]);
+        await executeRollback(log.modulo, producaoIds, vendaIds, stockChanges, log.id);
         return;
       }
-      const { producaoIds = [], vendaIds = [], stockChanges = [] } = JSON.parse(rollbackMatch[1]);
-      const tipo = lastImport.modulo as TipoImportacao;
 
-      if (tipo === "producao" && producaoIds.length > 0) {
-        await (supabase as any).from("producao_funcionarios").delete().in("producao_id", producaoIds);
-        await (supabase as any).from("movimentacoes_estoque").delete().in("referencia_id", producaoIds);
-        await (supabase as any).from("producoes").delete().in("id", producaoIds);
-      }
-      if (tipo === "vendas" && vendaIds.length > 0) {
-        await (supabase as any).from("venda_itens").delete().in("venda_id", vendaIds);
-        await (supabase as any).from("venda_parcelas").delete().in("venda_id", vendaIds);
-        await (supabase as any).from("vendas").delete().in("id", vendaIds);
-      }
+      // Strategy 2: Find records by timestamp (for old imports without rollback data)
+      const importTime = log.created_at;
+      const tipo = log.modulo;
 
-      const saborTotals = new Map<string, number>();
-      for (const sc of stockChanges) {
-        saborTotals.set(sc.saborId, (saborTotals.get(sc.saborId) || 0) + sc.quantidade);
-      }
-      for (const [saborId, qtd] of saborTotals) {
-        const { data: estoque } = await (supabase as any)
-          .from("estoque_gelos").select("quantidade").eq("sabor_id", saborId).maybeSingle();
-        if (estoque) {
-          await (supabase as any).from("estoque_gelos")
-            .update({ quantidade: Math.max(0, estoque.quantidade - qtd) }).eq("sabor_id", saborId);
+      if (tipo === "producao") {
+        // Find producoes created around the import time with "Importado via planilha" in observacoes
+        const { data: prods } = await (supabase as any).from("producoes")
+          .select("id, sabor_id, quantidade_total")
+          .ilike("observacoes", "%Importado via planilha%")
+          .gte("created_at", new Date(new Date(importTime).getTime() - 60000).toISOString())
+          .lte("created_at", new Date(new Date(importTime).getTime() + 300000).toISOString());
+
+        if (!prods || prods.length === 0) {
+          toast({ title: "Nenhum registro encontrado", description: "Não foi possível encontrar os registros desta importação.", variant: "destructive" });
+          return;
         }
-        await (supabase as any).from("movimentacoes_estoque").insert({
-          tipo_item: "gelo_pronto", item_id: saborId, tipo_movimentacao: "saida",
-          quantidade: qtd, operador: "desfazer importação", referencia: "rollback_importacao",
-        });
+
+        const producaoIds = prods.map((p: any) => p.id);
+        const stockChanges = prods.map((p: any) => ({ saborId: p.sabor_id, quantidade: p.quantidade_total }));
+        await executeRollback("producao", producaoIds, [], stockChanges, log.id);
+      } else {
+        // Find vendas created around the import time with "Importado via planilha" in observacoes
+        const { data: vendas } = await (supabase as any).from("vendas")
+          .select("id")
+          .ilike("observacoes", "%Importado via planilha%")
+          .gte("created_at", new Date(new Date(importTime).getTime() - 60000).toISOString())
+          .lte("created_at", new Date(new Date(importTime).getTime() + 300000).toISOString());
+
+        if (!vendas || vendas.length === 0) {
+          toast({ title: "Nenhum registro encontrado", description: "Não foi possível encontrar as vendas desta importação.", variant: "destructive" });
+          return;
+        }
+
+        const vendaIds = vendas.map((v: any) => v.id);
+
+        // Get items to reverse stock
+        const { data: itens } = await (supabase as any).from("venda_itens")
+          .select("sabor_id, quantidade")
+          .in("venda_id", vendaIds);
+
+        const stockChanges = (itens || []).map((i: any) => ({ saborId: i.sabor_id, quantidade: i.quantidade }));
+        await executeRollback("vendas", [], vendaIds, stockChanges, log.id);
       }
-
-      await (supabase as any).from("auditoria").delete().eq("id", lastImport.id);
-      await (supabase as any).from("auditoria").insert({
-        usuario_nome: "importação planilha",
-        modulo: tipo === "producao" ? "producao" : "vendas",
-        acao: "desfazer_importacao",
-        descricao: `Importação desfeita: ${producaoIds.length + vendaIds.length} registros removidos, estoque revertido.`,
-      });
-
-      toast({ title: "Importação desfeita!", description: "Registros removidos e estoque revertido." });
-      setLastImport(null);
-      loadData();
-      loadLastImport();
     } catch (e: any) {
       toast({ title: "Erro ao desfazer", description: e.message, variant: "destructive" });
     } finally {
-      setUndoing(false);
+      setUndoingId(null);
+      setConfirmId(null);
     }
   }
 
-  const hasRollback = lastImport?.descricao?.includes("||ROLLBACK:");
+  async function executeRollback(
+    tipo: string,
+    producaoIds: string[],
+    vendaIds: string[],
+    stockChanges: { saborId: string; quantidade: number }[],
+    auditId: string,
+  ) {
+    if (tipo === "producao" && producaoIds.length > 0) {
+      await (supabase as any).from("producao_funcionarios").delete().in("producao_id", producaoIds);
+      await (supabase as any).from("movimentacoes_estoque").delete().in("referencia_id", producaoIds);
+      await (supabase as any).from("producoes").delete().in("id", producaoIds);
+    }
+    if (tipo === "vendas" && vendaIds.length > 0) {
+      await (supabase as any).from("venda_itens").delete().in("venda_id", vendaIds);
+      await (supabase as any).from("venda_parcelas").delete().in("venda_id", vendaIds);
+      await (supabase as any).from("vendas").delete().in("id", vendaIds);
+    }
+
+    // Reverse stock
+    const saborTotals = new Map<string, number>();
+    for (const sc of stockChanges) {
+      saborTotals.set(sc.saborId, (saborTotals.get(sc.saborId) || 0) + sc.quantidade);
+    }
+    for (const [saborId, qtd] of saborTotals) {
+      const { data: estoque } = await (supabase as any)
+        .from("estoque_gelos").select("quantidade").eq("sabor_id", saborId).maybeSingle();
+      if (estoque) {
+        await (supabase as any).from("estoque_gelos")
+          .update({ quantidade: Math.max(0, estoque.quantidade - qtd) }).eq("sabor_id", saborId);
+      }
+      await (supabase as any).from("movimentacoes_estoque").insert({
+        tipo_item: "gelo_pronto", item_id: saborId, tipo_movimentacao: "saida",
+        quantidade: qtd, operador: "desfazer importação", referencia: "rollback_importacao",
+      });
+    }
+
+    // Update audit
+    await (supabase as any).from("auditoria").delete().eq("id", auditId);
+    await (supabase as any).from("auditoria").insert({
+      usuario_nome: "importação planilha",
+      modulo: tipo,
+      acao: "desfazer_importacao",
+      descricao: `Importação desfeita: ${producaoIds.length + vendaIds.length} registros removidos, estoque revertido.`,
+    });
+
+    toast({ title: "Importação desfeita!", description: "Registros removidos e estoque revertido." });
+    loadData();
+  }
+
+  function cleanDescription(desc: string | null) {
+    if (!desc) return "-";
+    return desc.includes("||ROLLBACK:") ? desc.split("||ROLLBACK:")[0].trim() : desc;
+  }
 
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Auditoria</h1>
 
-      {hasRollback && (
-        <Card className="mb-6 border-destructive/30 bg-destructive/5">
-          <CardContent className="py-4 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <Undo2 className="h-5 w-5 text-destructive shrink-0" />
-              <div>
-                <p className="text-sm font-medium">Última importação de planilha</p>
-                <p className="text-xs text-muted-foreground">
-                  {lastImport.descricao.split("||ROLLBACK:")[0].trim()}
-                  {" — "}
-                  {new Date(lastImport.created_at).toLocaleString("pt-BR")}
-                </p>
-              </div>
+      {confirmId && (
+        <Alert className="mb-4 border-destructive/30 bg-destructive/5">
+          <AlertTriangle className="h-4 w-4 text-destructive" />
+          <AlertDescription className="flex items-center justify-between">
+            <span className="text-sm">
+              Tem certeza que deseja desfazer esta importação? Isso removerá todos os registros e reverterá o estoque.
+            </span>
+            <div className="flex gap-2 ml-4 shrink-0">
+              <Button size="sm" variant="outline" onClick={() => setConfirmId(null)}>Cancelar</Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                disabled={undoingId === confirmId}
+                onClick={() => {
+                  const log = logs.find(l => l.id === confirmId);
+                  if (log) handleUndoImport(log);
+                }}
+              >
+                {undoingId === confirmId ? (
+                  <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Desfazendo...</>
+                ) : (
+                  "Confirmar"
+                )}
+              </Button>
             </div>
-            <Button onClick={handleUndoLastImport} variant="destructive" size="sm" disabled={undoing}>
-              {undoing ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Desfazendo...</>
-              ) : (
-                <><Undo2 className="h-4 w-4 mr-2" /> Desfazer Importação</>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
+          </AlertDescription>
+        </Alert>
       )}
 
       <Card>
@@ -131,6 +180,7 @@ export default function Auditoria() {
                 <TableHead>Ação</TableHead>
                 <TableHead>Descrição</TableHead>
                 <TableHead>Dispositivo</TableHead>
+                <TableHead></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -140,14 +190,29 @@ export default function Auditoria() {
                   <TableCell>{l.usuario_nome}</TableCell>
                   <TableCell><Badge variant="outline" className="capitalize">{l.modulo}</Badge></TableCell>
                   <TableCell className="capitalize">{l.acao}</TableCell>
-                  <TableCell className="max-w-xs truncate">
-                    {l.descricao?.includes("||ROLLBACK:") ? l.descricao.split("||ROLLBACK:")[0].trim() : l.descricao}
-                  </TableCell>
+                  <TableCell className="max-w-xs truncate">{cleanDescription(l.descricao)}</TableCell>
                   <TableCell>{l.dispositivo}</TableCell>
+                  <TableCell>
+                    {l.acao === "importar_planilha" && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        disabled={undoingId === l.id}
+                        onClick={() => setConfirmId(l.id)}
+                      >
+                        {undoingId === l.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <><Undo2 className="h-4 w-4 mr-1" /> Desfazer</>
+                        )}
+                      </Button>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
               {logs.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Nenhum registro.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Nenhum registro.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
