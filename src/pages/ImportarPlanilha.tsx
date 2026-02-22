@@ -458,6 +458,7 @@ function SheetPreview({ sheet, importing, onImport, onCancel, fileName }: {
               <TableHeader>
                 <TableRow>
                   <TableHead>#</TableHead>
+                  {rows.some(r => r.semana) && <TableHead className="bg-accent/20 font-semibold">📆 Semana</TableHead>}
                   <TableHead className="bg-primary/10 font-semibold">📅 Data</TableHead>
                   <TableHead>Sabor</TableHead>
                   <TableHead>Qtd</TableHead>
@@ -467,6 +468,7 @@ function SheetPreview({ sheet, importing, onImport, onCancel, fileName }: {
                   {tipoImportacao === "producao" && <TableHead>Responsável</TableHead>}
                   {rows.some(r => r.statusPagamento) && <TableHead>Pagamento</TableHead>}
                   {rows.some(r => r.formaPagamento) && <TableHead>F. Pagto</TableHead>}
+                  {rows.some(r => r.observacoes) && <TableHead>Obs</TableHead>}
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -474,6 +476,7 @@ function SheetPreview({ sheet, importing, onImport, onCancel, fileName }: {
                 {rows.map((row) => (
                   <TableRow key={row.rowNum} className={row.errors.length > 0 ? "bg-destructive/5" : ""}>
                     <TableCell>{row.rowNum}</TableCell>
+                    {rows.some(r => r.semana) && <TableCell className="bg-accent/10 font-medium">{row.semana || "-"}</TableCell>}
                     <TableCell className="bg-primary/5 font-medium whitespace-nowrap">{row.data}</TableCell>
                     <TableCell>{row.sabor}</TableCell>
                     <TableCell>{row.quantidade}</TableCell>
@@ -493,6 +496,9 @@ function SheetPreview({ sheet, importing, onImport, onCancel, fileName }: {
                     )}
                     {rows.some(r => r.formaPagamento) && (
                       <TableCell>{row.formaPagamento || "-"}</TableCell>
+                    )}
+                    {rows.some(r => r.observacoes) && (
+                      <TableCell className="max-w-[200px] truncate text-xs" title={row.observacoes || ""}>{row.observacoes || "-"}</TableCell>
                     )}
                     <TableCell>
                       {row.errors.length > 0 ? (
