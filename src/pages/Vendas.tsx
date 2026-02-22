@@ -37,6 +37,8 @@ export default function Vendas() {
   const [observacoes, setObservacoes] = useState("");
   const [itens, setItens] = useState<{ sabor_id: string; quantidade: number }[]>([]);
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 20;
 
   // Edit state
   const [editVenda, setEditVenda] = useState<any>(null);
@@ -279,7 +281,7 @@ export default function Vendas() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {vendas.map((v) => (
+              {vendas.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((v) => (
                 <TableRow key={v.id}>
                   <TableCell>{new Date(v.created_at).toLocaleDateString("pt-BR")}</TableCell>
                   <TableCell>{v.clientes?.nome}</TableCell>
@@ -302,6 +304,17 @@ export default function Vendas() {
               )}
             </TableBody>
           </Table>
+          {vendas.length > PAGE_SIZE && (
+            <div className="flex items-center justify-between mt-4">
+              <span className="text-sm text-muted-foreground">
+                {page * PAGE_SIZE + 1}-{Math.min((page + 1) * PAGE_SIZE, vendas.length)} de {vendas.length}
+              </span>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage(p => p - 1)}>Anterior</Button>
+                <Button size="sm" variant="outline" disabled={(page + 1) * PAGE_SIZE >= vendas.length} onClick={() => setPage(p => p + 1)}>Próxima</Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
