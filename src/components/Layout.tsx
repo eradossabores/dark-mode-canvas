@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Package, Users, ShoppingCart, Factory,
-  Warehouse, ClipboardList, UserCog, ChevronLeft, ChevronRight, BarChart3, FileUp, Menu, X
+  Warehouse, ClipboardList, UserCog, ChevronLeft, ChevronRight, BarChart3, FileUp, Menu, X, DollarSign
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.png";
@@ -11,6 +11,7 @@ const menuItems = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
   { path: "/producao", label: "Produção", icon: Factory },
   { path: "/vendas", label: "Vendas", icon: ShoppingCart },
+  { path: "/a-receber", label: "A Receber", icon: DollarSign },
   { path: "/estoque", label: "Estoque", icon: Warehouse },
   { path: "/clientes", label: "Clientes", icon: Users },
   { path: "/funcionarios", label: "Funcionários", icon: UserCog },
