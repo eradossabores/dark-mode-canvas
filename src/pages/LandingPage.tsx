@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   IceCream, Droplets, Sparkles, Leaf, Star, Send, MapPin, Phone, Mail,
-  ArrowRight, Instagram, Facebook, ChevronRight, ThermometerSnowflake, Heart
+  ArrowRight, Instagram, Facebook, ChevronRight, ThermometerSnowflake, Heart,
+  Factory, Users, TrendingUp, Truck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +18,6 @@ import geloMaracuja from "@/assets/gelo-maracuja.png";
 import geloMacaVerde from "@/assets/gelo-maca-verde.png";
 import geloProducao from "@/assets/gelo-producao.png";
 import geloBobMarleyDetalhe from "@/assets/gelo-bob-marley-detalhe.png";
-import sidImg from "@/assets/sid.png";
 
 const sabores = [
   {
@@ -65,6 +65,29 @@ const beneficios = [
   },
 ];
 
+const compromissos = [
+  {
+    icon: Factory,
+    titulo: "Produção Local",
+    desc: "Nossa fábrica em Boa Vista garante frescor e qualidade direto da produção para sua mesa.",
+  },
+  {
+    icon: Users,
+    titulo: "Geração de Empregos",
+    desc: "Geramos empregos e apoiamos o desenvolvimento econômico de Roraima.",
+  },
+  {
+    icon: TrendingUp,
+    titulo: "Economia Regional",
+    desc: "Fortalecemos a cadeia produtiva local, valorizando ingredientes e fornecedores regionais.",
+  },
+  {
+    icon: Truck,
+    titulo: "Distribuição Regional",
+    desc: "Distribuímos para toda Boa Vista e regiões próximas, levando sabor a cada canto.",
+  },
+];
+
 const depoimentos = [
   {
     nome: "Ana Paula S.",
@@ -86,17 +109,19 @@ const depoimentos = [
 export default function LandingPage() {
   const [formNome, setFormNome] = useState("");
   const [formEmail, setFormEmail] = useState("");
+  const [formTelefone, setFormTelefone] = useState("");
   const [formMsg, setFormMsg] = useState("");
 
   function handleSubmitContato(e: React.FormEvent) {
     e.preventDefault();
     if (!formNome.trim() || !formEmail.trim() || !formMsg.trim()) {
-      toast({ title: "Preencha todos os campos", variant: "destructive" });
+      toast({ title: "Preencha todos os campos obrigatórios", variant: "destructive" });
       return;
     }
-    toast({ title: "Mensagem enviada!", description: "Entraremos em contato em breve." });
+    toast({ title: "Pedido enviado!", description: "Entraremos em contato em breve para confirmar." });
     setFormNome("");
     setFormEmail("");
+    setFormTelefone("");
     setFormMsg("");
   }
 
@@ -108,12 +133,16 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
             <img src={logo} alt="A Era dos Sabores" className="h-10 w-10 rounded-lg shadow-sm" />
-            <span className="text-lg font-bold hidden sm:inline">A Era dos Sabores</span>
+            <div className="hidden sm:block">
+              <span className="text-lg font-bold block leading-tight">A Era dos Sabores</span>
+              <span className="text-xs text-muted-foreground">Boa Vista • Roraima</span>
+            </div>
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
             <a href="#sobre" className="hover:text-foreground transition-colors">Sobre</a>
             <a href="#sabores" className="hover:text-foreground transition-colors">Sabores</a>
             <a href="#beneficios" className="hover:text-foreground transition-colors">Benefícios</a>
+            <a href="#compromisso" className="hover:text-foreground transition-colors">Compromisso Local</a>
             <a href="#contato" className="hover:text-foreground transition-colors">Contato</a>
           </nav>
           <Link to="/painel">
@@ -125,24 +154,26 @@ export default function LandingPage() {
       </header>
 
       {/* ─── HERO ─── */}
-      <section className="relative min-h-[90vh] flex items-center">
-        {/* Background with real product photo */}
+      <section className="relative min-h-[92vh] flex items-center">
         <div className="absolute inset-0 overflow-hidden">
           <img src={geloMelanciaMaca} alt="Gelos Saborizados" className="w-full h-full object-cover object-top" />
-          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/30" />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/20" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/30" />
         </div>
         <div className="relative max-w-7xl mx-auto px-6 py-24 md:py-36 w-full">
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/15 text-primary text-sm font-semibold mb-6 backdrop-blur-sm border border-primary/20">
-              <IceCream className="h-4 w-4" />
-              Gelos Saborizados Artesanais
+              <MapPin className="h-4 w-4" />
+              Fábrica em Boa Vista, Roraima
             </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-              Transformando sua experiência com{" "}
-              <span className="text-primary">gelos saborizados!</span>
+              A Era dos Sabores:{" "}
+              <span className="text-primary">Fábrica de Gelo Saborizado</span> em Boa Vista!
             </h1>
-            <p className="mt-6 text-lg text-muted-foreground leading-relaxed max-w-xl">
+            <p className="mt-4 text-lg md:text-xl text-muted-foreground font-medium">
+              Gelos saborizados de qualidade, diretamente de Boa Vista para o Brasil.
+            </p>
+            <p className="mt-4 text-muted-foreground leading-relaxed max-w-xl">
               Na Era dos Sabores, trazemos gelos saborizados inovadores para dar um toque especial às suas bebidas. Descubra nossos sabores exclusivos e surpreenda-se!
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-4">
@@ -153,7 +184,7 @@ export default function LandingPage() {
               </a>
               <a href="#contato">
                 <Button size="lg" variant="outline" className="gap-2 text-base px-8 backdrop-blur-sm">
-                  Entre em Contato
+                  Faça Seu Pedido
                 </Button>
               </a>
             </div>
@@ -161,31 +192,51 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── SOBRE + GALERIA ─── */}
+      {/* ─── SOBRE / APRESENTAÇÃO ─── */}
       <section id="sobre" className="py-20 md:py-28 bg-gradient-to-b from-secondary/10 to-background">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/15 text-accent-foreground text-xs font-semibold mb-4 border border-accent/20">
+                <Factory className="h-3.5 w-3.5" />
+                Nossa Fábrica
+              </div>
               <h2 className="text-3xl md:text-4xl font-bold mb-6">
-                Sobre a <span className="text-primary">Era dos Sabores</span>
+                Conheça a <span className="text-primary">Era dos Sabores</span>
               </h2>
               <p className="text-lg text-muted-foreground leading-relaxed mb-6">
-                Somos uma empresa apaixonada por transformar momentos simples em experiências saborosas.
-                Nossos gelos saborizados são produzidos artesanalmente com ingredientes frescos e naturais,
-                pensados para adicionar cor, sabor e diversão a qualquer bebida.
+                Somos a <strong>"A Era dos Sabores"</strong>, uma fábrica localizada em <strong>Boa Vista, Roraima</strong>, 
+                especializada em criar gelos saborizados que transformam qualquer bebida. Nosso compromisso 
+                é com a qualidade, inovação e frescor.
               </p>
-              <p className="text-muted-foreground leading-relaxed">
-                Do happy hour em família ao evento corporativo, nossos produtos fazem a diferença.
-                Cada gelo é produzido com cuidado e dedicação, garantindo qualidade e sabor em cada cubo.
+              <p className="text-muted-foreground leading-relaxed mb-6">
+                Cada gelo é produzido artesanalmente em nossa fábrica com ingredientes frescos e de alta qualidade, 
+                passando por rigoroso controle para garantir o melhor sabor e segurança alimentar.
               </p>
+              <div className="flex items-center gap-6 text-sm">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-primary">100%</div>
+                  <div className="text-muted-foreground">Artesanal</div>
+                </div>
+                <div className="w-px h-10 bg-border" />
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-primary">10+</div>
+                  <div className="text-muted-foreground">Sabores</div>
+                </div>
+                <div className="w-px h-10 bg-border" />
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-primary">BV/RR</div>
+                  <div className="text-muted-foreground">Sede</div>
+                </div>
+              </div>
             </div>
-            {/* Real production photos grid */}
+            {/* Galeria de fotos reais */}
             <div className="grid grid-cols-2 gap-4">
               <div className="rounded-2xl overflow-hidden shadow-lg border border-border row-span-2">
                 <img src={geloBobMarleyDetalhe} alt="Gelo Bob Marley - detalhes dos sabores" className="w-full h-full object-cover" loading="lazy" />
               </div>
               <div className="rounded-2xl overflow-hidden shadow-lg border border-border">
-                <img src={geloProducao} alt="Produção artesanal" className="w-full h-full object-cover" loading="lazy" />
+                <img src={geloProducao} alt="Produção artesanal na fábrica" className="w-full h-full object-cover" loading="lazy" />
               </div>
               <div className="rounded-2xl overflow-hidden shadow-lg border border-border">
                 <img src={geloMaracujaCoco} alt="Gelo de maracujá e coco" className="w-full h-full object-cover" loading="lazy" />
@@ -203,17 +254,18 @@ export default function LandingPage() {
         <div className="relative max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="text-white">
-              <span className="text-sm font-bold uppercase tracking-widest opacity-80">Novidade!!</span>
+              <span className="text-sm font-bold uppercase tracking-widest opacity-80">🔥 Novidade!!</span>
               <h2 className="text-4xl md:text-5xl font-bold mt-2 mb-4">Gelo Bob Marley</h2>
               <p className="text-xl opacity-90 mb-2">220ml de pura explosão de sabores</p>
-              <ul className="space-y-2 mt-6 text-lg">
+              <p className="opacity-75 mb-6">Feito com ingredientes frescos em nossa fábrica de Boa Vista.</p>
+              <ul className="space-y-3 text-lg">
                 <li className="flex items-center gap-3">🍉 <span>Melancia — frescor tropical</span></li>
                 <li className="flex items-center gap-3">🥭 <span>Maracujá — acidez equilibrada</span></li>
                 <li className="flex items-center gap-3">🍏 <span>Maçã Verde — toque refrescante</span></li>
               </ul>
               <a href="#contato">
                 <Button size="lg" variant="secondary" className="mt-8 gap-2 text-base px-10 shadow-lg">
-                  Faça Seu Pedido <ArrowRight className="h-5 w-5" />
+                  Compre Agora <ArrowRight className="h-5 w-5" />
                 </Button>
               </a>
             </div>
@@ -234,8 +286,9 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Nossos Sabores</h2>
-            <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-              Conheça nossa linha de gelos saborizados feitos com frutas selecionadas e ingredientes premium.
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Feitos com ingredientes frescos e de alta qualidade em nossa fábrica de Boa Vista. 
+              Cada sabor é pensado para surpreender.
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -264,6 +317,13 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
+          <div className="text-center mt-12">
+            <a href="#contato">
+              <Button size="lg" className="gap-2 px-10">
+                Veja Todos os Sabores <ArrowRight className="h-5 w-5" />
+              </Button>
+            </a>
+          </div>
         </div>
       </section>
 
@@ -273,7 +333,7 @@ export default function LandingPage() {
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Por que escolher nossos gelos?</h2>
             <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-              Qualidade, sabor e praticidade em cada cubo.
+              Qualidade, sabor e praticidade em cada cubo de gelo saborizado.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -290,8 +350,36 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ─── COMPROMISSO LOCAL ─── */}
+      <section id="compromisso" className="py-20 md:py-28">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary text-secondary-foreground text-xs font-semibold mb-4">
+              <MapPin className="h-3.5 w-3.5" />
+              Boa Vista, Roraima
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Nosso Compromisso Local</h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Com sede em Boa Vista, nossa fábrica gera empregos e apoia a economia de Roraima. 
+              Distribuímos nossos gelos saborizados para toda Boa Vista e além, levando um toque de sabor em cada cubo de gelo.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-12">
+            {compromissos.map((c) => (
+              <div key={c.titulo} className="p-6 rounded-2xl bg-card border border-border shadow-sm text-center">
+                <div className="w-14 h-14 rounded-xl bg-secondary flex items-center justify-center mx-auto mb-4">
+                  <c.icon className="h-7 w-7 text-secondary-foreground" />
+                </div>
+                <h3 className="font-bold mb-2">{c.titulo}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{c.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ─── DEPOIMENTOS ─── */}
-      <section className="py-20 md:py-28">
+      <section className="py-20 md:py-28 bg-gradient-to-b from-primary/5 to-background">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">O que nossos clientes dizem</h2>
@@ -316,56 +404,62 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── CONTATO ─── */}
+      {/* ─── CONTATO / PEDIDO ─── */}
       <section id="contato" className="py-20 md:py-28 bg-gradient-to-b from-secondary/10 to-background">
         <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Faça Seu Pedido</h2>
+            <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+              Entre em contato para fazer seu pedido diretamente da fábrica! Compre nossos gelos saborizados fresquinhos!
+            </p>
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-            <div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Entre em Contato</h2>
-              <p className="text-muted-foreground mb-8">
-                Faça seu pedido ou tire suas dúvidas. Responderemos o mais rápido possível!
-              </p>
-              <form onSubmit={handleSubmitContato} className="space-y-5">
-                <Input placeholder="Seu nome" value={formNome} onChange={(e) => setFormNome(e.target.value)} className="h-12" maxLength={100} />
-                <Input type="email" placeholder="Seu e-mail" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} className="h-12" maxLength={255} />
-                <Textarea placeholder="Sua mensagem ou pedido..." value={formMsg} onChange={(e) => setFormMsg(e.target.value)} className="min-h-[120px]" maxLength={1000} />
-                <Button type="submit" size="lg" className="gap-2 w-full sm:w-auto px-10">
-                  Enviar Mensagem <Send className="h-5 w-5" />
-                </Button>
-              </form>
-            </div>
-            <div className="flex flex-col justify-center space-y-8">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  <Phone className="h-5 w-5 text-primary" />
+            <form onSubmit={handleSubmitContato} className="space-y-5 bg-card p-8 rounded-2xl border border-border shadow-sm">
+              <h3 className="text-xl font-bold mb-2">Formulário de Pedido</h3>
+              <Input placeholder="Seu nome *" value={formNome} onChange={(e) => setFormNome(e.target.value)} className="h-12" maxLength={100} />
+              <Input type="email" placeholder="Seu e-mail *" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} className="h-12" maxLength={255} />
+              <Input type="tel" placeholder="Seu telefone" value={formTelefone} onChange={(e) => setFormTelefone(e.target.value)} className="h-12" maxLength={20} />
+              <Textarea placeholder="Descreva seu pedido (sabores, quantidade, etc.) *" value={formMsg} onChange={(e) => setFormMsg(e.target.value)} className="min-h-[120px]" maxLength={1000} />
+              <Button type="submit" size="lg" className="gap-2 w-full px-10">
+                Enviar Pedido <Send className="h-5 w-5" />
+              </Button>
+            </form>
+
+            <div className="flex flex-col justify-between space-y-6">
+              <div className="space-y-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <Phone className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-1">Telefone / WhatsApp</h4>
+                    <p className="text-muted-foreground">(95) 99999-9999</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-semibold mb-1">Telefone</h4>
-                  <p className="text-muted-foreground">(11) 99999-9999</p>
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <Mail className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-1">E-mail</h4>
+                    <p className="text-muted-foreground">contato@aeradossabores.com.br</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <MapPin className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-1">Endereço da Fábrica</h4>
+                    <p className="text-muted-foreground">A Era dos Sabores — Boa Vista, Roraima, Brasil</p>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  <Mail className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-1">E-mail</h4>
-                  <p className="text-muted-foreground">contato@aeradossabores.com.br</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  <MapPin className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-1">Localização</h4>
-                  <p className="text-muted-foreground">São Paulo, SP - Brasil</p>
-                </div>
-              </div>
-              <div className="rounded-2xl overflow-hidden border border-border h-48 bg-muted">
+              {/* Mapa de Boa Vista */}
+              <div className="rounded-2xl overflow-hidden border border-border h-56 bg-muted">
                 <iframe
-                  title="Localização"
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d467692.0488684!2d-46.87529!3d-23.6821!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce448183a461d1%3A0x9ba94b08ff335bae!2sS%C3%A3o%20Paulo%2C%20SP!5e0!3m2!1spt-BR!2sbr!4v1"
+                  title="Localização - Boa Vista, Roraima"
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d127133.2!2d-60.7!3d2.82!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8d931534f8770b5f%3A0x4c3e7741fb4ef76!2sBoa%20Vista%2C%20RR!5e0!3m2!1spt-BR!2sbr!4v1"
                   className="w-full h-full border-0"
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
@@ -378,15 +472,14 @@ export default function LandingPage() {
 
       {/* ─── CTA FINAL ─── */}
       <section className="py-16 bg-primary text-primary-foreground relative overflow-hidden">
-        <img src={sidImg} alt="" aria-hidden className="absolute right-8 top-1/2 -translate-y-1/2 w-32 h-32 object-contain opacity-15 pointer-events-none select-none hidden lg:block" />
         <div className="relative max-w-4xl mx-auto px-6 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Pronto para experimentar?</h2>
           <p className="text-primary-foreground/80 text-lg mb-8 max-w-xl mx-auto">
-            Adicione sabor e cor às suas bebidas. Faça seu pedido agora e receba em casa!
+            Compre agora nossos gelos saborizados fresquinhos, direto da fábrica em Boa Vista!
           </p>
           <a href="#contato">
             <Button size="lg" variant="secondary" className="gap-2 text-base px-10 shadow-lg">
-              Faça Seu Pedido <ArrowRight className="h-5 w-5" />
+              Faça Seu Pedido Agora <ArrowRight className="h-5 w-5" />
             </Button>
           </a>
         </div>
@@ -399,10 +492,14 @@ export default function LandingPage() {
             <div>
               <div className="flex items-center gap-3 mb-4">
                 <img src={logo} alt="A Era dos Sabores" className="h-10 w-10 rounded-lg" />
-                <span className="font-bold text-lg">A Era dos Sabores</span>
+                <div>
+                  <span className="font-bold text-lg block leading-tight">A Era dos Sabores</span>
+                  <span className="text-xs text-muted-foreground">Boa Vista • Roraima</span>
+                </div>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Gelos saborizados artesanais feitos com ingredientes frescos e naturais para transformar suas bebidas.
+                Fábrica de gelos saborizados artesanais em Boa Vista, Roraima. Ingredientes frescos 
+                e naturais para transformar suas bebidas.
               </p>
             </div>
             <div>
@@ -411,7 +508,8 @@ export default function LandingPage() {
                 <li><a href="#sobre" className="hover:text-foreground transition-colors">Sobre Nós</a></li>
                 <li><a href="#sabores" className="hover:text-foreground transition-colors">Nossos Sabores</a></li>
                 <li><a href="#beneficios" className="hover:text-foreground transition-colors">Benefícios</a></li>
-                <li><a href="#contato" className="hover:text-foreground transition-colors">Contato</a></li>
+                <li><a href="#compromisso" className="hover:text-foreground transition-colors">Compromisso Local</a></li>
+                <li><a href="#contato" className="hover:text-foreground transition-colors">Contato / Pedido</a></li>
               </ul>
             </div>
             <div>
@@ -424,14 +522,15 @@ export default function LandingPage() {
                   <Facebook className="h-5 w-5 text-primary" />
                 </a>
               </div>
-              <div className="mt-4 text-sm text-muted-foreground">
-                <p>contato@aeradossabores.com.br</p>
-                <p>(11) 99999-9999</p>
+              <div className="mt-4 text-sm text-muted-foreground space-y-1">
+                <p>📧 contato@aeradossabores.com.br</p>
+                <p>📞 (95) 99999-9999</p>
+                <p>📍 Boa Vista, Roraima - Brasil</p>
               </div>
             </div>
           </div>
           <div className="mt-10 pt-6 border-t border-border text-center text-sm text-muted-foreground">
-            © {new Date().getFullYear()} A Era dos Sabores — Todos os direitos reservados.
+            © {new Date().getFullYear()} A Era dos Sabores — Fábrica de Gelos Saborizados — Boa Vista, Roraima. Todos os direitos reservados.
           </div>
         </div>
       </footer>
