@@ -14,17 +14,17 @@ import scratStandingImg from "@/assets/scrat-standing.png";
 import scratHangingImg from "@/assets/scrat-hanging.png";
 
 const menuItems = [
-  { path: "/", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/producao", label: "Produção", icon: Factory },
-  { path: "/vendas", label: "Vendas", icon: ShoppingCart },
-  { path: "/a-receber", label: "A Receber", icon: DollarSign },
-  { path: "/estoque", label: "Estoque", icon: Warehouse },
-  { path: "/clientes", label: "Clientes", icon: Users },
-  { path: "/funcionarios", label: "Funcionários", icon: UserCog },
-  { path: "/sabores", label: "Sabores", icon: Package },
-  { path: "/relatorios", label: "Relatórios", icon: BarChart3 },
-  { path: "/importar-planilha", label: "Upload Planilha", icon: FileUp },
-  { path: "/auditoria", label: "Auditoria", icon: ClipboardList },
+  { path: "/painel", label: "Dashboard", icon: LayoutDashboard },
+  { path: "/painel/producao", label: "Produção", icon: Factory },
+  { path: "/painel/vendas", label: "Vendas", icon: ShoppingCart },
+  { path: "/painel/a-receber", label: "A Receber", icon: DollarSign },
+  { path: "/painel/estoque", label: "Estoque", icon: Warehouse },
+  { path: "/painel/clientes", label: "Clientes", icon: Users },
+  { path: "/painel/funcionarios", label: "Funcionários", icon: UserCog },
+  { path: "/painel/sabores", label: "Sabores", icon: Package },
+  { path: "/painel/relatorios", label: "Relatórios", icon: BarChart3 },
+  { path: "/painel/importar-planilha", label: "Upload Planilha", icon: FileUp },
+  { path: "/painel/auditoria", label: "Auditoria", icon: ClipboardList },
 ];
 
 const allCharacters = [
@@ -64,9 +64,9 @@ const positionSets = [
 ];
 
 const routeToIndex: Record<string, number> = {
-  "/": 0, "/producao": 1, "/vendas": 2, "/a-receber": 3,
-  "/estoque": 4, "/clientes": 5, "/funcionarios": 6,
-  "/sabores": 7, "/relatorios": 8, "/importar-planilha": 9, "/auditoria": 10,
+  "/painel": 0, "/painel/producao": 1, "/painel/vendas": 2, "/painel/a-receber": 3,
+  "/painel/estoque": 4, "/painel/clientes": 5, "/painel/funcionarios": 6,
+  "/painel/sabores": 7, "/painel/relatorios": 8, "/painel/importar-planilha": 9, "/painel/auditoria": 10,
 };
 
 function getPageCharacters(pathname: string) {

@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "@/components/Layout";
+import LandingPage from "@/pages/LandingPage";
 import Dashboard from "@/pages/Dashboard";
 import Producao from "@/pages/Producao";
 import Vendas from "@/pages/Vendas";
@@ -25,22 +26,24 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/producao" element={<Producao />} />
-            <Route path="/vendas" element={<Vendas />} />
-            <Route path="/a-receber" element={<AReceber />} />
-            <Route path="/estoque" element={<Estoque />} />
-            <Route path="/clientes" element={<Clientes />} />
-            <Route path="/funcionarios" element={<Funcionarios />} />
-            <Route path="/sabores" element={<Sabores />} />
-            <Route path="/relatorios" element={<Relatorios />} />
-            <Route path="/importar-planilha" element={<ImportarPlanilha />} />
-            <Route path="/auditoria" element={<Auditoria />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Layout>
+        <Routes>
+          {/* Landing page - sem sidebar */}
+          <Route path="/" element={<LandingPage />} />
+
+          {/* Painel de controle - com sidebar */}
+          <Route path="/painel" element={<Layout><Dashboard /></Layout>} />
+          <Route path="/painel/producao" element={<Layout><Producao /></Layout>} />
+          <Route path="/painel/vendas" element={<Layout><Vendas /></Layout>} />
+          <Route path="/painel/a-receber" element={<Layout><AReceber /></Layout>} />
+          <Route path="/painel/estoque" element={<Layout><Estoque /></Layout>} />
+          <Route path="/painel/clientes" element={<Layout><Clientes /></Layout>} />
+          <Route path="/painel/funcionarios" element={<Layout><Funcionarios /></Layout>} />
+          <Route path="/painel/sabores" element={<Layout><Sabores /></Layout>} />
+          <Route path="/painel/relatorios" element={<Layout><Relatorios /></Layout>} />
+          <Route path="/painel/importar-planilha" element={<Layout><ImportarPlanilha /></Layout>} />
+          <Route path="/painel/auditoria" element={<Layout><Auditoria /></Layout>} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
