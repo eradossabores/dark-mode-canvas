@@ -163,11 +163,25 @@ export default function Dashboard() {
               return (
                 <div
                   key={cat.tipo}
-                  className={`relative min-h-[140px] rounded-sm p-4 shadow-lg transform ${cat.rotate}`}
+                  className={`relative min-h-[140px] rounded-sm p-4 shadow-lg transform ${cat.rotate} overflow-hidden`}
                   style={{ background: cat.cor, boxShadow: "2px 4px 12px hsl(0 0% 0% / 0.15)" }}
                 >
+                  {/* Snow on post-it */}
+                  <svg className="absolute top-0 left-0 w-full h-5 opacity-60" viewBox="0 0 200 20" preserveAspectRatio="none" fill="white">
+                    <path d="M0,8 Q10,2 20,7 Q30,12 40,6 Q50,0 60,5 Q70,10 80,4 Q90,0 100,6 Q110,12 120,5 Q130,0 140,7 Q150,12 160,4 Q170,0 180,8 Q190,14 200,6 L200,0 L0,0 Z" />
+                  </svg>
+                  <svg className="absolute -top-1 left-0 w-full h-4 opacity-40" viewBox="0 0 200 16" preserveAspectRatio="none" fill="white">
+                    <path d="M0,10 Q15,4 30,9 Q45,14 60,7 Q75,2 90,8 Q105,14 120,6 Q135,0 150,8 Q165,14 180,5 Q195,0 200,8 L200,0 L0,0 Z" />
+                  </svg>
+                  {/* Tiny snowflakes */}
+                  <svg className="absolute top-6 right-3 w-4 h-4 text-white/30" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round">
+                    <path d="M10 2 L10 18 M3 6 L17 14 M3 14 L17 6" />
+                  </svg>
+                  <svg className="absolute bottom-4 left-3 w-3 h-3 text-white/20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                    <path d="M10 2 L10 18 M3 6 L17 14 M3 14 L17 6" />
+                  </svg>
                   <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-14 h-4 rounded-sm opacity-60" style={{ background: cat.fita }} />
-                  <div className="mt-2">
+                  <div className="mt-2 relative">
                     <div className="flex items-center gap-1.5 mb-2">
                       <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
                       <span className="text-[10px] font-bold text-destructive uppercase tracking-wide">{cat.tipo}</span>
@@ -192,11 +206,21 @@ export default function Dashboard() {
             })}
             {/* 4º Post-it: Resumo */}
             <div
-              className={`relative min-h-[140px] rounded-sm p-4 shadow-lg transform ${totalCard.rotate}`}
+              className={`relative min-h-[140px] rounded-sm p-4 shadow-lg transform ${totalCard.rotate} overflow-hidden`}
               style={{ background: totalCard.cor, boxShadow: "2px 4px 12px hsl(0 0% 0% / 0.15)" }}
             >
+              {/* Snow on post-it */}
+              <svg className="absolute top-0 left-0 w-full h-5 opacity-60" viewBox="0 0 200 20" preserveAspectRatio="none" fill="white">
+                <path d="M0,8 Q10,2 20,7 Q30,12 40,6 Q50,0 60,5 Q70,10 80,4 Q90,0 100,6 Q110,12 120,5 Q130,0 140,7 Q150,12 160,4 Q170,0 180,8 Q190,14 200,6 L200,0 L0,0 Z" />
+              </svg>
+              <svg className="absolute -top-1 left-0 w-full h-4 opacity-40" viewBox="0 0 200 16" preserveAspectRatio="none" fill="white">
+                <path d="M0,10 Q15,4 30,9 Q45,14 60,7 Q75,2 90,8 Q105,14 120,6 Q135,0 150,8 Q165,14 180,5 Q195,0 200,8 L200,0 L0,0 Z" />
+              </svg>
+              <svg className="absolute top-7 right-2 w-4 h-4 text-white/25" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round">
+                <path d="M10 2 L10 18 M3 6 L17 14 M3 14 L17 6" />
+              </svg>
               <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-14 h-4 rounded-sm opacity-60" style={{ background: totalCard.fita }} />
-              <div className="mt-2">
+              <div className="mt-2 relative">
                 <div className="flex items-center gap-1.5 mb-2">
                   <Bell className="h-3.5 w-3.5 text-foreground/80" />
                   <span className="text-[10px] font-bold uppercase tracking-wide text-foreground/80">Resumo</span>
