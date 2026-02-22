@@ -17,6 +17,8 @@ import Relatorios from "@/pages/Relatorios";
 import ImportarPlanilha from "@/pages/ImportarPlanilha";
 import AReceber from "@/pages/AReceber";
 import ContasAPagar from "@/pages/ContasAPagar";
+import PedidosProducao from "@/pages/PedidosProducao";
+import MonitorProducao from "@/pages/MonitorProducao";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +36,8 @@ const App = () => (
           {/* Painel de controle - com sidebar */}
           <Route path="/painel" element={<Layout><Dashboard /></Layout>} />
           <Route path="/painel/producao" element={<Layout><Producao /></Layout>} />
+          <Route path="/painel/pedidos-producao" element={<Layout><PedidosProducao /></Layout>} />
+          <Route path="/painel/monitor-producao" element={<Layout><MonitorProducao /></Layout>} />
           <Route path="/painel/vendas" element={<Layout><Vendas /></Layout>} />
           <Route path="/painel/a-receber" element={<Layout><AReceber /></Layout>} />
           <Route path="/painel/contas-a-pagar" element={<Layout><ContasAPagar /></Layout>} />

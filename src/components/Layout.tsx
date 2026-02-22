@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Package, Users, ShoppingCart, Factory,
-  Warehouse, ClipboardList, UserCog, ChevronLeft, ChevronRight, BarChart3, FileUp, Menu, X, DollarSign
+  Warehouse, ClipboardList, UserCog, ChevronLeft, ChevronRight, BarChart3, FileUp, Menu, X, DollarSign, Monitor, ShoppingBag
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.png";
@@ -16,6 +16,8 @@ import scratHangingImg from "@/assets/scrat-hanging.png";
 const menuItems = [
   { path: "/painel", label: "Dashboard", icon: LayoutDashboard },
   { path: "/painel/producao", label: "Produção", icon: Factory },
+  { path: "/painel/pedidos-producao", label: "Pedidos Produção", icon: ShoppingBag },
+  { path: "/painel/monitor-producao", label: "Monitor Produção", icon: Monitor },
   { path: "/painel/vendas", label: "Vendas", icon: ShoppingCart },
   { path: "/painel/a-receber", label: "A Receber", icon: DollarSign },
   { path: "/painel/contas-a-pagar", label: "Contas a Pagar", icon: ClipboardList },
@@ -65,9 +67,10 @@ const positionSets = [
 ];
 
 const routeToIndex: Record<string, number> = {
-  "/painel": 0, "/painel/producao": 1, "/painel/vendas": 2, "/painel/a-receber": 3,
-  "/painel/contas-a-pagar": 4, "/painel/estoque": 5, "/painel/clientes": 6, "/painel/funcionarios": 7,
-  "/painel/sabores": 8, "/painel/relatorios": 9, "/painel/importar-planilha": 10, "/painel/auditoria": 11,
+  "/painel": 0, "/painel/producao": 1, "/painel/pedidos-producao": 2, "/painel/monitor-producao": 3,
+  "/painel/vendas": 4, "/painel/a-receber": 5, "/painel/contas-a-pagar": 6,
+  "/painel/estoque": 7, "/painel/clientes": 8, "/painel/funcionarios": 9,
+  "/painel/sabores": 10, "/painel/relatorios": 11, "/painel/importar-planilha": 12, "/painel/auditoria": 13,
 };
 
 function getPageCharacters(pathname: string) {
