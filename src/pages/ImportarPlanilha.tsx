@@ -2,17 +2,21 @@ import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { realizarProducao, realizarVenda } from "@/lib/supabase-helpers";
 import { toast } from "@/hooks/use-toast";
-import { Upload, Eye, CheckCircle2, AlertTriangle, XCircle, FileSpreadsheet, Loader2 } from "lucide-react";
+import {
+  Upload, Eye, CheckCircle2, AlertTriangle, XCircle,
+  FileSpreadsheet, Loader2, HelpCircle, Factory, ShoppingCart,
+} from "lucide-react";
 import * as XLSX from "xlsx";
 
+/* ───────── types ───────── */
 interface ImportRow {
   rowNum: number;
   data: string;
@@ -26,31 +30,45 @@ interface ImportRow {
   clienteId?: string;
 }
 
-const EXPECTED_PRODUCTION_COLS = ["data", "sabor", "quantidade"];
-const EXPECTED_SALES_COLS = ["data", "sabor", "quantidade", "cliente"];
+type TipoImportacao = "producao" | "vendas";
+
+/* ───────── helpers ───────── */
+const SALES_INDICATORS = ["valor", "preco", "total", "preço", "unitario", "unitário", "cliente", "faturamento"];
+const PRODUCTION_INDICATORS = ["responsavel", "responsável", "operador", "lote"];
 
 function normalizeHeader(h: string): string {
-  return h
-    .toString()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]/g, "")
-    .trim();
+  return h.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "").trim();
+}
+
+function detectTipo(headers: string[]): { tipo: TipoImportacao | null; confidence: "high" | "medium" | "low" } {
+  const normalized = headers.map(h => h.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim());
+
+  let salesScore = 0;
+  let prodScore = 0;
+
+  for (const h of normalized) {
+    if (SALES_INDICATORS.some(s => h.includes(s))) salesScore++;
+    if (PRODUCTION_INDICATORS.some(s => h.includes(s))) prodScore++;
+  }
+
+  // "cliente" column is a very strong sales indicator
+  if (normalized.some(h => h === "cliente")) salesScore += 3;
+
+  if (salesScore > 0 && prodScore === 0) return { tipo: "vendas", confidence: salesScore >= 2 ? "high" : "medium" };
+  if (prodScore > 0 && salesScore === 0) return { tipo: "producao", confidence: prodScore >= 2 ? "high" : "medium" };
+  if (salesScore === 0 && prodScore === 0) return { tipo: "producao", confidence: "low" };
+  return { tipo: null, confidence: "low" };
 }
 
 function parseDate(val: any): string | null {
   if (!val) return null;
-  // Excel serial date
   if (typeof val === "number") {
     const d = XLSX.SSF.parse_date_code(val);
     if (d) return `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
   }
   const str = String(val).trim();
-  // dd/mm/yyyy
   const m1 = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (m1) return `${m1[3]}-${m1[2].padStart(2, "0")}-${m1[1].padStart(2, "0")}`;
-  // yyyy-mm-dd
   const m2 = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (m2) return str;
   return null;
@@ -62,18 +80,28 @@ function parseQuantity(val: any): number | null {
   return isNaN(n) ? null : Math.round(n);
 }
 
+/* ───────── component ───────── */
 export default function ImportarPlanilha() {
-  const [tipoImportacao, setTipoImportacao] = useState<"producao" | "vendas" | "">("");
+  // Data sources
+  const [sabores, setSabores] = useState<any[]>([]);
+  const [clientes, setClientes] = useState<any[]>([]);
+  const [funcionarios, setFuncionarios] = useState<any[]>([]);
+
+  // Wizard state
   const [file, setFile] = useState<File | null>(null);
+  const [detectedTipo, setDetectedTipo] = useState<TipoImportacao | null>(null);
+  const [detectedConfidence, setDetectedConfidence] = useState<"high" | "medium" | "low">("low");
+  const [confirmedTipo, setConfirmedTipo] = useState<TipoImportacao | null>(null);
+  const [rawHeaders, setRawHeaders] = useState<string[]>([]);
+  const [rawData, setRawData] = useState<any[][]>([]);
+
   const [rows, setRows] = useState<ImportRow[]>([]);
   const [previewLoaded, setPreviewLoaded] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importDone, setImportDone] = useState(false);
   const [importSummary, setImportSummary] = useState<{ ok: number; fail: number } | null>(null);
 
-  const [sabores, setSabores] = useState<any[]>([]);
-  const [clientes, setClientes] = useState<any[]>([]);
-  const [funcionarios, setFuncionarios] = useState<any[]>([]);
+  const tipoImportacao = confirmedTipo;
 
   useEffect(() => {
     Promise.all([
@@ -89,12 +117,18 @@ export default function ImportarPlanilha() {
 
   function resetAll() {
     setFile(null);
+    setDetectedTipo(null);
+    setDetectedConfidence("low");
+    setConfirmedTipo(null);
+    setRawHeaders([]);
+    setRawData([]);
     setRows([]);
     setPreviewLoaded(false);
     setImportDone(false);
     setImportSummary(null);
   }
 
+  /* ── Step 1: File selection + auto-detect ── */
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
@@ -108,30 +142,39 @@ export default function ImportarPlanilha() {
     setImportDone(false);
     setImportSummary(null);
     setRows([]);
+    setConfirmedTipo(null);
+
+    // Read file and auto-detect
+    f.arrayBuffer().then(buf => {
+      const wb = XLSX.read(buf, { type: "array", cellDates: false });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const raw: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+      if (raw.length < 2) {
+        toast({ title: "Planilha vazia", description: "A planilha não contém dados.", variant: "destructive" });
+        return;
+      }
+      const headers = raw[0].map(String);
+      setRawHeaders(headers);
+      setRawData(raw);
+      const detection = detectTipo(headers);
+      setDetectedTipo(detection.tipo);
+      setDetectedConfidence(detection.confidence);
+      // Auto-confirm if high confidence
+      if (detection.confidence === "high" && detection.tipo) {
+        setConfirmedTipo(detection.tipo);
+      }
+    });
   }
 
-  const handlePreview = useCallback(async () => {
-    if (!file || !tipoImportacao) return;
+  /* ── Step 2: Build preview rows ── */
+  const handlePreview = useCallback(() => {
+    if (!tipoImportacao || rawData.length < 2) return;
 
-    const data = await file.arrayBuffer();
-    const wb = XLSX.read(data, { type: "array", cellDates: false });
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const raw: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
-
-    if (raw.length < 2) {
-      toast({ title: "Planilha vazia", description: "A planilha não contém dados.", variant: "destructive" });
-      return;
-    }
-
-    const headers = raw[0].map((h: any) => normalizeHeader(String(h)));
-    const expected = tipoImportacao === "producao" ? EXPECTED_PRODUCTION_COLS : EXPECTED_SALES_COLS;
+    const headers = rawHeaders.map(h => normalizeHeader(h));
+    const expected = tipoImportacao === "producao" ? ["data", "sabor", "quantidade"] : ["data", "sabor", "quantidade", "cliente"];
     const missing = expected.filter(e => !headers.includes(e));
     if (missing.length > 0) {
-      toast({
-        title: "Colunas obrigatórias ausentes",
-        description: `Faltam: ${missing.join(", ")}`,
-        variant: "destructive",
-      });
+      toast({ title: "Colunas obrigatórias ausentes", description: `Faltam: ${missing.join(", ")}`, variant: "destructive" });
       return;
     }
 
@@ -140,15 +183,14 @@ export default function ImportarPlanilha() {
 
     const saborMap = new Map<string, string>();
     sabores.forEach(s => saborMap.set(s.nome.toLowerCase().trim(), s.id));
-
     const clienteMap = new Map<string, string>();
     clientes.forEach(c => clienteMap.set(c.nome.toLowerCase().trim(), c.id));
 
     const seen = new Set<string>();
     const parsed: ImportRow[] = [];
 
-    for (let r = 1; r < raw.length; r++) {
-      const row = raw[r];
+    for (let r = 1; r < rawData.length; r++) {
+      const row = rawData[r];
       if (row.every((c: any) => c === "" || c == null)) continue;
 
       const errors: string[] = [];
@@ -182,39 +224,38 @@ export default function ImportarPlanilha() {
       seen.add(dupeKey);
 
       parsed.push({
-        rowNum: r + 1,
-        data: dateVal || String(row[colIdx["data"]]),
-        sabor: saborRaw,
-        quantidade: qtd ?? 0,
-        responsavel: respRaw || undefined,
-        cliente: clienteRaw || undefined,
-        errors,
-        warnings,
-        saborId,
-        clienteId,
+        rowNum: r + 1, data: dateVal || String(row[colIdx["data"]]),
+        sabor: saborRaw, quantidade: qtd ?? 0,
+        responsavel: respRaw || undefined, cliente: clienteRaw || undefined,
+        errors, warnings, saborId, clienteId,
       });
     }
 
     setRows(parsed);
     setPreviewLoaded(true);
-  }, [file, tipoImportacao, sabores, clientes]);
+  }, [tipoImportacao, rawHeaders, rawData, sabores, clientes]);
+
+  // Auto-preview when tipo is confirmed
+  useEffect(() => {
+    if (confirmedTipo && rawData.length > 1 && !previewLoaded) {
+      handlePreview();
+    }
+  }, [confirmedTipo, rawData, previewLoaded, handlePreview]);
 
   const validRows = rows.filter(r => r.errors.length === 0);
   const errorRows = rows.filter(r => r.errors.length > 0);
   const totalQtd = validRows.reduce((s, r) => s + r.quantidade, 0);
   const hasBlockingErrors = errorRows.length > 0;
 
+  /* ── Step 3: Import ── */
   async function handleImport() {
-    if (hasBlockingErrors) return;
+    if (hasBlockingErrors || !tipoImportacao) return;
     setImporting(true);
-    let ok = 0;
-    let fail = 0;
+    let ok = 0, fail = 0;
 
-    // Group by date+sabor for production, or process individually for sales
     if (tipoImportacao === "producao") {
       for (const row of validRows) {
         try {
-          // Find a funcionario for responsavel or use first available
           let funcId = funcionarios[0]?.id;
           if (row.responsavel) {
             const found = funcionarios.find(f => f.nome.toLowerCase() === row.responsavel!.toLowerCase());
@@ -236,14 +277,12 @@ export default function ImportarPlanilha() {
         }
       }
     } else {
-      // Group sales by date+client
       const groups = new Map<string, ImportRow[]>();
       for (const row of validRows) {
         const key = `${row.data}|${row.clienteId}`;
         if (!groups.has(key)) groups.set(key, []);
         groups.get(key)!.push(row);
       }
-
       for (const [, items] of groups) {
         try {
           await realizarVenda({
@@ -260,7 +299,6 @@ export default function ImportarPlanilha() {
       }
     }
 
-    // Audit log
     try {
       await (supabase as any).from("auditoria").insert({
         usuario_nome: "importação planilha",
@@ -273,15 +311,15 @@ export default function ImportarPlanilha() {
     setImportSummary({ ok, fail });
     setImportDone(true);
     setImporting(false);
-    toast({
-      title: "Importação concluída",
-      description: `${ok} registros importados, ${fail} erros.`,
-    });
+    toast({ title: "Importação concluída", description: `${ok} registros importados, ${fail} erros.` });
   }
+
+  /* ───────── render ───────── */
+  const needsManualConfirmation = file && rawHeaders.length > 0 && !confirmedTipo;
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Importar Planilha Oficial</h1>
+      <h1 className="text-2xl font-bold mb-6">Upload Planilha</h1>
 
       {importDone && importSummary ? (
         <Card>
@@ -297,26 +335,60 @@ export default function ImportarPlanilha() {
         </Card>
       ) : (
         <div className="space-y-6">
-          {/* Step 1: Type + File */}
+          {/* Step 1: File Upload */}
           <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2"><FileSpreadsheet className="h-5 w-5" /> Configuração</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><FileSpreadsheet className="h-5 w-5" /> Upload do Arquivo</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Tipo de Importação</Label>
-                  <Select value={tipoImportacao} onValueChange={(v) => { setTipoImportacao(v as any); setPreviewLoaded(false); setRows([]); }}>
-                    <SelectTrigger><SelectValue placeholder="Selecione o tipo" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="producao">Produção</SelectItem>
-                      <SelectItem value="vendas">Vendas</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Arquivo Excel (.xlsx / .xls)</Label>
-                  <Input type="file" accept=".xlsx,.xls" onChange={handleFileChange} />
-                </div>
+              <div>
+                <Label>Arquivo Excel (.xlsx / .xls)</Label>
+                <Input type="file" accept=".xlsx,.xls" onChange={handleFileChange} />
               </div>
+              {file && (
+                <p className="text-sm text-muted-foreground">
+                  Arquivo selecionado: <strong>{file.name}</strong> ({(file.size / 1024).toFixed(1)} KB)
+                </p>
+              )}
+
+              {/* Auto-detection result */}
+              {file && rawHeaders.length > 0 && detectedTipo && detectedConfidence === "high" && (
+                <Alert>
+                  <CheckCircle2 className="h-4 w-4" />
+                  <AlertDescription className="flex items-center gap-2">
+                    Tipo identificado automaticamente:
+                    <Badge variant="secondary" className="gap-1">
+                      {detectedTipo === "producao" ? <Factory className="h-3 w-3" /> : <ShoppingCart className="h-3 w-3" />}
+                      {detectedTipo === "producao" ? "Produção" : "Vendas"}
+                    </Badge>
+                    <Button size="sm" variant="ghost" onClick={() => { setConfirmedTipo(null); setPreviewLoaded(false); setRows([]); }}>
+                      Alterar
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Needs manual confirmation */}
+              {needsManualConfirmation && (
+                <Alert variant={detectedTipo ? "default" : "destructive"}>
+                  <HelpCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    <p className="mb-3">
+                      {detectedTipo
+                        ? `O sistema sugere "${detectedTipo === "producao" ? "Produção" : "Vendas"}", mas com baixa confiança. Confirme o tipo:`
+                        : "Não foi possível identificar o tipo automaticamente. Selecione manualmente:"}
+                    </p>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" className="gap-1" onClick={() => { setConfirmedTipo("producao"); setPreviewLoaded(false); setRows([]); }}>
+                        <Factory className="h-4 w-4" /> Produção
+                      </Button>
+                      <Button size="sm" variant="outline" className="gap-1" onClick={() => { setConfirmedTipo("vendas"); setPreviewLoaded(false); setRows([]); }}>
+                        <ShoppingCart className="h-4 w-4" /> Vendas
+                      </Button>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
 
               {tipoImportacao && (
                 <Alert>
@@ -328,22 +400,23 @@ export default function ImportarPlanilha() {
                   </AlertDescription>
                 </Alert>
               )}
-
-              <Button
-                onClick={handlePreview}
-                disabled={!file || !tipoImportacao}
-                className="w-full md:w-auto"
-              >
-                <Eye className="h-4 w-4 mr-2" /> Visualizar Dados
-              </Button>
             </CardContent>
           </Card>
 
           {/* Step 2: Preview */}
-          {previewLoaded && (
+          {previewLoaded && tipoImportacao && (
             <>
               {/* Summary Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <Card>
+                  <CardContent className="py-4 text-center">
+                    <Badge variant="secondary" className="mb-2 gap-1">
+                      {tipoImportacao === "producao" ? <Factory className="h-3 w-3" /> : <ShoppingCart className="h-3 w-3" />}
+                      {tipoImportacao === "producao" ? "Produção" : "Vendas"}
+                    </Badge>
+                    <p className="text-xs text-muted-foreground">Tipo Identificado</p>
+                  </CardContent>
+                </Card>
                 <Card>
                   <CardContent className="py-4 text-center">
                     <p className="text-2xl font-bold">{rows.length}</p>
@@ -370,7 +443,6 @@ export default function ImportarPlanilha() {
                 </Card>
               </div>
 
-              {/* Errors Alert */}
               {hasBlockingErrors && (
                 <Alert variant="destructive">
                   <XCircle className="h-4 w-4" />
@@ -385,7 +457,7 @@ export default function ImportarPlanilha() {
                 <CardHeader><CardTitle>Pré-visualização dos Dados</CardTitle></CardHeader>
                 <CardContent>
                   {rows.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">Nenhum dado encontrado na planilha.</p>
+                    <p className="text-center text-muted-foreground py-8">Nenhum dado encontrado.</p>
                   ) : (
                     <div className="max-h-[500px] overflow-auto">
                       <Table>
@@ -442,10 +514,7 @@ export default function ImportarPlanilha() {
               {/* Confirm Import */}
               <div className="flex justify-end gap-3">
                 <Button variant="outline" onClick={resetAll}>Cancelar</Button>
-                <Button
-                  onClick={handleImport}
-                  disabled={hasBlockingErrors || importing || validRows.length === 0}
-                >
+                <Button onClick={handleImport} disabled={hasBlockingErrors || importing || validRows.length === 0}>
                   {importing ? (
                     <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Importando...</>
                   ) : (
