@@ -366,6 +366,86 @@ export type Database = {
         }
         Relationships: []
       }
+      pedido_producao_itens: {
+        Row: {
+          id: string
+          pedido_id: string
+          quantidade: number
+          sabor_id: string
+        }
+        Insert: {
+          id?: string
+          pedido_id: string
+          quantidade: number
+          sabor_id: string
+        }
+        Update: {
+          id?: string
+          pedido_id?: string
+          quantidade?: number
+          sabor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedido_producao_itens_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos_producao"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedido_producao_itens_sabor_id_fkey"
+            columns: ["sabor_id"]
+            isOneToOne: false
+            referencedRelation: "sabores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pedidos_producao: {
+        Row: {
+          cliente_id: string
+          created_at: string
+          data_entrega: string
+          id: string
+          observacoes: string | null
+          operador: string
+          status: Database["public"]["Enums"]["status_pedido_producao"]
+          tipo_embalagem: string
+          updated_at: string
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string
+          data_entrega: string
+          id?: string
+          observacoes?: string | null
+          operador?: string
+          status?: Database["public"]["Enums"]["status_pedido_producao"]
+          tipo_embalagem?: string
+          updated_at?: string
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string
+          data_entrega?: string
+          id?: string
+          observacoes?: string | null
+          operador?: string
+          status?: Database["public"]["Enums"]["status_pedido_producao"]
+          tipo_embalagem?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedidos_producao_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       producao_funcionarios: {
         Row: {
           funcionario_id: string
@@ -687,6 +767,11 @@ export type Database = {
     Enums: {
       modo_producao: "unidade" | "lote"
       status_cliente: "ativo" | "inativo"
+      status_pedido_producao:
+        | "aguardando_producao"
+        | "em_producao"
+        | "separado_para_entrega"
+        | "enviado"
       status_venda: "pendente" | "paga" | "cancelada"
       tipo_item_estoque: "materia_prima" | "gelo_pronto" | "embalagem"
       tipo_movimentacao: "entrada" | "saida"
@@ -821,6 +906,12 @@ export const Constants = {
     Enums: {
       modo_producao: ["unidade", "lote"],
       status_cliente: ["ativo", "inativo"],
+      status_pedido_producao: [
+        "aguardando_producao",
+        "em_producao",
+        "separado_para_entrega",
+        "enviado",
+      ],
       status_venda: ["pendente", "paga", "cancelada"],
       tipo_item_estoque: ["materia_prima", "gelo_pronto", "embalagem"],
       tipo_movimentacao: ["entrada", "saida"],
