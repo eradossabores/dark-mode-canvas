@@ -6,12 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Undo2, Loader2, AlertTriangle } from "lucide-react";
+import { Undo2, Loader2, AlertTriangle, Trash2 } from "lucide-react";
 
 export default function Auditoria() {
   const [logs, setLogs] = useState<any[]>([]);
   const [undoingId, setUndoingId] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => { loadData(); }, []);
 
@@ -136,6 +138,20 @@ export default function Auditoria() {
     return desc.includes("||ROLLBACK:") ? desc.split("||ROLLBACK:")[0].trim() : desc;
   }
 
+  async function handleDeleteLog(id: string) {
+    setDeletingId(id);
+    try {
+      await (supabase as any).from("auditoria").delete().eq("id", id);
+      toast({ title: "Registro excluído", description: "O registro de auditoria foi removido." });
+      loadData();
+    } catch (e: any) {
+      toast({ title: "Erro ao excluir", description: e.message, variant: "destructive" });
+    } finally {
+      setDeletingId(null);
+      setDeleteConfirmId(null);
+    }
+  }
+
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Auditoria</h1>
@@ -169,6 +185,32 @@ export default function Auditoria() {
         </Alert>
       )}
 
+      {deleteConfirmId && (
+        <Alert className="mb-4 border-destructive/30 bg-destructive/5">
+          <AlertTriangle className="h-4 w-4 text-destructive" />
+          <AlertDescription className="flex items-center justify-between">
+            <span className="text-sm">
+              Tem certeza que deseja excluir este registro de auditoria?
+            </span>
+            <div className="flex gap-2 ml-4 shrink-0">
+              <Button size="sm" variant="outline" onClick={() => setDeleteConfirmId(null)}>Cancelar</Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                disabled={deletingId === deleteConfirmId}
+                onClick={() => handleDeleteLog(deleteConfirmId)}
+              >
+                {deletingId === deleteConfirmId ? (
+                  <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Excluindo...</>
+                ) : (
+                  "Confirmar"
+                )}
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Card>
         <CardContent className="pt-6">
           <Table>
@@ -193,21 +235,31 @@ export default function Auditoria() {
                   <TableCell className="max-w-xs truncate">{cleanDescription(l.descricao)}</TableCell>
                   <TableCell>{l.dispositivo}</TableCell>
                   <TableCell>
-                    {l.acao === "importar_planilha" && (
+                    <div className="flex gap-1">
+                      {l.acao === "importar_planilha" && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          disabled={undoingId === l.id}
+                          onClick={() => setConfirmId(l.id)}
+                        >
+                          {undoingId === l.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <><Undo2 className="h-4 w-4 mr-1" /> Desfazer</>
+                          )}
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        disabled={undoingId === l.id}
-                        onClick={() => setConfirmId(l.id)}
+                        className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => setDeleteConfirmId(l.id)}
                       >
-                        {undoingId === l.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <><Undo2 className="h-4 w-4 mr-1" /> Desfazer</>
-                        )}
+                        <Trash2 className="h-4 w-4" />
                       </Button>
-                    )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
