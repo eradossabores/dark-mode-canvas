@@ -98,6 +98,40 @@ export default function MonitorProducao() {
   const filaEspera = pedidos?.filter((p: any) => p.status === "aguardando_producao") || [];
   const emAndamento = pedidos?.filter((p: any) => p.status === "em_producao" || p.status === "separado_para_entrega") || [];
 
+  const renderMiniQueue = (currentId: string) => {
+    const queue = filaEspera.filter((p: any) => p.id !== currentId);
+    if (queue.length === 0) return null;
+    return (
+      <div className="mt-8 border-t border-border pt-6">
+        <div className="flex items-center gap-2 mb-3">
+          <Hourglass className="h-4 w-4 text-amber-500" />
+          <span className="text-sm font-bold text-foreground">Fila de Espera</span>
+          <Badge variant="secondary" className="text-xs">{queue.length}</Badge>
+        </div>
+        <div className="grid gap-2">
+          {queue.map((p: any) => {
+            const urg = getUrgencyLabel(p.data_entrega);
+            return (
+              <div key={p.id} className="flex items-center justify-between bg-muted/50 border border-border rounded-lg px-4 py-2 text-sm">
+                <div className="flex items-center gap-3">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-semibold">{p.clientes?.nome}</span>
+                  {urg && <Badge className={`${urg.className} text-xs px-2 py-0.5`}>⚠ {urg.label}</Badge>}
+                </div>
+                <div className="flex items-center gap-3 text-muted-foreground">
+                  <span>{p.pedido_producao_itens?.length || 0} itens</span>
+                  <span className="font-medium text-primary">
+                    {format(new Date(p.data_entrega), "dd/MM HH:mm", { locale: ptBR })}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   const renderCard = (pedido: any, index: number) => {
     const urgency = getUrgencyLabel(pedido.data_entrega);
     const isExpanded = fullscreenPedidoId === pedido.id;
@@ -184,6 +218,7 @@ export default function MonitorProducao() {
               )}
             </div>
           </div>
+          {isExpanded && renderMiniQueue(pedido.id)}
         </CardContent>
       </Card>
     );
