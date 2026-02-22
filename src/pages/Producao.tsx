@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { realizarProducao } from "@/lib/supabase-helpers";
 import { toast } from "@/hooks/use-toast";
@@ -328,40 +329,70 @@ export default function Producao() {
 
       <Card>
         <CardHeader><CardTitle>Histórico de Produções</CardTitle></CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Data</TableHead>
-                <TableHead>Sabor</TableHead>
-                <TableHead>Modo</TableHead>
-                <TableHead>Lotes</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Operador</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {producoes.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell>{new Date(p.created_at).toLocaleDateString("pt-BR")}</TableCell>
-                  <TableCell>{p.sabores?.nome}</TableCell>
-                  <TableCell className="capitalize">{p.modo}</TableCell>
-                  <TableCell>{p.quantidade_lotes}</TableCell>
-                  <TableCell>{p.quantidade_total}</TableCell>
-                  <TableCell>{p.operador}</TableCell>
-                  <TableCell className="text-right space-x-1">
-                    <Button size="icon" variant="ghost" onClick={() => openDetailDialog(p)}><Eye className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => openEditDialog(p)}><Pencil className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => setDeleteId(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {producoes.length === 0 && (
-                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Nenhuma produção.</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
+        <CardContent className="space-y-3">
+          {(() => {
+            const grouped: Record<string, typeof producoes> = {};
+            producoes.forEach((p) => {
+              const day = new Date(p.created_at).toLocaleDateString("pt-BR");
+              if (!grouped[day]) grouped[day] = [];
+              grouped[day].push(p);
+            });
+            const days = Object.keys(grouped);
+            if (days.length === 0) return <p className="text-center text-muted-foreground py-4">Nenhuma produção.</p>;
+            return days.map((day) => {
+              const dayItems = grouped[day];
+              const dayTotal = dayItems.reduce((s, p) => s + p.quantidade_total, 0);
+              // Consolidar por sabor
+              const saborMap: Record<string, number> = {};
+              dayItems.forEach((p) => {
+                const nome = p.sabores?.nome || "?";
+                saborMap[nome] = (saborMap[nome] || 0) + p.quantidade_total;
+              });
+              return (
+                <div key={day} className="rounded-lg border bg-card p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-sm text-foreground">📅 {day}</span>
+                    <Badge variant="default" className="font-bold text-xs">Total: {dayTotal.toLocaleString("pt-BR")} un</Badge>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(saborMap).map(([nome, qtd]) => (
+                      <Badge key={nome} variant="outline" className="text-xs font-medium gap-1">
+                        {nome} <span className="font-bold text-primary">{qtd.toLocaleString("pt-BR")} un</span>
+                      </Badge>
+                    ))}
+                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Sabor</TableHead>
+                        <TableHead>Modo</TableHead>
+                        <TableHead>Lotes</TableHead>
+                        <TableHead>Total</TableHead>
+                        <TableHead>Operador</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {dayItems.map((p) => (
+                        <TableRow key={p.id}>
+                          <TableCell>{p.sabores?.nome}</TableCell>
+                          <TableCell className="capitalize">{p.modo}</TableCell>
+                          <TableCell>{p.quantidade_lotes}</TableCell>
+                          <TableCell>{p.quantidade_total}</TableCell>
+                          <TableCell>{p.operador}</TableCell>
+                          <TableCell className="text-right space-x-1">
+                            <Button size="icon" variant="ghost" onClick={() => openDetailDialog(p)}><Eye className="h-4 w-4" /></Button>
+                            <Button size="icon" variant="ghost" onClick={() => openEditDialog(p)}><Pencil className="h-4 w-4" /></Button>
+                            <Button size="icon" variant="ghost" onClick={() => setDeleteId(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              );
+            });
+          })()}
         </CardContent>
       </Card>
     </div>
