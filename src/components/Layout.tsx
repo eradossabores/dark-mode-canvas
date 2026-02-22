@@ -132,7 +132,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           alt=""
           aria-hidden
           className={cn(
-            "object-contain opacity-15 pointer-events-none select-none animate-fade-in transition-opacity duration-500",
+            "object-contain opacity-30 pointer-events-none select-none animate-fade-in transition-opacity duration-500",
             collapsed ? "w-10 h-10" : "w-24 h-24"
           )}
         />
@@ -244,7 +244,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 src={item.character.src}
                 alt=""
                 aria-hidden
-                className={`absolute ${item.pos} ${item.size} object-contain opacity-[0.10] dark:opacity-[0.06] pointer-events-none select-none`}
+                className={`absolute ${item.pos} ${item.size} object-contain opacity-[0.20] dark:opacity-[0.12] pointer-events-none select-none`}
               />
             ))}
           </div>
