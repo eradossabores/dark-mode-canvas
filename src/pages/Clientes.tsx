@@ -25,6 +25,8 @@ export default function Clientes() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 20;
 
   useEffect(() => { loadData(); }, []);
 
@@ -173,7 +175,7 @@ export default function Clientes() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {clientes.map((c) => {
+              {clientes.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((c) => {
                 const dias = diasSemComprar(c.ultima_compra);
                 return (
                   <TableRow key={c.id}>
@@ -205,6 +207,17 @@ export default function Clientes() {
               )}
             </TableBody>
           </Table>
+          {clientes.length > PAGE_SIZE && (
+            <div className="flex items-center justify-between mt-4">
+              <span className="text-sm text-muted-foreground">
+                {page * PAGE_SIZE + 1}-{Math.min((page + 1) * PAGE_SIZE, clientes.length)} de {clientes.length}
+              </span>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage(p => p - 1)}>Anterior</Button>
+                <Button size="sm" variant="outline" disabled={(page + 1) * PAGE_SIZE >= clientes.length} onClick={() => setPage(p => p + 1)}>Próxima</Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Package, Users, ShoppingCart, Factory,
-  Warehouse, ClipboardList, UserCog, ChevronLeft, ChevronRight, BarChart3, FileUp
+  Warehouse, ClipboardList, UserCog, ChevronLeft, ChevronRight, BarChart3, FileUp, Menu, X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.png";
@@ -22,42 +22,74 @@ const menuItems = [
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+
+  const sidebarContent = (
+    <>
+      <div className="flex items-center gap-2 px-3 py-3 border-b border-sidebar-border">
+        <img src={logo} alt="A Era dos Sabores" className="h-9 w-9 shrink-0 rounded" />
+        {!collapsed && (
+          <span className="font-bold text-sm whitespace-nowrap">A Era dos Sabores</span>
+        )}
+      </div>
+      <nav className="flex-1 py-2 space-y-1 overflow-y-auto">
+        {menuItems.map((item) => {
+          const active = location.pathname === item.path;
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              onClick={() => setMobileOpen(false)}
+              className={cn(
+                "flex items-center gap-3 px-4 py-2.5 text-sm transition-colors rounded-md mx-2",
+                active
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold shadow-md"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              )}
+            >
+              <item.icon className="h-4 w-4 shrink-0" />
+              {!collapsed && <span>{item.label}</span>}
+            </Link>
+          );
+        })}
+      </nav>
+    </>
+  );
 
   return (
     <div className="flex h-screen overflow-hidden">
+      {/* Mobile hamburger */}
+      <button
+        onClick={() => setMobileOpen(true)}
+        className="md:hidden fixed top-3 left-3 z-50 p-2 rounded-md bg-card shadow-md border border-border"
+      >
+        <Menu className="h-5 w-5" />
+      </button>
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-40 md:hidden">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
+          <aside className="absolute left-0 top-0 h-full w-60 flex flex-col bg-sidebar-background text-sidebar-foreground border-r border-sidebar-border z-50">
+            <div className="flex justify-end p-2">
+              <button onClick={() => setMobileOpen(false)}>
+                <X className="h-5 w-5 text-sidebar-foreground" />
+              </button>
+            </div>
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
+
+      {/* Desktop sidebar */}
       <aside
         className={cn(
-          "flex flex-col bg-sidebar-background text-sidebar-foreground transition-all duration-300 border-r border-sidebar-border",
+          "hidden md:flex flex-col bg-sidebar-background text-sidebar-foreground transition-all duration-300 border-r border-sidebar-border",
           collapsed ? "w-16" : "w-60"
         )}
       >
-        <div className="flex items-center gap-2 px-3 py-3 border-b border-sidebar-border">
-          <img src={logo} alt="A Era dos Sabores" className="h-9 w-9 shrink-0 rounded" />
-          {!collapsed && (
-            <span className="font-bold text-sm whitespace-nowrap">A Era dos Sabores</span>
-          )}
-        </div>
-        <nav className="flex-1 py-2 space-y-1 overflow-y-auto">
-          {menuItems.map((item) => {
-            const active = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={cn(
-                  "flex items-center gap-3 px-4 py-2.5 text-sm transition-colors rounded-md mx-2",
-                  active
-                    ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold shadow-md"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                )}
-              >
-                <item.icon className="h-4 w-4 shrink-0" />
-                {!collapsed && <span>{item.label}</span>}
-              </Link>
-            );
-          })}
-        </nav>
+        {sidebarContent}
         <button
           onClick={() => setCollapsed(!collapsed)}
           className={cn(
@@ -73,8 +105,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           )}
         </button>
       </aside>
+
       <main className="flex-1 overflow-auto">
-        <div className="p-6">{children}</div>
+        <div className="p-4 md:p-6 pt-14 md:pt-6">{children}</div>
       </main>
     </div>
   );
