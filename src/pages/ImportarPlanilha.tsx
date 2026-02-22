@@ -58,7 +58,7 @@ export default function ImportarPlanilha() {
   const [activeSheet, setActiveSheet] = useState<string>("");
   const [importing, setImporting] = useState(false);
   const [importDone, setImportDone] = useState(false);
-  const [importSummary, setImportSummary] = useState<{ ok: number; fail: number } | null>(null);
+  const [importSummary, setImportSummary] = useState<{ ok: number; fail: number; errors: string[] } | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -321,7 +321,7 @@ export default function ImportarPlanilha() {
       });
     } catch {}
 
-    setImportSummary({ ok, fail }); setImportDone(true); setImporting(false);
+    setImportSummary({ ok, fail, errors }); setImportDone(true); setImporting(false);
     if (fail > 0 && errors.length > 0) {
       toast({ title: "Importação com erros", description: errors.slice(0, 3).join("; "), variant: "destructive" });
     } else {
@@ -342,6 +342,19 @@ export default function ImportarPlanilha() {
               <strong>{importSummary.ok}</strong> registros importados
               {importSummary.fail > 0 && <>, <strong className="text-destructive">{importSummary.fail}</strong> erros</>}
             </p>
+            {importSummary.errors.length > 0 && (
+              <div className="mt-4 text-left max-w-lg mx-auto">
+                <p className="text-sm font-semibold text-destructive mb-2 text-center">Detalhes dos erros:</p>
+                <div className="max-h-60 overflow-auto rounded border border-border bg-muted/50 p-3 space-y-1">
+                  {importSummary.errors.map((err, i) => (
+                    <p key={i} className="text-xs text-muted-foreground flex items-start gap-1">
+                      <XCircle className="h-3 w-3 text-destructive mt-0.5 shrink-0" />
+                      {err}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            )}
             <Button onClick={resetAll} variant="outline">Nova Importação</Button>
           </CardContent>
         </Card>
