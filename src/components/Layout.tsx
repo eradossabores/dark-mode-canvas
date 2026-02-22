@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Package, Users, ShoppingCart, Factory,
@@ -84,8 +84,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
 
-  // Pick a character for the sidebar based on route
-  const sidebarCharIdx = (routeToIndex[location.pathname] ?? 0) % allCharacters.length;
+  const [sidebarCharIdx, setSidebarCharIdx] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSidebarCharIdx((prev) => (prev + 1) % allCharacters.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   const sidebarChar = allCharacters[sidebarCharIdx];
 
   const sidebarContent = (
@@ -120,11 +127,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Ice Age character at bottom of sidebar */}
       <div className="flex justify-center py-2 border-t border-sidebar-border">
         <img
+          key={sidebarCharIdx}
           src={sidebarChar.src}
           alt=""
           aria-hidden
           className={cn(
-            "object-contain opacity-15 pointer-events-none select-none",
+            "object-contain opacity-15 pointer-events-none select-none animate-fade-in transition-opacity duration-500",
             collapsed ? "w-10 h-10" : "w-24 h-24"
           )}
         />
