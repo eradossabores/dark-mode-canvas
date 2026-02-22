@@ -27,6 +27,58 @@ const menuItems = [
   { path: "/auditoria", label: "Auditoria", icon: ClipboardList },
 ];
 
+const allCharacters = [
+  { src: sidImg, alt: "Sid" },
+  { src: buckImg, alt: "Buck" },
+  { src: scrat3dImg, alt: "Scrat 3D" },
+  { src: scratAcornImg, alt: "Scrat Acorn" },
+  { src: scratStandingImg, alt: "Scrat Standing" },
+  { src: scratHangingImg, alt: "Scrat Hanging" },
+];
+
+const positionSets = [
+  // Set 0: corners + sides variant A
+  [
+    { pos: "bottom-[2%] right-[3%]", size: "w-44 h-44" },
+    { pos: "top-[3%] left-[3%]", size: "w-36 h-36" },
+    { pos: "top-[50%] right-[2%] -translate-y-1/2", size: "w-36 h-28" },
+  ],
+  // Set 1: opposite corners + center
+  [
+    { pos: "top-[2%] right-[4%]", size: "w-36 h-36" },
+    { pos: "bottom-[3%] left-[4%]", size: "w-40 h-40" },
+    { pos: "top-[45%] left-[2%]", size: "w-28 h-40" },
+  ],
+  // Set 2: scattered
+  [
+    { pos: "bottom-[4%] left-[5%]", size: "w-36 h-36" },
+    { pos: "top-[5%] right-[3%]", size: "w-32 h-32" },
+    { pos: "top-[55%] right-[3%]", size: "w-32 h-36" },
+  ],
+  // Set 3: top-heavy
+  [
+    { pos: "top-[2%] left-[5%]", size: "w-38 h-38" },
+    { pos: "top-[3%] right-[5%]", size: "w-34 h-34" },
+    { pos: "bottom-[3%] right-[4%]", size: "w-40 h-40" },
+  ],
+];
+
+const routeToIndex: Record<string, number> = {
+  "/": 0, "/producao": 1, "/vendas": 2, "/a-receber": 3,
+  "/estoque": 4, "/clientes": 5, "/funcionarios": 6,
+  "/sabores": 7, "/relatorios": 8, "/importar-planilha": 9, "/auditoria": 10,
+};
+
+function getPageCharacters(pathname: string) {
+  const idx = routeToIndex[pathname] ?? 0;
+  const posSet = positionSets[idx % positionSets.length];
+  // Pick 3 characters, offset by page index so each page has different ones
+  return posSet.map((p, i) => ({
+    ...p,
+    character: allCharacters[(idx * 2 + i) % allCharacters.length],
+  }));
+}
+
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -161,25 +213,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <div className="absolute top-[25%] left-[60%] w-2 h-2 rounded-full bg-sky-300/20 dark:bg-sky-400/8" />
             <div className="absolute top-[85%] right-[60%] w-1.5 h-1.5 rounded-full bg-cyan-400/15 dark:bg-cyan-400/6" />
 
-            {/* === ICE AGE CHARACTERS (real images) === */}
-            
-            {/* Sid - bottom right corner */}
-            <img src={sidImg} alt="" aria-hidden className="absolute bottom-[2%] right-[3%] w-44 h-44 object-contain opacity-[0.18] dark:opacity-[0.10] pointer-events-none select-none" />
-            
-            {/* Buck - top left corner */}
-            <img src={buckImg} alt="" aria-hidden className="absolute top-[3%] left-[3%] w-36 h-36 object-contain opacity-[0.18] dark:opacity-[0.10] pointer-events-none select-none" />
-            
-            {/* Scrat 3D (glasses) - top right corner */}
-            <img src={scrat3dImg} alt="" aria-hidden className="absolute top-[2%] right-[4%] w-32 h-32 object-contain opacity-[0.16] dark:opacity-[0.09] pointer-events-none select-none" />
-            
-            {/* Scrat with acorn - bottom left corner */}
-            <img src={scratAcornImg} alt="" aria-hidden className="absolute bottom-[2%] left-[4%] w-36 h-36 object-contain opacity-[0.17] dark:opacity-[0.09] pointer-events-none select-none" />
-            
-            {/* Scrat standing - far right, vertically centered */}
-            <img src={scratStandingImg} alt="" aria-hidden className="absolute top-[50%] right-[2%] w-40 h-32 object-contain opacity-[0.14] dark:opacity-[0.08] pointer-events-none select-none -translate-y-1/2" />
-            
-            {/* Scrat hanging - far left, vertically centered */}
-            <img src={scratHangingImg} alt="" aria-hidden className="absolute top-[55%] left-[2%] w-28 h-40 object-contain opacity-[0.15] dark:opacity-[0.08] pointer-events-none select-none" />
+            {/* === ICE AGE CHARACTERS (route-based) === */}
+            {getPageCharacters(location.pathname).map((item, i) => (
+              <img
+                key={`${location.pathname}-char-${i}`}
+                src={item.character.src}
+                alt=""
+                aria-hidden
+                className={`absolute ${item.pos} ${item.size} object-contain opacity-[0.18] dark:opacity-[0.10] pointer-events-none select-none`}
+              />
+            ))}
           </div>
         </div>
 
