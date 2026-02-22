@@ -22,9 +22,19 @@ export default function Dashboard() {
   const [vendasPorDia, setVendasPorDia] = useState<any[]>([]);
   const [producaoPorDia, setProducaoPorDia] = useState<any[]>([]);
   const [alertasEstoque, setAlertasEstoque] = useState<any[]>([]);
+  const [alertaIndex, setAlertaIndex] = useState(0);
   const [contasReceber, setContasReceber] = useState({ total: 0, vencidas: 0, quantidade: 0 });
 
   useEffect(() => { loadStats(); }, []);
+
+  // Auto-rotate alerts every 5 seconds
+  useEffect(() => {
+    if (alertasEstoque.length <= 1) return;
+    const interval = setInterval(() => {
+      setAlertaIndex((prev) => (prev + 1) % alertasEstoque.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [alertasEstoque.length]);
 
   async function loadStats() {
     try {
@@ -127,26 +137,51 @@ export default function Dashboard() {
     <div>
       <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
 
-      {/* Alertas de estoque baixo */}
+      {/* Alerta estilo Post-it com rotação automática */}
       {alertasEstoque.length > 0 && (
-        <Card className="mb-6 border-destructive/50 bg-destructive/5">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2 text-destructive">
-              <Bell className="h-4 w-4" />
-              Alertas de Estoque Baixo ({alertasEstoque.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {alertasEstoque.map((a, i) => (
-                <Badge key={i} variant="destructive" className="text-xs">
-                  <AlertTriangle className="h-3 w-3 mr-1" />
-                  {a.tipo}: {a.nome} ({a.atual}/{a.minimo})
-                </Badge>
-              ))}
+        <div className="mb-6 flex items-start gap-4">
+          <div
+            className="relative w-72 min-h-[140px] rounded-sm p-4 shadow-lg transform -rotate-1 transition-all duration-500"
+            style={{
+              background: "linear-gradient(135deg, hsl(45, 100%, 80%), hsl(45, 100%, 72%))",
+              boxShadow: "2px 4px 12px hsl(0 0% 0% / 0.15)",
+            }}
+          >
+            {/* Fita adesiva */}
+            <div
+              className="absolute -top-2 left-1/2 -translate-x-1/2 w-16 h-5 rounded-sm opacity-60"
+              style={{ background: "hsl(45, 30%, 85%)" }}
+            />
+
+            <div className="mt-3">
+              <div className="flex items-center gap-1.5 mb-2">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                <span className="text-xs font-bold text-destructive uppercase tracking-wide">Estoque Baixo</span>
+              </div>
+
+              <div key={alertaIndex} className="animate-fade-in">
+                <p className="text-sm font-bold text-foreground">{alertasEstoque[alertaIndex]?.tipo}</p>
+                <p className="text-lg font-extrabold text-foreground mt-0.5">{alertasEstoque[alertaIndex]?.nome}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Atual: <span className="font-bold text-destructive">{alertasEstoque[alertaIndex]?.atual}</span> / Mín: {alertasEstoque[alertaIndex]?.minimo}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between mt-3">
+                <div className="flex gap-1">
+                  {alertasEstoque.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setAlertaIndex(i)}
+                      className={`w-1.5 h-1.5 rounded-full transition-all ${i === alertaIndex ? "bg-destructive scale-125" : "bg-foreground/30"}`}
+                    />
+                  ))}
+                </div>
+                <span className="text-[10px] text-muted-foreground">{alertaIndex + 1}/{alertasEstoque.length}</span>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* KPI Cards */}
