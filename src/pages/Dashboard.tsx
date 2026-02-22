@@ -186,7 +186,7 @@ export default function Dashboard() {
                     src={postItCharacters[grouped.indexOf(cat) % postItCharacters.length]}
                     alt=""
                     aria-hidden
-                    className="absolute bottom-2 right-1 w-12 h-12 object-contain opacity-20 pointer-events-none select-none"
+                    className="absolute bottom-2 right-1 w-12 h-12 object-contain opacity-[0.12] pointer-events-none select-none"
                   />
                   <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-14 h-4 rounded-sm opacity-60" style={{ background: cat.fita }} />
                   <div className="mt-2 relative">
@@ -229,7 +229,7 @@ export default function Dashboard() {
                 src={postItCharacters[3]}
                 alt=""
                 aria-hidden
-                className="absolute bottom-2 right-1 w-12 h-12 object-contain opacity-20 pointer-events-none select-none"
+                className="absolute bottom-2 right-1 w-12 h-12 object-contain opacity-[0.12] pointer-events-none select-none"
               />
               <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-14 h-4 rounded-sm opacity-60" style={{ background: totalCard.fita }} />
               <div className="mt-2 relative">
