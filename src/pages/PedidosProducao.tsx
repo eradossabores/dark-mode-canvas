@@ -45,6 +45,7 @@ export default function PedidosProducao() {
   const [clienteId, setClienteId] = useState("");
   const [tipoEmbalagem, setTipoEmbalagem] = useState("padrão");
   const [dataEntrega, setDataEntrega] = useState("");
+  const [horaEntrega, setHoraEntrega] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [itens, setItens] = useState<ItemPedido[]>([]);
   const [saborSel, setSaborSel] = useState("");
@@ -87,7 +88,7 @@ export default function PedidosProducao() {
         .insert({
           cliente_id: clienteId,
           tipo_embalagem: tipoEmbalagem,
-          data_entrega: dataEntrega,
+          data_entrega: `${dataEntrega}T${horaEntrega}`,
           observacoes: observacoes || null,
         })
         .select()
@@ -119,6 +120,7 @@ export default function PedidosProducao() {
     setClienteId("");
     setTipoEmbalagem("padrão");
     setDataEntrega("");
+    setHoraEntrega("");
     setObservacoes("");
     setItens([]);
   }
@@ -140,7 +142,7 @@ export default function PedidosProducao() {
     setItens(itens.filter((_, i) => i !== idx));
   }
 
-  const canSubmit = clienteId && dataEntrega && itens.length > 0;
+  const canSubmit = clienteId && dataEntrega && horaEntrega && itens.length > 0;
 
   return (
     <div className="space-y-6">
@@ -171,8 +173,12 @@ export default function PedidosProducao() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Data/Hora da Entrega *</Label>
-                  <Input type="datetime-local" value={dataEntrega} onChange={(e) => setDataEntrega(e.target.value)} />
+                  <Label>Data da Entrega *</Label>
+                  <Input type="date" value={dataEntrega} onChange={(e) => setDataEntrega(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Hora da Entrega *</Label>
+                  <Input type="time" value={horaEntrega} onChange={(e) => setHoraEntrega(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>Tipo de Embalagem</Label>
