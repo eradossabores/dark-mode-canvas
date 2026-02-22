@@ -16,7 +16,7 @@ import {
 import * as XLSX from "xlsx";
 import {
   type ImportRow, type TipoImportacao, type LayoutType, type MatrixOrientation,
-  detectLayout, detectTipo, unpivotMatrix, parseRows, buildAnalise,
+  detectLayout, detectTipo, unpivotMatrix, unpivotWide, parseRows, buildAnalise,
 } from "@/lib/spreadsheet-helpers";
 import AnaliseResumoCard from "@/components/importar/AnaliseResumoCard";
 
@@ -76,11 +76,14 @@ export default function ImportarPlanilha() {
       const raw: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
       if (raw.length < 2) { toast({ title: "Planilha vazia", variant: "destructive" }); return; }
 
-      const detected = detectLayout(raw);
+      const detected = detectLayout(raw, sabores);
       setLayoutType(detected.layout);
 
       let headers: string[], dataRows: any[][];
-      if (detected.layout === "matrix" && detected.orientation) {
+      if (detected.layout === "wide" && detected.flavorCols) {
+        const u = unpivotWide(raw, detected.flavorCols, sabores);
+        headers = u.headers; dataRows = u.dataRows;
+      } else if (detected.layout === "matrix" && detected.orientation) {
         const u = unpivotMatrix(raw, detected.orientation);
         headers = u.headers; dataRows = u.dataRows;
       } else {
@@ -91,6 +94,8 @@ export default function ImportarPlanilha() {
 
       if (detected.layout === "matrix") {
         setDetectedTipo("producao"); setDetectedConfidence("high"); setConfirmedTipo("producao");
+      } else if (detected.layout === "wide") {
+        setDetectedTipo("vendas"); setDetectedConfidence("high"); setConfirmedTipo("vendas");
       } else {
         const d = detectTipo(headers);
         setDetectedTipo(d.tipo); setDetectedConfidence(d.confidence);
@@ -275,6 +280,7 @@ export default function ImportarPlanilha() {
                 <p className="text-sm text-muted-foreground">
                   Arquivo: <strong>{file.name}</strong> ({(file.size / 1024).toFixed(1)} KB)
                   {layoutType === "matrix" && <Badge variant="secondary" className="ml-2">Layout Matricial</Badge>}
+                  {layoutType === "wide" && <Badge variant="secondary" className="ml-2">Layout Wide (Sabores em Colunas)</Badge>}
                 </p>
               )}
 
@@ -373,6 +379,7 @@ export default function ImportarPlanilha() {
                           {tipoImportacao === "vendas" && <TableHead>Cliente</TableHead>}
                           {tipoImportacao === "producao" && <TableHead>Responsável</TableHead>}
                           {rows.some(r => r.statusPagamento) && <TableHead>Pagamento</TableHead>}
+                          {rows.some(r => r.formaPagamento) && <TableHead>F. Pagto</TableHead>}
                           <TableHead>Status</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -396,6 +403,9 @@ export default function ImportarPlanilha() {
                                   }>{row.statusPagamento}</Badge>
                                 ) : "-"}
                               </TableCell>
+                            )}
+                            {rows.some(r => r.formaPagamento) && (
+                              <TableCell>{row.formaPagamento || "-"}</TableCell>
                             )}
                             <TableCell>
                               {row.errors.length > 0 ? (
