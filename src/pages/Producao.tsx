@@ -7,10 +7,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
 import { realizarProducao } from "@/lib/supabase-helpers";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Trash2, Pencil, Eye, TrendingUp } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Plus, Trash2, Pencil, Eye, TrendingUp, CalendarIcon } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 export default function Producao() {
@@ -28,6 +33,7 @@ export default function Producao() {
   const [qtdLotes, setQtdLotes] = useState(1);
   const [qtdTotal, setQtdTotal] = useState(84);
   const [observacoes, setObservacoes] = useState("");
+  const [dataProducao, setDataProducao] = useState<Date>(new Date());
   const [funcList, setFuncList] = useState<string[]>([""]);
   const [loading, setLoading] = useState(false);
 
@@ -75,7 +81,7 @@ export default function Producao() {
   function updateFunc(i: number, val: string) { const list = [...funcList]; list[i] = val; setFuncList(list); }
 
   function resetForm() {
-    setSaborId(""); setModo("lote"); setQtdLotes(1); setQtdTotal(84); setObservacoes(""); setFuncList([""]);
+    setSaborId(""); setModo("lote"); setQtdLotes(1); setQtdTotal(84); setObservacoes(""); setFuncList([""]); setDataProducao(new Date());
   }
 
   async function handleSubmit() {
@@ -95,6 +101,16 @@ export default function Producao() {
         p_observacoes: observacoes,
         p_funcionarios: validFuncs.map(f => ({ funcionario_id: f, quantidade_produzida: 0 })),
       });
+
+      // Atualizar a data se diferente de hoje
+      const hoje = new Date();
+      if (dataProducao.toDateString() !== hoje.toDateString()) {
+        const { data: latestProd } = await (supabase as any)
+          .from("producoes").select("id").order("created_at", { ascending: false }).limit(1);
+        if (latestProd?.[0]) {
+          await (supabase as any).from("producoes").update({ created_at: dataProducao.toISOString() }).eq("id", latestProd[0].id);
+        }
+      }
       toast({ title: "Produção registrada com sucesso!" });
       setOpen(false); resetForm(); loadData();
     } catch (e: any) {
@@ -193,6 +209,29 @@ export default function Producao() {
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>Nova Produção</DialogTitle></DialogHeader>
             <div className="space-y-4">
+              <div>
+                <Label>Data da Produção</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn("w-full justify-start text-left font-normal", !dataProducao && "text-muted-foreground")}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dataProducao ? format(dataProducao, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dataProducao}
+                      onSelect={(d) => d && setDataProducao(d)}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
               <div><Label>Sabor</Label>
                 <Select value={saborId} onValueChange={setSaborId}>
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
