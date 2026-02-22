@@ -10,11 +10,13 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2, ClipboardList, Eye } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Plus, Trash2, ClipboardList, Eye, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
+// ... keep existing code (statusLabels, statusColors, ItemPedido interface)
 const statusLabels: Record<string, string> = {
   aguardando_producao: "Aguardando Produção",
   em_producao: "Em Produção",
@@ -40,6 +42,9 @@ export default function PedidosProducao() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [detailOrder, setDetailOrder] = useState<any>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editOrder, setEditOrder] = useState<any>(null);
 
   // Form state
   const [clienteId, setClienteId] = useState("");
@@ -50,6 +55,14 @@ export default function PedidosProducao() {
   const [itens, setItens] = useState<ItemPedido[]>([]);
   const [saborSel, setSaborSel] = useState("");
   const [qtdSel, setQtdSel] = useState("");
+
+  // Edit form state
+  const [editClienteId, setEditClienteId] = useState("");
+  const [editTipoEmbalagem, setEditTipoEmbalagem] = useState("");
+  const [editDataEntrega, setEditDataEntrega] = useState("");
+  const [editHoraEntrega, setEditHoraEntrega] = useState("");
+  const [editObservacoes, setEditObservacoes] = useState("");
+  const [editStatus, setEditStatus] = useState("");
 
   const { data: clientes } = useQuery({
     queryKey: ["clientes-ativos"],
@@ -81,6 +94,7 @@ export default function PedidosProducao() {
     },
   });
 
+  // ... keep existing code (createMutation, resetForm, addItem, removeItem, canSubmit)
   const createMutation = useMutation({
     mutationFn: async () => {
       const { data: pedido, error: pedidoErr } = await supabase
@@ -116,6 +130,45 @@ export default function PedidosProducao() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await supabase.from("pedido_producao_itens").delete().eq("pedido_id", id);
+      const { error } = await supabase.from("pedidos_producao").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pedidos-producao"] });
+      toast({ title: "Pedido excluído!" });
+      setDeleteId(null);
+    },
+    onError: (err: any) => {
+      toast({ title: "Erro ao excluir", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const editMutation = useMutation({
+    mutationFn: async () => {
+      if (!editOrder) return;
+      const { error } = await supabase.from("pedidos_producao").update({
+        cliente_id: editClienteId,
+        tipo_embalagem: editTipoEmbalagem,
+        data_entrega: `${editDataEntrega}T${editHoraEntrega}`,
+        observacoes: editObservacoes || null,
+        status: editStatus as any,
+      }).eq("id", editOrder.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pedidos-producao"] });
+      toast({ title: "Pedido atualizado!" });
+      setEditOpen(false);
+      setEditOrder(null);
+    },
+    onError: (err: any) => {
+      toast({ title: "Erro ao atualizar", description: err.message, variant: "destructive" });
+    },
+  });
+
   function resetForm() {
     setClienteId("");
     setTipoEmbalagem("padrão");
@@ -140,6 +193,18 @@ export default function PedidosProducao() {
 
   function removeItem(idx: number) {
     setItens(itens.filter((_, i) => i !== idx));
+  }
+
+  function openEdit(p: any) {
+    setEditOrder(p);
+    setEditClienteId(p.cliente_id);
+    setEditTipoEmbalagem(p.tipo_embalagem);
+    const dt = new Date(p.data_entrega);
+    setEditDataEntrega(format(dt, "yyyy-MM-dd"));
+    setEditHoraEntrega(format(dt, "HH:mm"));
+    setEditObservacoes(p.observacoes || "");
+    setEditStatus(p.status);
+    setEditOpen(true);
   }
 
   const canSubmit = clienteId && dataEntrega && horaEntrega && itens.length > 0;
@@ -274,7 +339,7 @@ export default function PedidosProducao() {
                   <TableHead>Entrega</TableHead>
                   <TableHead>Embalagem</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="w-10" />
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -293,9 +358,15 @@ export default function PedidosProducao() {
                         {statusLabels[p.status] || p.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-right space-x-1">
                       <Button variant="ghost" size="icon" onClick={() => setDetailOrder(p)}>
                         <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(p)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => setDeleteId(p.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -348,6 +419,81 @@ export default function PedidosProducao() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Edit dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Editar Pedido</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Cliente</Label>
+              <Select value={editClienteId} onValueChange={setEditClienteId}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {clientes?.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Data Entrega</Label>
+                <Input type="date" value={editDataEntrega} onChange={(e) => setEditDataEntrega(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Hora Entrega</Label>
+                <Input type="time" value={editHoraEntrega} onChange={(e) => setEditHoraEntrega(e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Tipo Embalagem</Label>
+              <Select value={editTipoEmbalagem} onValueChange={setEditTipoEmbalagem}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="padrão">Padrão</SelectItem>
+                  <SelectItem value="premium">Premium</SelectItem>
+                  <SelectItem value="personalizada">Personalizada</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={editStatus} onValueChange={setEditStatus}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(statusLabels).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Observações</Label>
+              <Textarea value={editObservacoes} onChange={(e) => setEditObservacoes(e.target.value)} />
+            </div>
+            <Button className="w-full" onClick={() => editMutation.mutate()} disabled={editMutation.isPending}>
+              {editMutation.isPending ? "Salvando..." : "Salvar Alterações"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirm */}
+      <AlertDialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir pedido?</AlertDialogTitle>
+            <AlertDialogDescription>Esta ação não pode ser desfeita. O pedido e seus itens serão removidos permanentemente.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deleteId && deleteMutation.mutate(deleteId)}>Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
