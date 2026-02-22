@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Plus, Trash2, Pencil, Eye, TrendingUp, CalendarIcon } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import Chart3DBarProducao from "@/components/Chart3DBarProducao";
 
 export default function Producao() {
   const [sabores, setSabores] = useState<any[]>([]);
@@ -288,38 +288,17 @@ export default function Producao() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Top 5 Sabores Mais Produzidos */}
+      {/* Top 5 Sabores Mais Produzidos - 3D Chart */}
       {topProduzidos.length > 0 && (
         <Card className="mb-6">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-primary" />
+              <span className="text-lg">📊</span>
               Top 5 Sabores Mais Produzidos
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
-              <div className="space-y-2">
-                {topProduzidos.map((s, i) => (
-                  <div key={i} className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-muted-foreground w-5">{i + 1}º</span>
-                      <span className="font-medium text-sm">{s.nome}</span>
-                    </div>
-                    <span className="text-sm text-muted-foreground">{s.total.toLocaleString("pt-BR")} un.</span>
-                  </div>
-                ))}
-              </div>
-              <ResponsiveContainer width="100%" height={160}>
-                <BarChart data={topProduzidos} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" fontSize={11} />
-                  <YAxis dataKey="nome" type="category" width={90} fontSize={11} />
-                  <Tooltip />
-                  <Bar dataKey="total" name="Produzidos" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <Chart3DBarProducao data={topProduzidos} />
           </CardContent>
         </Card>
       )}
