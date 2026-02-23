@@ -1,0 +1,1 @@
+ALTER TABLE public.materias_primas DROP CONSTRAINT IF EXISTS materias_primas_estoque_atual_check;
