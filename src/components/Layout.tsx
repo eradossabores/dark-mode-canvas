@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Package, Users, ShoppingCart, Factory,
-  Warehouse, ClipboardList, UserCog, ChevronLeft, ChevronRight, BarChart3, FileUp, Menu, X, DollarSign, Monitor, ShoppingBag
+  Warehouse, ClipboardList, UserCog, ChevronLeft, ChevronRight, BarChart3, FileUp, Menu, X, DollarSign, Monitor, ShoppingBag, Database
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.png";
@@ -28,6 +28,7 @@ const menuItems = [
   { path: "/painel/relatorios", label: "Relatórios", icon: BarChart3 },
   { path: "/painel/importar-planilha", label: "Upload Planilha", icon: FileUp },
   { path: "/painel/auditoria", label: "Auditoria", icon: ClipboardList },
+  { path: "/painel/diagnostico", label: "Diagnóstico", icon: Database },
 ];
 
 const allCharacters = [
@@ -70,7 +71,7 @@ const routeToIndex: Record<string, number> = {
   "/painel": 0, "/painel/producao": 1, "/painel/pedidos-producao": 2, "/painel/monitor-producao": 3,
   "/painel/vendas": 4, "/painel/a-receber": 5, "/painel/contas-a-pagar": 6,
   "/painel/estoque": 7, "/painel/clientes": 8, "/painel/funcionarios": 9,
-  "/painel/sabores": 10, "/painel/relatorios": 11, "/painel/importar-planilha": 12, "/painel/auditoria": 13,
+  "/painel/sabores": 10, "/painel/relatorios": 11, "/painel/importar-planilha": 12, "/painel/auditoria": 13, "/painel/diagnostico": 14,
 };
 
 function getPageCharacters(pathname: string) {
