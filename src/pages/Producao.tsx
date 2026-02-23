@@ -29,6 +29,15 @@ export default function Producao() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
+  interface ProdItem {
+    sabor_id: string;
+    sabor_nome: string;
+    modo: "lote" | "unidade";
+    qtdLotes: number;
+    qtdTotal: number;
+  }
+
+  const [prodItens, setProdItens] = useState<ProdItem[]>([]);
   const [saborId, setSaborId] = useState("");
   const [modo, setModo] = useState<"lote" | "unidade">("lote");
   const [qtdLotes, setQtdLotes] = useState(1);
@@ -86,11 +95,25 @@ export default function Producao() {
   function updateFunc(i: number, val: string) { const list = [...funcList]; list[i] = val; setFuncList(list); }
 
   function resetForm() {
-    setSaborId(""); setModo("lote"); setQtdLotes(1); setQtdTotal(84); setObservacoes(""); setFuncList([""]); setDataProducao(new Date());
+    setSaborId(""); setModo("lote"); setQtdLotes(1); setQtdTotal(84); setObservacoes(""); setFuncList([""]); setDataProducao(new Date()); setProdItens([]);
+  }
+
+  function addProdItem() {
+    if (!saborId) return toast({ title: "Selecione um sabor", variant: "destructive" });
+    if (prodItens.some(i => i.sabor_id === saborId)) return toast({ title: "Sabor já adicionado", variant: "destructive" });
+    const sabor = sabores.find(s => s.id === saborId);
+    if (!sabor) return;
+    const total = modo === "lote" ? qtdLotes * 84 : qtdTotal;
+    setProdItens([...prodItens, { sabor_id: saborId, sabor_nome: sabor.nome, modo, qtdLotes, qtdTotal: total }]);
+    setSaborId(""); setModo("lote"); setQtdLotes(1); setQtdTotal(84);
+  }
+
+  function removeProdItem(idx: number) {
+    setProdItens(prodItens.filter((_, i) => i !== idx));
   }
 
   async function handleSubmit() {
-    if (!saborId) return toast({ title: "Selecione um sabor", variant: "destructive" });
+    if (prodItens.length === 0) return toast({ title: "Adicione ao menos um sabor", variant: "destructive" });
     const validFuncs = funcList.filter(f => f !== "");
     if (validFuncs.length === 0) return toast({ title: "Adicione ao menos um responsável", variant: "destructive" });
 
@@ -98,25 +121,27 @@ export default function Producao() {
 
     setLoading(true);
     try {
-      await realizarProducao({
-        p_sabor_id: saborId, p_modo: modo,
-        p_quantidade_lotes: modo === "lote" ? qtdLotes : 0,
-        p_quantidade_total: qtdTotal,
-        p_operador: nomesFuncionarios || "sistema",
-        p_observacoes: observacoes,
-        p_funcionarios: validFuncs.map(f => ({ funcionario_id: f, quantidade_produzida: 0 })),
-      });
+      for (const item of prodItens) {
+        await realizarProducao({
+          p_sabor_id: item.sabor_id, p_modo: item.modo,
+          p_quantidade_lotes: item.modo === "lote" ? item.qtdLotes : 0,
+          p_quantidade_total: item.qtdTotal,
+          p_operador: nomesFuncionarios || "sistema",
+          p_observacoes: observacoes,
+          p_funcionarios: validFuncs.map(f => ({ funcionario_id: f, quantidade_produzida: 0 })),
+        });
 
-      // Atualizar a data se diferente de hoje
-      const hoje = new Date();
-      if (dataProducao.toDateString() !== hoje.toDateString()) {
-        const { data: latestProd } = await (supabase as any)
-          .from("producoes").select("id").order("created_at", { ascending: false }).limit(1);
-        if (latestProd?.[0]) {
-          await (supabase as any).from("producoes").update({ created_at: dataProducao.toISOString() }).eq("id", latestProd[0].id);
+        // Atualizar a data se diferente de hoje
+        const hoje = new Date();
+        if (dataProducao.toDateString() !== hoje.toDateString()) {
+          const { data: latestProd } = await (supabase as any)
+            .from("producoes").select("id").order("created_at", { ascending: false }).limit(1);
+          if (latestProd?.[0]) {
+            await (supabase as any).from("producoes").update({ created_at: dataProducao.toISOString() }).eq("id", latestProd[0].id);
+          }
         }
       }
-      toast({ title: "Produção registrada com sucesso!" });
+      toast({ title: `${prodItens.length} produção(ões) registrada(s) com sucesso!` });
       setOpen(false); resetForm(); loadData();
     } catch (e: any) {
       toast({ title: "Erro na produção", description: e.message, variant: "destructive" });
@@ -238,26 +263,75 @@ export default function Producao() {
                   </PopoverContent>
                 </Popover>
               </div>
-              <div><Label>Sabor</Label>
-                <Select value={saborId} onValueChange={setSaborId}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{sabores.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}</SelectContent>
-                </Select>
+              {/* Adicionar sabores */}
+              <div className="border rounded-md p-4 space-y-3 bg-muted/30">
+                <Label className="text-base font-semibold">Sabores a Produzir</Label>
+                <div className="grid grid-cols-1 gap-3">
+                  <div>
+                    <Label className="text-xs">Sabor</Label>
+                    <Select value={saborId} onValueChange={setSaborId}>
+                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectContent>{sabores.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs">Modo</Label>
+                      <Select value={modo} onValueChange={(v) => setModo(v as any)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="lote">Lote (84 un.)</SelectItem>
+                          <SelectItem value="unidade">Unidade</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      {modo === "lote" ? (
+                        <>
+                          <Label className="text-xs">Qtd. Lotes</Label>
+                          <Input type="number" min={1} value={qtdLotes} onChange={(e) => setQtdLotes(Number(e.target.value))} />
+                          <p className="text-xs text-muted-foreground mt-1">= {qtdLotes * 84} gelos</p>
+                        </>
+                      ) : (
+                        <>
+                          <Label className="text-xs">Qtd. Total</Label>
+                          <Input type="number" min={1} value={qtdTotal} onChange={(e) => setQtdTotal(Number(e.target.value))} />
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <Button type="button" size="sm" variant="secondary" onClick={addProdItem} className="w-full">
+                    <Plus className="h-4 w-4 mr-1" /> Adicionar Sabor
+                  </Button>
+                </div>
+                {prodItens.length > 0 && (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Sabor</TableHead>
+                        <TableHead>Modo</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
+                        <TableHead className="w-10" />
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {prodItens.map((item, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell>{item.sabor_nome}</TableCell>
+                          <TableCell className="capitalize text-xs">{item.modo === "lote" ? `${item.qtdLotes} lote(s)` : "unidade"}</TableCell>
+                          <TableCell className="text-right">{item.qtdTotal}</TableCell>
+                          <TableCell>
+                            <Button variant="ghost" size="icon" onClick={() => removeProdItem(idx)}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </div>
-              <div><Label>Modo</Label>
-                <Select value={modo} onValueChange={(v) => setModo(v as any)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="lote">Lote (84 un.)</SelectItem>
-                    <SelectItem value="unidade">Unidade</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {modo === "lote" ? (
-                <div><Label>Qtd. Lotes</Label><Input type="number" min={1} value={qtdLotes} onChange={(e) => setQtdLotes(Number(e.target.value))} /><p className="text-xs text-muted-foreground mt-1">Total: {qtdLotes * 84} gelos</p></div>
-              ) : (
-                <div><Label>Qtd. Total</Label><Input type="number" min={1} value={qtdTotal} onChange={(e) => setQtdTotal(Number(e.target.value))} /></div>
-              )}
+
               <div><Label>Observações</Label><Input value={observacoes} onChange={(e) => setObservacoes(e.target.value)} /></div>
               <div>
                 <div className="flex items-center justify-between mb-2">
@@ -274,7 +348,7 @@ export default function Producao() {
                   </div>
                 ))}
               </div>
-              <Button className="w-full" onClick={handleSubmit} disabled={loading}>{loading ? "Processando..." : "Registrar Produção"}</Button>
+              <Button className="w-full" onClick={handleSubmit} disabled={loading || prodItens.length === 0}>{loading ? "Processando..." : `Registrar ${prodItens.length} Produção(ões)`}</Button>
             </div>
           </DialogContent>
         </Dialog>
