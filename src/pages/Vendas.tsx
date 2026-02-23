@@ -284,9 +284,15 @@ export default function Vendas() {
                   </div>
                 ))}
                 {itens.length > 0 && (
-                  <div className="flex justify-between items-center mt-3 pt-3 border-t font-semibold">
-                    <span>Total da Venda:</span>
-                    <span className="text-lg">R$ {itens.reduce((sum, item) => sum + (Number(item.preco_unitario) || 0) * (item.quantidade || 0), 0).toFixed(2)}</span>
+                  <div className="mt-3 pt-3 border-t font-semibold space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span>Total de Gelos:</span>
+                      <span className="text-lg">{itens.reduce((sum, item) => sum + (item.quantidade || 0), 0)} un.</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span>Total da Venda:</span>
+                      <span className="text-lg">R$ {itens.reduce((sum, item) => sum + (Number(item.preco_unitario) || 0) * (item.quantidade || 0), 0).toFixed(2)}</span>
+                    </div>
                   </div>
                 )}
               </div>
