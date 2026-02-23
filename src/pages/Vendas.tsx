@@ -29,6 +29,12 @@ const FORMAS_PAGAMENTO = [
   { value: "fiado", label: "Fiado" },
 ];
 
+const TOP_SABORES = ["melancia", "morango", "maca verde", "maracuja", "agua de coco"];
+
+function normalizeStr(s: string) {
+  return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[çÇ]/g, "c");
+}
+
 export default function Vendas() {
   const [clientes, setClientes] = useState<any[]>([]);
   const [sabores, setSabores] = useState<any[]>([]);
@@ -122,8 +128,8 @@ export default function Vendas() {
   }
 
   async function handleSubmit() {
-    if (itens.length === 0) return toast({ title: "Adicione ao menos um gelo", variant: "destructive" });
-    if (itens.some(i => !i.sabor_id)) return toast({ title: "Selecione o sabor de todos os itens", variant: "destructive" });
+    const itensValidos = itens.filter(i => i.sabor_id && i.quantidade > 0);
+    if (itensValidos.length === 0) return toast({ title: "Adicione ao menos um gelo com quantidade", variant: "destructive" });
     if (!clienteId) return toast({ title: "Selecione o cliente", variant: "destructive" });
 
     setLoading(true);
@@ -140,7 +146,7 @@ export default function Vendas() {
         p_observacoes: observacoes
           ? `[${formaPagamento}]${formaPagamento === "parcelado" && valorTotal ? ` Valor: R$${valorTotal} | Entrada: R$${valorEntrada} | Restante: R$${valorRestante}` : ""} ${observacoes}`
           : `[${formaPagamento}]${formaPagamento === "parcelado" && valorTotal ? ` Valor: R$${valorTotal} | Entrada: R$${valorEntrada} | Restante: R$${valorRestante}` : ""}`,
-        p_itens: itens,
+        p_itens: itensValidos,
         ...(parcelasData ? { p_parcelas: parcelasData } : {}),
         p_ignorar_estoque: ignorarEstoque,
       });
@@ -248,7 +254,16 @@ export default function Vendas() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Vendas</h1>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(v) => {
+          setOpen(v);
+          if (v && itens.length === 0 && sabores.length > 0) {
+            const preSelected = TOP_SABORES
+              .map(name => sabores.find(s => normalizeStr(s.nome) === name || normalizeStr(s.nome).includes(name)))
+              .filter(Boolean)
+              .map(s => ({ sabor_id: s.id, quantidade: 0, preco_unitario: "", preco_auto: false }));
+            if (preSelected.length > 0) setItens(preSelected);
+          }
+        }}>
           <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-2" />Nova Venda</Button></DialogTrigger>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>Nova Venda</DialogTitle></DialogHeader>
