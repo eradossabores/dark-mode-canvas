@@ -66,6 +66,7 @@ export default function Vendas() {
   const [editNf, setEditNf] = useState("");
   const [editData, setEditData] = useState<Date>(new Date());
   const [editItens, setEditItens] = useState<any[]>([]);
+  const [editIgnorarEstoque, setEditIgnorarEstoque] = useState(false);
 
   // Detail state
   const [detailVenda, setDetailVenda] = useState<any>(null);
@@ -468,6 +469,10 @@ export default function Vendas() {
             )}
             <div><Label>Observações</Label><Input value={editObs} onChange={(e) => setEditObs(e.target.value)} /></div>
             <div><Label>Nº NF</Label><Input value={editNf} onChange={(e) => setEditNf(e.target.value)} placeholder="Número da nota fiscal" /></div>
+            <div className="flex items-center space-x-2">
+              <Checkbox id="edit-ignorar-estoque" checked={editIgnorarEstoque} onCheckedChange={(v) => setEditIgnorarEstoque(!!v)} />
+              <Label htmlFor="edit-ignorar-estoque" className="text-sm font-normal cursor-pointer">Lançamento retroativo (ignorar estoque)</Label>
+            </div>
             <Button className="w-full" onClick={handleEditSave}>Salvar Alterações</Button>
           </div>
         </DialogContent>
