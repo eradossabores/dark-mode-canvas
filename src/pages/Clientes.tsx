@@ -26,7 +26,12 @@ export default function Clientes() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
   const [page, setPage] = useState(0);
+  const [busca, setBusca] = useState("");
   const PAGE_SIZE = 20;
+
+  const clientesFiltrados = clientes.filter((c) =>
+    c.nome?.toLowerCase().includes(busca.toLowerCase())
+  );
 
   useEffect(() => { loadData(); }, []);
 
@@ -124,9 +129,18 @@ export default function Clientes() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold">Clientes</h1>
         <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" />Novo Cliente</Button>
+      </div>
+
+      <div className="mb-4">
+        <Input
+          placeholder="Buscar cliente pelo nome..."
+          value={busca}
+          onChange={(e) => { setBusca(e.target.value); setPage(0); }}
+          className="max-w-sm"
+        />
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -194,7 +208,7 @@ export default function Clientes() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {clientes.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((c) => {
+              {clientesFiltrados.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((c) => {
                 const dias = diasSemComprar(c.ultima_compra);
                 return (
                   <TableRow key={c.id}>
@@ -221,19 +235,19 @@ export default function Clientes() {
                   </TableRow>
                 );
               })}
-              {clientes.length === 0 && (
-                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Nenhum cliente.</TableCell></TableRow>
+              {clientesFiltrados.length === 0 && (
+                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Nenhum cliente encontrado.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
-          {clientes.length > PAGE_SIZE && (
+          {clientesFiltrados.length > PAGE_SIZE && (
             <div className="flex items-center justify-between mt-4">
               <span className="text-sm text-muted-foreground">
-                {page * PAGE_SIZE + 1}-{Math.min((page + 1) * PAGE_SIZE, clientes.length)} de {clientes.length}
+                {page * PAGE_SIZE + 1}-{Math.min((page + 1) * PAGE_SIZE, clientesFiltrados.length)} de {clientesFiltrados.length}
               </span>
               <div className="flex gap-2">
                 <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage(p => p - 1)}>Anterior</Button>
-                <Button size="sm" variant="outline" disabled={(page + 1) * PAGE_SIZE >= clientes.length} onClick={() => setPage(p => p + 1)}>Próxima</Button>
+                <Button size="sm" variant="outline" disabled={(page + 1) * PAGE_SIZE >= clientesFiltrados.length} onClick={() => setPage(p => p + 1)}>Próxima</Button>
               </div>
             </div>
           )}
