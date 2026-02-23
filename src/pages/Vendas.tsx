@@ -56,6 +56,7 @@ export default function Vendas() {
   const [valorRestante, setValorRestante] = useState("");
   const [ignorarEstoque, setIgnorarEstoque] = useState(false);
   const [statusVenda, setStatusVenda] = useState("pendente");
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 20;
@@ -137,10 +138,16 @@ export default function Vendas() {
 
     setLoading(true);
     try {
+      const toLocalDateStr = (d: Date) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${y}-${m}-${day}`;
+      };
       const parcelasData = formaPagamento === "parcelado" && valorEntrada
         ? [
-            { valor: Number(valorEntrada), vencimento: dataVenda.toISOString().split("T")[0] },
-            ...(Number(valorRestante) > 0 ? [{ valor: Number(valorRestante), vencimento: new Date(dataVenda.getTime() + 30 * 86400000).toISOString().split("T")[0] }] : []),
+            { valor: Number(valorEntrada), vencimento: toLocalDateStr(dataVenda) },
+            ...(Number(valorRestante) > 0 ? [{ valor: Number(valorRestante), vencimento: toLocalDateStr(new Date(dataVenda.getTime() + 30 * 86400000)) }] : []),
           ]
         : undefined;
 
@@ -170,7 +177,8 @@ export default function Vendas() {
           .from("vendas").select("id").eq("cliente_id", clienteId)
           .order("created_at", { ascending: false }).limit(1);
         if (latestVendaData?.[0]) {
-          await (supabase as any).from("vendas").update({ created_at: dataVenda.toISOString() }).eq("id", latestVendaData[0].id);
+          const localStr = `${dataVenda.getFullYear()}-${String(dataVenda.getMonth() + 1).padStart(2, "0")}-${String(dataVenda.getDate()).padStart(2, "0")}T12:00:00`;
+          await (supabase as any).from("vendas").update({ created_at: localStr }).eq("id", latestVendaData[0].id);
         }
       }
 
@@ -214,7 +222,7 @@ export default function Vendas() {
       // Update venda header
       const { error } = await (supabase as any).from("vendas").update({
         status: editStatus, forma_pagamento: editForma, observacoes: editObs, numero_nf: editNf.trim() || null,
-        created_at: editData.toISOString(),
+        created_at: `${editData.getFullYear()}-${String(editData.getMonth() + 1).padStart(2, "0")}-${String(editData.getDate()).padStart(2, "0")}T12:00:00`,
       }).eq("id", editVenda.id);
       if (error) throw error;
 
@@ -295,7 +303,7 @@ export default function Vendas() {
             <div className="space-y-4">
               <div>
                 <Label>Data da Venda</Label>
-                <Popover>
+              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
@@ -309,7 +317,10 @@ export default function Vendas() {
                     <Calendar
                       mode="single"
                       selected={dataVenda}
-                      onSelect={(d) => d && setDataVenda(d)}
+                      onSelect={(d) => {
+                        if (d) setDataVenda(d);
+                        setCalendarOpen(false);
+                      }}
                       initialFocus
                       className={cn("p-3 pointer-events-auto")}
                     />
