@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { Package, ShoppingCart, Factory, Users, AlertTriangle, TrendingUp, DollarSign, Bell } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
 import sidImg from "@/assets/sid.png";
 import buckImg from "@/assets/buck.png";
@@ -22,6 +23,7 @@ const CHART_COLORS = [
 ];
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalGelos: 0, totalClientes: 0, totalVendas: 0,
     totalProducoes: 0, faturamento: 0, clientesInativos: 0,
@@ -133,12 +135,12 @@ export default function Dashboard() {
   }
 
   const cards = [
-    { title: "Gelos em Estoque", value: stats.totalGelos.toLocaleString(), icon: Package, color: "text-primary" },
-    { title: "Clientes Ativos", value: stats.totalClientes, icon: Users, color: "text-secondary-foreground" },
-    { title: "Total Vendas", value: stats.totalVendas, icon: ShoppingCart, color: "text-accent" },
-    { title: "Faturamento", value: `R$ ${stats.faturamento.toFixed(2)}`, icon: TrendingUp, color: "text-primary" },
-    { title: "Produções", value: stats.totalProducoes, icon: Factory, color: "text-secondary-foreground" },
-    { title: "A Receber", value: `R$ ${contasReceber.total.toFixed(2)}`, icon: DollarSign, color: contasReceber.vencidas > 0 ? "text-destructive" : "text-primary" },
+    { title: "Gelos em Estoque", value: stats.totalGelos.toLocaleString(), icon: Package, color: "text-primary", href: "/estoque" },
+    { title: "Clientes Ativos", value: stats.totalClientes, icon: Users, color: "text-secondary-foreground", href: "/clientes" },
+    { title: "Total Vendas", value: stats.totalVendas, icon: ShoppingCart, color: "text-accent", href: "/vendas" },
+    { title: "Faturamento", value: `R$ ${stats.faturamento.toFixed(2)}`, icon: TrendingUp, color: "text-primary", href: "/vendas" },
+    { title: "Produções", value: stats.totalProducoes, icon: Factory, color: "text-secondary-foreground", href: "/producao" },
+    { title: "A Receber", value: `R$ ${contasReceber.total.toFixed(2)}`, icon: DollarSign, color: contasReceber.vencidas > 0 ? "text-destructive" : "text-primary", href: "/a-receber" },
   ];
 
   return (
@@ -256,7 +258,11 @@ export default function Dashboard() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
         {cards.map((c) => (
-          <Card key={c.title}>
+          <Card
+            key={c.title}
+            className="cursor-pointer transition-all hover:scale-[1.03] hover:shadow-md"
+            onClick={() => navigate(c.href)}
+          >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground">{c.title}</CardTitle>
               <c.icon className={`h-4 w-4 ${c.color}`} />
