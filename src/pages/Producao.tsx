@@ -575,7 +575,15 @@ export default function Producao() {
           </CardHeader>
           <CardContent>
             {topProduzidos.length > 0 ? (
-              <Chart3DBarProducao data={topProduzidos} />
+              <>
+                <div className="text-center mb-2">
+                  <span className="text-xs text-muted-foreground">Quantidade Total no Período:</span>
+                  <span className="ml-2 text-lg font-bold text-primary">
+                    {topProduzidos.reduce((s, i) => s + i.total, 0).toLocaleString("pt-BR")} un
+                  </span>
+                </div>
+                <Chart3DBarProducao data={topProduzidos} />
+              </>
             ) : (
               <p className="text-center text-muted-foreground py-8">Nenhuma produção neste período.</p>
             )}
