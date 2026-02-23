@@ -20,6 +20,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, ShoppingCart, Pencil, Eye, CalendarIcon } from "lucide-react";
 
 const FORMAS_PAGAMENTO = [
+  { value: "amostra", label: "Amostra (Grátis)" },
   { value: "dinheiro", label: "Dinheiro" },
   { value: "pix", label: "PIX" },
   { value: "cartao_credito", label: "Cartão de Crédito" },
@@ -27,7 +28,6 @@ const FORMAS_PAGAMENTO = [
   { value: "boleto", label: "Boleto" },
   { value: "parcelado", label: "Parcelado" },
   { value: "fiado", label: "Fiado" },
-  { value: "gratis", label: "Grátis" },
 ];
 
 const TOP_SABORES = ["melancia", "morango", "maca verde", "maracuja", "agua de coco"];
