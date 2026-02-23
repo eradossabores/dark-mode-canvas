@@ -27,6 +27,7 @@ const FORMAS_PAGAMENTO = [
   { value: "boleto", label: "Boleto" },
   { value: "parcelado", label: "Parcelado" },
   { value: "fiado", label: "Fiado" },
+  { value: "gratis", label: "Grátis" },
 ];
 
 const TOP_SABORES = ["melancia", "morango", "maca verde", "maracuja", "agua de coco"];
