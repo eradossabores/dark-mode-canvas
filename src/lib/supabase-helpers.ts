@@ -39,8 +39,12 @@ export async function realizarProducao(params: {
   p_operador: string;
   p_observacoes: string;
   p_funcionarios: { funcionario_id: string; quantidade_produzida: number }[];
+  p_ignorar_estoque?: boolean;
 }) {
-  const { data, error } = await supabase.rpc("realizar_producao" as any, params);
+  const { data, error } = await supabase.rpc("realizar_producao" as any, {
+    ...params,
+    p_ignorar_estoque: params.p_ignorar_estoque ?? false,
+  });
   if (error) throw error;
   return data;
 }

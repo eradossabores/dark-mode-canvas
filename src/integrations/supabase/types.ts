@@ -741,18 +741,32 @@ export type Database = {
         Args: { p_cliente_id: string; p_quantidade: number; p_sabor_id: string }
         Returns: number
       }
-      realizar_producao: {
-        Args: {
-          p_funcionarios: Json
-          p_modo: Database["public"]["Enums"]["modo_producao"]
-          p_observacoes: string
-          p_operador: string
-          p_quantidade_lotes: number
-          p_quantidade_total: number
-          p_sabor_id: string
-        }
-        Returns: string
-      }
+      realizar_producao:
+        | {
+            Args: {
+              p_funcionarios: Json
+              p_modo: Database["public"]["Enums"]["modo_producao"]
+              p_observacoes: string
+              p_operador: string
+              p_quantidade_lotes: number
+              p_quantidade_total: number
+              p_sabor_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_funcionarios: Json
+              p_ignorar_estoque?: boolean
+              p_modo: Database["public"]["Enums"]["modo_producao"]
+              p_observacoes: string
+              p_operador: string
+              p_quantidade_lotes: number
+              p_quantidade_total: number
+              p_sabor_id: string
+            }
+            Returns: string
+          }
       realizar_venda: {
         Args: {
           p_cliente_id: string
