@@ -280,6 +280,12 @@ export default function Vendas() {
                     <Button size="icon" variant="ghost" onClick={() => removeItem(i)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                   </div>
                 ))}
+                {itens.length > 0 && (
+                  <div className="flex justify-between items-center mt-3 pt-3 border-t font-semibold">
+                    <span>Total da Venda:</span>
+                    <span className="text-lg">R$ {itens.reduce((sum, item) => sum + (Number(item.preco_unitario) || 0) * (item.quantidade || 0), 0).toFixed(2)}</span>
+                  </div>
+                )}
               </div>
               <div><Label>Cliente</Label>
                 <Select value={clienteId} onValueChange={(v) => { setClienteId(v); recalcPrecos(v); }}>
