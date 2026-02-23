@@ -314,6 +314,12 @@ export default function Vendas() {
                   </PopoverContent>
                 </Popover>
               </div>
+              <div><Label>Cliente</Label>
+                <Select value={clienteId} onValueChange={(v) => { setClienteId(v); recalcPrecos(v); }}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>{clientes.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <Label className="text-base font-semibold flex items-center gap-2"><ShoppingCart className="h-4 w-4" /> Gelos</Label>
@@ -354,12 +360,6 @@ export default function Vendas() {
                     </div>
                   </div>
                 )}
-              </div>
-              <div><Label>Cliente</Label>
-                <Select value={clienteId} onValueChange={(v) => { setClienteId(v); recalcPrecos(v); }}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{clientes.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
-                </Select>
               </div>
               <div><Label>Forma de Pagamento</Label>
                 <Select value={formaPagamento} onValueChange={(v) => { setFormaPagamento(v); if (v !== "parcelado") { setValorTotal(""); setValorEntrada(""); setValorRestante(""); } }}>
