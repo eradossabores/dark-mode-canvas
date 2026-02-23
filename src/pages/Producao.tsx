@@ -27,6 +27,7 @@ export default function Producao() {
   const [producoes, setProducoes] = useState<any[]>([]);
   const [chartPeriodo, setChartPeriodo] = useState<"dia" | "semana" | "mes">("mes");
   const [chartDate, setChartDate] = useState<Date>(new Date());
+  const [chartView, setChartView] = useState<"top5" | "todos">("top5");
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -125,6 +126,33 @@ export default function Producao() {
       saborMap[nome].total += item.quantidade_total;
     });
     return Object.values(saborMap).sort((a, b) => b.total - a.total).slice(0, 5);
+  }, [producoes, chartPeriodo, chartDate]);
+
+  const todosProduzidos = useMemo(() => {
+    let start: Date;
+    let end: Date;
+    if (chartPeriodo === "dia") {
+      start = startOfDay(chartDate);
+      end = endOfDay(chartDate);
+    } else if (chartPeriodo === "semana") {
+      const w = getMonthWeek(chartDate);
+      start = startOfDay(w.start);
+      end = endOfDay(w.end);
+    } else {
+      start = startOfMonth(chartDate);
+      end = endOfMonth(chartDate);
+    }
+    const filtered = producoes.filter(p => {
+      const d = new Date(p.created_at);
+      return !isBefore(d, start) && !isAfter(d, end);
+    });
+    const saborMap: Record<string, { nome: string; total: number }> = {};
+    filtered.forEach((item: any) => {
+      const nome = item.sabores?.nome || "?";
+      if (!saborMap[nome]) saborMap[nome] = { nome, total: 0 };
+      saborMap[nome].total += item.quantidade_total;
+    });
+    return Object.values(saborMap).sort((a, b) => b.total - a.total);
   }, [producoes, chartPeriodo, chartDate]);
 
   const chartPeriodoLabel = useMemo(() => {
@@ -525,7 +553,11 @@ export default function Producao() {
             <div className="flex items-center justify-between flex-wrap gap-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <span className="text-lg">📊</span>
-                Top 5 Sabores Mais Produzidos
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setChartView(prev => prev === "top5" ? "todos" : "top5")}>◀</Button>
+                  <span>{chartView === "top5" ? "Top 5 Sabores Mais Produzidos" : "Todos os Sabores Produzidos"}</span>
+                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setChartView(prev => prev === "top5" ? "todos" : "top5")}>▶</Button>
+                </div>
               </CardTitle>
               <div className="flex items-center gap-2 flex-wrap">
                 {(["dia", "semana", "mes"] as const).map((p) => (
@@ -574,19 +606,21 @@ export default function Producao() {
             </div>
           </CardHeader>
           <CardContent>
-            {topProduzidos.length > 0 ? (
-              <>
-                <div className="text-center mb-2">
-                  <span className="text-xs text-muted-foreground">Quantidade Total no Período:</span>
-                  <span className="ml-2 text-lg font-bold text-primary">
-                    {topProduzidos.reduce((s, i) => s + i.total, 0).toLocaleString("pt-BR")} un
-                  </span>
-                </div>
-                <Chart3DBarProducao data={topProduzidos} />
-              </>
-            ) : (
-              <p className="text-center text-muted-foreground py-8">Nenhuma produção neste período.</p>
-            )}
+            {(() => {
+              const currentData = chartView === "top5" ? topProduzidos : todosProduzidos;
+              if (currentData.length === 0) return <p className="text-center text-muted-foreground py-8">Nenhuma produção neste período.</p>;
+              return (
+                <>
+                  <div className="text-center mb-2">
+                    <span className="text-xs text-muted-foreground">Quantidade Total no Período:</span>
+                    <span className="ml-2 text-lg font-bold text-primary">
+                      {currentData.reduce((s, i) => s + i.total, 0).toLocaleString("pt-BR")} un
+                    </span>
+                  </div>
+                  <Chart3DBarProducao data={currentData} />
+                </>
+              );
+            })()}
           </CardContent>
         </Card>
 
