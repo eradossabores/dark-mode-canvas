@@ -80,12 +80,25 @@ export default function Clientes() {
     }
   }
 
-  async function handleDelete() {
+  async function handleDeactivate() {
     if (!deleteId) return;
     try {
       const { error } = await (supabase as any).from("clientes").update({ status: "inativo" }).eq("id", deleteId);
       if (error) throw error;
       toast({ title: "Cliente desativado!" });
+      setDeleteId(null);
+      loadData();
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+  }
+
+  async function handleDeletePermanent() {
+    if (!deleteId) return;
+    try {
+      const { error } = await (supabase as any).from("clientes").delete().eq("id", deleteId);
+      if (error) throw error;
+      toast({ title: "Cliente apagado permanentemente!" });
       setDeleteId(null);
       loadData();
     } catch (e: any) {
@@ -150,12 +163,18 @@ export default function Clientes() {
       <AlertDialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Desativar cliente?</AlertDialogTitle>
-            <AlertDialogDescription>O cliente será marcado como inativo e não aparecerá nas vendas.</AlertDialogDescription>
+            <AlertDialogTitle>O que deseja fazer com este cliente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              <strong>Desativar:</strong> O cliente será marcado como inativo mas seus dados serão mantidos.<br />
+              <strong>Apagar:</strong> O cliente será removido permanentemente do sistema. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="flex gap-2 sm:justify-between">
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Desativar</AlertDialogAction>
+            <div className="flex gap-2">
+              <AlertDialogAction onClick={handleDeactivate} className="bg-amber-600 hover:bg-amber-700 text-white">Desativar</AlertDialogAction>
+              <AlertDialogAction onClick={handleDeletePermanent} className="bg-destructive hover:bg-destructive/90">Apagar</AlertDialogAction>
+            </div>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
