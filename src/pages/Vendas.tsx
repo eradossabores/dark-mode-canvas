@@ -58,6 +58,8 @@ export default function Vendas() {
   const [editForma, setEditForma] = useState("");
   const [editObs, setEditObs] = useState("");
   const [editNf, setEditNf] = useState("");
+  const [editData, setEditData] = useState<Date>(new Date());
+  const [editItens, setEditItens] = useState<any[]>([]);
 
   // Detail state
   const [detailVenda, setDetailVenda] = useState<any>(null);
@@ -173,22 +175,41 @@ export default function Vendas() {
     }
   }
 
-  function openEditDialog(v: any) {
+  async function openEditDialog(v: any) {
     setEditVenda(v);
     setEditStatus(v.status);
     setEditForma(v.forma_pagamento || "dinheiro");
     setEditObs(v.observacoes || "");
     setEditNf(v.numero_nf || "");
+    setEditData(new Date(v.created_at));
+    // Load items
+    const { data } = await (supabase as any).from("venda_itens").select("*, sabores(nome)").eq("venda_id", v.id);
+    setEditItens((data || []).map((it: any) => ({ ...it, quantidade: it.quantidade })));
     setEditOpen(true);
   }
 
   async function handleEditSave() {
     if (!editVenda) return;
     try {
+      // Update venda header
       const { error } = await (supabase as any).from("vendas").update({
         status: editStatus, forma_pagamento: editForma, observacoes: editObs, numero_nf: editNf.trim() || null,
+        created_at: editData.toISOString(),
       }).eq("id", editVenda.id);
       if (error) throw error;
+
+      // Update item quantities and recalc totals
+      let newTotal = 0;
+      for (const item of editItens) {
+        const subtotal = Number(item.preco_unitario) * item.quantidade;
+        newTotal += subtotal;
+        await (supabase as any).from("venda_itens").update({
+          quantidade: item.quantidade,
+          subtotal: subtotal,
+        }).eq("id", item.id);
+      }
+      await (supabase as any).from("vendas").update({ total: newTotal }).eq("id", editVenda.id);
+
       toast({ title: "Venda atualizada!" });
       setEditOpen(false);
       loadData();
@@ -347,9 +368,23 @@ export default function Vendas() {
 
       {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Editar Venda</DialogTitle></DialogHeader>
           <div className="space-y-4">
+            <div>
+              <Label>Data da Venda</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {format(editData, "dd/MM/yyyy", { locale: ptBR })}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={editData} onSelect={(d) => d && setEditData(d)} initialFocus className="p-3 pointer-events-auto" />
+                </PopoverContent>
+              </Popover>
+            </div>
             <div><Label>Status</Label>
               <Select value={editStatus} onValueChange={setEditStatus}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -366,6 +401,34 @@ export default function Vendas() {
                 <SelectContent>{FORMAS_PAGAMENTO.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}</SelectContent>
               </Select>
             </div>
+            {editItens.length > 0 && (
+              <div>
+                <Label className="text-base font-semibold">Itens da Venda</Label>
+                {editItens.map((item, i) => (
+                  <div key={item.id} className="flex gap-2 mb-2 items-center">
+                    <span className="flex-1 text-sm truncate">{item.sabores?.nome}</span>
+                    <Input
+                      type="number"
+                      className="w-20"
+                      min={1}
+                      value={item.quantidade}
+                      onChange={(e) => {
+                        const updated = [...editItens];
+                        updated[i] = { ...updated[i], quantidade: Number(e.target.value) || 0 };
+                        setEditItens(updated);
+                      }}
+                    />
+                    <span className="text-sm text-muted-foreground w-24 text-right">
+                      R$ {(Number(item.preco_unitario) * (item.quantidade || 0)).toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+                <div className="flex justify-between items-center mt-2 pt-2 border-t font-semibold text-sm">
+                  <span>Novo Total:</span>
+                  <span>R$ {editItens.reduce((sum, it) => sum + Number(it.preco_unitario) * (it.quantidade || 0), 0).toFixed(2)}</span>
+                </div>
+              </div>
+            )}
             <div><Label>Observações</Label><Input value={editObs} onChange={(e) => setEditObs(e.target.value)} /></div>
             <div><Label>Nº NF</Label><Input value={editNf} onChange={(e) => setEditNf(e.target.value)} placeholder="Número da nota fiscal" /></div>
             <Button className="w-full" onClick={handleEditSave}>Salvar Alterações</Button>
