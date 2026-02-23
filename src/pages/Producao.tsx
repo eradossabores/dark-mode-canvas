@@ -85,6 +85,20 @@ export default function Producao() {
 
   }
 
+  // Helper: semanas do mês começando no dia 1
+  function getMonthWeek(date: Date): { start: Date; end: Date } {
+    const monthStart = startOfMonth(date);
+    const monthEnd = endOfMonth(date);
+    const dayOfMonth = date.getDate();
+    const weekIndex = Math.floor((dayOfMonth - 1) / 7);
+    const start = new Date(monthStart);
+    start.setDate(1 + weekIndex * 7);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    if (end > monthEnd) return { start, end: monthEnd };
+    return { start, end: endOfDay(end) };
+  }
+
   const topProduzidos = useMemo(() => {
     let start: Date;
     let end: Date;
@@ -92,8 +106,9 @@ export default function Producao() {
       start = startOfDay(chartDate);
       end = endOfDay(chartDate);
     } else if (chartPeriodo === "semana") {
-      start = startOfWeek(chartDate, { weekStartsOn: 1 });
-      end = endOfWeek(chartDate, { weekStartsOn: 1 });
+      const w = getMonthWeek(chartDate);
+      start = startOfDay(w.start);
+      end = endOfDay(w.end);
     } else {
       start = startOfMonth(chartDate);
       end = endOfMonth(chartDate);
@@ -115,9 +130,8 @@ export default function Producao() {
   const chartPeriodoLabel = useMemo(() => {
     if (chartPeriodo === "dia") return format(chartDate, "dd/MM/yyyy");
     if (chartPeriodo === "semana") {
-      const s = startOfWeek(chartDate, { weekStartsOn: 1 });
-      const e = endOfWeek(chartDate, { weekStartsOn: 1 });
-      return `${format(s, "dd/MM")} a ${format(e, "dd/MM")}`;
+      const w = getMonthWeek(chartDate);
+      return `${format(w.start, "dd/MM")} a ${format(w.end, "dd/MM")}`;
     }
     return format(chartDate, "MMMM yyyy", { locale: ptBR });
   }, [chartDate, chartPeriodo]);
@@ -528,7 +542,11 @@ export default function Producao() {
                 <div className="flex items-center gap-1">
                   <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => {
                     if (chartPeriodo === "dia") setChartDate(prev => addDays(prev, -1));
-                    else if (chartPeriodo === "semana") setChartDate(prev => addDays(prev, -7));
+                    else if (chartPeriodo === "semana") setChartDate(prev => {
+                      const w = getMonthWeek(prev);
+                      const newDate = addDays(w.start, -1);
+                      return newDate < startOfMonth(prev) ? new Date(prev.getFullYear(), prev.getMonth() - 1, 28) : newDate;
+                    });
                     else setChartDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
                   }}>←</Button>
                   <Popover>
@@ -544,7 +562,11 @@ export default function Producao() {
                   </Popover>
                   <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => {
                     if (chartPeriodo === "dia") setChartDate(prev => addDays(prev, 1));
-                    else if (chartPeriodo === "semana") setChartDate(prev => addDays(prev, 7));
+                    else if (chartPeriodo === "semana") setChartDate(prev => {
+                      const w = getMonthWeek(prev);
+                      const newDate = addDays(w.end, 1);
+                      return newDate > endOfMonth(prev) ? new Date(prev.getFullYear(), prev.getMonth() + 1, 1) : newDate;
+                    });
                     else setChartDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
                   }}>→</Button>
                 </div>
