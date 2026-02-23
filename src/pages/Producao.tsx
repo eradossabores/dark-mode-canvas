@@ -16,7 +16,8 @@ import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Plus, Trash2, Pencil, Eye, TrendingUp, CalendarIcon } from "lucide-react";
+import { Plus, Trash2, Pencil, Eye, TrendingUp, CalendarIcon, AlertTriangle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import Chart3DBarProducao from "@/components/Chart3DBarProducao";
 
 export default function Producao() {
@@ -43,6 +44,7 @@ export default function Producao() {
   const [qtdLotes, setQtdLotes] = useState(1);
   const [qtdTotal, setQtdTotal] = useState(84);
   const [observacoes, setObservacoes] = useState("");
+  const [ignorarEstoque, setIgnorarEstoque] = useState(false);
   const [dataProducao, setDataProducao] = useState<Date>(new Date());
   const [funcList, setFuncList] = useState<string[]>([""]);
   const [loading, setLoading] = useState(false);
@@ -95,7 +97,7 @@ export default function Producao() {
   function updateFunc(i: number, val: string) { const list = [...funcList]; list[i] = val; setFuncList(list); }
 
   function resetForm() {
-    setSaborId(""); setModo("lote"); setQtdLotes(1); setQtdTotal(84); setObservacoes(""); setFuncList([""]); setDataProducao(new Date()); setProdItens([]);
+    setSaborId(""); setModo("lote"); setQtdLotes(1); setQtdTotal(84); setObservacoes(""); setFuncList([""]); setDataProducao(new Date()); setProdItens([]); setIgnorarEstoque(false);
   }
 
   function addProdItem() {
@@ -129,6 +131,7 @@ export default function Producao() {
           p_operador: nomesFuncionarios || "sistema",
           p_observacoes: observacoes,
           p_funcionarios: validFuncs.map(f => ({ funcionario_id: f, quantidade_produzida: 0 })),
+          p_ignorar_estoque: ignorarEstoque,
         });
 
         // Atualizar a data se diferente de hoje
@@ -347,6 +350,13 @@ export default function Producao() {
                     <Button size="icon" variant="ghost" onClick={() => removeFunc(i)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                   </div>
                 ))}
+              </div>
+              <div className="flex items-center gap-2 p-3 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30">
+                <Checkbox id="ignorar-estoque" checked={ignorarEstoque} onCheckedChange={(v) => setIgnorarEstoque(!!v)} />
+                <Label htmlFor="ignorar-estoque" className="text-sm cursor-pointer flex items-center gap-1.5">
+                  <AlertTriangle className="h-4 w-4 text-amber-600" />
+                  Ignorar validação de estoque (lançamento retroativo)
+                </Label>
               </div>
               <Button className="w-full" onClick={handleSubmit} disabled={loading || prodItens.length === 0}>{loading ? "Processando..." : `Registrar ${prodItens.length} Produção(ões)`}</Button>
             </div>
