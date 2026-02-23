@@ -1,0 +1,1 @@
+ALTER TABLE public.embalagens DROP CONSTRAINT IF EXISTS embalagens_estoque_atual_check;
