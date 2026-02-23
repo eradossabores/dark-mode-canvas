@@ -19,6 +19,7 @@ import AReceber from "@/pages/AReceber";
 import ContasAPagar from "@/pages/ContasAPagar";
 import PedidosProducao from "@/pages/PedidosProducao";
 import MonitorProducao from "@/pages/MonitorProducao";
+import Diagnostico from "@/pages/Diagnostico";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,6 +49,7 @@ const App = () => (
           <Route path="/painel/relatorios" element={<Layout><Relatorios /></Layout>} />
           <Route path="/painel/importar-planilha" element={<Layout><ImportarPlanilha /></Layout>} />
           <Route path="/painel/auditoria" element={<Layout><Auditoria /></Layout>} />
+          <Route path="/painel/diagnostico" element={<Layout><Diagnostico /></Layout>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
