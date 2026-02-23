@@ -1,0 +1,1 @@
+ALTER TABLE public.estoque_gelos DROP CONSTRAINT IF EXISTS estoque_gelos_quantidade_check;
