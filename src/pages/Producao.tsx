@@ -42,6 +42,13 @@ export default function Producao() {
   const [editProd, setEditProd] = useState<any>(null);
   const [editObs, setEditObs] = useState("");
   const [editOperador, setEditOperador] = useState("");
+  const [editSaborId, setEditSaborId] = useState("");
+  const [editModo, setEditModo] = useState<"lote" | "unidade">("lote");
+  const [editQtdLotes, setEditQtdLotes] = useState(1);
+  const [editQtdTotal, setEditQtdTotal] = useState(84);
+  const [editDataProducao, setEditDataProducao] = useState<Date>(new Date());
+  const [editFuncList, setEditFuncList] = useState<string[]>([""]);
+  const [editLoading, setEditLoading] = useState(false);
 
   // Detail
   const [detailProd, setDetailProd] = useState<any>(null);
@@ -118,25 +125,62 @@ export default function Producao() {
     }
   }
 
-  function openEditDialog(p: any) {
+  async function openEditDialog(p: any) {
     setEditProd(p);
     setEditObs(p.observacoes || "");
     setEditOperador(p.operador || "");
+    setEditSaborId(p.sabor_id || "");
+    setEditModo(p.modo || "lote");
+    setEditQtdLotes(p.quantidade_lotes || 1);
+    setEditQtdTotal(p.quantidade_total || 84);
+    setEditDataProducao(new Date(p.created_at));
+    // Load associated funcionarios
+    const { data } = await (supabase as any).from("producao_funcionarios").select("funcionario_id").eq("producao_id", p.id);
+    setEditFuncList(data?.length ? data.map((d: any) => d.funcionario_id) : [""]);
     setEditOpen(true);
   }
 
+  function addEditFunc() { setEditFuncList([...editFuncList, ""]); }
+  function removeEditFunc(i: number) { setEditFuncList(editFuncList.filter((_, idx) => idx !== i)); }
+  function updateEditFunc(i: number, val: string) { const list = [...editFuncList]; list[i] = val; setEditFuncList(list); }
+
   async function handleEditSave() {
     if (!editProd) return;
+    if (!editSaborId) return toast({ title: "Selecione um sabor", variant: "destructive" });
+    const validFuncs = editFuncList.filter(f => f !== "");
+    if (validFuncs.length === 0) return toast({ title: "Adicione ao menos um responsável", variant: "destructive" });
+
+    const nomesFuncionarios = validFuncs.map(f => funcionarios.find(fn => fn.id === f)?.nome).filter(Boolean).join(", ");
+    const finalQtdTotal = editModo === "lote" ? editQtdLotes * 84 : editQtdTotal;
+
+    setEditLoading(true);
     try {
       const { error } = await (supabase as any).from("producoes").update({
-        observacoes: editObs, operador: editOperador,
+        sabor_id: editSaborId,
+        modo: editModo,
+        quantidade_lotes: editModo === "lote" ? editQtdLotes : 0,
+        quantidade_total: finalQtdTotal,
+        observacoes: editObs || null,
+        operador: nomesFuncionarios || "sistema",
+        created_at: editDataProducao.toISOString(),
       }).eq("id", editProd.id);
       if (error) throw error;
+
+      // Update funcionarios: delete old, insert new
+      await (supabase as any).from("producao_funcionarios").delete().eq("producao_id", editProd.id);
+      if (validFuncs.length > 0) {
+        await (supabase as any).from("producao_funcionarios").insert(
+          validFuncs.map(f => ({ producao_id: editProd.id, funcionario_id: f, quantidade_produzida: 0 }))
+        );
+      }
+
       toast({ title: "Produção atualizada!" });
       setEditOpen(false);
       loadData();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
+    } finally {
+      setEditLoading(false);
     }
   }
 
@@ -238,12 +282,71 @@ export default function Producao() {
 
       {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Editar Produção</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div><Label>Operador</Label><Input value={editOperador} onChange={(e) => setEditOperador(e.target.value)} /></div>
+            <div>
+              <Label>Data da Produção</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {format(editDataProducao, "dd/MM/yyyy", { locale: ptBR })}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={editDataProducao} onSelect={(d) => d && setEditDataProducao(d)} initialFocus className="p-3 pointer-events-auto" />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div>
+              <Label>Sabor</Label>
+              <Select value={editSaborId} onValueChange={setEditSaborId}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>{sabores.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Modo</Label>
+              <Select value={editModo} onValueChange={(v) => setEditModo(v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="lote">Lote (84 un.)</SelectItem>
+                  <SelectItem value="unidade">Unidade</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {editModo === "lote" ? (
+              <div>
+                <Label>Qtd. Lotes</Label>
+                <Input type="number" min={1} value={editQtdLotes} onChange={(e) => setEditQtdLotes(Number(e.target.value))} />
+                <p className="text-xs text-muted-foreground mt-1">Total: {editQtdLotes * 84} gelos</p>
+              </div>
+            ) : (
+              <div>
+                <Label>Qtd. Total</Label>
+                <Input type="number" min={1} value={editQtdTotal} onChange={(e) => setEditQtdTotal(Number(e.target.value))} />
+              </div>
+            )}
             <div><Label>Observações</Label><Input value={editObs} onChange={(e) => setEditObs(e.target.value)} /></div>
-            <Button className="w-full" onClick={handleEditSave}>Salvar</Button>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <Label>Responsáveis</Label>
+                <Button size="sm" variant="outline" onClick={addEditFunc}><Plus className="h-3 w-3 mr-1" />Add</Button>
+              </div>
+              {editFuncList.map((f, i) => (
+                <div key={i} className="flex gap-2 mb-2">
+                  <Select value={f} onValueChange={(v) => updateEditFunc(i, v)}>
+                    <SelectTrigger className="flex-1"><SelectValue placeholder="Funcionário" /></SelectTrigger>
+                    <SelectContent>{funcionarios.map((fn) => <SelectItem key={fn.id} value={fn.id}>{fn.nome}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <Button size="icon" variant="ghost" onClick={() => removeEditFunc(i)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                </div>
+              ))}
+            </div>
+            <Button className="w-full" onClick={handleEditSave} disabled={editLoading}>
+              {editLoading ? "Salvando..." : "Salvar Alterações"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
