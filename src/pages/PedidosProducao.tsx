@@ -63,6 +63,9 @@ export default function PedidosProducao() {
   const [editHoraEntrega, setEditHoraEntrega] = useState("");
   const [editObservacoes, setEditObservacoes] = useState("");
   const [editStatus, setEditStatus] = useState("");
+  const [editItens, setEditItens] = useState<ItemPedido[]>([]);
+  const [editSaborSel, setEditSaborSel] = useState("");
+  const [editQtdSel, setEditQtdSel] = useState("");
 
   const { data: clientes } = useQuery({
     queryKey: ["clientes-ativos"],
@@ -157,6 +160,18 @@ export default function PedidosProducao() {
         status: editStatus as any,
       }).eq("id", editOrder.id);
       if (error) throw error;
+
+      // Update itens: delete old, insert new
+      await supabase.from("pedido_producao_itens").delete().eq("pedido_id", editOrder.id);
+      if (editItens.length > 0) {
+        const itensBatch = editItens.map((i) => ({
+          pedido_id: editOrder.id,
+          sabor_id: i.sabor_id,
+          quantidade: i.quantidade,
+        }));
+        const { error: itensErr } = await supabase.from("pedido_producao_itens").insert(itensBatch);
+        if (itensErr) throw itensErr;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pedidos-producao"] });
@@ -204,7 +219,34 @@ export default function PedidosProducao() {
     setEditHoraEntrega(format(dt, "HH:mm"));
     setEditObservacoes(p.observacoes || "");
     setEditStatus(p.status);
+    // Load existing items
+    setEditItens(
+      (p.pedido_producao_itens || []).map((i: any) => ({
+        sabor_id: i.sabor_id,
+        sabor_nome: i.sabores?.nome || "?",
+        quantidade: i.quantidade,
+      }))
+    );
+    setEditSaborSel("");
+    setEditQtdSel("");
     setEditOpen(true);
+  }
+
+  function addEditItem() {
+    if (!editSaborSel || !editQtdSel || Number(editQtdSel) <= 0) return;
+    const sabor = sabores?.find((s) => s.id === editSaborSel);
+    if (!sabor) return;
+    if (editItens.some((i) => i.sabor_id === editSaborSel)) {
+      toast({ title: "Sabor já adicionado", variant: "destructive" });
+      return;
+    }
+    setEditItens([...editItens, { sabor_id: editSaborSel, sabor_nome: sabor.nome, quantidade: Number(editQtdSel) }]);
+    setEditSaborSel("");
+    setEditQtdSel("");
+  }
+
+  function removeEditItem(idx: number) {
+    setEditItens(editItens.filter((_, i) => i !== idx));
   }
 
   const canSubmit = clienteId && dataEntrega && horaEntrega && itens.length > 0;
@@ -422,23 +464,23 @@ export default function PedidosProducao() {
 
       {/* Edit dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Pedido</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Cliente</Label>
-              <Select value={editClienteId} onValueChange={setEditClienteId}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {clientes?.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Cliente</Label>
+                <Select value={editClienteId} onValueChange={setEditClienteId}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {clientes?.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="space-y-2">
                 <Label>Data Entrega</Label>
                 <Input type="date" value={editDataEntrega} onChange={(e) => setEditDataEntrega(e.target.value)} />
@@ -447,17 +489,17 @@ export default function PedidosProducao() {
                 <Label>Hora Entrega</Label>
                 <Input type="time" value={editHoraEntrega} onChange={(e) => setEditHoraEntrega(e.target.value)} />
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Tipo Embalagem</Label>
-              <Select value={editTipoEmbalagem} onValueChange={setEditTipoEmbalagem}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="padrão">Padrão</SelectItem>
-                  <SelectItem value="premium">Premium</SelectItem>
-                  <SelectItem value="personalizada">Personalizada</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <Label>Tipo Embalagem</Label>
+                <Select value={editTipoEmbalagem} onValueChange={setEditTipoEmbalagem}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="padrão">Padrão</SelectItem>
+                    <SelectItem value="premium">Premium</SelectItem>
+                    <SelectItem value="personalizada">Personalizada</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Status</Label>
@@ -474,7 +516,57 @@ export default function PedidosProducao() {
               <Label>Observações</Label>
               <Textarea value={editObservacoes} onChange={(e) => setEditObservacoes(e.target.value)} />
             </div>
-            <Button className="w-full" onClick={() => editMutation.mutate()} disabled={editMutation.isPending}>
+
+            {/* Edit items */}
+            <div className="border rounded-md p-4 space-y-3 bg-muted/30">
+              <Label className="text-base font-semibold">Itens do Pedido</Label>
+              <div className="flex gap-2 items-end">
+                <div className="flex-1 space-y-1">
+                  <Label className="text-xs">Sabor</Label>
+                  <Select value={editSaborSel} onValueChange={setEditSaborSel}>
+                    <SelectTrigger><SelectValue placeholder="Sabor" /></SelectTrigger>
+                    <SelectContent>
+                      {sabores?.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="w-24 space-y-1">
+                  <Label className="text-xs">Qtd</Label>
+                  <Input type="number" min="1" value={editQtdSel} onChange={(e) => setEditQtdSel(e.target.value)} placeholder="0" />
+                </div>
+                <Button type="button" size="sm" onClick={addEditItem} variant="secondary">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {editItens.length > 0 && (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Sabor</TableHead>
+                      <TableHead className="text-right">Qtd</TableHead>
+                      <TableHead className="w-10" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {editItens.map((item, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell>{item.sabor_nome}</TableCell>
+                        <TableCell className="text-right">{item.quantidade}</TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="icon" onClick={() => removeEditItem(idx)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+
+            <Button className="w-full" onClick={() => editMutation.mutate()} disabled={editMutation.isPending || editItens.length === 0}>
               {editMutation.isPending ? "Salvando..." : "Salvar Alterações"}
             </Button>
           </div>
