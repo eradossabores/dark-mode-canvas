@@ -55,8 +55,12 @@ export async function realizarVenda(params: {
   p_observacoes: string;
   p_itens: { sabor_id: string; quantidade: number }[];
   p_parcelas?: { valor: number; vencimento: string }[] | null;
+  p_ignorar_estoque?: boolean;
 }) {
-  const { data, error } = await supabase.rpc("realizar_venda" as any, params);
+  const { data, error } = await supabase.rpc("realizar_venda" as any, {
+    ...params,
+    p_ignorar_estoque: params.p_ignorar_estoque ?? false,
+  });
   if (error) throw error;
   return data;
 }

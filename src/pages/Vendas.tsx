@@ -16,6 +16,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, ShoppingCart, Pencil, Eye, CalendarIcon } from "lucide-react";
 
 const FORMAS_PAGAMENTO = [
@@ -46,6 +47,7 @@ export default function Vendas() {
   const [valorTotal, setValorTotal] = useState("");
   const [valorEntrada, setValorEntrada] = useState("");
   const [valorRestante, setValorRestante] = useState("");
+  const [ignorarEstoque, setIgnorarEstoque] = useState(false);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 20;
@@ -138,6 +140,7 @@ export default function Vendas() {
           : `[${formaPagamento}]${formaPagamento === "parcelado" && valorTotal ? ` Valor: R$${valorTotal} | Entrada: R$${valorEntrada} | Restante: R$${valorRestante}` : ""}`,
         p_itens: itens,
         ...(parcelasData ? { p_parcelas: parcelasData } : {}),
+        p_ignorar_estoque: ignorarEstoque,
       });
 
       const { data: latestVenda } = await (supabase as any)
@@ -161,7 +164,7 @@ export default function Vendas() {
       }
 
       toast({ title: "Venda registrada com sucesso!" });
-      setOpen(false); setItens([]); setClienteId(""); setFormaPagamento("dinheiro"); setObservacoes(""); setNumeroNf(""); setDataVenda(new Date()); setValorTotal(""); setValorEntrada(""); setValorRestante("");
+      setOpen(false); setItens([]); setClienteId(""); setFormaPagamento("dinheiro"); setObservacoes(""); setNumeroNf(""); setDataVenda(new Date()); setValorTotal(""); setValorEntrada(""); setValorRestante(""); setIgnorarEstoque(false);
       loadData();
     } catch (e: any) {
       toast({ title: "Erro na venda", description: e.message, variant: "destructive" });
@@ -326,7 +329,10 @@ export default function Vendas() {
                 </div>
               )}
               <div><Label>Observações</Label><Input value={observacoes} onChange={(e) => setObservacoes(e.target.value)} /></div>
-              <div><Label>Nº NF (opcional)</Label><Input value={numeroNf} onChange={(e) => setNumeroNf(e.target.value)} placeholder="Número da nota fiscal" /></div>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="ignorar-estoque" checked={ignorarEstoque} onCheckedChange={(v) => setIgnorarEstoque(!!v)} />
+                <Label htmlFor="ignorar-estoque" className="text-sm font-normal cursor-pointer">Lançamento retroativo (ignorar estoque)</Label>
+              </div>
               <Button className="w-full" onClick={handleSubmit} disabled={loading}>{loading ? "Processando..." : "Registrar Venda"}</Button>
             </div>
           </DialogContent>

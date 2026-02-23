@@ -767,16 +767,28 @@ export type Database = {
             }
             Returns: string
           }
-      realizar_venda: {
-        Args: {
-          p_cliente_id: string
-          p_itens: Json
-          p_observacoes: string
-          p_operador: string
-          p_parcelas?: Json
-        }
-        Returns: string
-      }
+      realizar_venda:
+        | {
+            Args: {
+              p_cliente_id: string
+              p_itens: Json
+              p_observacoes: string
+              p_operador: string
+              p_parcelas?: Json
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_cliente_id: string
+              p_ignorar_estoque?: boolean
+              p_itens: Json
+              p_observacoes: string
+              p_operador: string
+              p_parcelas?: Json
+            }
+            Returns: string
+          }
     }
     Enums: {
       modo_producao: "unidade" | "lote"
