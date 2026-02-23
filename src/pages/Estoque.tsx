@@ -165,9 +165,53 @@ export default function Estoque() {
     }
   }
 
+  const SABOR_COLORS: Record<string, string> = {
+    melancia: "bg-red-500/15 text-red-700 border-red-300",
+    morango: "bg-pink-500/15 text-pink-700 border-pink-300",
+    "maçã verde": "bg-green-500/15 text-green-700 border-green-300",
+    maracujá: "bg-yellow-500/15 text-yellow-700 border-yellow-300",
+    "água de coco": "bg-cyan-500/15 text-cyan-700 border-cyan-300",
+    "abacaxi com hortelã": "bg-emerald-500/15 text-emerald-700 border-emerald-300",
+    "bob marley": "bg-amber-500/15 text-amber-700 border-amber-300",
+    limão: "bg-lime-500/15 text-lime-700 border-lime-300",
+    "limão com sal": "bg-lime-600/15 text-lime-800 border-lime-400",
+    pitaya: "bg-fuchsia-500/15 text-fuchsia-700 border-fuchsia-300",
+    "blue ice": "bg-blue-500/15 text-blue-700 border-blue-300",
+  };
+
+  const getSaborColor = (nome: string) => {
+    const key = nome?.toLowerCase() || "";
+    return SABOR_COLORS[key] || "bg-muted text-foreground border-border";
+  };
+
+  const totalGelos = gelos.reduce((s, g) => s + (g.quantidade || 0), 0);
+
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Estoque</h1>
+      <h1 className="text-2xl font-bold mb-4">Estoque</h1>
+
+      {/* Painel de gelos por sabor */}
+      {gelos.length > 0 && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm text-muted-foreground font-medium">Gelos por Sabor</p>
+            <Badge variant="secondary" className="text-xs font-bold">Total: {totalGelos.toLocaleString()} un.</Badge>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+            {gelos
+              .sort((a, b) => (b.quantidade || 0) - (a.quantidade || 0))
+              .map((g) => (
+                <div
+                  key={g.id}
+                  className={`rounded-lg border px-3 py-2.5 text-center transition-all hover:scale-[1.03] ${getSaborColor(g.sabores?.nome)}`}
+                >
+                  <p className="text-[11px] font-semibold truncate">{g.sabores?.nome}</p>
+                  <p className="text-lg font-extrabold mt-0.5">{(g.quantidade || 0).toLocaleString()}</p>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
 
       {/* Dialog de Ajuste */}
       <Dialog open={openAjuste} onOpenChange={setOpenAjuste}>
