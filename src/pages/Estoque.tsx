@@ -168,17 +168,17 @@ export default function Estoque() {
   }
 
   const SABOR_COLORS: Record<string, string> = {
-    melancia: "bg-red-500/15 text-red-700 border-red-300",
-    morango: "bg-pink-500/15 text-pink-700 border-pink-300",
-    "maçã verde": "bg-green-500/15 text-green-700 border-green-300",
-    maracujá: "bg-yellow-500/15 text-yellow-700 border-yellow-300",
-    "água de coco": "bg-cyan-500/15 text-cyan-700 border-cyan-300",
-    "abacaxi com hortelã": "bg-emerald-500/15 text-emerald-700 border-emerald-300",
-    "bob marley": "bg-amber-500/15 text-amber-700 border-amber-300",
-    limão: "bg-lime-500/15 text-lime-700 border-lime-300",
-    "limão com sal": "bg-lime-600/15 text-lime-800 border-lime-400",
-    pitaya: "bg-fuchsia-500/15 text-fuchsia-700 border-fuchsia-300",
-    "blue ice": "bg-blue-500/15 text-blue-700 border-blue-300",
+    melancia: "bg-red-500/30 text-red-800 border-red-400",
+    morango: "bg-pink-500/30 text-pink-800 border-pink-400",
+    "maçã verde": "bg-green-500/30 text-green-800 border-green-400",
+    maracujá: "bg-yellow-500/30 text-yellow-800 border-yellow-400",
+    "água de coco": "bg-cyan-500/30 text-cyan-800 border-cyan-400",
+    "abacaxi com hortelã": "bg-emerald-500/30 text-emerald-800 border-emerald-400",
+    "bob marley": "bg-amber-500/30 text-amber-800 border-amber-400",
+    limão: "bg-lime-500/30 text-lime-800 border-lime-400",
+    "limão com sal": "bg-lime-600/30 text-lime-900 border-lime-500",
+    pitaya: "bg-fuchsia-500/30 text-fuchsia-800 border-fuchsia-400",
+    "blue ice": "bg-blue-500/30 text-blue-800 border-blue-400",
   };
 
   const getSaborColor = (nome: string) => {
