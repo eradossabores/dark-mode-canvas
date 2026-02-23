@@ -43,6 +43,9 @@ export default function Vendas() {
   const [numeroNf, setNumeroNf] = useState("");
   const [itens, setItens] = useState<{ sabor_id: string; quantidade: number }[]>([]);
   const [dataVenda, setDataVenda] = useState<Date>(new Date());
+  const [valorTotal, setValorTotal] = useState("");
+  const [valorEntrada, setValorEntrada] = useState("");
+  const [valorRestante, setValorRestante] = useState("");
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 20;
@@ -86,10 +89,20 @@ export default function Vendas() {
 
     setLoading(true);
     try {
+      const parcelasData = formaPagamento === "parcelado" && valorEntrada
+        ? [
+            { valor: Number(valorEntrada), vencimento: dataVenda.toISOString().split("T")[0] },
+            ...(Number(valorRestante) > 0 ? [{ valor: Number(valorRestante), vencimento: new Date(dataVenda.getTime() + 30 * 86400000).toISOString().split("T")[0] }] : []),
+          ]
+        : undefined;
+
       await realizarVenda({
         p_cliente_id: clienteId, p_operador: "sistema",
-        p_observacoes: observacoes ? `[${formaPagamento}] ${observacoes}` : `[${formaPagamento}]`,
+        p_observacoes: observacoes
+          ? `[${formaPagamento}]${formaPagamento === "parcelado" && valorTotal ? ` Valor: R$${valorTotal} | Entrada: R$${valorEntrada} | Restante: R$${valorRestante}` : ""} ${observacoes}`
+          : `[${formaPagamento}]${formaPagamento === "parcelado" && valorTotal ? ` Valor: R$${valorTotal} | Entrada: R$${valorEntrada} | Restante: R$${valorRestante}` : ""}`,
         p_itens: itens,
+        ...(parcelasData ? { p_parcelas: parcelasData } : {}),
       });
 
       const { data: latestVenda } = await (supabase as any)
@@ -113,7 +126,7 @@ export default function Vendas() {
       }
 
       toast({ title: "Venda registrada com sucesso!" });
-      setOpen(false); setItens([]); setClienteId(""); setFormaPagamento("dinheiro"); setObservacoes(""); setNumeroNf(""); setDataVenda(new Date());
+      setOpen(false); setItens([]); setClienteId(""); setFormaPagamento("dinheiro"); setObservacoes(""); setNumeroNf(""); setDataVenda(new Date()); setValorTotal(""); setValorEntrada(""); setValorRestante("");
       loadData();
     } catch (e: any) {
       toast({ title: "Erro na venda", description: e.message, variant: "destructive" });
@@ -228,11 +241,37 @@ export default function Vendas() {
                 </Select>
               </div>
               <div><Label>Forma de Pagamento</Label>
-                <Select value={formaPagamento} onValueChange={setFormaPagamento}>
+                <Select value={formaPagamento} onValueChange={(v) => { setFormaPagamento(v); if (v !== "parcelado") { setValorTotal(""); setValorEntrada(""); setValorRestante(""); } }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{FORMAS_PAGAMENTO.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
+              {formaPagamento === "parcelado" && (
+                <div className="space-y-3 p-3 border rounded-lg bg-muted/30">
+                  <div>
+                    <Label>Valor Total (R$)</Label>
+                    <Input type="number" step="0.01" min="0" value={valorTotal} onChange={(e) => {
+                      setValorTotal(e.target.value);
+                      const total = Number(e.target.value) || 0;
+                      const entrada = Number(valorEntrada) || 0;
+                      setValorRestante((total - entrada).toFixed(2));
+                    }} placeholder="0.00" />
+                  </div>
+                  <div>
+                    <Label>Valor da Entrada (R$)</Label>
+                    <Input type="number" step="0.01" min="0" value={valorEntrada} onChange={(e) => {
+                      setValorEntrada(e.target.value);
+                      const total = Number(valorTotal) || 0;
+                      const entrada = Number(e.target.value) || 0;
+                      setValorRestante((total - entrada).toFixed(2));
+                    }} placeholder="0.00" />
+                  </div>
+                  <div>
+                    <Label>Valor Restante (R$)</Label>
+                    <Input type="number" step="0.01" value={valorRestante} readOnly className="bg-muted" />
+                  </div>
+                </div>
+              )}
               <div><Label>Observações</Label><Input value={observacoes} onChange={(e) => setObservacoes(e.target.value)} /></div>
               <div><Label>Nº NF (opcional)</Label><Input value={numeroNf} onChange={(e) => setNumeroNf(e.target.value)} placeholder="Número da nota fiscal" /></div>
               <Button className="w-full" onClick={handleSubmit} disabled={loading}>{loading ? "Processando..." : "Registrar Venda"}</Button>
