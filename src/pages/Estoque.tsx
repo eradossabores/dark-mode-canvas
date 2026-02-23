@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Plus, Settings2, RefreshCw } from "lucide-react";
 import ConciliacaoEstoque from "@/components/estoque/ConciliacaoEstoque";
+import ConciliacaoProducao from "@/components/estoque/ConciliacaoProducao";
 
 export default function Estoque() {
   const [gelos, setGelos] = useState<any[]>([]);
@@ -246,7 +247,11 @@ export default function Estoque() {
           <TabsTrigger value="gelos">Gelos Prontos</TabsTrigger>
           <TabsTrigger value="conciliacao">
             <RefreshCw className="h-3.5 w-3.5 mr-1" />
-            Conciliação
+            Conciliação Estoque
+          </TabsTrigger>
+          <TabsTrigger value="conciliacao-prod">
+            <RefreshCw className="h-3.5 w-3.5 mr-1" />
+            Conciliação Produção
           </TabsTrigger>
           <TabsTrigger value="mp">Matéria-Prima</TabsTrigger>
           <TabsTrigger value="emb">Embalagens</TabsTrigger>
@@ -255,6 +260,10 @@ export default function Estoque() {
 
         <TabsContent value="conciliacao">
           <ConciliacaoEstoque gelos={gelos} onComplete={loadData} />
+        </TabsContent>
+
+        <TabsContent value="conciliacao-prod">
+          <ConciliacaoProducao />
         </TabsContent>
 
         <TabsContent value="gelos">
