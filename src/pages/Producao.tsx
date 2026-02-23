@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { startOfDay, startOfWeek, startOfMonth, isAfter } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +25,7 @@ export default function Producao() {
   const [sabores, setSabores] = useState<any[]>([]);
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
   const [producoes, setProducoes] = useState<any[]>([]);
-  const [topProduzidos, setTopProduzidos] = useState<{ nome: string; total: number }[]>([]);
+  const [chartPeriodo, setChartPeriodo] = useState<"dia" | "semana" | "mes">("mes");
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -81,16 +82,24 @@ export default function Producao() {
     setFuncionarios(f.data || []);
     setProducoes(p.data || []);
 
-    // Top 5 sabores mais produzidos
+  }
+
+  const topProduzidos = useMemo(() => {
+    const now = new Date();
+    let startDate: Date;
+    if (chartPeriodo === "dia") startDate = startOfDay(now);
+    else if (chartPeriodo === "semana") startDate = startOfWeek(now, { weekStartsOn: 1 });
+    else startDate = startOfMonth(now);
+
+    const filtered = producoes.filter(p => isAfter(new Date(p.created_at), startDate));
     const saborMap: Record<string, { nome: string; total: number }> = {};
-    (p.data || []).forEach((item: any) => {
+    filtered.forEach((item: any) => {
       const nome = item.sabores?.nome || "?";
       if (!saborMap[nome]) saborMap[nome] = { nome, total: 0 };
       saborMap[nome].total += item.quantidade_total;
     });
-    const sorted = Object.values(saborMap).sort((a, b) => b.total - a.total).slice(0, 5);
-    setTopProduzidos(sorted);
-  }
+    return Object.values(saborMap).sort((a, b) => b.total - a.total).slice(0, 5);
+  }, [producoes, chartPeriodo]);
 
   function addFunc() { setFuncList([...funcList, ""]); }
   function removeFunc(i: number) { setFuncList(funcList.filter((_, idx) => idx !== i)); }
@@ -476,19 +485,36 @@ export default function Producao() {
       </AlertDialog>
 
       {/* Top 5 Sabores Mais Produzidos - 3D Chart */}
-      {topProduzidos.length > 0 && (
         <Card className="mb-6">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <span className="text-lg">📊</span>
-              Top 5 Sabores Mais Produzidos
-            </CardTitle>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <span className="text-lg">📊</span>
+                Top 5 Sabores Mais Produzidos
+              </CardTitle>
+              <div className="flex gap-1">
+                {(["dia", "semana", "mes"] as const).map((p) => (
+                  <Button
+                    key={p}
+                    size="sm"
+                    variant={chartPeriodo === p ? "default" : "outline"}
+                    onClick={() => setChartPeriodo(p)}
+                    className="text-xs h-7 px-3"
+                  >
+                    {p === "dia" ? "Dia" : p === "semana" ? "Semana" : "Mês"}
+                  </Button>
+                ))}
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <Chart3DBarProducao data={topProduzidos} />
+            {topProduzidos.length > 0 ? (
+              <Chart3DBarProducao data={topProduzidos} />
+            ) : (
+              <p className="text-center text-muted-foreground py-8">Nenhuma produção neste período.</p>
+            )}
           </CardContent>
         </Card>
-      )}
 
       <Card>
         <CardHeader><CardTitle>Histórico de Produções</CardTitle></CardHeader>
