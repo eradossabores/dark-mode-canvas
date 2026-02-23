@@ -11,7 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Settings2 } from "lucide-react";
+import { Plus, Settings2, RefreshCw } from "lucide-react";
+import ConciliacaoEstoque from "@/components/estoque/ConciliacaoEstoque";
 
 export default function Estoque() {
   const [gelos, setGelos] = useState<any[]>([]);
@@ -243,10 +244,18 @@ export default function Estoque() {
       <Tabs defaultValue="gelos">
         <TabsList>
           <TabsTrigger value="gelos">Gelos Prontos</TabsTrigger>
+          <TabsTrigger value="conciliacao">
+            <RefreshCw className="h-3.5 w-3.5 mr-1" />
+            Conciliação
+          </TabsTrigger>
           <TabsTrigger value="mp">Matéria-Prima</TabsTrigger>
           <TabsTrigger value="emb">Embalagens</TabsTrigger>
           <TabsTrigger value="mov">Movimentações</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="conciliacao">
+          <ConciliacaoEstoque gelos={gelos} onComplete={loadData} />
+        </TabsContent>
 
         <TabsContent value="gelos">
           <Card>
