@@ -504,7 +504,24 @@ export default function Producao() {
               return (
                 <div key={day} className="rounded-lg border bg-card p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-sm text-foreground">📅 {day}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-sm text-foreground">📅 {day}</span>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="h-7 w-7"
+                        onClick={() => {
+                          // Parse day dd/MM/yyyy to Date
+                          const [d, m, y] = day.split("/").map(Number);
+                          setDataProducao(new Date(y, m - 1, d));
+                          resetForm();
+                          setDataProducao(new Date(y, m - 1, d));
+                          setOpen(true);
+                        }}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
                     <Badge variant="default" className="font-bold text-xs">Total: {dayTotal.toLocaleString("pt-BR")} un</Badge>
                   </div>
                   <div className="flex flex-wrap gap-2">
