@@ -41,7 +41,7 @@ export default function Vendas() {
   const [formaPagamento, setFormaPagamento] = useState("dinheiro");
   const [observacoes, setObservacoes] = useState("");
   const [numeroNf, setNumeroNf] = useState("");
-  const [itens, setItens] = useState<{ sabor_id: string; quantidade: number }[]>([]);
+  const [itens, setItens] = useState<{ sabor_id: string; quantidade: number; preco_unitario: string; preco_auto: boolean }[]>([]);
   const [dataVenda, setDataVenda] = useState<Date>(new Date());
   const [valorTotal, setValorTotal] = useState("");
   const [valorEntrada, setValorEntrada] = useState("");
@@ -74,12 +74,47 @@ export default function Vendas() {
     setVendas(v.data || []);
   }
 
-  function addItem() { setItens([...itens, { sabor_id: "", quantidade: 1 }]); }
+  function addItem() { setItens([...itens, { sabor_id: "", quantidade: 1, preco_unitario: "", preco_auto: false }]); }
   function removeItem(i: number) { setItens(itens.filter((_, idx) => idx !== i)); }
   function updateItem(i: number, field: string, val: any) {
     const list = [...itens];
-    (list[i] as any)[field] = field === "quantidade" ? Number(val) : val;
+    if (field === "quantidade") (list[i] as any)[field] = Number(val);
+    else if (field === "preco_unitario") { list[i].preco_unitario = val; list[i].preco_auto = false; }
+    else (list[i] as any)[field] = val;
     setItens(list);
+    // Recalcular preço se mudou sabor ou quantidade e tem cliente
+    if ((field === "sabor_id" || field === "quantidade") && clienteId) {
+      const item = list[i];
+      if (item.sabor_id && item.quantidade > 0) {
+        fetchPreco(clienteId, item.sabor_id, item.quantidade).then(preco => {
+          setItens(prev => {
+            const updated = [...prev];
+            if (updated[i] && preco !== null) { updated[i].preco_unitario = preco.toFixed(2); updated[i].preco_auto = true; }
+            return updated;
+          });
+        });
+      }
+    }
+  }
+
+  async function fetchPreco(cId: string, sId: string, qtd: number): Promise<number | null> {
+    try {
+      const { data, error } = await supabase.rpc("calcular_preco" as any, { p_cliente_id: cId, p_sabor_id: sId, p_quantidade: qtd });
+      if (error) return null;
+      return data as number;
+    } catch { return null; }
+  }
+
+  // Recalcular preços quando cliente muda
+  async function recalcPrecos(cId: string) {
+    const updated = [...itens];
+    for (let i = 0; i < updated.length; i++) {
+      if (updated[i].sabor_id && updated[i].quantidade > 0) {
+        const preco = await fetchPreco(cId, updated[i].sabor_id, updated[i].quantidade);
+        if (preco !== null) { updated[i].preco_unitario = preco.toFixed(2); updated[i].preco_auto = true; }
+      }
+    }
+    setItens(updated);
   }
 
   async function handleSubmit() {
@@ -224,18 +259,30 @@ export default function Vendas() {
                 </div>
                 {itens.length === 0 && <p className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md">Clique em "Add"</p>}
                 {itens.map((item, i) => (
-                  <div key={i} className="flex gap-2 mb-2">
+                  <div key={i} className="flex gap-2 mb-2 items-center">
                     <Select value={item.sabor_id} onValueChange={(v) => updateItem(i, "sabor_id", v)}>
                       <SelectTrigger className="flex-1"><SelectValue placeholder="Sabor" /></SelectTrigger>
                       <SelectContent>{sabores.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}</SelectContent>
                     </Select>
-                    <Input type="number" className="w-20" min={1} value={item.quantidade || ""} onChange={(e) => updateItem(i, "quantidade", e.target.value)} />
+                    <Input type="number" className="w-20" min={1} value={item.quantidade || ""} onChange={(e) => updateItem(i, "quantidade", e.target.value)} placeholder="Qtd" />
+                    <div className="relative w-24">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className={cn("pl-7 text-xs", item.preco_auto && "bg-muted/50")}
+                        value={item.preco_unitario}
+                        onChange={(e) => updateItem(i, "preco_unitario", e.target.value)}
+                        placeholder="0.00"
+                      />
+                    </div>
                     <Button size="icon" variant="ghost" onClick={() => removeItem(i)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                   </div>
                 ))}
               </div>
               <div><Label>Cliente</Label>
-                <Select value={clienteId} onValueChange={setClienteId}>
+                <Select value={clienteId} onValueChange={(v) => { setClienteId(v); recalcPrecos(v); }}>
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>{clientes.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
                 </Select>
