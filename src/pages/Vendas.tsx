@@ -54,6 +54,7 @@ export default function Vendas() {
   const [valorEntrada, setValorEntrada] = useState("");
   const [valorRestante, setValorRestante] = useState("");
   const [ignorarEstoque, setIgnorarEstoque] = useState(false);
+  const [statusVenda, setStatusVenda] = useState("pendente");
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 20;
@@ -156,7 +157,7 @@ export default function Vendas() {
         .from("vendas").select("id").eq("cliente_id", clienteId)
         .order("created_at", { ascending: false }).limit(1);
       if (latestVenda?.[0]) {
-        const updateData: any = { forma_pagamento: formaPagamento };
+        const updateData: any = { forma_pagamento: formaPagamento, status: statusVenda };
         if (numeroNf.trim()) updateData.numero_nf = numeroNf.trim();
         await (supabase as any).from("vendas").update(updateData).eq("id", latestVenda[0].id);
       }
@@ -184,7 +185,7 @@ export default function Vendas() {
       });
 
       toast({ title: "Venda registrada com sucesso!" });
-      setOpen(false); setItens([]); setClienteId(""); setFormaPagamento("dinheiro"); setObservacoes(""); setNumeroNf(""); setDataVenda(new Date()); setValorTotal(""); setValorEntrada(""); setValorRestante(""); setIgnorarEstoque(false);
+      setOpen(false); setItens([]); setClienteId(""); setFormaPagamento("dinheiro"); setObservacoes(""); setNumeroNf(""); setDataVenda(new Date()); setValorTotal(""); setValorEntrada(""); setValorRestante(""); setIgnorarEstoque(false); setStatusVenda("pendente");
       loadData();
     } catch (e: any) {
       toast({ title: "Erro na venda", description: e.message, variant: "destructive" });
@@ -365,6 +366,15 @@ export default function Vendas() {
                 <Select value={formaPagamento} onValueChange={(v) => { setFormaPagamento(v); if (v !== "parcelado") { setValorTotal(""); setValorEntrada(""); setValorRestante(""); } }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{FORMAS_PAGAMENTO.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div><Label>Status</Label>
+                <Select value={statusVenda} onValueChange={setStatusVenda}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pendente">Pendente</SelectItem>
+                    <SelectItem value="paga">Paga</SelectItem>
+                  </SelectContent>
                 </Select>
               </div>
               {formaPagamento === "parcelado" && (
