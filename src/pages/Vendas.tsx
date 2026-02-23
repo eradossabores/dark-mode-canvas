@@ -171,6 +171,17 @@ export default function Vendas() {
         }
       }
 
+      // Auditoria - lançamento de venda
+      const clienteNome = clientes.find(c => c.id === clienteId)?.nome || "?";
+      const totalVenda = itensValidos.reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0);
+      await (supabase as any).from("auditoria").insert({
+        usuario_nome: "sistema",
+        modulo: "vendas",
+        acao: "venda_registrada",
+        registro_afetado: latestVenda?.[0]?.id || null,
+        descricao: `Venda para ${clienteNome} - R$ ${totalVenda.toFixed(2)} (${formaPagamento}) - ${itensValidos.length} item(ns)`,
+      });
+
       toast({ title: "Venda registrada com sucesso!" });
       setOpen(false); setItens([]); setClienteId(""); setFormaPagamento("dinheiro"); setObservacoes(""); setNumeroNf(""); setDataVenda(new Date()); setValorTotal(""); setValorEntrada(""); setValorRestante(""); setIgnorarEstoque(false);
       loadData();
@@ -234,8 +245,19 @@ export default function Vendas() {
   async function handleCancel() {
     if (!cancelId) return;
     try {
+      const vendaCancelada = vendas.find(v => v.id === cancelId);
       const { error } = await (supabase as any).from("vendas").update({ status: "cancelada" }).eq("id", cancelId);
       if (error) throw error;
+
+      // Auditoria - cancelamento
+      await (supabase as any).from("auditoria").insert({
+        usuario_nome: "sistema",
+        modulo: "vendas",
+        acao: "venda_cancelada",
+        registro_afetado: cancelId,
+        descricao: `Venda cancelada - Cliente: ${vendaCancelada?.clientes?.nome || "?"} - R$ ${Number(vendaCancelada?.total || 0).toFixed(2)}`,
+      });
+
       toast({ title: "Venda cancelada!" });
       setCancelId(null);
       loadData();
