@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { startOfDay, startOfWeek, startOfMonth, isAfter } from "date-fns";
+import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isAfter, isBefore, addDays } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,7 @@ export default function Producao() {
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
   const [producoes, setProducoes] = useState<any[]>([]);
   const [chartPeriodo, setChartPeriodo] = useState<"dia" | "semana" | "mes">("mes");
+  const [chartDate, setChartDate] = useState<Date>(new Date());
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -85,13 +86,23 @@ export default function Producao() {
   }
 
   const topProduzidos = useMemo(() => {
-    const now = new Date();
-    let startDate: Date;
-    if (chartPeriodo === "dia") startDate = startOfDay(now);
-    else if (chartPeriodo === "semana") startDate = startOfWeek(now, { weekStartsOn: 1 });
-    else startDate = startOfMonth(now);
+    let start: Date;
+    let end: Date;
+    if (chartPeriodo === "dia") {
+      start = startOfDay(chartDate);
+      end = endOfDay(chartDate);
+    } else if (chartPeriodo === "semana") {
+      start = startOfWeek(chartDate, { weekStartsOn: 1 });
+      end = endOfWeek(chartDate, { weekStartsOn: 1 });
+    } else {
+      start = startOfMonth(chartDate);
+      end = endOfMonth(chartDate);
+    }
 
-    const filtered = producoes.filter(p => isAfter(new Date(p.created_at), startDate));
+    const filtered = producoes.filter(p => {
+      const d = new Date(p.created_at);
+      return !isBefore(d, start) && !isAfter(d, end);
+    });
     const saborMap: Record<string, { nome: string; total: number }> = {};
     filtered.forEach((item: any) => {
       const nome = item.sabores?.nome || "?";
@@ -99,7 +110,17 @@ export default function Producao() {
       saborMap[nome].total += item.quantidade_total;
     });
     return Object.values(saborMap).sort((a, b) => b.total - a.total).slice(0, 5);
-  }, [producoes, chartPeriodo]);
+  }, [producoes, chartPeriodo, chartDate]);
+
+  const chartPeriodoLabel = useMemo(() => {
+    if (chartPeriodo === "dia") return format(chartDate, "dd/MM/yyyy");
+    if (chartPeriodo === "semana") {
+      const s = startOfWeek(chartDate, { weekStartsOn: 1 });
+      const e = endOfWeek(chartDate, { weekStartsOn: 1 });
+      return `${format(s, "dd/MM")} a ${format(e, "dd/MM")}`;
+    }
+    return format(chartDate, "MMMM yyyy", { locale: ptBR });
+  }, [chartDate, chartPeriodo]);
 
   function addFunc() { setFuncList([...funcList, ""]); }
   function removeFunc(i: number) { setFuncList(funcList.filter((_, idx) => idx !== i)); }
@@ -492,7 +513,7 @@ export default function Producao() {
                 <span className="text-lg">📊</span>
                 Top 5 Sabores Mais Produzidos
               </CardTitle>
-              <div className="flex gap-1">
+              <div className="flex items-center gap-2 flex-wrap">
                 {(["dia", "semana", "mes"] as const).map((p) => (
                   <Button
                     key={p}
@@ -504,6 +525,29 @@ export default function Producao() {
                     {p === "dia" ? "Dia" : p === "semana" ? "Semana" : "Mês"}
                   </Button>
                 ))}
+                <div className="flex items-center gap-1">
+                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => {
+                    if (chartPeriodo === "dia") setChartDate(prev => addDays(prev, -1));
+                    else if (chartPeriodo === "semana") setChartDate(prev => addDays(prev, -7));
+                    else setChartDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+                  }}>←</Button>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button size="sm" variant="outline" className="h-7 text-xs px-2 min-w-[100px]">
+                        <CalendarIcon className="h-3 w-3 mr-1" />
+                        {chartPeriodoLabel}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="end">
+                      <Calendar mode="single" selected={chartDate} onSelect={(d) => d && setChartDate(d)} locale={ptBR} />
+                    </PopoverContent>
+                  </Popover>
+                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => {
+                    if (chartPeriodo === "dia") setChartDate(prev => addDays(prev, 1));
+                    else if (chartPeriodo === "semana") setChartDate(prev => addDays(prev, 7));
+                    else setChartDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+                  }}>→</Button>
+                </div>
               </div>
             </div>
           </CardHeader>
