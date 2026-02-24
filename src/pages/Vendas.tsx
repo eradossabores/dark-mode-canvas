@@ -492,12 +492,28 @@ export default function Vendas() {
                           updated[i] = { ...updated[i], preco_unitario: Number(e.target.value) || 0 };
                           setEditItens(updated);
                         }}
-                        placeholder="0.00"
+                        placeholder="Unit."
                       />
                     </div>
-                    <span className="text-sm text-muted-foreground w-20 text-right">
-                      R$ {(Number(item.preco_unitario) * (item.quantidade || 0)).toFixed(2)}
-                    </span>
+                    <div className="relative w-28">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="pl-7 text-xs"
+                        value={(Number(item.preco_unitario) * (item.quantidade || 0)).toFixed(2)}
+                        onChange={(e) => {
+                          const totalItem = Number(e.target.value) || 0;
+                          const qty = item.quantidade || 1;
+                          const newUnit = qty > 0 ? totalItem / qty : 0;
+                          const updated = [...editItens];
+                          updated[i] = { ...updated[i], preco_unitario: Number(newUnit.toFixed(4)) };
+                          setEditItens(updated);
+                        }}
+                        placeholder="Total"
+                      />
+                    </div>
                   </div>
                 ))}
                 <div className="flex justify-between items-center mt-2 pt-2 border-t font-semibold text-sm">
