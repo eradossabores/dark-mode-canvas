@@ -85,6 +85,28 @@ export default function PedidosProducao() {
     },
   });
 
+  // Query top 5 best-selling flavors
+  const { data: topSabores } = useQuery({
+    queryKey: ["top-sabores-vendas"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("venda_itens")
+        .select("sabor_id, quantidade, sabores(nome)");
+      if (error) throw error;
+      // Aggregate by sabor_id
+      const agg: Record<string, { sabor_id: string; nome: string; total: number }> = {};
+      for (const item of data || []) {
+        const id = item.sabor_id;
+        const nome = (item as any).sabores?.nome || "?";
+        if (!agg[id]) agg[id] = { sabor_id: id, nome, total: 0 };
+        agg[id].total += item.quantidade;
+      }
+      return Object.values(agg)
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 5);
+    },
+  });
+
   const { data: pedidos, isLoading } = useQuery({
     queryKey: ["pedidos-producao"],
     queryFn: async () => {
@@ -258,7 +280,16 @@ export default function PedidosProducao() {
           <ClipboardList className="h-7 w-7 text-primary" />
           <h1 className="text-2xl font-bold text-foreground">Pedidos de Produção</h1>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(v) => {
+          setOpen(v);
+          if (v && itens.length === 0 && topSabores && topSabores.length > 0) {
+            setItens(topSabores.map((s) => ({
+              sabor_id: s.sabor_id,
+              sabor_nome: s.nome,
+              quantidade: 84,
+            })));
+          }
+        }}>
           <DialogTrigger asChild>
             <Button><Plus className="h-4 w-4 mr-2" /> Novo Pedido</Button>
           </DialogTrigger>
