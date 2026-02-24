@@ -130,14 +130,15 @@ export default function Prospeccao() {
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
-    const [p, v, c] = await Promise.all([
+    const [p, v, c, ci] = await Promise.all([
       (supabase as any).from("prospectos").select("*").order("created_at", { ascending: false }),
       (supabase as any).from("prospecto_visitas").select("*").order("data_visita", { ascending: false }),
       (supabase as any).from("clientes").select("id, nome, bairro, endereco, telefone, latitude, longitude, status").eq("status", "ativo"),
+      (supabase as any).from("clientes").select("id, nome, bairro, endereco, telefone, latitude, longitude, status").eq("status", "inativo"),
     ]);
     setProspectos(p.data || []);
     setVisitas(v.data || []);
-    setClientes(c.data || []);
+    setClientes([...(c.data || []), ...(ci.data || [])]);
   }
 
   const operador = user?.email?.split("@")[0] || "admin";
@@ -235,11 +236,11 @@ export default function Prospeccao() {
         setExploreBairro(bairro);
 
         // Find nearby prospectos + clients (by bairro match OR distance < radius)
+        // Include ALL prospectos (even closed/rejected) as context
         const nearby: any[] = [];
         const MAX_DIST = exploreRadius * 0.01; // ~1km per 0.01 degrees
 
         prospectos.forEach(p => {
-          if (p.status === "pedido_fechado" || p.status === "sem_interesse") return;
           const byBairro = bairro && p.bairro?.toLowerCase() === bairro.toLowerCase();
           const byDist = p.latitude && p.longitude &&
             Math.sqrt((p.latitude - lat) ** 2 + (p.longitude - lng) ** 2) < MAX_DIST;
@@ -248,12 +249,13 @@ export default function Prospeccao() {
           }
         });
 
+        // Include ALL clients (active + inactive for reactivation)
         clientes.forEach(c => {
           const byBairro = bairro && c.bairro?.toLowerCase() === bairro.toLowerCase();
           const byDist = c.latitude && c.longitude &&
             Math.sqrt((c.latitude - lat) ** 2 + (c.longitude - lng) ** 2) < MAX_DIST;
           if (byBairro || byDist) {
-            nearby.push({ ...c, _type: "cliente", score: 5 });
+            nearby.push({ ...c, _type: c.status === "inativo" ? "cliente_inativo" : "cliente", score: c.status === "inativo" ? 2 : 5 });
           }
         });
 
@@ -462,13 +464,21 @@ export default function Prospeccao() {
             </Card>
 
             {/* Explore results panel */}
-            {explorePin && (
+            {explorePin && (() => {
+              const ativos = exploreNearby.filter(n => n._type === "cliente");
+              const inativos = exploreNearby.filter(n => n._type === "cliente_inativo");
+              const prospectosAtivos = exploreNearby.filter(n => n._type === "prospecto" && !["pedido_fechado", "sem_interesse"].includes(n.status));
+              const prospectosEncerrados = exploreNearby.filter(n => n._type === "prospecto" && ["pedido_fechado", "sem_interesse"].includes(n.status));
+              const cobertura = ativos.length + prospectosAtivos.length;
+              const oportunidade = cobertura === 0 ? "alta" : cobertura <= 2 ? "media" : "baixa";
+
+              return (
               <Card className="lg:col-span-1 max-h-[550px] overflow-y-auto">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-sm flex items-center gap-2">
                       <Navigation className="h-4 w-4 text-amber-500" />
-                      {exploreLoading ? "Buscando..." : exploreBairro || "Região"}
+                      {exploreLoading ? "Buscando..." : exploreBairro || "Região não identificada"}
                     </CardTitle>
                     <Button size="icon" variant="ghost" onClick={clearExplore}><X className="h-4 w-4" /></Button>
                   </div>
@@ -476,74 +486,118 @@ export default function Prospeccao() {
                 <CardContent>
                   {exploreLoading ? (
                     <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-                  ) : exploreNearby.length === 0 ? (
-                    <div className="text-center py-6 space-y-3">
-                      <p className="text-sm text-muted-foreground">Nenhum prospecto ou cliente encontrado nesta região.</p>
-                      <Button size="sm" onClick={() => { setQuickRegisterOpen(true); }}>
-                        <Plus className="h-4 w-4 mr-1" />Cadastrar Prospecto Aqui
-                      </Button>
-                    </div>
                   ) : (
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between text-xs text-muted-foreground border-b pb-2">
-                        <span>{exploreNearby.length} encontrado(s)</span>
-                        {exploreRoute.length > 1 && <span className="flex items-center gap-1"><Route className="h-3 w-3" />Rota gerada</span>}
-                      </div>
-                      {exploreNearby
-                        .sort((a, b) => (b.score || 0) - (a.score || 0))
-                        .map((n, i) => (
-                        <div key={n.id} className="p-2 rounded-lg bg-muted/50 space-y-1">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-bold text-muted-foreground w-5">{i + 1}.</span>
-                              <div>
-                                <p className="text-sm font-medium">{n.nome}</p>
-                                <p className="text-[10px] text-muted-foreground">
-                                  {n._type === "cliente" ? "👤 Cliente ativo" : TIPO_LABELS[n.tipo] || n.tipo}
-                                  {n.bairro && ` · ${n.bairro}`}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              {n._type === "prospecto" && (
-                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${STATUS_COLORS[n.status]}`}>
-                                  {STATUS_LABELS[n.status]}
-                                </span>
-                              )}
-                            </div>
+                      {/* Area analysis - always shown */}
+                      <div className="p-3 rounded-lg bg-muted/40 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Análise da Região</span>
+                          <Badge variant={oportunidade === "alta" ? "destructive" : oportunidade === "media" ? "secondary" : "outline"} className="text-[10px]">
+                            {oportunidade === "alta" ? "🔥 Oportunidade Alta" : oportunidade === "media" ? "⚡ Oportunidade Média" : "✅ Boa cobertura"}
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-center">
+                          <div className="bg-background rounded p-1.5">
+                            <p className="text-lg font-bold text-primary">{ativos.length}</p>
+                            <p className="text-[9px] text-muted-foreground">Clientes ativos</p>
                           </div>
-                          {n.score && (
-                            <div className="flex gap-0.5">{[1,2,3,4,5].map(s => <span key={s} className={`text-[10px] ${s <= n.score ? "text-amber-400" : "text-muted-foreground/30"}`}>★</span>)}</div>
-                          )}
-                          {n.telefone && <p className="text-[10px] text-muted-foreground">📞 {n.telefone}</p>}
-                          {n.observacoes_estrategicas && <p className="text-[10px] italic text-muted-foreground">{n.observacoes_estrategicas}</p>}
-                          {n._type === "prospecto" && (
-                            <div className="flex gap-1 mt-1">
-                              <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => setVisitaDialogId(n.id)}>
-                                <ClipboardCheck className="h-3 w-3 mr-1" />Visitar
-                              </Button>
+                          <div className="bg-background rounded p-1.5">
+                            <p className="text-lg font-bold">{prospectosAtivos.length}</p>
+                            <p className="text-[9px] text-muted-foreground">Prospectos abertos</p>
+                          </div>
+                          <div className="bg-background rounded p-1.5">
+                            <p className="text-lg font-bold text-amber-500">{inativos.length}</p>
+                            <p className="text-[9px] text-muted-foreground">Inativos (reativar)</p>
+                          </div>
+                          <div className="bg-background rounded p-1.5">
+                            <p className="text-lg font-bold text-muted-foreground">{prospectosEncerrados.length}</p>
+                            <p className="text-[9px] text-muted-foreground">Já visitados</p>
+                          </div>
+                        </div>
+                        {oportunidade === "alta" && (
+                          <p className="text-[10px] text-destructive font-medium">📍 Região sem cobertura! Ideal para prospectar novos clientes.</p>
+                        )}
+                        {oportunidade === "media" && (
+                          <p className="text-[10px] text-amber-600 font-medium">⚡ Região com pouca cobertura. Há espaço para crescimento.</p>
+                        )}
+                      </div>
+
+                      {/* Quick register - always prominent */}
+                      <Button size="sm" className="w-full" onClick={() => setQuickRegisterOpen(true)}>
+                        <Plus className="h-4 w-4 mr-1" />Cadastrar Prospecto {exploreBairro ? `em ${exploreBairro}` : "Aqui"}
+                      </Button>
+
+                      {/* Inactive clients for reactivation */}
+                      {inativos.length > 0 && (
+                        <div className="space-y-1.5">
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-amber-600">🔄 Reativar ({inativos.length})</p>
+                          {inativos.map((n: any) => (
+                            <div key={n.id} className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/30 space-y-1">
+                              <p className="text-sm font-medium">{n.nome}</p>
+                              {n.telefone && <p className="text-[10px] text-muted-foreground">📞 {n.telefone}</p>}
                               {n.telefone && (
                                 <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" asChild>
                                   <a href={`tel:${n.telefone}`}><Phone className="h-3 w-3 mr-1" />Ligar</a>
                                 </Button>
                               )}
                             </div>
-                          )}
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  )}
-                  {/* Quick register button at bottom of results */}
-                  {exploreNearby.length > 0 && (
-                    <div className="pt-3 border-t mt-3">
-                      <Button size="sm" variant="outline" className="w-full" onClick={() => setQuickRegisterOpen(true)}>
-                        <Plus className="h-4 w-4 mr-1" />Cadastrar Prospecto neste Bairro
-                      </Button>
+                      )}
+
+                      {/* Active prospects */}
+                      {prospectosAtivos.length > 0 && (
+                        <div className="space-y-1.5">
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Prospectos em andamento ({prospectosAtivos.length})</p>
+                          {prospectosAtivos.map((n: any, i: number) => (
+                            <div key={n.id} className="p-2 rounded-lg bg-muted/50 space-y-1">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-sm font-medium">{n.nome}</p>
+                                  <p className="text-[10px] text-muted-foreground">{TIPO_LABELS[n.tipo] || n.tipo}{n.bairro && ` · ${n.bairro}`}</p>
+                                </div>
+                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${STATUS_COLORS[n.status]}`}>
+                                  {STATUS_LABELS[n.status]}
+                                </span>
+                              </div>
+                              {n.telefone && <p className="text-[10px] text-muted-foreground">📞 {n.telefone}</p>}
+                              <div className="flex gap-1 mt-1">
+                                <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => setVisitaDialogId(n.id)}>
+                                  <ClipboardCheck className="h-3 w-3 mr-1" />Visitar
+                                </Button>
+                                {n.telefone && (
+                                  <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" asChild>
+                                    <a href={`tel:${n.telefone}`}><Phone className="h-3 w-3 mr-1" />Ligar</a>
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Active clients in area */}
+                      {ativos.length > 0 && (
+                        <div className="space-y-1.5">
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Clientes ativos ({ativos.length})</p>
+                          {ativos.map((n: any) => (
+                            <div key={n.id} className="p-2 rounded-lg bg-primary/5 border border-primary/10 space-y-1">
+                              <p className="text-sm font-medium">{n.nome}</p>
+                              <p className="text-[10px] text-muted-foreground">👤 Cliente ativo{n.bairro && ` · ${n.bairro}`}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {exploreRoute.length > 1 && (
+                        <p className="text-[10px] text-muted-foreground flex items-center gap-1 pt-1"><Route className="h-3 w-3" />Rota otimizada gerada no mapa</p>
+                      )}
                     </div>
                   )}
                 </CardContent>
               </Card>
-            )}
+              );
+            })()}
           </div>
 
           {/* Legend */}
