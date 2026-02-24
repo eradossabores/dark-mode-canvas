@@ -88,11 +88,29 @@ export default function ProtectedRoute({ children, adminOnly }: ProtectedRoutePr
     );
   }
 
-  // No role and no request (shouldn't happen normally)
+  // No role and no request (user can get stuck here) - show actionable fallback
   if (!role) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">Sem permissão de acesso. Contate um administrador.</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-sky-100 via-sky-50 to-cyan-100 dark:from-sky-950 dark:via-gray-900 dark:to-cyan-950 px-4">
+        <Card className="w-full max-w-md shadow-2xl">
+          <CardHeader className="text-center space-y-3">
+            <CardTitle className="text-xl font-bold flex items-center justify-center gap-2 text-destructive">
+              <XCircle className="h-5 w-5" />
+              Sem permissão de acesso
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-center space-y-4">
+            <p className="text-muted-foreground">
+              Esta conta ainda não tem perfil de acesso vinculado. Contate um administrador para liberar o acesso.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+              <Button variant="outline" onClick={() => navigate("/")}>Voltar ao início</Button>
+              <Button variant="outline" className="gap-2" onClick={async () => { await signOut(); navigate("/login"); }}>
+                <LogOut className="h-4 w-4" /> Sair
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
