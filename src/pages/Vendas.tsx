@@ -231,16 +231,28 @@ export default function Vendas() {
       }).eq("id", editVenda.id);
       if (error) throw error;
 
-      // Update item quantities and recalc totals
+      // Update existing items and insert new ones
       let newTotal = 0;
       for (const item of editItens) {
         const subtotal = Number(item.preco_unitario) * item.quantidade;
         newTotal += subtotal;
-        await (supabase as any).from("venda_itens").update({
-          quantidade: item.quantidade,
-          preco_unitario: Number(item.preco_unitario),
-          subtotal: subtotal,
-        }).eq("id", item.id);
+        if (item.isNew) {
+          if (!item.sabor_id || item.quantidade <= 0) continue;
+          await (supabase as any).from("venda_itens").insert({
+            venda_id: editVenda.id,
+            sabor_id: item.sabor_id,
+            quantidade: item.quantidade,
+            preco_unitario: Number(item.preco_unitario),
+            subtotal: subtotal,
+            regra_preco_aplicada: "manual",
+          });
+        } else {
+          await (supabase as any).from("venda_itens").update({
+            quantidade: item.quantidade,
+            preco_unitario: Number(item.preco_unitario),
+            subtotal: subtotal,
+          }).eq("id", item.id);
+        }
       }
       await (supabase as any).from("vendas").update({ total: newTotal }).eq("id", editVenda.id);
 
@@ -467,12 +479,28 @@ export default function Vendas() {
                 <SelectContent>{FORMAS_PAGAMENTO.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            {editItens.length > 0 && (
-              <div>
-                <Label className="text-base font-semibold">Itens da Venda</Label>
+            <div>
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="text-base font-semibold">Itens da Venda</Label>
+                  <Button size="sm" variant="outline" onClick={() => setEditItens([...editItens, { id: null, sabor_id: "", sabores: null, quantidade: 1, preco_unitario: 0, isNew: true }])}>
+                    <Plus className="h-3 w-3 mr-1" />Add Sabor
+                  </Button>
+                </div>
                 {editItens.map((item, i) => (
-                  <div key={item.id} className="flex gap-2 mb-2 items-center">
-                    <span className="flex-1 text-sm truncate">{item.sabores?.nome}</span>
+                  <div key={item.id || `new-${i}`} className="flex gap-2 mb-2 items-center">
+                    {item.isNew ? (
+                      <Select value={item.sabor_id} onValueChange={(v) => {
+                        const updated = [...editItens];
+                        const sab = sabores.find((s: any) => s.id === v);
+                        updated[i] = { ...updated[i], sabor_id: v, sabores: sab ? { nome: sab.nome } : null };
+                        setEditItens(updated);
+                      }}>
+                        <SelectTrigger className="flex-1"><SelectValue placeholder="Sabor" /></SelectTrigger>
+                        <SelectContent>{sabores.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}</SelectContent>
+                      </Select>
+                    ) : (
+                      <span className="flex-1 text-sm truncate">{item.sabores?.nome}</span>
+                    )}
                     <Input
                       type="number"
                       className="w-20"
@@ -520,6 +548,11 @@ export default function Vendas() {
                         placeholder="Total"
                       />
                     </div>
+                    {item.isNew && (
+                      <Button size="icon" variant="ghost" onClick={() => setEditItens(editItens.filter((_, idx) => idx !== i))}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
                   </div>
                 ))}
                 <div className="flex justify-between items-center mt-2 pt-2 border-t font-semibold text-sm">
@@ -527,7 +560,6 @@ export default function Vendas() {
                   <span>R$ {editItens.reduce((sum, it) => sum + Number(it.preco_unitario) * (it.quantidade || 0), 0).toFixed(2)}</span>
                 </div>
               </div>
-            )}
             <div><Label>Observações</Label><Input value={editObs} onChange={(e) => setEditObs(e.target.value)} /></div>
             <div><Label>Nº NF</Label><Input value={editNf} onChange={(e) => setEditNf(e.target.value)} placeholder="Número da nota fiscal" /></div>
             <div className="flex items-center space-x-2">
