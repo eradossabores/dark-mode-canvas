@@ -884,6 +884,7 @@ export type Database = {
         | "aguardando_producao"
         | "em_producao"
         | "separado_para_entrega"
+        | "retirado"
         | "enviado"
       status_venda: "pendente" | "paga" | "cancelada"
       tipo_item_estoque: "materia_prima" | "gelo_pronto" | "embalagem"
@@ -1024,6 +1025,7 @@ export const Constants = {
         "aguardando_producao",
         "em_producao",
         "separado_para_entrega",
+        "retirado",
         "enviado",
       ],
       status_venda: ["pendente", "paga", "cancelada"],

@@ -1,0 +1,1 @@
+ALTER TYPE public.status_pedido_producao ADD VALUE IF NOT EXISTS 'retirado' AFTER 'separado_para_entrega';
