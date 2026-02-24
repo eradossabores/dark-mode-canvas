@@ -48,7 +48,7 @@ export default function PedidosProducao() {
 
   // Form state
   const [clienteId, setClienteId] = useState("");
-  const [tipoEmbalagem, setTipoEmbalagem] = useState("1 sacola");
+  const [tipoEmbalagem, setTipoEmbalagem] = useState("1 saco");
   const [dataEntrega, setDataEntrega] = useState("");
   const [horaEntrega, setHoraEntrega] = useState("");
   const [observacoes, setObservacoes] = useState("");
@@ -212,7 +212,7 @@ export default function PedidosProducao() {
 
   function resetForm() {
     setClienteId("");
-    setTipoEmbalagem("1 sacola");
+    setTipoEmbalagem("1 saco");
     setDataEntrega("");
     setHoraEntrega("");
     setObservacoes("");
@@ -329,8 +329,8 @@ export default function PedidosProducao() {
                   <Select value={tipoEmbalagem} onValueChange={setTipoEmbalagem}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="1 sacola">1 Sacola</SelectItem>
-                      <SelectItem value="2 sacolas">2 Sacolas</SelectItem>
+                      <SelectItem value="1 saco">1 Saco</SelectItem>
+                      <SelectItem value="2 sacos">2 Sacos</SelectItem>
                       <SelectItem value="sacola com alça">Sacola com Alça</SelectItem>
                     </SelectContent>
                   </Select>
@@ -596,8 +596,8 @@ export default function PedidosProducao() {
                 <Select value={editTipoEmbalagem} onValueChange={setEditTipoEmbalagem}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1 sacola">1 Sacola</SelectItem>
-                    <SelectItem value="2 sacolas">2 Sacolas</SelectItem>
+                    <SelectItem value="1 saco">1 Saco</SelectItem>
+                    <SelectItem value="2 sacos">2 Sacos</SelectItem>
                     <SelectItem value="sacola com alça">Sacola com Alça</SelectItem>
                   </SelectContent>
                 </Select>
