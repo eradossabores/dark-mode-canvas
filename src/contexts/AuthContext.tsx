@@ -64,40 +64,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          try {
-            await fetchRoleAndApproval(session.user.id);
-          } catch (e) {
-            console.error("Erro onAuthStateChange:", e);
-          }
-        } else {
-          setRole(null);
-          setApprovalStatus(null);
-        }
-        setLoading(false);
-      }
-    );
+    let isMounted = true;
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        try {
-          await fetchRoleAndApproval(session.user.id);
-        } catch (e) {
-          console.error("Erro getSession:", e);
-        }
+    const applyAuthState = (nextSession: Session | null) => {
+      if (!isMounted) return;
+
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+      setLoading(false);
+
+      if (!nextSession?.user) {
+        setRole(null);
+        setApprovalStatus(null);
+        return;
       }
-      setLoading(false);
-    }).catch(() => {
-      setLoading(false);
+
+      // Evita deadlock do cliente de auth: não faça awaits de chamadas do backend
+      // diretamente dentro do callback de onAuthStateChange.
+      window.setTimeout(() => {
+        if (!isMounted) return;
+        fetchRoleAndApproval(nextSession.user.id);
+      }, 0);
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      applyAuthState(nextSession);
     });
 
+    supabase.auth
+      .getSession()
+      .then(({ data: { session: currentSession } }) => {
+        applyAuthState(currentSession);
+      })
+      .catch(() => {
+        if (isMounted) setLoading(false);
+      });
+
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
     };
   }, []);
