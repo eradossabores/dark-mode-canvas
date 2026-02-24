@@ -1,10 +1,11 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
 import { Monitor, Clock, User, Package, CalendarClock, MessageSquare, Maximize2, Minimize2, CheckCircle2, PackageCheck, Hourglass, HandMetal, Pencil, Smartphone, Volume2, VolumeX } from "lucide-react";
 import EditPedidoDialog from "@/components/monitor/EditPedidoDialog";
 import MonitorTopBar from "@/components/monitor/MonitorTopBar";
@@ -55,9 +56,9 @@ const SABOR_COLORS: Record<string, string> = {
 
 function getUrgencyLabel(dataEntrega: string) {
   const d = new Date(dataEntrega);
-  if (isPast(d)) return { label: "ATRASADO", className: "bg-destructive text-destructive-foreground animate-pulse" };
-  if (isToday(d)) return { label: "HOJE", className: "bg-destructive/80 text-destructive-foreground animate-pulse" };
-  if (isTomorrow(d)) return { label: "AMANHÃ", className: "bg-amber-500 text-white" };
+  if (isPast(d)) return { label: "ATRASADO", className: "bg-destructive text-destructive-foreground animate-pulse", type: "atrasado" };
+  if (isToday(d)) return { label: "HOJE", className: "bg-destructive/80 text-destructive-foreground animate-pulse", type: "hoje" };
+  if (isTomorrow(d)) return { label: "AMANHÃ", className: "bg-amber-500 text-white", type: "amanha" };
   return null;
 }
 
@@ -66,7 +67,8 @@ const getSaborColor = (nome: string) => {
   return SABOR_COLORS[key] || "bg-muted text-foreground border-border";
 };
 
-const REFRESH_INTERVAL = 30; // seconds
+const REFRESH_INTERVAL = 30;
+const AUTO_SCROLL_INTERVAL = 8000; // 8 seconds per scroll step
 
 export default function MonitorProducao() {
   const { toast } = useToast();
@@ -76,6 +78,52 @@ export default function MonitorProducao() {
   const [isFullPage, setIsFullPage] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [refreshCountdown, setRefreshCountdown] = useState(REFRESH_INTERVAL);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [prevTheme, setPrevTheme] = useState<string | null>(null);
+
+  // Auto dark mode for TV
+  useEffect(() => {
+    if (isFullPage) {
+      const current = document.documentElement.classList.contains("dark") ? "dark" : "light";
+      setPrevTheme(current);
+      document.documentElement.classList.add("dark");
+    } else if (prevTheme !== null) {
+      if (prevTheme === "light") {
+        document.documentElement.classList.remove("dark");
+      } else {
+        document.documentElement.classList.add("dark");
+      }
+      setPrevTheme(null);
+    }
+  }, [isFullPage]);
+
+  // Auto-scroll in fullscreen
+  useEffect(() => {
+    if (!isFullPage || fullscreenPedidoId) return;
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    let direction = 1; // 1 = down, -1 = up
+    const timer = setInterval(() => {
+      const maxScroll = container.scrollHeight - container.clientHeight;
+      if (maxScroll <= 0) return;
+
+      const currentScroll = container.scrollTop;
+      if (currentScroll >= maxScroll - 10) direction = -1;
+      if (currentScroll <= 10) direction = 1;
+
+      container.scrollBy({ top: direction * container.clientHeight * 0.6, behavior: "smooth" });
+    }, AUTO_SCROLL_INTERVAL);
+
+    // Pause on user interaction
+    const pause = () => { clearInterval(timer); };
+    container.addEventListener("pointerdown", pause, { once: true });
+
+    return () => {
+      clearInterval(timer);
+      container.removeEventListener("pointerdown", pause);
+    };
+  }, [isFullPage, fullscreenPedidoId]);
 
   // Auto-refresh countdown
   useEffect(() => {
@@ -97,9 +145,7 @@ export default function MonitorProducao() {
       if (!document.fullscreenElement) {
         await document.documentElement.requestFullscreen();
         if (screen.orientation && (screen.orientation as any).lock) {
-          try {
-            await (screen.orientation as any).lock("landscape");
-          } catch (e) {}
+          try { await (screen.orientation as any).lock("landscape"); } catch (e) {}
         }
         setIsFullPage(true);
       } else {
@@ -152,7 +198,6 @@ export default function MonitorProducao() {
     },
   });
 
-  // Sound alerts
   useMonitorAlerts(pedidos, soundEnabled);
 
   const totalGelos = (gelos || []).reduce((s: number, g: any) => s + (g.quantidade || 0), 0);
@@ -252,10 +297,19 @@ export default function MonitorProducao() {
   const renderCard = (pedido: any, index: number) => {
     const urgency = getUrgencyLabel(pedido.data_entrega);
     const isExpanded = fullscreenPedidoId === pedido.id;
+
+    // Progress calculation
+    const totalItens = pedido.pedido_producao_itens?.length || 0;
+    const separadosCount = pedido.pedido_producao_itens?.filter((i: any) => i.separado).length || 0;
+    const progressPercent = totalItens > 0 ? Math.round((separadosCount / totalItens) * 100) : 0;
+
+    // Flashing class for urgent orders
+    const flashClass = urgency?.type === "atrasado" ? "monitor-card-atrasado" : urgency?.type === "hoje" ? "monitor-card-hoje" : "";
+
     return (
       <Card
         key={pedido.id}
-        className={`border-l-[6px] ${statusBorderColors[pedido.status]} shadow-md animate-fade-in transition-all duration-300 ${isExpanded ? "fixed inset-0 z-50 border-l-8 rounded-none overflow-auto bg-gradient-to-br from-sky-50 via-blue-50 to-sky-100 dark:from-sky-950 dark:via-blue-950 dark:to-sky-900" : ""} ${tvCard}`}
+        className={`border-l-[6px] ${statusBorderColors[pedido.status]} shadow-md animate-fade-in transition-all duration-300 ${flashClass} ${isExpanded ? "fixed inset-0 z-50 border-l-8 rounded-none overflow-auto bg-gradient-to-br from-sky-50 via-blue-50 to-sky-100 dark:from-sky-950 dark:via-blue-950 dark:to-sky-900" : ""} ${tvCard}`}
         style={{ animationDelay: `${index * 80}ms`, ...(isExpanded ? { backgroundImage: "radial-gradient(circle at 20% 50%, rgba(186,230,253,0.4) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(147,197,253,0.3) 0%, transparent 50%), radial-gradient(circle at 50% 80%, rgba(186,230,253,0.2) 0%, transparent 50%)" } : {}) }}
       >
         <CardContent className={`p-5 md:p-6 ${isExpanded ? "max-w-4xl mx-auto py-10" : ""}`}>
@@ -275,10 +329,22 @@ export default function MonitorProducao() {
                   {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                 </Button>
               </div>
-              <div className="flex items-center gap-2">
-                <User className={`${isFullPage ? "h-6 w-6" : "h-5 w-5"} text-primary`} />
+
+              {/* Progress bar */}
+              <div className="flex items-center gap-3">
+                <User className={`${isFullPage ? "h-6 w-6" : "h-5 w-5"} text-primary shrink-0`} />
                 <span className={`${tvText} font-bold text-foreground`}>{pedido.clientes?.nome}</span>
+                <div className="flex-1 max-w-[200px] ml-auto flex items-center gap-2">
+                  <Progress 
+                    value={progressPercent} 
+                    className={`h-2.5 ${isFullPage ? "h-3" : ""}`}
+                  />
+                  <span className={`${isFullPage ? "text-sm" : "text-xs"} font-bold tabular-nums min-w-[36px] text-right ${progressPercent === 100 ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
+                    {progressPercent}%
+                  </span>
+                </div>
               </div>
+
               <div className={`flex flex-wrap gap-5 ${isFullPage ? "text-base" : "text-sm"} text-muted-foreground`}>
                 <div className="flex items-center gap-1.5">
                   <Clock className="h-4 w-4" />
@@ -300,7 +366,7 @@ export default function MonitorProducao() {
                   <span className={`${isFullPage ? "text-sm" : "text-xs"} font-bold uppercase tracking-wider text-muted-foreground`}>Checklist de Separação</span>
                   <div className="flex items-center gap-2">
                     <span className={`${isFullPage ? "text-sm" : "text-xs"} text-muted-foreground`}>
-                      {pedido.pedido_producao_itens?.filter((i: any) => i.separado).length || 0}/{pedido.pedido_producao_itens?.length || 0} itens
+                      {separadosCount}/{totalItens} itens
                     </span>
                     <Badge className={`bg-primary/10 text-primary border-primary/20 ${isFullPage ? "text-base" : "text-sm"} font-extrabold px-3 py-1`}>
                       Total: {pedido.pedido_producao_itens?.reduce((s: number, i: any) => s + (i.quantidade || 0), 0)} un
@@ -382,7 +448,10 @@ export default function MonitorProducao() {
   };
 
   return (
-    <div className={`space-y-6 ${isFullPage ? "pt-16" : ""}`}>
+    <div 
+      ref={scrollContainerRef}
+      className={`space-y-6 ${isFullPage ? "pt-16 h-screen overflow-auto" : ""}`}
+    >
       {/* Top bar for TV mode */}
       <MonitorTopBar
         isFullPage={isFullPage}
@@ -415,7 +484,6 @@ export default function MonitorProducao() {
               >
                 {soundEnabled ? <Volume2 className="h-4 w-4 text-primary" /> : <VolumeX className="h-4 w-4 text-muted-foreground" />}
               </Button>
-              {/* Mini refresh indicator */}
               <span className="text-xs text-muted-foreground tabular-nums font-mono">{refreshCountdown}s</span>
             </>
           )}

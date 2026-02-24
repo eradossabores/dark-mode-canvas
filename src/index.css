@@ -119,3 +119,20 @@
     font-family: 'Fira Code', monospace;
   }
 }
+
+/* Monitor - flashing card for overdue orders */
+@keyframes monitor-flash-red {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); border-color: rgba(239, 68, 68, 0.5); }
+  50% { box-shadow: 0 0 20px 4px rgba(239, 68, 68, 0.35); border-color: rgba(239, 68, 68, 1); }
+}
+.monitor-card-atrasado {
+  animation: monitor-flash-red 2s ease-in-out infinite;
+}
+
+@keyframes monitor-flash-amber {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+  50% { box-shadow: 0 0 16px 3px rgba(245, 158, 11, 0.25); }
+}
+.monitor-card-hoje {
+  animation: monitor-flash-amber 2.5s ease-in-out infinite;
+}
