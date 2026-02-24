@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { toast } from "@/hooks/use-toast";
@@ -446,9 +446,22 @@ export default function Prospeccao() {
 
                   {/* Explore pin */}
                   {explorePin && (
-                    <Marker position={[explorePin.lat, explorePin.lng]} icon={EXPLORE_ICON}>
-                      <Popup><p className="font-bold text-sm">📍 Ponto de exploração</p><p className="text-xs">{exploreBairro || "Identificando..."}</p></Popup>
-                    </Marker>
+                    <>
+                      <Circle
+                        center={[explorePin.lat, explorePin.lng]}
+                        radius={exploreRadius * 1000}
+                        pathOptions={{
+                          color: "hsl(38, 90%, 50%)",
+                          fillColor: "hsl(38, 90%, 50%)",
+                          fillOpacity: 0.08,
+                          weight: 2,
+                          dashArray: "6 4",
+                        }}
+                      />
+                      <Marker position={[explorePin.lat, explorePin.lng]} icon={EXPLORE_ICON}>
+                        <Popup><p className="font-bold text-sm">📍 Ponto de exploração</p><p className="text-xs">{exploreBairro || "Identificando..."} · Raio: {exploreRadius}km</p></Popup>
+                      </Marker>
+                    </>
                   )}
 
                   {/* Explore route */}
