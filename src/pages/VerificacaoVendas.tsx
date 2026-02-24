@@ -35,8 +35,20 @@ function parseValor(v: string): number {
   return parseFloat(v.replace("R$", "").replace(/,/g, "").trim()) || 0;
 }
 
-// Spreadsheet data hardcoded from parsed document
+// Spreadsheet data hardcoded from parsed document (Janeiro + Fevereiro)
 const PLANILHA_RAW: Array<{data:string; cliente:string; sabores:number[]; qtd:number; valor:string; status:string; pagto:string}> = [
+  // Janeiro
+  {data:"1/21/26",cliente:"CONV GOLD",sabores:[0,0,0,0,0,0,0,0,0,0,0],qtd:200,valor:"R$ 100.00",status:"PAGO",pagto:"PIX"},
+  {data:"1/22/26",cliente:"FLUTUAI",sabores:[0,0,0,0,0,0,0,0,0,0,0],qtd:300,valor:"R$ 597.00",status:"PAGO",pagto:"PIX"},
+  {data:"1/22/26",cliente:"BOLOTA",sabores:[0,0,0,0,0,0,0,0,0,0,0],qtd:105,valor:"R$ 208.95",status:"PAGO",pagto:"BOLETO"},
+  {data:"1/23/26",cliente:"SMOKE",sabores:[0,0,0,0,0,0,0,0,0,0,0],qtd:100,valor:"R$ 195.00",status:"PAGO",pagto:"PIX"},
+  {data:"1/24/26",cliente:"AVULSA",sabores:[0,0,0,0,0,0,0,0,0,0,0],qtd:75,valor:"R$ 187.50",status:"PAGO",pagto:"CRÉDITO"},
+  {data:"1/26/26",cliente:"PORÃO",sabores:[0,0,0,0,0,0,0,0,0,0,0],qtd:300,valor:"R$ 540.00",status:"PAGO",pagto:""},
+  {data:"1/26/26",cliente:"CONV GOLD",sabores:[59,58,58,15,0,10,0,0,0,0,0],qtd:200,valor:"R$ 390.00",status:"PAGO",pagto:"ENTRADA+PARCELA"},
+  {data:"1/30/26",cliente:"CONV FROTA",sabores:[0,0,0,0,0,0,0,0,0,0,0],qtd:100,valor:"R$ 200.00",status:"PAGO",pagto:"PIX"},
+  {data:"1/31/26",cliente:"PORÃO",sabores:[0,0,0,0,0,0,0,0,0,0,0],qtd:800,valor:"R$ 1,440.00",status:"PARCELADO",pagto:""},
+  {data:"1/31/26",cliente:"FLUTUAI",sabores:[0,0,0,0,0,0,0,0,0,0,0],qtd:400,valor:"R$ 358.50",status:"PAGO",pagto:"PIX"},
+  // Fevereiro
   {data:"2/1/26",cliente:"SMOKE",sabores:[25,25,20,10,10,10,0,0,0,0,0],qtd:100,valor:"R$ 195.00",status:"PAGO",pagto:"PIX"},
   {data:"2/2/26",cliente:"COPAO DE QUEBRADA",sabores:[6,6,6,6,6,0,0,0,0,0,0],qtd:30,valor:"R$ 67.50",status:"PAGO",pagto:"PIX"},
   {data:"2/3/26",cliente:"SMOKE",sabores:[30,30,20,10,10,0,0,0,0,0,0],qtd:100,valor:"R$ 195.00",status:"PAGO",pagto:"PIX"},
@@ -184,12 +196,9 @@ export default function VerificacaoVendas() {
   async function loadAndCompare() {
     setLoading(true);
     try {
-      const startDate = "2026-02-01";
-      const endDate = "2026-03-01";
-
+      // Buscar TODAS as vendas (sem filtro de mês)
       const [vendasRes, itensRes] = await Promise.all([
         (supabase as any).from("vendas").select("*, clientes(nome)")
-          .gte("created_at", startDate).lt("created_at", endDate)
           .order("created_at", { ascending: true }),
         (supabase as any).from("venda_itens").select("*, sabores(nome)"),
       ]);
@@ -322,7 +331,7 @@ export default function VerificacaoVendas() {
     <div>
       <h1 className="text-2xl font-bold flex items-center gap-2 mb-6">
         <Search className="h-6 w-6 text-primary" />
-        Verificação Vendas — Planilha vs Banco
+        Verificação Total de Vendas — Planilha vs Banco
       </h1>
 
       {loading ? (
@@ -338,7 +347,7 @@ export default function VerificacaoVendas() {
             </Card>
             <Card>
               <CardContent className="p-4 text-center">
-                <p className="text-xs text-muted-foreground">Vendas no Banco (Fev)</p>
+                <p className="text-xs text-muted-foreground">Vendas no Banco (Total)</p>
                 <p className="text-2xl font-bold">{dbVendas.length}</p>
               </CardContent>
             </Card>
