@@ -1,0 +1,1 @@
+ALTER TABLE public.pedidos_producao ADD COLUMN status_pagamento TEXT NOT NULL DEFAULT 'aguardando_pagamento';
