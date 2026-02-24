@@ -112,7 +112,7 @@ const PLANILHA_RAW: Array<{data:string; cliente:string; sabores:number[]; qtd:nu
   {data:"2/17/26",cliente:"AVULSO",sabores:[5,5,3,4,0,3,0,0,0,0,0],qtd:20,valor:"R$ 39.80",status:"PAGO",pagto:""},
   {data:"2/17/26",cliente:"VILE CLUB",sabores:[66,67,67,0,0,0,0,0,0,0,0],qtd:200,valor:"R$ 398.00",status:"PENDENTE",pagto:""},
   {data:"2/17/26",cliente:"COMBO",sabores:[2,2,2,2,1,1,0,0,0,0,0],qtd:10,valor:"R$ 73.00",status:"PAGO",pagto:""},
-  {data:"2/20/26",cliente:"BOLOTA",sabores:[60,60,60,60,30,40,0,0,0,0,0],qtd:310,valor:"R$ 616.90",status:"",pagto:""},
+  {data:"2/20/26",cliente:"BOLOTA",sabores:[60,60,60,60,30,40,0,0,0,0,0],qtd:310,valor:"R$ 589.00",status:"",pagto:""},
   {data:"2/21/26",cliente:"FLUTUAI",sabores:[100,0,0,0,0,0,0,0,0,0,0],qtd:100,valor:"R$ 199.00",status:"",pagto:""},
   {data:"2/21/26",cliente:"VILE CLUB",sabores:[75,0,75,0,0,0,0,0,0,0,0],qtd:150,valor:"R$ 298.50",status:"",pagto:""},
   {data:"2/24/26",cliente:"CONV OLD",sabores:[20,20,20,20,20,0,0,0,0,0,0],qtd:100,valor:"R$ 199.00",status:"PAGO",pagto:""},
