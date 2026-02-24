@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { isRouteAllowed } from "@/components/ProtectedRoute";
 import logo from "@/assets/logo.png";
+import useKeyboardShortcuts from "@/hooks/useKeyboardShortcuts";
 import sidImg from "@/assets/sid.png";
 import buckImg from "@/assets/buck.png";
 import scrat3dImg from "@/assets/scrat-3d.png";
@@ -93,6 +94,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { role, signOut, user } = useAuth();
+  useKeyboardShortcuts();
 
   const filteredMenu = menuItems.filter((item) => isRouteAllowed(item.path, role));
 
