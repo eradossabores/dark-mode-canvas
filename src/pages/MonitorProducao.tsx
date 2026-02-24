@@ -468,7 +468,7 @@ export default function MonitorProducao() {
             <Badge variant="outline" className="text-xs font-bold tabular-nums">{totalGelos.toLocaleString()} total</Badge>
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1">
-            {[...(gelos || [])].sort((a: any, b: any) => (b.quantidade || 0) - (a.quantidade || 0)).map((g: any) => (
+            {[...(gelos || [])].filter((g: any) => (g.quantidade || 0) > 0).sort((a: any, b: any) => (b.quantidade || 0) - (a.quantidade || 0)).map((g: any) => (
               <div key={g.id} className="shrink-0 rounded-lg border border-border bg-muted/30 px-3 py-2 text-center min-w-[72px]">
                 <p className="text-[10px] font-medium text-muted-foreground truncate leading-tight">{g.sabores?.nome}</p>
                 <p className={`${tv ? "text-lg" : "text-sm"} font-bold text-foreground mt-0.5 leading-none tabular-nums`}>{(g.quantidade || 0).toLocaleString()}</p>
