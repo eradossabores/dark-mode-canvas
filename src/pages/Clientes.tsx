@@ -15,7 +15,7 @@ import { Plus, Pencil, Trash2 } from "lucide-react";
 
 const emptyForm = {
   nome: "", telefone: "", email: "", endereco: "", bairro: "", cidade: "",
-  estado: "SP", cep: "", cpf_cnpj: "", possui_freezer: false,
+  estado: "RR", cep: "", cpf_cnpj: "", possui_freezer: false,
   freezer_identificacao: "", preco_padrao_personalizado: "", observacoes: "",
 };
 
@@ -51,7 +51,7 @@ export default function Clientes() {
     setForm({
       nome: c.nome || "", telefone: c.telefone || "", email: c.email || "",
       endereco: c.endereco || "", bairro: c.bairro || "", cidade: c.cidade || "",
-      estado: c.estado || "SP", cep: c.cep || "", cpf_cnpj: c.cpf_cnpj || "",
+      estado: c.estado || "RR", cep: c.cep || "", cpf_cnpj: c.cpf_cnpj || "",
       possui_freezer: c.possui_freezer || false,
       freezer_identificacao: c.freezer_identificacao || "",
       preco_padrao_personalizado: c.preco_padrao_personalizado ? String(c.preco_padrao_personalizado) : "",
