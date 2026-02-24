@@ -10,7 +10,7 @@ import { Monitor, Clock, User, Package, CalendarClock, MessageSquare, Maximize2,
 import EditPedidoDialog from "@/components/monitor/EditPedidoDialog";
 import MonitorTopBar from "@/components/monitor/MonitorTopBar";
 import DemandaSaborResumo from "@/components/monitor/DemandaSaborResumo";
-import MiniDashboardProdutividade from "@/components/monitor/MiniDashboardProdutividade";
+
 import { useMonitorAlerts } from "@/hooks/useMonitorAlerts";
 import { useToast } from "@/hooks/use-toast";
 import { format, isPast, isToday, isTomorrow, formatDistanceToNow } from "date-fns";
@@ -562,8 +562,6 @@ export default function MonitorProducao() {
         </div>
       )}
 
-      {/* Mini dashboard de produtividade (TV mode only) */}
-      <MiniDashboardProdutividade isFullPage={isFullPage} />
 
       {/* Demanda pendente por sabor */}
       {pedidos && pedidos.length > 0 && (
