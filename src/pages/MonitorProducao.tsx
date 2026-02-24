@@ -519,7 +519,7 @@ export default function MonitorProducao() {
 
       {/* Estoque por sabor — compact horizontal scroll (hide zero quantities) */}
       {gelos && gelos.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+        <div className="flex flex-wrap gap-2">
           {[...(gelos || [])].filter((g: any) => (g.quantidade || 0) > 0).sort((a: any, b: any) => (b.quantidade || 0) - (a.quantidade || 0)).map((g: any) => (
             <div key={g.id} className={`shrink-0 rounded-xl border px-3 py-2 text-center min-w-[72px] ${getSaborColor(g.sabores?.nome)}`}>
               <p className="text-[10px] font-semibold truncate leading-tight">{g.sabores?.nome}</p>
