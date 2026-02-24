@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Package, Users, ShoppingCart, Factory,
-  Warehouse, ClipboardList, UserCog, ChevronLeft, ChevronRight, BarChart3, FileUp, Menu, X, DollarSign, Monitor, ShoppingBag, Database, LogOut, Shield
+  Warehouse, ClipboardList, UserCog, ChevronLeft, ChevronRight, BarChart3, FileUp, Menu, X, DollarSign, Monitor, ShoppingBag, Database, LogOut, Shield, Brain, MapPin
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -33,6 +33,8 @@ const menuItems = [
   { path: "/painel/auditoria", label: "Auditoria", icon: ClipboardList },
   { path: "/painel/diagnostico", label: "Diagnóstico", icon: Database },
   { path: "/painel/usuarios", label: "Usuários", icon: Shield },
+  { path: "/painel/previsao-demanda", label: "Previsão Demanda", icon: Brain },
+  { path: "/painel/mapa-entregas", label: "Mapa Entregas", icon: MapPin },
 ];
 
 const allCharacters = [
@@ -75,7 +77,8 @@ const routeToIndex: Record<string, number> = {
   "/painel": 0, "/painel/producao": 1, "/painel/pedidos-producao": 2, "/painel/monitor-producao": 3,
   "/painel/vendas": 4, "/painel/a-receber": 5, "/painel/contas-a-pagar": 6,
   "/painel/estoque": 7, "/painel/clientes": 8, "/painel/funcionarios": 9,
-  "/painel/sabores": 10, "/painel/relatorios": 11, "/painel/importar-planilha": 12, "/painel/auditoria": 13, "/painel/diagnostico": 14,
+  "/painel/sabores": 10, "/painel/relatorios": 11, "/painel/importar-planilha": 12, "/painel/auditoria": 13,
+  "/painel/diagnostico": 14, "/painel/previsao-demanda": 15, "/painel/mapa-entregas": 16,
 };
 
 function getPageCharacters(pathname: string) {
