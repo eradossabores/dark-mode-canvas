@@ -124,6 +124,8 @@ export default function Prospeccao() {
   const [exploreLoading, setExploreLoading] = useState(false);
   const [exploreNearby, setExploreNearby] = useState<any[]>([]);
   const [exploreRoute, setExploreRoute] = useState<{ lat: number; lng: number; id: string }[]>([]);
+  const [exploreRadius, setExploreRadius] = useState(2); // km
+  const [quickRegisterOpen, setQuickRegisterOpen] = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
@@ -232,9 +234,9 @@ export default function Prospeccao() {
         const bairro = geo?.address?.suburb || geo?.address?.neighbourhood || geo?.address?.city_district || "";
         setExploreBairro(bairro);
 
-        // Find nearby prospectos + clients (by bairro match OR distance < 2km)
+        // Find nearby prospectos + clients (by bairro match OR distance < radius)
         const nearby: any[] = [];
-        const MAX_DIST = 0.02; // ~2km in degrees
+        const MAX_DIST = exploreRadius * 0.01; // ~1km per 0.01 degrees
 
         prospectos.forEach(p => {
           if (p.status === "pedido_fechado" || p.status === "sem_interesse") return;
@@ -371,7 +373,7 @@ export default function Prospeccao() {
             </div>
           )}
 
-          <div className="flex flex-wrap gap-2 mb-3">
+          <div className="flex flex-wrap gap-2 mb-3 items-center">
             <Button
               size="sm"
               variant={exploreMode ? "default" : "outline"}
@@ -379,6 +381,21 @@ export default function Prospeccao() {
             >
               <Crosshair className="h-4 w-4 mr-1" />{exploreMode ? "Sair Exploração" : "Explorar Bairro"}
             </Button>
+            {exploreMode && (
+              <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-1.5">
+                <span className="text-xs text-muted-foreground whitespace-nowrap">Raio:</span>
+                <input
+                  type="range"
+                  min={1}
+                  max={5}
+                  step={0.5}
+                  value={exploreRadius}
+                  onChange={e => setExploreRadius(Number(e.target.value))}
+                  className="w-20 h-2 accent-primary"
+                />
+                <span className="text-xs font-bold w-10">{exploreRadius}km</span>
+              </div>
+            )}
             <Button size="sm" variant={showRoute ? "default" : "outline"} onClick={() => setShowRoute(!showRoute)}>
               <Route className="h-4 w-4 mr-1" />{showRoute ? "Ocultar Rota" : "Gerar Rota"}
             </Button>
@@ -460,7 +477,12 @@ export default function Prospeccao() {
                   {exploreLoading ? (
                     <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
                   ) : exploreNearby.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">Nenhum prospecto ou cliente encontrado nesta região. Cadastre novos prospectos!</p>
+                    <div className="text-center py-6 space-y-3">
+                      <p className="text-sm text-muted-foreground">Nenhum prospecto ou cliente encontrado nesta região.</p>
+                      <Button size="sm" onClick={() => { setQuickRegisterOpen(true); }}>
+                        <Plus className="h-4 w-4 mr-1" />Cadastrar Prospecto Aqui
+                      </Button>
+                    </div>
                   ) : (
                     <div className="space-y-3">
                       <div className="flex items-center justify-between text-xs text-muted-foreground border-b pb-2">
@@ -509,6 +531,14 @@ export default function Prospeccao() {
                           )}
                         </div>
                       ))}
+                    </div>
+                  )}
+                  {/* Quick register button at bottom of results */}
+                  {exploreNearby.length > 0 && (
+                    <div className="pt-3 border-t mt-3">
+                      <Button size="sm" variant="outline" className="w-full" onClick={() => setQuickRegisterOpen(true)}>
+                        <Plus className="h-4 w-4 mr-1" />Cadastrar Prospecto neste Bairro
+                      </Button>
                     </div>
                   )}
                 </CardContent>
@@ -732,6 +762,22 @@ export default function Prospeccao() {
 
       {/* Dialogs */}
       <ProspectoForm open={formOpen} onOpenChange={setFormOpen} onSubmit={handleCreateProspecto} />
+      {/* Quick register from explore panel */}
+      <ProspectoForm
+        open={quickRegisterOpen}
+        onOpenChange={setQuickRegisterOpen}
+        onSubmit={async (data: any) => {
+          const enriched = {
+            ...data,
+            bairro: data.bairro || exploreBairro,
+            latitude: explorePin?.lat || null,
+            longitude: explorePin?.lng || null,
+          };
+          await handleCreateProspecto(enriched);
+          setQuickRegisterOpen(false);
+        }}
+        initial={{ nome: "", tipo: "bar", bairro: exploreBairro, endereco: "", telefone: "", contato_nome: "", prioridade: "media", score: 3, observacoes_estrategicas: "", volume_potencial: "", perfil_publico: "", script_abordagem: "Olá! Trabalhamos com gelos saborizados premium, ideais para drinks diferenciados. Temos mais de 10 sabores e preços especiais para parceiros comerciais. Posso apresentar nossos produtos?" }}
+      />
       {editingProspecto && (
         <ProspectoForm open={!!editingProspecto} onOpenChange={v => !v && setEditingProspecto(null)} onSubmit={handleEditProspecto} initial={editingProspecto} />
       )}
