@@ -40,13 +40,35 @@ export default function Login() {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const signInPromise = supabase.auth.signInWithPassword({ email, password });
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("timeout_login")), 12000)
+      );
+
+      const { error } = (await Promise.race([signInPromise, timeoutPromise])) as Awaited<
+        ReturnType<typeof supabase.auth.signInWithPassword>
+      >;
 
       if (error) {
         toast({ title: "Erro ao entrar", description: error.message, variant: "destructive" });
       }
     } catch (error: any) {
-      toast({ title: "Erro ao entrar", description: error?.message || "Falha inesperada no login", variant: "destructive" });
+      // Workaround para casos em que a promise fica pendente, mas a sessão é criada
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (session) {
+        toast({ title: "Login confirmado", description: "Redirecionando para o painel..." });
+      } else {
+        toast({
+          title: "Erro ao entrar",
+          description: error?.message === "timeout_login"
+            ? "A autenticação demorou demais. Tente novamente."
+            : error?.message || "Falha inesperada no login",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
