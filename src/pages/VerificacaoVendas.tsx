@@ -38,11 +38,11 @@ function parseValor(v: string): number {
 
 // Spreadsheet data hardcoded from parsed document - Aba VENDAS (todos os clientes)
 const PLANILHA_RAW: Array<{data:string; cliente:string; sabores:number[]; qtd:number; valor:string; status:string; pagto:string}> = [
-  {data:"1/21/26",cliente:"CONV GOLD",sabores:[0,0,0,0,0,0,0,0,0,0,0],qtd:200,valor:"R$ 100.00",status:"PAGO",pagto:"PIX"},
+  {data:"1/21/26",cliente:"CONV GOLD",sabores:[0,0,0,0,0,0,0,0,0,0,0],qtd:200,valor:"R$ 390.00",status:"PAGO",pagto:"PIX"},
   {data:"1/22/26",cliente:"FLUTUAI",sabores:[0,0,0,0,0,0,0,0,0,0,0],qtd:300,valor:"R$ 597.00",status:"PAGO",pagto:"PIX"},
   {data:"1/22/26",cliente:"BOLOTA",sabores:[0,0,0,0,0,0,0,0,0,0,0],qtd:105,valor:"R$ 208.95",status:"PAGO",pagto:""},
   {data:"1/23/26",cliente:"SMOKE",sabores:[0,0,0,0,0,0,0,0,0,0,0],qtd:100,valor:"R$ 195.00",status:"PAGO",pagto:"PIX"},
-  {data:"1/24/26",cliente:"AVULSA",sabores:[0,0,0,0,0,0,0,0,0,0,0],qtd:75,valor:"R$ 187.50",status:"PAGO",pagto:"CRÉDITO"},
+  {data:"1/24/26",cliente:"AVULSO",sabores:[0,0,0,0,0,0,0,0,0,0,0],qtd:75,valor:"R$ 187.50",status:"PAGO",pagto:"CRÉDITO"},
   {data:"1/26/26",cliente:"PORÃO",sabores:[0,0,0,0,0,0,0,0,0,0,0],qtd:300,valor:"R$ 540.00",status:"PAGO",pagto:""},
   {data:"1/26/26",cliente:"CONV GOLD",sabores:[59,58,58,15,0,10,0,0,0,0,0],qtd:200,valor:"R$ 390.00",status:"PAGO",pagto:"ENTRADA+PARCELA"},
   {data:"1/30/26",cliente:"CONV FROTA",sabores:[0,0,0,0,0,0,0,0,0,0,0],qtd:100,valor:"R$ 200.00",status:"PAGO",pagto:"PIX"},
@@ -57,7 +57,7 @@ const PLANILHA_RAW: Array<{data:string; cliente:string; sabores:number[]; qtd:nu
   {data:"2/6/26",cliente:"SMOKE",sabores:[20,20,20,20,20,0,0,0,0,0,0],qtd:100,valor:"R$ 195.00",status:"PAGO",pagto:"PIX"},
   {data:"2/6/26",cliente:"AMOSTRAS",sabores:[1,1,1,1,1,1,1,0,0,0,0],qtd:7,valor:"R$ -",status:"",pagto:""},
   {data:"2/7/26",cliente:"SMOKE",sabores:[20,20,20,20,20,0,0,0,0,0,0],qtd:100,valor:"R$ 195.00",status:"PAGO",pagto:"PIX"},
-  {data:"2/7/26",cliente:"CELEIRO",sabores:[0,0,60,90,0,0,0,0,0,0,0],qtd:150,valor:"R$ 292.50",status:"PAGO",pagto:"PIX"},
+  {data:"2/7/26",cliente:"CELEIRO",sabores:[0,0,60,90,0,0,0,0,0,0,0],qtd:150,valor:"R$ 298.50",status:"PAGO",pagto:"PIX"},
   {data:"2/7/26",cliente:"FLUTUAI",sabores:[200,100,100,0,0,0,0,0,0,0,0],qtd:400,valor:"R$ 780.00",status:"PAGO",pagto:"PIX"},
   {data:"2/7/26",cliente:"VILE CLUB",sabores:[88,87,88,87,50,0,0,0,0,0,0],qtd:400,valor:"R$ 796.00",status:"PAGO",pagto:"PIX"},
   {data:"2/7/26",cliente:"SMOKE",sabores:[40,40,40,40,40,0,0,0,0,0,0],qtd:200,valor:"R$ 390.00",status:"PAGO",pagto:"PIX"},
@@ -78,7 +78,7 @@ const PLANILHA_RAW: Array<{data:string; cliente:string; sabores:number[]; qtd:nu
   {data:"2/13/26",cliente:"SMOKE",sabores:[0,25,25,25,25,0,0,0,0,0,0],qtd:100,valor:"R$ 195.00",status:"PAGO",pagto:""},
   {data:"2/13/26",cliente:"ADEGA GRECIA",sabores:[50,50,50,50,50,0,0,0,0,0,0],qtd:250,valor:"R$ 497.50",status:"PAGO",pagto:"PIX"},
   {data:"2/13/26",cliente:"AVULSO",sabores:[2,1,1,0,0,1,0,0,0,0,0],qtd:5,valor:"R$ 66.00",status:"PAGO",pagto:"PIX"},
-  {data:"2/14/26",cliente:"AVULSO",sabores:[35,35,35,25,20,0,0,0,0,0,0],qtd:150,valor:"R$ 292.50",status:"PAGO",pagto:"PIX"},
+  {data:"2/14/26",cliente:"AVULSO",sabores:[35,35,35,25,20,0,0,0,0,0,0],qtd:150,valor:"R$ 298.50",status:"PAGO",pagto:"PIX"},
   {data:"2/14/26",cliente:"FLUTUAI",sabores:[0,200,100,0,0,0,0,0,0,0,0],qtd:300,valor:"R$ 597.00",status:"PAGO",pagto:"PIX"},
   {data:"2/14/26",cliente:"COPAO DE QUEBRADA",sabores:[0,10,10,10,0,0,0,0,0,0,0],qtd:30,valor:"R$ 67.50",status:"PAGO",pagto:"PIX"},
   {data:"2/14/26",cliente:"ADEGA GRECIA",sabores:[50,50,50,50,50,0,0,0,0,0,0],qtd:250,valor:"R$ 497.50",status:"PAGO",pagto:"PIX"},
