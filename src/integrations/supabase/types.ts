@@ -589,6 +589,116 @@ export type Database = {
         }
         Relationships: []
       }
+      prospecto_visitas: {
+        Row: {
+          created_at: string
+          data_visita: string
+          feedback: string | null
+          id: string
+          operador: string
+          produto_apresentado: string | null
+          prospecto_id: string
+          proxima_acao: string | null
+          resultado: Database["public"]["Enums"]["status_prospecto"]
+        }
+        Insert: {
+          created_at?: string
+          data_visita?: string
+          feedback?: string | null
+          id?: string
+          operador?: string
+          produto_apresentado?: string | null
+          prospecto_id: string
+          proxima_acao?: string | null
+          resultado: Database["public"]["Enums"]["status_prospecto"]
+        }
+        Update: {
+          created_at?: string
+          data_visita?: string
+          feedback?: string | null
+          id?: string
+          operador?: string
+          produto_apresentado?: string | null
+          prospecto_id?: string
+          proxima_acao?: string | null
+          resultado?: Database["public"]["Enums"]["status_prospecto"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prospecto_visitas_prospecto_id_fkey"
+            columns: ["prospecto_id"]
+            isOneToOne: false
+            referencedRelation: "prospectos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prospectos: {
+        Row: {
+          bairro: string | null
+          contato_nome: string | null
+          created_at: string
+          endereco: string | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          nome: string
+          observacoes_estrategicas: string | null
+          operador: string
+          perfil_publico: string | null
+          prioridade: Database["public"]["Enums"]["prioridade_prospecto"]
+          score: number
+          script_abordagem: string | null
+          status: Database["public"]["Enums"]["status_prospecto"]
+          telefone: string | null
+          tipo: Database["public"]["Enums"]["tipo_prospecto"]
+          updated_at: string
+          volume_potencial: string | null
+        }
+        Insert: {
+          bairro?: string | null
+          contato_nome?: string | null
+          created_at?: string
+          endereco?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          nome: string
+          observacoes_estrategicas?: string | null
+          operador?: string
+          perfil_publico?: string | null
+          prioridade?: Database["public"]["Enums"]["prioridade_prospecto"]
+          score?: number
+          script_abordagem?: string | null
+          status?: Database["public"]["Enums"]["status_prospecto"]
+          telefone?: string | null
+          tipo?: Database["public"]["Enums"]["tipo_prospecto"]
+          updated_at?: string
+          volume_potencial?: string | null
+        }
+        Update: {
+          bairro?: string | null
+          contato_nome?: string | null
+          created_at?: string
+          endereco?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          nome?: string
+          observacoes_estrategicas?: string | null
+          operador?: string
+          perfil_publico?: string | null
+          prioridade?: Database["public"]["Enums"]["prioridade_prospecto"]
+          score?: number
+          script_abordagem?: string | null
+          status?: Database["public"]["Enums"]["status_prospecto"]
+          telefone?: string | null
+          tipo?: Database["public"]["Enums"]["tipo_prospecto"]
+          updated_at?: string
+          volume_potencial?: string | null
+        }
+        Relationships: []
+      }
       sabor_receita: {
         Row: {
           embalagem_id: string
@@ -888,6 +998,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "producao"
       modo_producao: "unidade" | "lote"
+      prioridade_prospecto: "alta" | "media" | "baixa"
       status_cliente: "ativo" | "inativo"
       status_pedido_producao:
         | "aguardando_producao"
@@ -895,10 +1006,27 @@ export type Database = {
         | "separado_para_entrega"
         | "retirado"
         | "enviado"
+      status_prospecto:
+        | "novo"
+        | "visitado"
+        | "interessado"
+        | "pedido_fechado"
+        | "retornar"
+        | "sem_interesse"
       status_venda: "pendente" | "paga" | "cancelada"
       tipo_item_estoque: "materia_prima" | "gelo_pronto" | "embalagem"
       tipo_movimentacao: "entrada" | "saida"
       tipo_pagamento_funcionario: "diaria" | "fixo"
+      tipo_prospecto:
+        | "bar"
+        | "tabacaria"
+        | "distribuidora"
+        | "casa_noturna"
+        | "evento_buffet"
+        | "restaurante_lounge"
+        | "lanchonete"
+        | "mercado"
+        | "outro"
       unidade_medida: "g" | "kg"
     }
     CompositeTypes: {
@@ -1029,6 +1157,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "producao"],
       modo_producao: ["unidade", "lote"],
+      prioridade_prospecto: ["alta", "media", "baixa"],
       status_cliente: ["ativo", "inativo"],
       status_pedido_producao: [
         "aguardando_producao",
@@ -1037,10 +1166,29 @@ export const Constants = {
         "retirado",
         "enviado",
       ],
+      status_prospecto: [
+        "novo",
+        "visitado",
+        "interessado",
+        "pedido_fechado",
+        "retornar",
+        "sem_interesse",
+      ],
       status_venda: ["pendente", "paga", "cancelada"],
       tipo_item_estoque: ["materia_prima", "gelo_pronto", "embalagem"],
       tipo_movimentacao: ["entrada", "saida"],
       tipo_pagamento_funcionario: ["diaria", "fixo"],
+      tipo_prospecto: [
+        "bar",
+        "tabacaria",
+        "distribuidora",
+        "casa_noturna",
+        "evento_buffet",
+        "restaurante_lounge",
+        "lanchonete",
+        "mercado",
+        "outro",
+      ],
       unidade_medida: ["g", "kg"],
     },
   },
