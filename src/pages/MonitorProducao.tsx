@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Monitor, Clock, User, Package, CalendarClock, MessageSquare, Maximize2, Minimize2, CheckCircle2, PackageCheck, Hourglass, HandMetal } from "lucide-react";
+import { Monitor, Clock, User, Package, CalendarClock, MessageSquare, Maximize2, Minimize2, CheckCircle2, PackageCheck, Hourglass, HandMetal, Pencil } from "lucide-react";
+import EditPedidoDialog from "@/components/monitor/EditPedidoDialog";
 import { useToast } from "@/hooks/use-toast";
 import { format, isPast, isToday, isTomorrow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -49,6 +50,7 @@ export default function MonitorProducao() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [fullscreenPedidoId, setFullscreenPedidoId] = useState<string | null>(null);
+  const [editPedido, setEditPedido] = useState<any>(null);
 
   const { data: gelos } = useQuery({
     queryKey: ["monitor-gelos"],
@@ -204,7 +206,10 @@ export default function MonitorProducao() {
                 {urgency && (
                   <Badge className={`${urgency.className} text-sm px-3 py-1 font-bold`}>⚠ {urgency.label}</Badge>
                 )}
-                <Button variant="ghost" size="sm" onClick={() => toggleFullscreen(pedido.id)} className="ml-auto">
+                <Button variant="ghost" size="sm" onClick={() => setEditPedido(pedido)} className="ml-auto" title="Editar pedido">
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => toggleFullscreen(pedido.id)} title="Expandir">
                   {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                 </Button>
               </div>
@@ -390,6 +395,11 @@ export default function MonitorProducao() {
           )}
         </div>
       )}
+      <EditPedidoDialog
+        pedido={editPedido}
+        open={!!editPedido}
+        onOpenChange={(open) => { if (!open) setEditPedido(null); }}
+      />
     </div>
   );
 }
