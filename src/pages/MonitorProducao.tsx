@@ -6,13 +6,42 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { Monitor, Clock, User, Package, CalendarClock, MessageSquare, Maximize2, Minimize2, CheckCircle2, PackageCheck, Hourglass, HandMetal, Pencil, Smartphone, Volume2, VolumeX } from "lucide-react";
+import { Monitor, Clock, User, Package, CalendarClock, MessageSquare, Maximize2, Minimize2, CheckCircle2, PackageCheck, Hourglass, HandMetal, Pencil, Smartphone, Volume2, VolumeX, Printer, Timer } from "lucide-react";
 import EditPedidoDialog from "@/components/monitor/EditPedidoDialog";
 import MonitorTopBar from "@/components/monitor/MonitorTopBar";
+import DemandaSaborResumo from "@/components/monitor/DemandaSaborResumo";
+import MiniDashboardProdutividade from "@/components/monitor/MiniDashboardProdutividade";
 import { useMonitorAlerts } from "@/hooks/useMonitorAlerts";
 import { useToast } from "@/hooks/use-toast";
-import { format, isPast, isToday, isTomorrow } from "date-fns";
+import { format, isPast, isToday, isTomorrow, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+
+function getElapsedTime(createdAt: string): string {
+  return formatDistanceToNow(new Date(createdAt), { locale: ptBR, addSuffix: false });
+}
+
+function handlePrintPedido(pedido: any) {
+  const itens = (pedido.pedido_producao_itens || [])
+    .map((i: any) => `<tr><td style="padding:4px 8px;border:1px solid #ddd">${i.sabores?.nome || "-"}</td><td style="padding:4px 8px;border:1px solid #ddd;text-align:right;font-weight:bold">${i.quantidade}</td></tr>`)
+    .join("");
+  const totalUn = (pedido.pedido_producao_itens || []).reduce((s: number, i: any) => s + (i.quantidade || 0), 0);
+  const html = `
+    <html><head><title>Pedido - ${pedido.clientes?.nome}</title>
+    <style>body{font-family:Arial,sans-serif;padding:20px;max-width:400px;margin:0 auto}
+    h2{margin:0 0 4px}table{width:100%;border-collapse:collapse;margin:12px 0}
+    .meta{color:#666;font-size:13px;margin:4px 0}.total{font-size:18px;font-weight:bold;margin-top:8px}
+    @media print{body{padding:10px}}</style></head><body>
+    <h2>📋 ${pedido.clientes?.nome}</h2>
+    <p class="meta">Entrega: ${format(new Date(pedido.data_entrega), "dd/MM/yyyy HH:mm", { locale: ptBR })}</p>
+    <p class="meta">Embalagem: ${pedido.tipo_embalagem || "-"}</p>
+    ${pedido.observacoes ? `<p class="meta" style="color:#b45309">⚠ ${pedido.observacoes}</p>` : ""}
+    <table><thead><tr><th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Sabor</th><th style="padding:4px 8px;border:1px solid #ddd;text-align:right">Qtd</th></tr></thead><tbody>${itens}</tbody></table>
+    <p class="total">Total: ${totalUn} unidades</p>
+    <p class="meta">Pedido criado em: ${format(new Date(pedido.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}</p>
+    <script>window.onload=()=>{window.print()}</script></body></html>`;
+  const win = window.open("", "_blank", "width=420,height=600");
+  if (win) { win.document.write(html); win.document.close(); }
+}
 
 const statusOrder = ["aguardando_producao", "em_producao", "separado_para_entrega", "retirado", "enviado"];
 
@@ -325,15 +354,24 @@ export default function MonitorProducao() {
                 <Button variant="ghost" size="sm" onClick={() => setEditPedido(pedido)} className="ml-auto" title="Editar pedido">
                   <Pencil className="h-4 w-4" />
                 </Button>
+                <Button variant="ghost" size="sm" onClick={() => handlePrintPedido(pedido)} title="Imprimir pedido">
+                  <Printer className="h-4 w-4" />
+                </Button>
                 <Button variant="ghost" size="sm" onClick={() => toggleFullscreen(pedido.id)} title="Expandir">
                   {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                 </Button>
               </div>
 
-              {/* Progress bar */}
+              {/* Progress bar + elapsed time */}
               <div className="flex items-center gap-3">
                 <User className={`${isFullPage ? "h-6 w-6" : "h-5 w-5"} text-primary shrink-0`} />
                 <span className={`${tvText} font-bold text-foreground`}>{pedido.clientes?.nome}</span>
+                <div className="flex items-center gap-1.5 ml-2 text-muted-foreground">
+                  <Timer className="h-3.5 w-3.5" />
+                  <span className={`${isFullPage ? "text-sm" : "text-xs"} font-medium tabular-nums`}>
+                    há {getElapsedTime(pedido.created_at)}
+                  </span>
+                </div>
                 <div className="flex-1 max-w-[200px] ml-auto flex items-center gap-2">
                   <Progress 
                     value={progressPercent} 
@@ -522,6 +560,14 @@ export default function MonitorProducao() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Mini dashboard de produtividade (TV mode only) */}
+      <MiniDashboardProdutividade isFullPage={isFullPage} />
+
+      {/* Demanda pendente por sabor */}
+      {pedidos && pedidos.length > 0 && (
+        <DemandaSaborResumo pedidos={pedidos} isFullPage={isFullPage} />
       )}
 
       {isLoading ? (
