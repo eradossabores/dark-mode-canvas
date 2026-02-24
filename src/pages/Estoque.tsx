@@ -192,12 +192,7 @@ export default function Estoque() {
 
       {/* Painel de gelos saborizados - formato tabela horizontal */}
       {gelos.length > 0 && (() => {
-        const order = ["melancia","morango","maçã verde","maracujá","água de coco","abacaxi com hortelã","bob marley","limão","limão com sal","blue ice","pitaya"];
-        const sorted = [...gelos].sort((a, b) => {
-          const ai = order.indexOf((a.sabores?.nome || "").toLowerCase());
-          const bi = order.indexOf((b.sabores?.nome || "").toLowerCase());
-          return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
-        });
+        const sorted = [...gelos].sort((a, b) => (b.quantidade || 0) - (a.quantidade || 0));
         return (
           <div className="mb-6 overflow-x-auto">
             <p className="text-sm text-muted-foreground font-medium mb-2">Gelos Saborizados</p>
