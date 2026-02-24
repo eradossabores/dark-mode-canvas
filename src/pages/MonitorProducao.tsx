@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Monitor, Clock, User, Package, CalendarClock, MessageSquare, Maximize2, Minimize2, CheckCircle2, PackageCheck, Hourglass, HandMetal, Pencil, Smartphone, Volume2, VolumeX, Printer, Timer, AlertTriangle } from "lucide-react";
 import EditPedidoDialog from "@/components/monitor/EditPedidoDialog";
 import MonitorTopBar from "@/components/monitor/MonitorTopBar";
-import DemandaSaborResumo from "@/components/monitor/DemandaSaborResumo";
+
 import { useMonitorAlerts } from "@/hooks/useMonitorAlerts";
 import { useToast } from "@/hooks/use-toast";
 import { format, isPast, isToday, isTomorrow, formatDistanceToNow } from "date-fns";
@@ -534,10 +534,6 @@ export default function MonitorProducao() {
         </div>
       )}
 
-      {/* Demanda pendente */}
-      {pedidos && pedidos.length > 0 && (
-        <DemandaSaborResumo pedidos={pedidos} isFullPage={isFullPage} />
-      )}
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
