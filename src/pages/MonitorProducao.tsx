@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Monitor, Clock, User, Package, CalendarClock, MessageSquare, Maximize2, Minimize2, CheckCircle2, PackageCheck, Hourglass, HandMetal, Pencil } from "lucide-react";
+import { Monitor, Clock, User, Package, CalendarClock, MessageSquare, Maximize2, Minimize2, CheckCircle2, PackageCheck, Hourglass, HandMetal, Pencil, Smartphone } from "lucide-react";
 import EditPedidoDialog from "@/components/monitor/EditPedidoDialog";
 import { useToast } from "@/hooks/use-toast";
 import { format, isPast, isToday, isTomorrow } from "date-fns";
@@ -51,6 +51,48 @@ export default function MonitorProducao() {
   const queryClient = useQueryClient();
   const [fullscreenPedidoId, setFullscreenPedidoId] = useState<string | null>(null);
   const [editPedido, setEditPedido] = useState<any>(null);
+  const [isFullPage, setIsFullPage] = useState(false);
+
+  const toggleFullPage = useCallback(async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+        // Try to lock orientation to landscape on mobile
+        if (screen.orientation && (screen.orientation as any).lock) {
+          try {
+            await (screen.orientation as any).lock("landscape");
+          } catch (e) {
+            // orientation lock not supported or denied — ignore
+          }
+        }
+        setIsFullPage(true);
+      } else {
+        // Unlock orientation first
+        if (screen.orientation && (screen.orientation as any).unlock) {
+          try {
+            (screen.orientation as any).unlock();
+          } catch (e) {}
+        }
+        await document.exitFullscreen();
+        setIsFullPage(false);
+      }
+    } catch (err) {
+      console.error("Fullscreen error:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleChange = () => {
+      if (!document.fullscreenElement) {
+        setIsFullPage(false);
+        if (screen.orientation && (screen.orientation as any).unlock) {
+          try { (screen.orientation as any).unlock(); } catch (e) {}
+        }
+      }
+    };
+    document.addEventListener("fullscreenchange", handleChange);
+    return () => document.removeEventListener("fullscreenchange", handleChange);
+  }, []);
 
   const { data: gelos } = useQuery({
     queryKey: ["monitor-gelos"],
@@ -328,6 +370,16 @@ export default function MonitorProducao() {
           <h1 className="text-2xl font-bold text-foreground">Monitor da Produção</h1>
           <Badge variant="secondary" className="ml-2 text-base px-3 py-1">{activeOrders.length} pedido(s)</Badge>
         </div>
+        <Button
+          variant={isFullPage ? "default" : "outline"}
+          size="sm"
+          onClick={toggleFullPage}
+          className="gap-2"
+          title={isFullPage ? "Sair da tela cheia" : "Tela cheia (rotação automática no celular)"}
+        >
+          {isFullPage ? <Minimize2 className="h-4 w-4" /> : <Smartphone className="h-4 w-4" />}
+          {isFullPage ? "Sair" : "Tela Cheia"}
+        </Button>
       </div>
 
       {/* Cards de estoque por sabor */}
