@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, ShoppingCart, Pencil, Eye, CalendarIcon } from "lucide-react";
+import { Plus, Trash2, ShoppingCart, Pencil, Eye, CalendarIcon, X } from "lucide-react";
 
 const FORMAS_PAGAMENTO = [
   { value: "amostra", label: "Amostra (Grátis)" },
@@ -47,6 +47,7 @@ export default function Vendas() {
   const [editOpen, setEditOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [cancelId, setCancelId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const [clienteId, setClienteId] = useState("");
   const [formaPagamento, setFormaPagamento] = useState("dinheiro");
@@ -305,6 +306,32 @@ export default function Vendas() {
 
       toast({ title: "Venda cancelada!" });
       setCancelId(null);
+      loadData();
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+  }
+
+  async function handleDelete() {
+    if (!deleteId) return;
+    try {
+      const vendaDeletada = vendas.find(v => v.id === deleteId);
+      await (supabase as any).from("venda_itens").delete().eq("venda_id", deleteId);
+      await (supabase as any).from("venda_parcelas").delete().eq("venda_id", deleteId);
+      await (supabase as any).from("movimentacoes_estoque").delete().eq("referencia_id", deleteId).eq("referencia", "venda");
+      const { error } = await (supabase as any).from("vendas").delete().eq("id", deleteId);
+      if (error) throw error;
+
+      await (supabase as any).from("auditoria").insert({
+        usuario_nome: "sistema",
+        modulo: "vendas",
+        acao: "venda_excluida",
+        registro_afetado: deleteId,
+        descricao: `Venda excluída permanentemente - Cliente: ${vendaDeletada?.clientes?.nome || "?"} - R$ ${Number(vendaDeletada?.total || 0).toFixed(2)}`,
+      });
+
+      toast({ title: "Venda excluída!" });
+      setDeleteId(null);
       loadData();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
@@ -632,6 +659,20 @@ export default function Vendas() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Delete Confirm */}
+      <AlertDialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir venda permanentemente?</AlertDialogTitle>
+            <AlertDialogDescription>Esta ação é irreversível. A venda e todos os seus itens serão removidos do sistema.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Voltar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -692,6 +733,7 @@ export default function Vendas() {
                       {v.status !== "cancelada" && (
                         <Button size="icon" variant="ghost" onClick={() => setCancelId(v.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                       )}
+                      <Button size="icon" variant="ghost" onClick={() => setDeleteId(v.id)}><X className="h-4 w-4 text-destructive" /></Button>
                     </TableCell>
                   </TableRow>
                 ));
