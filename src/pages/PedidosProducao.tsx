@@ -48,7 +48,7 @@ export default function PedidosProducao() {
 
   // Form state
   const [clienteId, setClienteId] = useState("");
-  const [tipoEmbalagem, setTipoEmbalagem] = useState("padrão");
+  const [tipoEmbalagem, setTipoEmbalagem] = useState("1 sacola");
   const [dataEntrega, setDataEntrega] = useState("");
   const [horaEntrega, setHoraEntrega] = useState("");
   const [observacoes, setObservacoes] = useState("");
@@ -212,7 +212,7 @@ export default function PedidosProducao() {
 
   function resetForm() {
     setClienteId("");
-    setTipoEmbalagem("padrão");
+    setTipoEmbalagem("1 sacola");
     setDataEntrega("");
     setHoraEntrega("");
     setObservacoes("");
@@ -329,9 +329,9 @@ export default function PedidosProducao() {
                   <Select value={tipoEmbalagem} onValueChange={setTipoEmbalagem}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="padrão">Padrão</SelectItem>
-                      <SelectItem value="premium">Premium</SelectItem>
-                      <SelectItem value="personalizada">Personalizada</SelectItem>
+                      <SelectItem value="1 sacola">1 Sacola</SelectItem>
+                      <SelectItem value="2 sacolas">2 Sacolas</SelectItem>
+                      <SelectItem value="sacola com alça">Sacola com Alça</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -596,9 +596,9 @@ export default function PedidosProducao() {
                 <Select value={editTipoEmbalagem} onValueChange={setEditTipoEmbalagem}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="padrão">Padrão</SelectItem>
-                    <SelectItem value="premium">Premium</SelectItem>
-                    <SelectItem value="personalizada">Personalizada</SelectItem>
+                    <SelectItem value="1 sacola">1 Sacola</SelectItem>
+                    <SelectItem value="2 sacolas">2 Sacolas</SelectItem>
+                    <SelectItem value="sacola com alça">Sacola com Alça</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

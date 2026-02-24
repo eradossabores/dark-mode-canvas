@@ -179,9 +179,9 @@ export default function EditPedidoDialog({ pedido, open, onOpenChange }: EditPed
               <Select value={tipoEmbalagem} onValueChange={setTipoEmbalagem}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="padrão">Padrão</SelectItem>
-                  <SelectItem value="premium">Premium</SelectItem>
-                  <SelectItem value="personalizada">Personalizada</SelectItem>
+                  <SelectItem value="1 sacola">1 Sacola</SelectItem>
+                  <SelectItem value="2 sacolas">2 Sacolas</SelectItem>
+                  <SelectItem value="sacola com alça">Sacola com Alça</SelectItem>
                 </SelectContent>
               </Select>
             </div>
