@@ -149,19 +149,11 @@ export default function LandingPage() {
             <a href="#compromisso" className="hover:text-foreground transition-colors">Compromisso Local</a>
             <a href="#contato" className="hover:text-foreground transition-colors">Contato</a>
           </nav>
-          {user ? (
-            <Link to="/painel">
-              <Button size="sm" variant="outline" className="gap-1.5">
-                <LayoutDashboard className="h-4 w-4" /> Painel
-              </Button>
-            </Link>
-          ) : (
-            <Link to="/login">
-              <Button size="sm" className="gap-1.5">
-                <LogIn className="h-4 w-4" /> Entrar
-              </Button>
-            </Link>
-          )}
+          <Link to="/login">
+            <Button size="sm" className="gap-1.5">
+              <LogIn className="h-4 w-4" /> Entrar
+            </Button>
+          </Link>
         </div>
       </header>
 
