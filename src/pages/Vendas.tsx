@@ -96,19 +96,22 @@ export default function Vendas() {
     else if (field === "preco_unitario") { list[i].preco_unitario = val; list[i].preco_auto = false; }
     else (list[i] as any)[field] = val;
     setItens(list);
-    // Recalcular preço se mudou sabor ou quantidade e tem cliente
+    // Recalcular preço de TODOS os itens usando quantidade total da comanda
     if ((field === "sabor_id" || field === "quantidade") && clienteId) {
-      const item = list[i];
-      if (item.sabor_id && item.quantidade > 0) {
-        fetchPreco(clienteId, item.sabor_id, item.quantidade).then(preco => {
-          setItens(prev => {
-            const updated = [...prev];
-            if (updated[i] && preco !== null) { updated[i].preco_unitario = preco.toFixed(2); updated[i].preco_auto = true; }
-            return updated;
-          });
-        });
+      recalcPrecosTotalComanda(list, clienteId);
+    }
+  }
+
+  async function recalcPrecosTotalComanda(currentItens: typeof itens, cId: string) {
+    const totalQtd = currentItens.reduce((s, it) => s + (it.quantidade || 0), 0);
+    const updated = [...currentItens];
+    for (let i = 0; i < updated.length; i++) {
+      if (updated[i].sabor_id && updated[i].quantidade > 0) {
+        const preco = await fetchPreco(cId, updated[i].sabor_id, totalQtd);
+        if (preco !== null) { updated[i].preco_unitario = preco.toFixed(2); updated[i].preco_auto = true; }
       }
     }
+    setItens(updated);
   }
 
   async function fetchPreco(cId: string, sId: string, qtd: number): Promise<number | null> {
@@ -121,14 +124,7 @@ export default function Vendas() {
 
   // Recalcular preços quando cliente muda
   async function recalcPrecos(cId: string) {
-    const updated = [...itens];
-    for (let i = 0; i < updated.length; i++) {
-      if (updated[i].sabor_id && updated[i].quantidade > 0) {
-        const preco = await fetchPreco(cId, updated[i].sabor_id, updated[i].quantidade);
-        if (preco !== null) { updated[i].preco_unitario = preco.toFixed(2); updated[i].preco_auto = true; }
-      }
-    }
-    setItens(updated);
+    recalcPrecosTotalComanda(itens, cId);
   }
 
   async function handleSubmit() {
