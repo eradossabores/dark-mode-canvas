@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +18,18 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
+  const { user, role, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (authLoading || !user) return;
+
+    if (role === "producao") {
+      navigate("/painel/producao", { replace: true });
+      return;
+    }
+
+    navigate("/painel", { replace: true });
+  }, [authLoading, user, role, navigate]);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -24,13 +37,18 @@ export default function Login() {
       toast({ title: "Preencha email e senha", variant: "destructive" });
       return;
     }
+
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) {
-      toast({ title: "Erro ao entrar", description: error.message, variant: "destructive" });
-    } else {
-      navigate("/painel");
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        toast({ title: "Erro ao entrar", description: error.message, variant: "destructive" });
+      }
+    } catch (error: any) {
+      toast({ title: "Erro ao entrar", description: error?.message || "Falha inesperada no login", variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
   }
 
