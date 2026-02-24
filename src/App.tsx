@@ -3,8 +3,11 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import Layout from "@/components/Layout";
 import LandingPage from "@/pages/LandingPage";
+import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import Producao from "@/pages/Producao";
 import Vendas from "@/pages/Vendas";
@@ -21,9 +24,20 @@ import PedidosProducao from "@/pages/PedidosProducao";
 import MonitorProducao from "@/pages/MonitorProducao";
 import Diagnostico from "@/pages/Diagnostico";
 import VerificacaoVendas from "@/pages/VerificacaoVendas";
+import GerenciarUsuarios from "@/pages/GerenciarUsuarios";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
+
+// Helper for admin-only routes
+const AdminRoute = ({ children }: { children: React.ReactNode }) => (
+  <ProtectedRoute adminOnly><Layout>{children}</Layout></ProtectedRoute>
+);
+
+// Helper for routes accessible by producao role too
+const ProdRoute = ({ children }: { children: React.ReactNode }) => (
+  <ProtectedRoute><Layout>{children}</Layout></ProtectedRoute>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -31,29 +45,36 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          {/* Landing page - sem sidebar */}
-          <Route path="/" element={<LandingPage />} />
+        <AuthProvider>
+          <Routes>
+            {/* Public */}
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<Login />} />
 
-          {/* Painel de controle - com sidebar */}
-          <Route path="/painel" element={<Layout><Dashboard /></Layout>} />
-          <Route path="/painel/producao" element={<Layout><Producao /></Layout>} />
-          <Route path="/painel/pedidos-producao" element={<Layout><PedidosProducao /></Layout>} />
-          <Route path="/painel/monitor-producao" element={<Layout><MonitorProducao /></Layout>} />
-          <Route path="/painel/vendas" element={<Layout><Vendas /></Layout>} />
-          <Route path="/painel/a-receber" element={<Layout><AReceber /></Layout>} />
-          <Route path="/painel/contas-a-pagar" element={<Layout><ContasAPagar /></Layout>} />
-          <Route path="/painel/estoque" element={<Layout><Estoque /></Layout>} />
-          <Route path="/painel/clientes" element={<Layout><Clientes /></Layout>} />
-          <Route path="/painel/funcionarios" element={<Layout><Funcionarios /></Layout>} />
-          <Route path="/painel/sabores" element={<Layout><Sabores /></Layout>} />
-          <Route path="/painel/relatorios" element={<Layout><Relatorios /></Layout>} />
-          <Route path="/painel/importar-planilha" element={<Layout><ImportarPlanilha /></Layout>} />
-          <Route path="/painel/auditoria" element={<Layout><Auditoria /></Layout>} />
-          <Route path="/painel/diagnostico" element={<Layout><Diagnostico /></Layout>} />
-          <Route path="/painel/verificacao-vendas" element={<Layout><VerificacaoVendas /></Layout>} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            {/* Admin only routes */}
+            <Route path="/painel" element={<AdminRoute><Dashboard /></AdminRoute>} />
+            <Route path="/painel/vendas" element={<AdminRoute><Vendas /></AdminRoute>} />
+            <Route path="/painel/a-receber" element={<AdminRoute><AReceber /></AdminRoute>} />
+            <Route path="/painel/contas-a-pagar" element={<AdminRoute><ContasAPagar /></AdminRoute>} />
+            <Route path="/painel/clientes" element={<AdminRoute><Clientes /></AdminRoute>} />
+            <Route path="/painel/funcionarios" element={<AdminRoute><Funcionarios /></AdminRoute>} />
+            <Route path="/painel/sabores" element={<AdminRoute><Sabores /></AdminRoute>} />
+            <Route path="/painel/relatorios" element={<AdminRoute><Relatorios /></AdminRoute>} />
+            <Route path="/painel/importar-planilha" element={<AdminRoute><ImportarPlanilha /></AdminRoute>} />
+            <Route path="/painel/auditoria" element={<AdminRoute><Auditoria /></AdminRoute>} />
+            <Route path="/painel/diagnostico" element={<AdminRoute><Diagnostico /></AdminRoute>} />
+            <Route path="/painel/verificacao-vendas" element={<AdminRoute><VerificacaoVendas /></AdminRoute>} />
+            <Route path="/painel/usuarios" element={<AdminRoute><GerenciarUsuarios /></AdminRoute>} />
+
+            {/* Production accessible routes */}
+            <Route path="/painel/producao" element={<ProdRoute><Producao /></ProdRoute>} />
+            <Route path="/painel/pedidos-producao" element={<ProdRoute><PedidosProducao /></ProdRoute>} />
+            <Route path="/painel/monitor-producao" element={<ProdRoute><MonitorProducao /></ProdRoute>} />
+            <Route path="/painel/estoque" element={<ProdRoute><Estoque /></ProdRoute>} />
+
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

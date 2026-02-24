@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Package, Users, ShoppingCart, Factory,
-  Warehouse, ClipboardList, UserCog, ChevronLeft, ChevronRight, BarChart3, FileUp, Menu, X, DollarSign, Monitor, ShoppingBag, Database
+  Warehouse, ClipboardList, UserCog, ChevronLeft, ChevronRight, BarChart3, FileUp, Menu, X, DollarSign, Monitor, ShoppingBag, Database, LogOut, Shield
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { isRouteAllowed } from "@/components/ProtectedRoute";
 import logo from "@/assets/logo.png";
 import sidImg from "@/assets/sid.png";
 import buckImg from "@/assets/buck.png";
@@ -29,6 +31,7 @@ const menuItems = [
   { path: "/painel/importar-planilha", label: "Upload Planilha", icon: FileUp },
   { path: "/painel/auditoria", label: "Auditoria", icon: ClipboardList },
   { path: "/painel/diagnostico", label: "Diagnóstico", icon: Database },
+  { path: "/painel/usuarios", label: "Usuários", icon: Shield },
 ];
 
 const allCharacters = [
@@ -88,6 +91,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { role, signOut, user } = useAuth();
+
+  const filteredMenu = menuItems.filter((item) => isRouteAllowed(item.path, role));
 
   const [sidebarCharIdx, setSidebarCharIdx] = useState(0);
 
@@ -100,6 +107,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const sidebarChar = allCharacters[sidebarCharIdx];
 
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/login");
+  };
+
   const sidebarContent = (
     <>
       <div className="flex items-center gap-2 px-3 py-3 border-b border-sidebar-border">
@@ -109,7 +121,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         )}
       </div>
       <nav className="flex-1 py-2 space-y-1 overflow-y-auto">
-        {menuItems.map((item) => {
+        {filteredMenu.map((item) => {
           const active = location.pathname === item.path;
           return (
             <Link
@@ -129,7 +141,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           );
         })}
       </nav>
-      {/* Ice Age character at bottom of sidebar */}
+      {/* Logout button */}
+      <button
+        onClick={handleLogout}
+        className={cn(
+          "flex items-center gap-3 px-4 py-2.5 text-sm transition-colors mx-2 rounded-md text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+          collapsed ? "justify-center" : ""
+        )}
+      >
+        <LogOut className="h-4 w-4 shrink-0" />
+        {!collapsed && <span>Sair</span>}
+      </button>
       <div className="flex justify-center py-2 border-t border-sidebar-border">
         <img
           key={sidebarCharIdx}
