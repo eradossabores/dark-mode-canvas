@@ -122,14 +122,27 @@ export default function PedidosProducao() {
   });
 
   // ... keep existing code (createMutation, resetForm, addItem, removeItem, canSubmit)
+  function splitDateTime(value?: string | null) {
+    if (!value) return { date: "", time: "" };
+
+    const normalized = value.replace(" ", "T");
+    const [date = "", timeWithZone = ""] = normalized.split("T");
+
+    return {
+      date,
+      time: timeWithZone.slice(0, 5),
+    };
+  }
+
   const createMutation = useMutation({
     mutationFn: async () => {
+      const horaComSegundos = horaEntrega.length === 5 ? `${horaEntrega}:00` : horaEntrega;
       const { data: pedido, error: pedidoErr } = await supabase
         .from("pedidos_producao")
         .insert({
           cliente_id: clienteId,
           tipo_embalagem: tipoEmbalagem,
-          data_entrega: `${dataEntrega}T${horaEntrega}`,
+          data_entrega: `${dataEntrega}T${horaComSegundos}`,
           observacoes: observacoes || null,
           status_pagamento: statusPagamento,
         })
@@ -177,10 +190,11 @@ export default function PedidosProducao() {
   const editMutation = useMutation({
     mutationFn: async () => {
       if (!editOrder) return;
+      const editHoraComSegundos = editHoraEntrega.length === 5 ? `${editHoraEntrega}:00` : editHoraEntrega;
       const { error } = await supabase.from("pedidos_producao").update({
         cliente_id: editClienteId,
         tipo_embalagem: editTipoEmbalagem,
-        data_entrega: `${editDataEntrega}T${editHoraEntrega}`,
+        data_entrega: `${editDataEntrega}T${editHoraComSegundos}`,
         observacoes: editObservacoes || null,
         status: editStatus as any,
         status_pagamento: editStatusPagamento,
@@ -241,9 +255,9 @@ export default function PedidosProducao() {
     setEditOrder(p);
     setEditClienteId(p.cliente_id);
     setEditTipoEmbalagem(p.tipo_embalagem);
-    const dt = new Date(p.data_entrega);
-    setEditDataEntrega(format(dt, "yyyy-MM-dd"));
-    setEditHoraEntrega(format(dt, "HH:mm"));
+    const { date, time } = splitDateTime(p.data_entrega);
+    setEditDataEntrega(date);
+    setEditHoraEntrega(time);
     setEditObservacoes(p.observacoes || "");
     setEditStatus(p.status);
     setEditStatusPagamento(p.status_pagamento || "aguardando_pagamento");
