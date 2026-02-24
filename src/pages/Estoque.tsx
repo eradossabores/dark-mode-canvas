@@ -190,28 +190,44 @@ export default function Estoque() {
     <div>
       <h1 className="text-2xl font-bold mb-4">Estoque</h1>
 
-      {/* Painel de gelos por sabor */}
-      {gelos.length > 0 && (
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-sm text-muted-foreground font-medium">Gelos por Sabor</p>
-            <Badge variant="secondary" className="text-xs font-bold">Total: {totalGelos.toLocaleString()} un.</Badge>
+      {/* Painel de gelos saborizados - formato tabela horizontal */}
+      {gelos.length > 0 && (() => {
+        const order = ["melancia","morango","maçã verde","maracujá","água de coco","abacaxi com hortelã","bob marley","limão","limão com sal","blue ice","pitaya"];
+        const sorted = [...gelos].sort((a, b) => {
+          const ai = order.indexOf((a.sabores?.nome || "").toLowerCase());
+          const bi = order.indexOf((b.sabores?.nome || "").toLowerCase());
+          return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+        });
+        return (
+          <div className="mb-6 overflow-x-auto">
+            <p className="text-sm text-muted-foreground font-medium mb-2">Gelos Saborizados</p>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-sky-600">
+                  {sorted.map((g) => (
+                    <TableHead key={g.id} className="text-center text-white font-bold text-xs whitespace-nowrap px-3 py-1.5 border border-sky-700">
+                      {g.sabores?.nome}
+                    </TableHead>
+                  ))}
+                  <TableHead className="text-center text-white font-bold text-xs px-3 py-1.5 border border-sky-700">TOTAL</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow className="bg-sky-50">
+                  {sorted.map((g) => (
+                    <TableCell key={g.id} className="text-center font-bold text-sm border px-3 py-2">
+                      {g.quantidade || 0}
+                    </TableCell>
+                  ))}
+                  <TableCell className="text-center font-extrabold text-sm border px-3 py-2">
+                    {totalGelos.toLocaleString()}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-            {[...gelos]
-              .sort((a, b) => (b.quantidade || 0) - (a.quantidade || 0))
-              .map((g) => (
-                <div
-                  key={g.id}
-                  className={`rounded-lg border px-3 py-2.5 text-center transition-all hover:scale-[1.03] ${getSaborColor(g.sabores?.nome)}`}
-                >
-                  <p className="text-[11px] font-semibold truncate">{g.sabores?.nome}</p>
-                  <p className="text-lg font-extrabold mt-0.5">{(g.quantidade || 0).toLocaleString()}</p>
-                </div>
-              ))}
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Dialog de Ajuste */}
       <Dialog open={openAjuste} onOpenChange={setOpenAjuste}>
