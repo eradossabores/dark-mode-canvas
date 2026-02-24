@@ -122,9 +122,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const sidebarContent = (
     <>
       <div className="flex items-center gap-2 px-3 py-3 border-b border-sidebar-border">
-        <img src={logo} alt="A Era dos Sabores" className="h-9 w-9 shrink-0 rounded" />
+        <img src={logo} alt="A Era dos Sabores" className="h-10 w-10 shrink-0 rounded shadow-sm" />
         {!collapsed && (
-          <span className="font-bold text-sm whitespace-nowrap">A Era dos Sabores</span>
+          <div className="flex flex-col">
+            <span className="font-bold text-sm whitespace-nowrap leading-tight">A Era dos Sabores</span>
+            <span className="text-[10px] text-sidebar-foreground/60 leading-tight">Gelo Gourmet</span>
+          </div>
         )}
       </div>
       <nav className="flex-1 py-2 space-y-1 overflow-y-auto">
@@ -179,8 +182,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Mobile hamburger */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="md:hidden fixed top-3 left-3 z-50 p-2 rounded-md bg-card shadow-md border border-border"
+        className="md:hidden fixed top-3 left-3 z-50 p-1.5 rounded-md bg-card shadow-md border border-border flex items-center gap-1.5"
       >
+        <img src={logo} alt="" className="h-7 w-7 rounded" />
         <Menu className="h-5 w-5" />
       </button>
 
@@ -224,6 +228,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </aside>
 
       <main className="flex-1 overflow-auto relative bg-background">
+        {/* Watermark logo */}
+        <div className="fixed bottom-4 right-4 pointer-events-none z-0 opacity-[0.06] dark:opacity-[0.04]">
+          <img src={logo} alt="" aria-hidden className="w-32 h-32 object-contain" />
+        </div>
         {/* Ice Age themed background - positioned behind content */}
         <div className="sticky top-0 left-0 w-full h-0 pointer-events-none" style={{ zIndex: 0 }}>
           <div className="absolute top-0 left-0 w-full h-screen overflow-hidden">
