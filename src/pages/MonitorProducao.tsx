@@ -46,6 +46,18 @@ export default function MonitorProducao() {
   const queryClient = useQueryClient();
   const [fullscreenPedidoId, setFullscreenPedidoId] = useState<string | null>(null);
 
+  const { data: gelos } = useQuery({
+    queryKey: ["monitor-gelos"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("estoque_gelos")
+        .select("*, sabores(nome)")
+        .order("quantidade", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   const { data: pedidos, isLoading } = useQuery({
     queryKey: ["monitor-pedidos"],
     queryFn: async () => {
@@ -58,6 +70,27 @@ export default function MonitorProducao() {
       return data;
     },
   });
+
+  const SABOR_COLORS: Record<string, string> = {
+    melancia: "bg-red-500/90 text-white border-red-600",
+    morango: "bg-pink-500/90 text-white border-pink-600",
+    "maçã verde": "bg-green-500/90 text-white border-green-600",
+    maracujá: "bg-yellow-500/90 text-white border-yellow-600",
+    "água de coco": "bg-cyan-500/90 text-white border-cyan-600",
+    "abacaxi com hortelã": "bg-emerald-500/90 text-white border-emerald-600",
+    "bob marley": "bg-amber-500/90 text-white border-amber-600",
+    limão: "bg-lime-500/90 text-white border-lime-600",
+    "limão com sal": "bg-lime-600/90 text-white border-lime-700",
+    pitaya: "bg-fuchsia-500/90 text-white border-fuchsia-600",
+    "blue ice": "bg-blue-500/90 text-white border-blue-600",
+  };
+
+  const getSaborColor = (nome: string) => {
+    const key = nome?.toLowerCase() || "";
+    return SABOR_COLORS[key] || "bg-muted text-foreground border-border";
+  };
+
+  const totalGelos = (gelos || []).reduce((s: number, g: any) => s + (g.quantidade || 0), 0);
 
   useEffect(() => {
     const channel = supabase
@@ -228,6 +261,30 @@ export default function MonitorProducao() {
           <Badge variant="secondary" className="ml-2 text-base px-3 py-1">{activeOrders.length} pedido(s)</Badge>
         </div>
       </div>
+
+      {/* Cards de estoque por sabor */}
+      {gelos && gelos.length > 0 && (
+        <div>
+          <p className="text-sm text-muted-foreground font-medium mb-2">Gelos por Sabor</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+            {[...(gelos || [])]
+              .sort((a: any, b: any) => (b.quantidade || 0) - (a.quantidade || 0))
+              .map((g: any) => (
+                <div
+                  key={g.id}
+                  className={`rounded-lg border px-3 py-2.5 text-center transition-all hover:scale-[1.03] ${getSaborColor(g.sabores?.nome)}`}
+                >
+                  <p className="text-[11px] font-semibold truncate">{g.sabores?.nome}</p>
+                  <p className="text-lg font-extrabold mt-0.5">{(g.quantidade || 0).toLocaleString()}</p>
+                </div>
+              ))}
+            <div className="rounded-lg border px-3 py-2.5 text-center transition-all hover:scale-[1.03] bg-gray-700/90 text-white border-gray-800">
+              <p className="text-[11px] font-semibold truncate">TOTAL</p>
+              <p className="text-lg font-extrabold mt-0.5">{totalGelos.toLocaleString()}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isLoading ? (
         <p className="text-muted-foreground">Carregando...</p>
