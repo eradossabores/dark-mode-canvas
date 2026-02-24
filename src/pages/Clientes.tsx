@@ -11,7 +11,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from "@/integrations/supabase/client";
 import { insertRow } from "@/lib/supabase-helpers";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, History } from "lucide-react";
+import HistoricoCompras from "@/components/clientes/HistoricoCompras";
 
 const emptyForm = {
   nome: "", telefone: "", email: "", endereco: "", bairro: "", cidade: "",
@@ -27,6 +28,7 @@ export default function Clientes() {
   const [form, setForm] = useState({ ...emptyForm });
   const [page, setPage] = useState(0);
   const [busca, setBusca] = useState("");
+  const [historicoCliente, setHistoricoCliente] = useState<{ id: string; nome: string } | null>(null);
   const PAGE_SIZE = 20;
 
   const clientesFiltrados = clientes.filter((c) =>
@@ -229,6 +231,7 @@ export default function Clientes() {
                       ) : "Nunca comprou"}
                     </TableCell>
                     <TableCell className="text-right space-x-1">
+                      <Button size="icon" variant="ghost" onClick={() => setHistoricoCliente({ id: c.id, nome: c.nome })} title="Histórico"><History className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" onClick={() => setDeleteId(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                     </TableCell>
@@ -253,6 +256,12 @@ export default function Clientes() {
           )}
         </CardContent>
       </Card>
+      <HistoricoCompras
+        clienteId={historicoCliente?.id || null}
+        clienteNome={historicoCliente?.nome || ""}
+        open={!!historicoCliente}
+        onOpenChange={(v) => !v && setHistoricoCliente(null)}
+      />
     </div>
   );
 }
