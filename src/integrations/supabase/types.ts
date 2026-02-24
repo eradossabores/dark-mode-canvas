@@ -157,6 +157,8 @@ export type Database = {
           estado: string | null
           freezer_identificacao: string | null
           id: string
+          latitude: number | null
+          longitude: number | null
           nome: string
           observacoes: string | null
           possui_freezer: boolean
@@ -177,6 +179,8 @@ export type Database = {
           estado?: string | null
           freezer_identificacao?: string | null
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           nome: string
           observacoes?: string | null
           possui_freezer?: boolean
@@ -197,6 +201,8 @@ export type Database = {
           estado?: string | null
           freezer_identificacao?: string | null
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           nome?: string
           observacoes?: string | null
           possui_freezer?: boolean

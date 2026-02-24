@@ -1,0 +1,291 @@
+import { useEffect, useState, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "@/hooks/use-toast";
+import { MapPin, Save, X, Users, RefreshCw } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+// Fix leaflet default icons
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
+  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+});
+
+const clienteIcon = new L.Icon({
+  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
+  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+});
+
+const pendingIcon = new L.Icon({
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+});
+
+// Boa Vista center coordinates
+const BOA_VISTA_CENTER: [number, number] = [2.8195, -60.6714];
+
+interface Cliente {
+  id: string;
+  nome: string;
+  bairro: string | null;
+  endereco: string | null;
+  telefone: string | null;
+  status: string;
+  latitude: number | null;
+  longitude: number | null;
+  possui_freezer: boolean;
+}
+
+function ClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number) => void }) {
+  useMapEvents({
+    click(e) {
+      onMapClick(e.latlng.lat, e.latlng.lng);
+    },
+  });
+  return null;
+}
+
+export default function MapaClientes() {
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [placingClienteId, setPlacingClienteId] = useState<string | null>(null);
+  const [tempMarker, setTempMarker] = useState<[number, number] | null>(null);
+  const [filterBairro, setFilterBairro] = useState<string>("todos");
+
+  useEffect(() => { loadClientes(); }, []);
+
+  async function loadClientes() {
+    const { data } = await (supabase as any)
+      .from("clientes")
+      .select("id, nome, bairro, endereco, telefone, status, latitude, longitude, possui_freezer")
+      .eq("status", "ativo")
+      .order("nome");
+    setClientes(data || []);
+  }
+
+  const semCoordenadas = clientes.filter(c => !c.latitude || !c.longitude);
+  const comCoordenadas = clientes.filter(c => c.latitude && c.longitude);
+  const bairros = [...new Set(clientes.map(c => c.bairro).filter(Boolean))].sort() as string[];
+
+  const clientesFiltrados = filterBairro === "todos"
+    ? comCoordenadas
+    : comCoordenadas.filter(c => c.bairro === filterBairro);
+
+  function startPlacing(clienteId: string) {
+    setPlacingClienteId(clienteId);
+    setTempMarker(null);
+    toast({ title: "Clique no mapa para posicionar o cliente" });
+  }
+
+  function handleMapClick(lat: number, lng: number) {
+    if (!placingClienteId) return;
+    setTempMarker([lat, lng]);
+  }
+
+  async function savePosition() {
+    if (!placingClienteId || !tempMarker) return;
+    try {
+      const { error } = await (supabase as any)
+        .from("clientes")
+        .update({ latitude: tempMarker[0], longitude: tempMarker[1] })
+        .eq("id", placingClienteId);
+      if (error) throw error;
+      toast({ title: "Localização salva!" });
+      setPlacingClienteId(null);
+      setTempMarker(null);
+      loadClientes();
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+  }
+
+  function cancelPlacing() {
+    setPlacingClienteId(null);
+    setTempMarker(null);
+  }
+
+  async function removePosition(clienteId: string) {
+    try {
+      await (supabase as any)
+        .from("clientes")
+        .update({ latitude: null, longitude: null })
+        .eq("id", clienteId);
+      toast({ title: "Localização removida" });
+      loadClientes();
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+  }
+
+  const placingCliente = clientes.find(c => c.id === placingClienteId);
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <MapPin className="h-6 w-6 text-primary" />
+          <h1 className="text-2xl font-bold">Mapa de Clientes</h1>
+        </div>
+        <Button variant="outline" size="sm" onClick={loadClientes}>
+          <RefreshCw className="h-4 w-4 mr-1" /> Atualizar
+        </Button>
+      </div>
+
+      {/* KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <Card><CardContent className="pt-3 pb-3 text-center">
+          <p className="text-xl font-bold">{clientes.length}</p>
+          <p className="text-xs text-muted-foreground">Clientes ativos</p>
+        </CardContent></Card>
+        <Card><CardContent className="pt-3 pb-3 text-center">
+          <p className="text-xl font-bold text-primary">{comCoordenadas.length}</p>
+          <p className="text-xs text-muted-foreground">No mapa</p>
+        </CardContent></Card>
+        <Card><CardContent className="pt-3 pb-3 text-center">
+          <p className="text-xl font-bold text-amber-500">{semCoordenadas.length}</p>
+          <p className="text-xs text-muted-foreground">Sem localização</p>
+        </CardContent></Card>
+        <Card><CardContent className="pt-3 pb-3 text-center">
+          <p className="text-xl font-bold">{bairros.length}</p>
+          <p className="text-xs text-muted-foreground">Bairros</p>
+        </CardContent></Card>
+      </div>
+
+      {/* Placing mode banner */}
+      {placingClienteId && (
+        <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-300 rounded-lg flex items-center justify-between">
+          <div>
+            <p className="font-bold text-sm">📍 Posicionando: {placingCliente?.nome}</p>
+            <p className="text-xs text-muted-foreground">Clique no mapa para definir a localização</p>
+          </div>
+          <div className="flex gap-2">
+            {tempMarker && (
+              <Button size="sm" onClick={savePosition}>
+                <Save className="h-4 w-4 mr-1" /> Salvar
+              </Button>
+            )}
+            <Button size="sm" variant="outline" onClick={cancelPlacing}>
+              <X className="h-4 w-4 mr-1" /> Cancelar
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        {/* Map */}
+        <div className="lg:col-span-3">
+          <Card className="overflow-hidden">
+            <div style={{ height: "600px" }}>
+              <MapContainer
+                center={BOA_VISTA_CENTER}
+                zoom={13}
+                style={{ height: "100%", width: "100%" }}
+                scrollWheelZoom={true}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <ClickHandler onMapClick={handleMapClick} />
+
+                {/* Client markers */}
+                {clientesFiltrados.map(c => (
+                  <Marker
+                    key={c.id}
+                    position={[c.latitude!, c.longitude!]}
+                    icon={clienteIcon}
+                  >
+                    <Popup>
+                      <div className="min-w-[180px]">
+                        <p className="font-bold text-sm">{c.nome}</p>
+                        {c.bairro && <p className="text-xs text-gray-600">{c.bairro}</p>}
+                        {c.endereco && <p className="text-xs text-gray-500">{c.endereco}</p>}
+                        {c.telefone && <p className="text-xs text-gray-500">📞 {c.telefone}</p>}
+                        {c.possui_freezer && <p className="text-xs text-blue-600 font-medium mt-1">❄️ Possui Freezer</p>}
+                        <div className="flex gap-1 mt-2">
+                          <button
+                            className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+                            onClick={() => startPlacing(c.id)}
+                          >
+                            Reposicionar
+                          </button>
+                          <button
+                            className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+                            onClick={() => removePosition(c.id)}
+                          >
+                            Remover
+                          </button>
+                        </div>
+                      </div>
+                    </Popup>
+                  </Marker>
+                ))}
+
+                {/* Temp marker for placing */}
+                {tempMarker && (
+                  <Marker position={tempMarker} icon={pendingIcon}>
+                    <Popup>
+                      <p className="font-bold text-sm">{placingCliente?.nome}</p>
+                      <p className="text-xs text-gray-500">Nova posição</p>
+                    </Popup>
+                  </Marker>
+                )}
+              </MapContainer>
+            </div>
+          </Card>
+
+          {/* Filter */}
+          <div className="flex items-center gap-3 mt-3">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            <Select value={filterBairro} onValueChange={setFilterBairro}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Filtrar por bairro" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os bairros</SelectItem>
+                {bairros.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <span className="text-sm text-muted-foreground">{clientesFiltrados.length} cliente(s) no mapa</span>
+          </div>
+        </div>
+
+        {/* Sidebar - clients without coordinates */}
+        <div className="space-y-3">
+          <h3 className="font-bold text-sm flex items-center gap-2">
+            <MapPin className="h-4 w-4 text-amber-500" />
+            Sem localização ({semCoordenadas.length})
+          </h3>
+          <div className="max-h-[560px] overflow-y-auto space-y-2 pr-1">
+            {semCoordenadas.map(c => (
+              <Card key={c.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => startPlacing(c.id)}>
+                <CardContent className="pt-3 pb-3">
+                  <p className="font-medium text-sm truncate">{c.nome}</p>
+                  {c.bairro && <p className="text-xs text-muted-foreground">{c.bairro}</p>}
+                  {c.endereco && <p className="text-xs text-muted-foreground truncate">{c.endereco}</p>}
+                  <Badge variant="outline" className="text-[10px] mt-1">Clique para posicionar</Badge>
+                </CardContent>
+              </Card>
+            ))}
+            {semCoordenadas.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">Todos os clientes estão no mapa! 🎉</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
