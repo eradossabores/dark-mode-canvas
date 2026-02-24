@@ -1,0 +1,227 @@
+import { useEffect, useState, useMemo } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { MapPin, Truck, Package, Filter } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const BAIRRO_COLORS: Record<string, string> = {};
+const COLOR_PALETTE = [
+  "bg-blue-100 border-blue-400 text-blue-800",
+  "bg-emerald-100 border-emerald-400 text-emerald-800",
+  "bg-amber-100 border-amber-400 text-amber-800",
+  "bg-purple-100 border-purple-400 text-purple-800",
+  "bg-rose-100 border-rose-400 text-rose-800",
+  "bg-cyan-100 border-cyan-400 text-cyan-800",
+  "bg-orange-100 border-orange-400 text-orange-800",
+  "bg-indigo-100 border-indigo-400 text-indigo-800",
+  "bg-pink-100 border-pink-400 text-pink-800",
+  "bg-teal-100 border-teal-400 text-teal-800",
+];
+
+function getBairroColor(bairro: string) {
+  if (!BAIRRO_COLORS[bairro]) {
+    const idx = Object.keys(BAIRRO_COLORS).length % COLOR_PALETTE.length;
+    BAIRRO_COLORS[bairro] = COLOR_PALETTE[idx];
+  }
+  return BAIRRO_COLORS[bairro];
+}
+
+interface PedidoEntrega {
+  id: string;
+  clienteNome: string;
+  bairro: string;
+  endereco: string;
+  cidade: string;
+  status: string;
+  dataEntrega: string;
+  itens: number;
+}
+
+export default function MapaEntregas() {
+  const [pedidos, setPedidos] = useState<PedidoEntrega[]>([]);
+  const [filtroStatus, setFiltroStatus] = useState<string>("todos");
+  const [filtroBairro, setFiltroBairro] = useState<string>("todos");
+
+  useEffect(() => { loadData(); }, []);
+
+  async function loadData() {
+    try {
+      const { data } = await (supabase as any)
+        .from("pedidos_producao")
+        .select("*, clientes(nome, bairro, endereco, cidade), pedido_producao_itens(quantidade)")
+        .in("status", ["separado_para_entrega", "em_producao", "aguardando_producao"])
+        .order("data_entrega");
+
+      const mapped: PedidoEntrega[] = (data || []).map((p: any) => ({
+        id: p.id,
+        clienteNome: p.clientes?.nome || "?",
+        bairro: p.clientes?.bairro || "Sem bairro",
+        endereco: p.clientes?.endereco || "",
+        cidade: p.clientes?.cidade || "Boa Vista",
+        status: p.status,
+        dataEntrega: p.data_entrega,
+        itens: (p.pedido_producao_itens || []).reduce((s: number, i: any) => s + i.quantidade, 0),
+      }));
+
+      setPedidos(mapped);
+    } catch (e) {
+      console.error("MapaEntregas error:", e);
+    }
+  }
+
+  const bairros = useMemo(() => {
+    const set = new Set(pedidos.map(p => p.bairro));
+    return Array.from(set).sort();
+  }, [pedidos]);
+
+  const filtered = useMemo(() => {
+    return pedidos.filter(p => {
+      if (filtroStatus !== "todos" && p.status !== filtroStatus) return false;
+      if (filtroBairro !== "todos" && p.bairro !== filtroBairro) return false;
+      return true;
+    });
+  }, [pedidos, filtroStatus, filtroBairro]);
+
+  // Group by bairro
+  const grouped = useMemo(() => {
+    const map: Record<string, PedidoEntrega[]> = {};
+    filtered.forEach(p => {
+      if (!map[p.bairro]) map[p.bairro] = [];
+      map[p.bairro].push(p);
+    });
+    return Object.entries(map).sort((a, b) => b[1].length - a[1].length);
+  }, [filtered]);
+
+  const totalItens = filtered.reduce((s, p) => s + p.itens, 0);
+
+  const statusLabel: Record<string, string> = {
+    aguardando_producao: "Aguardando",
+    em_producao: "Em Produção",
+    separado_para_entrega: "Separado",
+  };
+
+  const statusVariant = (s: string) => {
+    if (s === "separado_para_entrega") return "default" as const;
+    if (s === "em_producao") return "secondary" as const;
+    return "outline" as const;
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <MapPin className="h-6 w-6 text-primary" />
+          <h1 className="text-2xl font-bold">Mapa de Entregas</h1>
+        </div>
+        <Button variant="outline" size="sm" onClick={loadData}>
+          <Truck className="h-4 w-4 mr-1" /> Atualizar
+        </Button>
+      </div>
+
+      {/* KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <Card>
+          <CardContent className="pt-4 text-center">
+            <p className="text-2xl font-bold">{filtered.length}</p>
+            <p className="text-xs text-muted-foreground">Pedidos</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 text-center">
+            <p className="text-2xl font-bold">{bairros.length}</p>
+            <p className="text-xs text-muted-foreground">Bairros</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 text-center">
+            <p className="text-2xl font-bold">{totalItens}</p>
+            <p className="text-xs text-muted-foreground">Unidades</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 text-center">
+            <p className="text-2xl font-bold">{filtered.filter(p => p.status === "separado_para_entrega").length}</p>
+            <p className="text-xs text-muted-foreground">Prontos p/ entrega</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3 mb-6">
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os status</SelectItem>
+              <SelectItem value="aguardando_producao">Aguardando</SelectItem>
+              <SelectItem value="em_producao">Em Produção</SelectItem>
+              <SelectItem value="separado_para_entrega">Separado</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <Select value={filtroBairro} onValueChange={setFiltroBairro}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Bairro" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos os bairros</SelectItem>
+            {bairros.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Grouped by bairro */}
+      {grouped.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground">
+            <Truck className="h-12 w-12 mx-auto mb-3 opacity-30" />
+            <p className="text-lg font-medium">Nenhum pedido pendente de entrega</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-6">
+          {grouped.map(([bairro, pedidosBairro]) => (
+            <div key={bairro}>
+              <div className="flex items-center gap-2 mb-3">
+                <MapPin className="h-4 w-4 text-primary" />
+                <h3 className="font-bold text-lg">{bairro}</h3>
+                <Badge variant="secondary">{pedidosBairro.length} pedido(s)</Badge>
+                <Badge variant="outline">{pedidosBairro.reduce((s, p) => s + p.itens, 0)} un</Badge>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {pedidosBairro.map(p => (
+                  <Card key={p.id} className={`border-l-4 ${getBairroColor(bairro)}`}>
+                    <CardContent className="pt-3 pb-3 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-sm truncate">{p.clienteNome}</span>
+                        <Badge variant={statusVariant(p.status)} className="text-[10px] shrink-0">
+                          {statusLabel[p.status] || p.status}
+                        </Badge>
+                      </div>
+                      {p.endereco && (
+                        <p className="text-xs text-muted-foreground truncate">{p.endereco}</p>
+                      )}
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="flex items-center gap-1">
+                          <Package className="h-3 w-3" /> {p.itens} un
+                        </span>
+                        <span className="text-muted-foreground">
+                          Entrega: {new Date(p.dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
