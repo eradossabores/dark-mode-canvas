@@ -413,6 +413,12 @@ export default function PedidosProducao() {
                 )}
               </div>
 
+              {/* Total */}
+              <div className="flex justify-between items-center px-2 py-3 bg-muted/50 rounded-md text-sm font-semibold">
+                <span>Total de unidades:</span>
+                <span className="text-lg">{itens.reduce((sum, i) => sum + i.quantidade, 0)}</span>
+              </div>
+
               <Button onClick={() => createMutation.mutate()} disabled={!canSubmit || createMutation.isPending} className="w-full">
                 {createMutation.isPending ? "Criando..." : "Criar Pedido"}
               </Button>
