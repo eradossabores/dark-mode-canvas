@@ -71,19 +71,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
-      setLoading(false);
 
       if (!nextSession?.user) {
         setRole(null);
         setApprovalStatus(null);
+        setLoading(false);
         return;
       }
 
-      // Evita deadlock do cliente de auth: não faça awaits de chamadas do backend
-      // diretamente dentro do callback de onAuthStateChange.
-      window.setTimeout(() => {
+      // Busca role em microtask para não bloquear o callback do auth,
+      // mas só libera loading DEPOIS de concluir.
+      window.setTimeout(async () => {
         if (!isMounted) return;
-        fetchRoleAndApproval(nextSession.user.id);
+        try {
+          await fetchRoleAndApproval(nextSession.user.id);
+        } catch (e) {
+          console.error("Erro ao buscar role:", e);
+        } finally {
+          if (isMounted) setLoading(false);
+        }
       }, 0);
     };
 
