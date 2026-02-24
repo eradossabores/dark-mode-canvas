@@ -30,8 +30,9 @@ function parsePlanilhaDate(d: string): string {
 }
 
 function parseValor(v: string): number {
-  if (!v || v === "R$ -") return 0;
-  return parseFloat(v.replace("R$", "").replace(/\./g, "").replace(",", ".").trim()) || 0;
+  if (!v || v === "R$ -" || v === "") return 0;
+  // Values are stored in US format from parser: comma=thousand, dot=decimal
+  return parseFloat(v.replace("R$", "").replace(/,/g, "").trim()) || 0;
 }
 
 // Spreadsheet data hardcoded from parsed document
