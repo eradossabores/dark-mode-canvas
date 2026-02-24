@@ -209,6 +209,10 @@ export default function Estoque() {
                   <p className="text-lg font-extrabold mt-0.5">{(g.quantidade || 0).toLocaleString()}</p>
                 </div>
               ))}
+            <div className="rounded-lg border px-3 py-2.5 text-center transition-all hover:scale-[1.03] bg-gray-700/90 text-white border-gray-800">
+              <p className="text-[11px] font-semibold truncate">TOTAL</p>
+              <p className="text-lg font-extrabold mt-0.5">{totalGelos.toLocaleString()}</p>
+            </div>
           </div>
         </div>
       )}
