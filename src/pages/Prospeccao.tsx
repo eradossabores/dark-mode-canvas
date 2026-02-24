@@ -18,6 +18,7 @@ import FollowUpTab from "@/components/prospeccao/FollowUpTab";
 import {
   Plus, MapPin, Star, Search, ClipboardCheck, Route, BarChart3,
   Users, Target, TrendingUp, Eye, Pencil, Trash2, Phone, FileText, RefreshCw, MessageSquare,
+  Navigation, Crosshair, Loader2, X,
 } from "lucide-react";
 
 // Leaflet icon fix
@@ -68,6 +69,14 @@ const ICONS: Record<string, L.Icon> = {
   sem_interesse: makeIcon("red"),
 };
 
+const EXPLORE_ICON = new L.Icon({
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+  iconSize: [30, 49], iconAnchor: [15, 49], popupAnchor: [1, -34],
+});
+
+const CLIENT_ICON = makeIcon("blue");
+
 function ClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number) => void }) {
   useMapEvents({ click(e) { onMapClick(e.latlng.lat, e.latlng.lng); } });
   return null;
@@ -95,6 +104,7 @@ export default function Prospeccao() {
   const { user } = useAuth();
   const [prospectos, setProspectos] = useState<any[]>([]);
   const [visitas, setVisitas] = useState<any[]>([]);
+  const [clientes, setClientes] = useState<any[]>([]);
   const [formOpen, setFormOpen] = useState(false);
   const [editingProspecto, setEditingProspecto] = useState<any>(null);
   const [visitaDialogId, setVisitaDialogId] = useState<string | null>(null);
@@ -107,15 +117,25 @@ export default function Prospeccao() {
   const followUpRef = useRef<{ loadFollowups: () => void } | null>(null);
   const [scriptView, setScriptView] = useState<string | null>(null);
 
+  // Exploration pin state
+  const [exploreMode, setExploreMode] = useState(false);
+  const [explorePin, setExplorePin] = useState<{ lat: number; lng: number } | null>(null);
+  const [exploreBairro, setExploreBairro] = useState<string>("");
+  const [exploreLoading, setExploreLoading] = useState(false);
+  const [exploreNearby, setExploreNearby] = useState<any[]>([]);
+  const [exploreRoute, setExploreRoute] = useState<{ lat: number; lng: number; id: string }[]>([]);
+
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
-    const [p, v] = await Promise.all([
+    const [p, v, c] = await Promise.all([
       (supabase as any).from("prospectos").select("*").order("created_at", { ascending: false }),
       (supabase as any).from("prospecto_visitas").select("*").order("data_visita", { ascending: false }),
+      (supabase as any).from("clientes").select("id, nome, bairro, endereco, telefone, latitude, longitude, status").eq("status", "ativo"),
     ]);
     setProspectos(p.data || []);
     setVisitas(v.data || []);
+    setClientes(c.data || []);
   }
 
   const operador = user?.email?.split("@")[0] || "admin";
@@ -201,6 +221,57 @@ export default function Prospeccao() {
   }
 
   async function handleMapClick(lat: number, lng: number) {
+    // Explore mode: drop pin and find nearby
+    if (exploreMode) {
+      setExplorePin({ lat, lng });
+      setExploreLoading(true);
+      try {
+        // Reverse geocode to get bairro
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1`);
+        const geo = await res.json();
+        const bairro = geo?.address?.suburb || geo?.address?.neighbourhood || geo?.address?.city_district || "";
+        setExploreBairro(bairro);
+
+        // Find nearby prospectos + clients (by bairro match OR distance < 2km)
+        const nearby: any[] = [];
+        const MAX_DIST = 0.02; // ~2km in degrees
+
+        prospectos.forEach(p => {
+          if (p.status === "pedido_fechado" || p.status === "sem_interesse") return;
+          const byBairro = bairro && p.bairro?.toLowerCase() === bairro.toLowerCase();
+          const byDist = p.latitude && p.longitude &&
+            Math.sqrt((p.latitude - lat) ** 2 + (p.longitude - lng) ** 2) < MAX_DIST;
+          if (byBairro || byDist) {
+            nearby.push({ ...p, _type: "prospecto" });
+          }
+        });
+
+        clientes.forEach(c => {
+          const byBairro = bairro && c.bairro?.toLowerCase() === bairro.toLowerCase();
+          const byDist = c.latitude && c.longitude &&
+            Math.sqrt((c.latitude - lat) ** 2 + (c.longitude - lng) ** 2) < MAX_DIST;
+          if (byBairro || byDist) {
+            nearby.push({ ...c, _type: "cliente", score: 5 });
+          }
+        });
+
+        setExploreNearby(nearby);
+
+        // Generate route from pin through all nearby with coordinates
+        const withCoords = nearby.filter(n => n.latitude && n.longitude);
+        const startPoint = { lat, lng, id: "start" };
+        const points = withCoords.map(n => ({ lat: n.latitude, lng: n.longitude, id: n.id }));
+        const route = optimizeRoute([startPoint, ...points]);
+        setExploreRoute(route);
+      } catch (e) {
+        console.error("Explore error:", e);
+        setExploreBairro("Não identificado");
+      } finally {
+        setExploreLoading(false);
+      }
+      return;
+    }
+
     if (!placingId) return;
     try {
       await (supabase as any).from("prospectos").update({ latitude: lat, longitude: lng }).eq("id", placingId);
@@ -210,6 +281,14 @@ export default function Prospeccao() {
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
     }
+  }
+
+  function clearExplore() {
+    setExploreMode(false);
+    setExplorePin(null);
+    setExploreBairro("");
+    setExploreNearby([]);
+    setExploreRoute([]);
   }
 
   // Filters
@@ -285,7 +364,21 @@ export default function Prospeccao() {
             </div>
           )}
 
+          {exploreMode && !explorePin && (
+            <div className="mb-3 p-3 bg-primary/10 border border-primary/30 rounded-lg flex items-center justify-between">
+              <p className="text-sm font-bold flex items-center gap-2"><Crosshair className="h-4 w-4" /> Clique no mapa para explorar o bairro e ver potenciais clientes</p>
+              <Button size="sm" variant="outline" onClick={clearExplore}>Cancelar</Button>
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-2 mb-3">
+            <Button
+              size="sm"
+              variant={exploreMode ? "default" : "outline"}
+              onClick={() => { if (exploreMode) clearExplore(); else { setExploreMode(true); setPlacingId(null); } }}
+            >
+              <Crosshair className="h-4 w-4 mr-1" />{exploreMode ? "Sair Exploração" : "Explorar Bairro"}
+            </Button>
             <Button size="sm" variant={showRoute ? "default" : "outline"} onClick={() => setShowRoute(!showRoute)}>
               <Route className="h-4 w-4 mr-1" />{showRoute ? "Ocultar Rota" : "Gerar Rota"}
             </Button>
@@ -305,38 +398,123 @@ export default function Prospeccao() {
             </Select>
           </div>
 
-          <Card className="overflow-hidden">
-            <div style={{ height: "550px" }}>
-              <MapContainer center={BOA_VISTA_CENTER} zoom={13} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
-                <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                <ClickHandler onMapClick={handleMapClick} />
+          <div className={explorePin ? "grid grid-cols-1 lg:grid-cols-3 gap-4" : ""}>
+            <Card className={`overflow-hidden ${explorePin ? "lg:col-span-2" : ""}`}>
+              <div style={{ height: "550px" }}>
+                <MapContainer center={BOA_VISTA_CENTER} zoom={13} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
+                  <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                  <ClickHandler onMapClick={handleMapClick} />
 
-                {comCoordenadas.map(p => (
-                  <Marker key={p.id} position={[p.latitude, p.longitude]} icon={ICONS[p.status] || ICONS.novo}>
-                    <Popup>
-                      <div className="min-w-[200px] space-y-1">
-                        <p className="font-bold">{p.nome}</p>
-                        <p className="text-xs">{TIPO_LABELS[p.tipo] || p.tipo}</p>
-                        {p.bairro && <p className="text-xs text-gray-500">{p.bairro}</p>}
-                        {p.telefone && <p className="text-xs">📞 {p.telefone}</p>}
-                        <div className="flex gap-0.5">{[1,2,3,4,5].map(s => <span key={s} className={`text-xs ${s <= p.score ? "text-amber-400" : "text-gray-300"}`}>★</span>)}</div>
-                        {p.observacoes_estrategicas && <p className="text-xs italic text-gray-600 mt-1">{p.observacoes_estrategicas}</p>}
-                        <div className="flex gap-1 mt-2 flex-wrap">
-                          <button className="text-xs bg-blue-500 text-white px-2 py-1 rounded" onClick={() => setVisitaDialogId(p.id)}>Registrar Visita</button>
-                          <button className="text-xs bg-gray-500 text-white px-2 py-1 rounded" onClick={() => { setEditingProspecto(p); }}>Editar</button>
-                          <button className="text-xs bg-green-500 text-white px-2 py-1 rounded" onClick={() => setPlacingId(p.id)}>Reposicionar</button>
+                  {comCoordenadas.map(p => (
+                    <Marker key={p.id} position={[p.latitude, p.longitude]} icon={ICONS[p.status] || ICONS.novo}>
+                      <Popup>
+                        <div className="min-w-[200px] space-y-1">
+                          <p className="font-bold">{p.nome}</p>
+                          <p className="text-xs">{TIPO_LABELS[p.tipo] || p.tipo}</p>
+                          {p.bairro && <p className="text-xs text-muted-foreground">{p.bairro}</p>}
+                          {p.telefone && <p className="text-xs">📞 {p.telefone}</p>}
+                          <div className="flex gap-0.5">{[1,2,3,4,5].map(s => <span key={s} className={`text-xs ${s <= p.score ? "text-amber-400" : "text-muted-foreground/40"}`}>★</span>)}</div>
+                          {p.observacoes_estrategicas && <p className="text-xs italic text-muted-foreground mt-1">{p.observacoes_estrategicas}</p>}
+                          <div className="flex gap-1 mt-2 flex-wrap">
+                            <button className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded" onClick={() => setVisitaDialogId(p.id)}>Registrar Visita</button>
+                            <button className="text-xs bg-muted text-foreground px-2 py-1 rounded" onClick={() => { setEditingProspecto(p); }}>Editar</button>
+                            <button className="text-xs bg-accent text-accent-foreground px-2 py-1 rounded" onClick={() => setPlacingId(p.id)}>Reposicionar</button>
+                          </div>
                         </div>
-                      </div>
-                    </Popup>
-                  </Marker>
-                ))}
+                      </Popup>
+                    </Marker>
+                  ))}
 
-                {showRoute && routePoints.length > 1 && (
-                  <Polyline positions={routePoints.map(p => [p.lat, p.lng] as [number, number])} color="hsl(200,98%,39%)" weight={3} dashArray="8 4" />
-                )}
-              </MapContainer>
-            </div>
-          </Card>
+                  {/* Explore pin */}
+                  {explorePin && (
+                    <Marker position={[explorePin.lat, explorePin.lng]} icon={EXPLORE_ICON}>
+                      <Popup><p className="font-bold text-sm">📍 Ponto de exploração</p><p className="text-xs">{exploreBairro || "Identificando..."}</p></Popup>
+                    </Marker>
+                  )}
+
+                  {/* Explore route */}
+                  {exploreRoute.length > 1 && (
+                    <Polyline positions={exploreRoute.map(p => [p.lat, p.lng] as [number, number])} color="hsl(38,90%,50%)" weight={4} dashArray="10 5" />
+                  )}
+
+                  {showRoute && routePoints.length > 1 && !explorePin && (
+                    <Polyline positions={routePoints.map(p => [p.lat, p.lng] as [number, number])} color="hsl(200,98%,39%)" weight={3} dashArray="8 4" />
+                  )}
+                </MapContainer>
+              </div>
+            </Card>
+
+            {/* Explore results panel */}
+            {explorePin && (
+              <Card className="lg:col-span-1 max-h-[550px] overflow-y-auto">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Navigation className="h-4 w-4 text-amber-500" />
+                      {exploreLoading ? "Buscando..." : exploreBairro || "Região"}
+                    </CardTitle>
+                    <Button size="icon" variant="ghost" onClick={clearExplore}><X className="h-4 w-4" /></Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {exploreLoading ? (
+                    <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+                  ) : exploreNearby.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-8">Nenhum prospecto ou cliente encontrado nesta região. Cadastre novos prospectos!</p>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground border-b pb-2">
+                        <span>{exploreNearby.length} encontrado(s)</span>
+                        {exploreRoute.length > 1 && <span className="flex items-center gap-1"><Route className="h-3 w-3" />Rota gerada</span>}
+                      </div>
+                      {exploreNearby
+                        .sort((a, b) => (b.score || 0) - (a.score || 0))
+                        .map((n, i) => (
+                        <div key={n.id} className="p-2 rounded-lg bg-muted/50 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-muted-foreground w-5">{i + 1}.</span>
+                              <div>
+                                <p className="text-sm font-medium">{n.nome}</p>
+                                <p className="text-[10px] text-muted-foreground">
+                                  {n._type === "cliente" ? "👤 Cliente ativo" : TIPO_LABELS[n.tipo] || n.tipo}
+                                  {n.bairro && ` · ${n.bairro}`}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {n._type === "prospecto" && (
+                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${STATUS_COLORS[n.status]}`}>
+                                  {STATUS_LABELS[n.status]}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {n.score && (
+                            <div className="flex gap-0.5">{[1,2,3,4,5].map(s => <span key={s} className={`text-[10px] ${s <= n.score ? "text-amber-400" : "text-muted-foreground/30"}`}>★</span>)}</div>
+                          )}
+                          {n.telefone && <p className="text-[10px] text-muted-foreground">📞 {n.telefone}</p>}
+                          {n.observacoes_estrategicas && <p className="text-[10px] italic text-muted-foreground">{n.observacoes_estrategicas}</p>}
+                          {n._type === "prospecto" && (
+                            <div className="flex gap-1 mt-1">
+                              <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => setVisitaDialogId(n.id)}>
+                                <ClipboardCheck className="h-3 w-3 mr-1" />Visitar
+                              </Button>
+                              {n.telefone && (
+                                <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" asChild>
+                                  <a href={`tel:${n.telefone}`}><Phone className="h-3 w-3 mr-1" />Ligar</a>
+                                </Button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </div>
 
           {/* Legend */}
           <div className="flex flex-wrap gap-3 mt-3 text-xs">
