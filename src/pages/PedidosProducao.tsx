@@ -286,7 +286,7 @@ export default function PedidosProducao() {
             setItens(topSabores.map((s) => ({
               sabor_id: s.sabor_id,
               sabor_nome: s.nome,
-              quantidade: 84,
+              quantidade: 0,
             })));
           }
         }}>
