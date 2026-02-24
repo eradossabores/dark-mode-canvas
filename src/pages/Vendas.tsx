@@ -62,6 +62,7 @@ export default function Vendas() {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(0);
+  const [searchCliente, setSearchCliente] = useState("");
   const PAGE_SIZE = 20;
 
   // Edit state
@@ -642,6 +643,12 @@ export default function Vendas() {
               </div>
             )}
           </div>
+          <Input
+            placeholder="Pesquisar por cliente..."
+            value={searchCliente}
+            onChange={(e) => { setSearchCliente(e.target.value); setPage(0); }}
+            className="max-w-sm mt-2"
+          />
         </CardHeader>
         <CardContent>
           <Table>
@@ -659,9 +666,12 @@ export default function Vendas() {
             </TableHeader>
             <TableBody>
               {(() => {
-                const filtered = clienteFilter
+                let filtered = clienteFilter
                   ? vendas.filter(v => normalizeStr(v.clientes?.nome || "").includes(normalizeStr(clienteFilter)))
                   : vendas;
+                if (searchCliente.trim()) {
+                  filtered = filtered.filter(v => normalizeStr(v.clientes?.nome || "").includes(normalizeStr(searchCliente.trim())));
+                }
                 if (filtered.length === 0) return (
                   <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Nenhuma venda{clienteFilter ? ` para "${clienteFilter}"` : ""}.</TableCell></TableRow>
                 );
@@ -689,9 +699,12 @@ export default function Vendas() {
             </TableBody>
           </Table>
           {(() => {
-            const filtered = clienteFilter
+            let filtered = clienteFilter
               ? vendas.filter(v => normalizeStr(v.clientes?.nome || "").includes(normalizeStr(clienteFilter)))
               : vendas;
+            if (searchCliente.trim()) {
+              filtered = filtered.filter(v => normalizeStr(v.clientes?.nome || "").includes(normalizeStr(searchCliente.trim())));
+            }
             if (filtered.length > PAGE_SIZE) return (
               <div className="flex items-center justify-between mt-4">
                 <span className="text-sm text-muted-foreground">
