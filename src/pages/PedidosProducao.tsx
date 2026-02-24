@@ -21,13 +21,15 @@ const statusLabels: Record<string, string> = {
   aguardando_producao: "Aguardando Produção",
   em_producao: "Em Produção",
   separado_para_entrega: "Separado p/ Entrega",
-  enviado: "Enviado",
+  retirado: "Separado p/ Retirada",
+  enviado: "Finalizado",
 };
 
 const statusColors: Record<string, string> = {
   aguardando_producao: "bg-amber-500/20 text-amber-700 border-amber-300",
   em_producao: "bg-blue-500/20 text-blue-700 border-blue-300",
   separado_para_entrega: "bg-purple-500/20 text-purple-700 border-purple-300",
+  retirado: "bg-orange-500/20 text-orange-700 border-orange-300",
   enviado: "bg-green-500/20 text-green-700 border-green-300",
 };
 

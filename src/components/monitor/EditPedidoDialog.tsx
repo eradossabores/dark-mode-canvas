@@ -27,8 +27,8 @@ const statusLabels: Record<string, string> = {
   aguardando_producao: "Aguardando Produção",
   em_producao: "Em Produção",
   separado_para_entrega: "Separado p/ Entrega",
-  retirado: "Retirado",
-  enviado: "Enviado",
+  retirado: "Separado p/ Retirada",
+  enviado: "Finalizado",
 };
 
 function splitDateTime(value?: string | null) {

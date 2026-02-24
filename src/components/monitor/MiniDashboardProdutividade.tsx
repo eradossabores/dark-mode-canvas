@@ -60,7 +60,7 @@ export default function MiniDashboardProdutividade({ isFullPage }: Produtividade
       <div className="bg-blue-950/40 border border-blue-800 rounded-xl px-4 py-3 flex items-center gap-3">
         <Package className="h-6 w-6 text-blue-400" />
         <div>
-          <p className="text-xs text-blue-400/80 font-medium">Gelos Despachados</p>
+          <p className="text-xs text-blue-400/80 font-medium">Gelos Finalizados</p>
           <p className="text-2xl font-extrabold text-blue-400 tabular-nums">{totalGelosEnviados.toLocaleString()}</p>
         </div>
       </div>
