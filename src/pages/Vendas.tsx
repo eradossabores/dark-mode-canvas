@@ -232,6 +232,7 @@ export default function Vendas() {
         newTotal += subtotal;
         await (supabase as any).from("venda_itens").update({
           quantidade: item.quantidade,
+          preco_unitario: Number(item.preco_unitario),
           subtotal: subtotal,
         }).eq("id", item.id);
       }
@@ -469,15 +470,32 @@ export default function Vendas() {
                     <Input
                       type="number"
                       className="w-20"
-                      min={1}
+                      min={0}
                       value={item.quantidade}
                       onChange={(e) => {
                         const updated = [...editItens];
                         updated[i] = { ...updated[i], quantidade: Number(e.target.value) || 0 };
                         setEditItens(updated);
                       }}
+                      placeholder="Qtd"
                     />
-                    <span className="text-sm text-muted-foreground w-24 text-right">
+                    <div className="relative w-24">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="pl-7 text-xs"
+                        value={item.preco_unitario}
+                        onChange={(e) => {
+                          const updated = [...editItens];
+                          updated[i] = { ...updated[i], preco_unitario: Number(e.target.value) || 0 };
+                          setEditItens(updated);
+                        }}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <span className="text-sm text-muted-foreground w-20 text-right">
                       R$ {(Number(item.preco_unitario) * (item.quantidade || 0)).toFixed(2)}
                     </span>
                   </div>
