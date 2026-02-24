@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Package, Users, ShoppingCart, Factory,
-  Warehouse, ClipboardList, UserCog, ChevronLeft, ChevronRight, BarChart3, FileUp, Menu, X, DollarSign, Monitor, ShoppingBag, Database, LogOut, Shield, Brain, MapPin, Map
+  Warehouse, ClipboardList, UserCog, ChevronLeft, ChevronRight, BarChart3, FileUp, Menu, X, DollarSign, Monitor, ShoppingBag, Database, LogOut, Shield, Brain, MapPin, Map, Target
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -36,6 +36,7 @@ const menuItems = [
   { path: "/painel/previsao-demanda", label: "Previsão Demanda", icon: Brain },
   { path: "/painel/mapa-entregas", label: "Mapa Entregas", icon: MapPin },
   { path: "/painel/mapa-clientes", label: "Mapa Clientes", icon: Map },
+  { path: "/painel/prospeccao", label: "Prospecção", icon: Target },
 ];
 
 const allCharacters = [

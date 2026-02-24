@@ -28,6 +28,7 @@ import GerenciarUsuarios from "@/pages/GerenciarUsuarios";
 import PrevisaoDemanda from "@/pages/PrevisaoDemanda";
 import MapaEntregas from "@/pages/MapaEntregas";
 import MapaClientes from "@/pages/MapaClientes";
+import Prospeccao from "@/pages/Prospeccao";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -71,6 +72,7 @@ const App = () => (
             <Route path="/painel/previsao-demanda" element={<AdminRoute><PrevisaoDemanda /></AdminRoute>} />
             <Route path="/painel/mapa-entregas" element={<AdminRoute><MapaEntregas /></AdminRoute>} />
             <Route path="/painel/mapa-clientes" element={<AdminRoute><MapaClientes /></AdminRoute>} />
+            <Route path="/painel/prospeccao" element={<AdminRoute><Prospeccao /></AdminRoute>} />
 
             {/* Production accessible routes */}
             <Route path="/painel/producao" element={<ProdRoute><Producao /></ProdRoute>} />
