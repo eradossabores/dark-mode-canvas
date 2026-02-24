@@ -238,17 +238,22 @@ export default function Vendas() {
           if (!item.sabor_id || item.quantidade <= 0) continue;
           const subtotal = Number(item.preco_unitario) * item.quantidade;
           newTotal += subtotal;
-          const { error: insertError } = await (supabase as any).from("venda_itens").insert({
+          console.log("Inserindo novo item:", { venda_id: editVenda.id, sabor_id: item.sabor_id, quantidade: item.quantidade, preco_unitario: Number(item.preco_unitario), subtotal });
+          const { data: insertedData, error: insertError } = await (supabase as any).from("venda_itens").insert({
             venda_id: editVenda.id,
             sabor_id: item.sabor_id,
             quantidade: item.quantidade,
             preco_unitario: Number(item.preco_unitario),
             subtotal: subtotal,
             regra_preco_aplicada: "manual",
-          });
+          }).select();
+          console.log("Resultado insert:", { insertedData, insertError });
           if (insertError) {
             console.error("Erro ao inserir item:", insertError);
             throw insertError;
+          }
+          if (!insertedData || insertedData.length === 0) {
+            throw new Error("Item não foi salvo. Verifique as permissões do banco de dados.");
           }
         } else {
           const subtotal = Number(item.preco_unitario) * item.quantidade;
