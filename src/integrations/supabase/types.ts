@@ -523,6 +523,27 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id: string
+          nome?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
       sabor_receita: {
         Row: {
           embalagem_id: string
@@ -596,6 +617,24 @@ export type Database = {
           id?: string
           nome?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -741,6 +780,17 @@ export type Database = {
         Args: { p_cliente_id: string; p_quantidade: number; p_sabor_id: string }
         Returns: number
       }
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       realizar_producao:
         | {
             Args: {
@@ -791,6 +841,7 @@ export type Database = {
           }
     }
     Enums: {
+      app_role: "admin" | "producao"
       modo_producao: "unidade" | "lote"
       status_cliente: "ativo" | "inativo"
       status_pedido_producao:
@@ -930,6 +981,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "producao"],
       modo_producao: ["unidade", "lote"],
       status_cliente: ["ativo", "inativo"],
       status_pedido_producao: [
