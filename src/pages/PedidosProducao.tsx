@@ -284,7 +284,7 @@ export default function PedidosProducao() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <ClipboardList className="h-7 w-7 text-primary" />
-          <h1 className="text-2xl font-bold text-foreground">Pedidos de Produção</h1>
+          <h1 className="text-2xl font-bold text-foreground">Separação de Pedidos</h1>
         </div>
         <Dialog open={open} onOpenChange={(v) => {
           setOpen(v);
