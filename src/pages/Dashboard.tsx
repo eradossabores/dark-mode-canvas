@@ -12,7 +12,7 @@ import scratAcornImg from "@/assets/scrat-acorn.png";
 import scratStandingImg from "@/assets/scrat-standing.png";
 import scratHangingImg from "@/assets/scrat-hanging.png";
 import EstoqueInteligente from "@/components/dashboard/EstoqueInteligente";
-import RankingProdutividade from "@/components/dashboard/RankingProdutividade";
+import RankingClientes from "@/components/dashboard/RankingClientes";
 
 const postItCharacters = [sidImg, scratAcornImg, buckImg, scrat3dImg, scratStandingImg, scratHangingImg];
 
@@ -379,7 +379,7 @@ export default function Dashboard() {
       {/* New widgets: Estoque Inteligente + Ranking */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <EstoqueInteligente />
-        <RankingProdutividade />
+        <RankingClientes />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
