@@ -13,6 +13,7 @@ import scratStandingImg from "@/assets/scrat-standing.png";
 import scratHangingImg from "@/assets/scrat-hanging.png";
 import EstoqueInteligente from "@/components/dashboard/EstoqueInteligente";
 import RankingClientes from "@/components/dashboard/RankingClientes";
+import ClientesInativos from "@/components/dashboard/ClientesInativos";
 
 const postItCharacters = [sidImg, scratAcornImg, buckImg, scrat3dImg, scratStandingImg, scratHangingImg];
 
@@ -376,10 +377,11 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* New widgets: Estoque Inteligente + Ranking */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      {/* Widgets: Estoque Inteligente + Ranking + Clientes Inativos */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <EstoqueInteligente />
         <RankingClientes />
+        <ClientesInativos />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
