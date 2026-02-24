@@ -33,28 +33,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   async function fetchRoleAndApproval(userId: string) {
-    // Check role
-    const { data: roleData } = await (supabase as any)
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .maybeSingle();
-    
-    if (roleData?.role) {
-      setRole(roleData.role);
-      setApprovalStatus("aprovado");
-      return;
-    }
+    try {
+      // Check role
+      const { data: roleData } = await (supabase as any)
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .maybeSingle();
+      
+      if (roleData?.role) {
+        setRole(roleData.role);
+        setApprovalStatus("aprovado");
+        return;
+      }
 
-    // No role — check access_requests
-    const { data: requestData } = await (supabase as any)
-      .from("access_requests")
-      .select("status")
-      .eq("user_id", userId)
-      .maybeSingle();
-    
-    setRole(null);
-    setApprovalStatus(requestData?.status || null);
+      // No role — check access_requests
+      const { data: requestData } = await (supabase as any)
+        .from("access_requests")
+        .select("status")
+        .eq("user_id", userId)
+        .maybeSingle();
+      
+      setRole(null);
+      setApprovalStatus(requestData?.status || null);
+    } catch (error) {
+      console.error("Erro ao buscar role/aprovação:", error);
+      setRole(null);
+      setApprovalStatus(null);
+    }
   }
 
   useEffect(() => {
@@ -63,7 +69,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          await fetchRoleAndApproval(session.user.id);
+          try {
+            await fetchRoleAndApproval(session.user.id);
+          } catch (e) {
+            console.error("Erro onAuthStateChange:", e);
+          }
         } else {
           setRole(null);
           setApprovalStatus(null);
@@ -76,8 +86,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        await fetchRoleAndApproval(session.user.id);
+        try {
+          await fetchRoleAndApproval(session.user.id);
+        } catch (e) {
+          console.error("Erro getSession:", e);
+        }
       }
+      setLoading(false);
+    }).catch(() => {
       setLoading(false);
     });
 
