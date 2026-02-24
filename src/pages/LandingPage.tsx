@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { LogIn, LayoutDashboard } from "lucide-react";
+import { LogIn } from "lucide-react";
 import {
   IceCream, Droplets, Sparkles, Leaf, Star, Send, MapPin, Phone, Mail,
   ArrowRight, Instagram, Facebook, ChevronRight, ThermometerSnowflake, Heart,
@@ -109,8 +108,6 @@ const depoimentos = [
 ];
 
 export default function LandingPage() {
-  const { user } = useAuth();
-
   const [formNome, setFormNome] = useState("");
   const [formEmail, setFormEmail] = useState("");
   const [formTelefone, setFormTelefone] = useState("");
