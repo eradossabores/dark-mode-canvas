@@ -5,17 +5,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Monitor, Clock, User, Package, CalendarClock, MessageSquare, Maximize2, Minimize2, CheckCircle2, PackageCheck, Hourglass } from "lucide-react";
+import { Monitor, Clock, User, Package, CalendarClock, MessageSquare, Maximize2, Minimize2, CheckCircle2, PackageCheck, Hourglass, HandMetal } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, isPast, isToday, isTomorrow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-const statusOrder = ["aguardando_producao", "em_producao", "separado_para_entrega", "enviado"];
+const statusOrder = ["aguardando_producao", "em_producao", "separado_para_entrega", "retirado", "enviado"];
 
 const statusLabels: Record<string, string> = {
   aguardando_producao: "AGUARDANDO PRODUÇÃO",
   em_producao: "EM PRODUÇÃO",
   separado_para_entrega: "SEPARADO P/ ENTREGA",
+  retirado: "RETIRADO",
   enviado: "ENVIADO",
 };
 
@@ -23,6 +24,7 @@ const statusColors: Record<string, string> = {
   aguardando_producao: "bg-amber-500 text-white",
   em_producao: "bg-blue-500 text-white",
   separado_para_entrega: "bg-purple-500 text-white",
+  retirado: "bg-orange-500 text-white",
   enviado: "bg-green-500 text-white",
 };
 
@@ -30,6 +32,7 @@ const statusBorderColors: Record<string, string> = {
   aguardando_producao: "border-l-amber-500",
   em_producao: "border-l-blue-500",
   separado_para_entrega: "border-l-purple-500",
+  retirado: "border-l-orange-500",
   enviado: "border-l-green-500",
 };
 
@@ -64,7 +67,7 @@ export default function MonitorProducao() {
       const { data, error } = await supabase
         .from("pedidos_producao")
         .select("*, clientes(nome), pedido_producao_itens(*, sabores(nome))")
-        .in("status", ["aguardando_producao", "em_producao", "separado_para_entrega"])
+        .in("status", ["aguardando_producao", "em_producao", "separado_para_entrega", "retirado"])
         .order("data_entrega", { ascending: true });
       if (error) throw error;
       return data;
@@ -129,7 +132,7 @@ export default function MonitorProducao() {
 
   const activeOrders = pedidos?.filter((p: any) => p.status !== "enviado") || [];
   const filaEspera = pedidos?.filter((p: any) => p.status === "aguardando_producao") || [];
-  const emAndamento = pedidos?.filter((p: any) => p.status === "em_producao" || p.status === "separado_para_entrega") || [];
+  const emAndamento = pedidos?.filter((p: any) => p.status === "em_producao" || p.status === "separado_para_entrega" || p.status === "retirado") || [];
 
   const renderMiniQueue = (currentId: string) => {
     const queue = filaEspera.filter((p: any) => p.id !== currentId);
@@ -223,8 +226,8 @@ export default function MonitorProducao() {
                 </div>
               )}
             </div>
-            <div className="flex flex-row gap-3 w-full lg:w-auto">
-              {pedido.status !== "separado_para_entrega" && pedido.status !== "enviado" && (
+            <div className="flex flex-row gap-3 w-full lg:w-auto flex-wrap">
+              {pedido.status !== "separado_para_entrega" && pedido.status !== "retirado" && pedido.status !== "enviado" && (
                 <Button
                   variant="outline"
                   size="lg"
@@ -232,6 +235,16 @@ export default function MonitorProducao() {
                   onClick={() => updateStatus.mutate({ id: pedido.id, status: "separado_para_entrega" })}
                 >
                   <PackageCheck className="h-5 w-5" /> Separado p/ Entrega
+                </Button>
+              )}
+              {pedido.status !== "retirado" && pedido.status !== "enviado" && (
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="flex-1 gap-2 h-14 text-base font-bold border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-700 dark:text-orange-300 dark:hover:bg-orange-950"
+                  onClick={() => updateStatus.mutate({ id: pedido.id, status: "retirado" })}
+                >
+                  <HandMetal className="h-5 w-5" /> Retirado
                 </Button>
               )}
               {pedido.status !== "enviado" && (
