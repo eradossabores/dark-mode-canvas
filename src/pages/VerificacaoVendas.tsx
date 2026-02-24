@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -187,6 +188,7 @@ interface CompareResult {
 }
 
 export default function VerificacaoVendas() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [dbVendas, setDbVendas] = useState<DbVenda[]>([]);
   const [results, setResults] = useState<CompareResult[]>([]);
@@ -401,8 +403,8 @@ export default function VerificacaoVendas() {
                         const qtdOk = v.qtdP === v.qtdD;
                         const valOk = Math.abs(v.valP - v.valD) < 0.05;
                         return (
-                          <TableRow key={nome}>
-                            <TableCell className="font-medium">{nome}</TableCell>
+                          <TableRow key={nome} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/painel/vendas?cliente=${encodeURIComponent(nome)}`)}>
+                            <TableCell className="font-medium text-primary underline cursor-pointer">{nome}</TableCell>
                             <TableCell className="text-right">{v.qtdP}</TableCell>
                             <TableCell className={`text-right font-bold ${qtdOk ? "" : "text-red-600"}`}>{v.qtdD}</TableCell>
                             <TableCell className="text-right">R$ {v.valP.toFixed(2)}</TableCell>
