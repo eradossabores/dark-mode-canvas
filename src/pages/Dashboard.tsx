@@ -22,6 +22,35 @@ const CHART_COLORS = [
   "hsl(174, 35%, 60%)",
 ];
 
+type PeriodoFiltro = "7dias" | "15dias" | "mensal";
+
+function getDaysForPeriod(periodo: PeriodoFiltro): number {
+  if (periodo === "15dias") return 15;
+  if (periodo === "mensal") return 30;
+  return 7;
+}
+
+function getPeriodLabel(periodo: PeriodoFiltro): string {
+  if (periodo === "15dias") return "Últimos 15 dias";
+  if (periodo === "mensal") return "Últimos 30 dias";
+  return "Últimos 7 dias";
+}
+
+function buildChartData(data: any[], days: number, dateKey: string, valueKey: string, isSum: boolean) {
+  const start = new Date(); start.setDate(start.getDate() - (days - 1));
+  const filtered = data.filter((item: any) => new Date(item[dateKey]) >= start);
+  const map: Record<string, number> = {};
+  for (let i = 0; i < days; i++) {
+    const d = new Date(); d.setDate(d.getDate() - (days - 1 - i));
+    map[d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })] = 0;
+  }
+  filtered.forEach((item: any) => {
+    const key = new Date(item[dateKey]).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+    if (map[key] !== undefined) map[key] += isSum ? Number(item[valueKey]) : item[valueKey];
+  });
+  return Object.entries(map).map(([dia, val]) => ({ dia, [isSum ? "valor" : "total"]: val }));
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const [stats, setStats] = useState({
@@ -34,6 +63,10 @@ export default function Dashboard() {
   const [alertasEstoque, setAlertasEstoque] = useState<any[]>([]);
   const [alertaIndex, setAlertaIndex] = useState(0);
   const [contasReceber, setContasReceber] = useState({ total: 0, vencidas: 0, quantidade: 0 });
+  const [periodoFaturamento, setPeriodoFaturamento] = useState<PeriodoFiltro>("7dias");
+  const [periodoProducao, setPeriodoProducao] = useState<PeriodoFiltro>("7dias");
+  const [allVendas, setAllVendas] = useState<any[]>([]);
+  const [allProducoes, setAllProducoes] = useState<any[]>([]);
 
   useEffect(() => { loadStats(); }, []);
 
@@ -45,6 +78,17 @@ export default function Dashboard() {
     }, 5000);
     return () => clearInterval(interval);
   }, [alertasEstoque.length]);
+
+  // Recalculate charts when period changes
+  useEffect(() => {
+    if (allVendas.length === 0) return;
+    setVendasPorDia(buildChartData(allVendas, getDaysForPeriod(periodoFaturamento), "created_at", "total", true));
+  }, [periodoFaturamento, allVendas]);
+
+  useEffect(() => {
+    if (allProducoes.length === 0) return;
+    setProducaoPorDia(buildChartData(allProducoes, getDaysForPeriod(periodoProducao), "created_at", "quantidade_total", false));
+  }, [periodoProducao, allProducoes]);
 
   async function loadStats() {
     try {
@@ -71,32 +115,15 @@ export default function Dashboard() {
       });
       setTopSabores(Object.values(saborMap).sort((a, b) => b.total - a.total).slice(0, 5));
 
-      // Vendas por dia (últimos 7 dias)
-      const last7 = new Date(); last7.setDate(last7.getDate() - 6);
-      const vendasRecentes = (vendas.data || []).filter((v: any) => new Date(v.created_at) >= last7 && v.status !== "cancelada");
-      const vendasDia: Record<string, number> = {};
-      for (let i = 0; i < 7; i++) {
-        const d = new Date(); d.setDate(d.getDate() - (6 - i));
-        vendasDia[d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })] = 0;
-      }
-      vendasRecentes.forEach((v: any) => {
-        const key = new Date(v.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
-        if (vendasDia[key] !== undefined) vendasDia[key] += Number(v.total);
-      });
-      setVendasPorDia(Object.entries(vendasDia).map(([dia, valor]) => ({ dia, valor })));
+      // Store raw data for dynamic filtering
+      const validVendas = (vendas.data || []).filter((v: any) => v.status !== "cancelada");
+      const validProd = producoes.data || [];
+      setAllVendas(validVendas);
+      setAllProducoes(validProd);
 
-      // Produção por dia (últimos 7 dias)
-      const prodRecentes = (producoes.data || []).filter((p: any) => new Date(p.created_at) >= last7);
-      const prodDia: Record<string, number> = {};
-      for (let i = 0; i < 7; i++) {
-        const d = new Date(); d.setDate(d.getDate() - (6 - i));
-        prodDia[d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })] = 0;
-      }
-      prodRecentes.forEach((p: any) => {
-        const key = new Date(p.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
-        if (prodDia[key] !== undefined) prodDia[key] += p.quantidade_total;
-      });
-      setProducaoPorDia(Object.entries(prodDia).map(([dia, total]) => ({ dia, total })));
+      // Build initial chart data (7 days)
+      setVendasPorDia(buildChartData(validVendas, 7, "created_at", "total", true));
+      setProducaoPorDia(buildChartData(validProd, 7, "created_at", "quantidade_total", false));
 
       // Alertas de estoque baixo
       const [mpRes, embRes] = await Promise.all([
@@ -276,10 +303,27 @@ export default function Dashboard() {
 
       {/* Gráficos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Vendas últimos 7 dias */}
+        {/* Faturamento */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Faturamento - Últimos 7 dias</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm">Faturamento - {getPeriodLabel(periodoFaturamento)}</CardTitle>
+              <div className="flex gap-1">
+                {(["7dias", "15dias", "mensal"] as PeriodoFiltro[]).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPeriodoFaturamento(p)}
+                    className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
+                      periodoFaturamento === p
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    }`}
+                  >
+                    {p === "7dias" ? "7D" : p === "15dias" ? "15D" : "Mês"}
+                  </button>
+                ))}
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
@@ -294,10 +338,27 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Produção últimos 7 dias */}
+        {/* Produção */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Produção - Últimos 7 dias</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm">Produção - {getPeriodLabel(periodoProducao)}</CardTitle>
+              <div className="flex gap-1">
+                {(["7dias", "15dias", "mensal"] as PeriodoFiltro[]).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPeriodoProducao(p)}
+                    className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
+                      periodoProducao === p
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    }`}
+                  >
+                    {p === "7dias" ? "7D" : p === "15dias" ? "15D" : "Mês"}
+                  </button>
+                ))}
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
