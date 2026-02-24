@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { LogIn, LayoutDashboard } from "lucide-react";
 import {
   IceCream, Droplets, Sparkles, Leaf, Star, Send, MapPin, Phone, Mail,
   ArrowRight, Instagram, Facebook, ChevronRight, ThermometerSnowflake, Heart,
@@ -107,6 +109,8 @@ const depoimentos = [
 ];
 
 export default function LandingPage() {
+  const { user } = useAuth();
+
   const [formNome, setFormNome] = useState("");
   const [formEmail, setFormEmail] = useState("");
   const [formTelefone, setFormTelefone] = useState("");
@@ -145,11 +149,19 @@ export default function LandingPage() {
             <a href="#compromisso" className="hover:text-foreground transition-colors">Compromisso Local</a>
             <a href="#contato" className="hover:text-foreground transition-colors">Contato</a>
           </nav>
-          <Link to="/painel">
-            <Button size="sm" variant="outline" className="gap-1.5">
-              Painel <ChevronRight className="h-4 w-4" />
-            </Button>
-          </Link>
+          {user ? (
+            <Link to="/painel">
+              <Button size="sm" variant="outline" className="gap-1.5">
+                <LayoutDashboard className="h-4 w-4" /> Painel
+              </Button>
+            </Link>
+          ) : (
+            <Link to="/login">
+              <Button size="sm" className="gap-1.5">
+                <LogIn className="h-4 w-4" /> Entrar
+              </Button>
+            </Link>
+          )}
         </div>
       </header>
 
