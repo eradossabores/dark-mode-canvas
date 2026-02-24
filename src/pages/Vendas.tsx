@@ -234,10 +234,10 @@ export default function Vendas() {
       // Update existing items and insert new ones
       let newTotal = 0;
       for (const item of editItens) {
-        const subtotal = Number(item.preco_unitario) * item.quantidade;
-        newTotal += subtotal;
         if (item.isNew) {
           if (!item.sabor_id || item.quantidade <= 0) continue;
+          const subtotal = Number(item.preco_unitario) * item.quantidade;
+          newTotal += subtotal;
           const { error: insertError } = await (supabase as any).from("venda_itens").insert({
             venda_id: editVenda.id,
             sabor_id: item.sabor_id,
@@ -251,11 +251,17 @@ export default function Vendas() {
             throw insertError;
           }
         } else {
-          await (supabase as any).from("venda_itens").update({
+          const subtotal = Number(item.preco_unitario) * item.quantidade;
+          newTotal += subtotal;
+          const { error: updateError } = await (supabase as any).from("venda_itens").update({
             quantidade: item.quantidade,
             preco_unitario: Number(item.preco_unitario),
             subtotal: subtotal,
           }).eq("id", item.id);
+          if (updateError) {
+            console.error("Erro ao atualizar item:", updateError);
+            throw updateError;
+          }
         }
       }
       await (supabase as any).from("vendas").update({ total: newTotal }).eq("id", editVenda.id);
