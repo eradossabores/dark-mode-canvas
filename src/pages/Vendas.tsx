@@ -81,14 +81,20 @@ export default function Vendas() {
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
-    const [c, s, v] = await Promise.all([
+    const [c, s, v, vi] = await Promise.all([
       (supabase as any).from("clientes").select("id, nome").eq("status", "ativo").order("nome"),
       (supabase as any).from("sabores").select("*").eq("ativo", true).order("nome"),
       (supabase as any).from("vendas").select("*, clientes(nome)").order("created_at", { ascending: false }).limit(100),
+      (supabase as any).from("venda_itens").select("venda_id, quantidade"),
     ]);
     setClientes(c.data || []);
     setSabores(s.data || []);
-    setVendas(v.data || []);
+    // Build units map per venda
+    const unitsMap: Record<string, number> = {};
+    (vi.data || []).forEach((it: any) => {
+      unitsMap[it.venda_id] = (unitsMap[it.venda_id] || 0) + it.quantidade;
+    });
+    setVendas((v.data || []).map((vd: any) => ({ ...vd, totalUnidades: unitsMap[vd.id] || 0 })));
   }
 
   function addItem() { setItens([...itens, { sabor_id: "", quantidade: 1, preco_unitario: "", preco_auto: false }]); }
@@ -596,6 +602,7 @@ export default function Vendas() {
               <TableRow>
                 <TableHead>Data</TableHead>
                 <TableHead>Cliente</TableHead>
+                <TableHead className="text-right">Unidades</TableHead>
                 <TableHead>Total</TableHead>
                 <TableHead>Pagamento</TableHead>
                 <TableHead>NF</TableHead>
@@ -609,12 +616,13 @@ export default function Vendas() {
                   ? vendas.filter(v => normalizeStr(v.clientes?.nome || "").includes(normalizeStr(clienteFilter)))
                   : vendas;
                 if (filtered.length === 0) return (
-                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Nenhuma venda{clienteFilter ? ` para "${clienteFilter}"` : ""}.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Nenhuma venda{clienteFilter ? ` para "${clienteFilter}"` : ""}.</TableCell></TableRow>
                 );
                 return filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((v) => (
                   <TableRow key={v.id}>
                     <TableCell>{new Date(v.created_at).toLocaleDateString("pt-BR")}</TableCell>
                     <TableCell>{v.clientes?.nome}</TableCell>
+                    <TableCell className="text-right font-medium">{v.totalUnidades || 0}</TableCell>
                     <TableCell>R$ {Number(v.total).toFixed(2)}</TableCell>
                     <TableCell>{getFormaPagamentoLabel(v)}</TableCell>
                     <TableCell>{v.numero_nf || "-"}</TableCell>
