@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, ClipboardList, Eye, Pencil } from "lucide-react";
+import { Plus, Minus, Trash2, ClipboardList, Eye, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -389,17 +389,43 @@ export default function PedidosProducao() {
                         <TableRow key={idx}>
                           <TableCell>{item.sabor_nome}</TableCell>
                           <TableCell className="text-right">
-                            <Input
-                              type="number"
-                              min="0"
-                              className="w-20 ml-auto text-right"
-                              value={item.quantidade}
-                              onChange={(e) => {
-                                const newItens = [...itens];
-                                newItens[idx] = { ...newItens[idx], quantidade: Number(e.target.value) };
-                                setItens(newItens);
-                              }}
-                            />
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => {
+                                  const newItens = [...itens];
+                                  newItens[idx] = { ...newItens[idx], quantidade: Math.max(0, newItens[idx].quantidade - 1) };
+                                  setItens(newItens);
+                                }}
+                              >
+                                <Minus className="h-3 w-3" />
+                              </Button>
+                              <Input
+                                type="number"
+                                min="0"
+                                className="w-16 text-center"
+                                value={item.quantidade}
+                                onChange={(e) => {
+                                  const newItens = [...itens];
+                                  newItens[idx] = { ...newItens[idx], quantidade: Number(e.target.value) };
+                                  setItens(newItens);
+                                }}
+                              />
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => {
+                                  const newItens = [...itens];
+                                  newItens[idx] = { ...newItens[idx], quantidade: newItens[idx].quantidade + 1 };
+                                  setItens(newItens);
+                                }}
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                            </div>
                           </TableCell>
                           <TableCell>
                             <Button variant="ghost" size="icon" onClick={() => removeItem(idx)}>
