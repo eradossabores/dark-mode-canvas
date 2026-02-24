@@ -7,9 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Shield, Factory } from "lucide-react";
+import { Plus, Shield, Factory, Clock, CheckCircle, XCircle, Bell } from "lucide-react";
 
 interface UserWithRole {
   id: string;
@@ -19,13 +20,23 @@ interface UserWithRole {
   created_at: string;
 }
 
+interface AccessRequest {
+  id: string;
+  user_id: string;
+  email: string;
+  nome: string | null;
+  status: string;
+  created_at: string;
+}
+
 export default function GerenciarUsuarios() {
   const [users, setUsers] = useState<UserWithRole[]>([]);
+  const [requests, setRequests] = useState<AccessRequest[]>([]);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ email: "", password: "", nome: "", role: "producao" });
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => { loadUsers(); }, []);
+  useEffect(() => { loadUsers(); loadRequests(); }, []);
 
   async function loadUsers() {
     const { data: profiles } = await (supabase as any).from("profiles").select("*").order("created_at");
@@ -44,6 +55,52 @@ export default function GerenciarUsuarios() {
     setUsers(merged);
   }
 
+  async function loadRequests() {
+    const { data } = await (supabase as any)
+      .from("access_requests")
+      .select("*")
+      .order("created_at", { ascending: false });
+    setRequests(data || []);
+  }
+
+  async function handleApprove(request: AccessRequest) {
+    try {
+      // Insert role for the user
+      const { error: roleError } = await (supabase as any)
+        .from("user_roles")
+        .insert({ user_id: request.user_id, role: "producao" });
+      if (roleError) throw roleError;
+
+      // Update request status
+      const { error: updateError } = await (supabase as any)
+        .from("access_requests")
+        .update({ status: "aprovado", updated_at: new Date().toISOString() })
+        .eq("id", request.id);
+      if (updateError) throw updateError;
+
+      toast({ title: `${request.nome || request.email} aprovado com sucesso!` });
+      loadRequests();
+      loadUsers();
+    } catch (e: any) {
+      toast({ title: "Erro ao aprovar", description: e.message, variant: "destructive" });
+    }
+  }
+
+  async function handleReject(request: AccessRequest) {
+    try {
+      const { error } = await (supabase as any)
+        .from("access_requests")
+        .update({ status: "rejeitado", updated_at: new Date().toISOString() })
+        .eq("id", request.id);
+      if (error) throw error;
+
+      toast({ title: `${request.nome || request.email} rejeitado.` });
+      loadRequests();
+    } catch (e: any) {
+      toast({ title: "Erro ao rejeitar", description: e.message, variant: "destructive" });
+    }
+  }
+
   async function handleCreate() {
     if (!form.email || !form.password || !form.nome) {
       toast({ title: "Preencha todos os campos", variant: "destructive" });
@@ -55,7 +112,6 @@ export default function GerenciarUsuarios() {
     }
     setLoading(true);
     try {
-      // Use edge function to create user (admin action)
       const { data, error } = await supabase.functions.invoke("create-user", {
         body: { email: form.email, password: form.password, nome: form.nome, role: form.role },
       });
@@ -70,6 +126,8 @@ export default function GerenciarUsuarios() {
     }
     setLoading(false);
   }
+
+  const pendingRequests = requests.filter(r => r.status === "pendente");
 
   return (
     <div>
@@ -102,38 +160,115 @@ export default function GerenciarUsuarios() {
         </DialogContent>
       </Dialog>
 
-      <Card>
-        <CardContent className="pt-6">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Perfil</TableHead>
-                <TableHead>Criado em</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((u) => (
-                <TableRow key={u.id}>
-                  <TableCell className="font-medium">{u.nome}</TableCell>
-                  <TableCell>{u.email}</TableCell>
-                  <TableCell>
-                    <Badge variant={u.role === "admin" ? "default" : "secondary"} className="gap-1">
-                      {u.role === "admin" ? <Shield className="h-3 w-3" /> : <Factory className="h-3 w-3" />}
-                      {u.role === "admin" ? "Administrador" : "Produção"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{new Date(u.created_at).toLocaleDateString("pt-BR")}</TableCell>
-                </TableRow>
-              ))}
-              {users.length === 0 && (
-                <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">Nenhum usuário cadastrado.</TableCell></TableRow>
+      <Tabs defaultValue="users" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="users">Usuários Ativos</TabsTrigger>
+          <TabsTrigger value="requests" className="gap-2">
+            Solicitações de Acesso
+            {pendingRequests.length > 0 && (
+              <Badge variant="destructive" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs rounded-full">
+                {pendingRequests.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="users">
+          <Card>
+            <CardContent className="pt-6">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Perfil</TableHead>
+                    <TableHead>Criado em</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.filter(u => u.role !== "sem_role").map((u) => (
+                    <TableRow key={u.id}>
+                      <TableCell className="font-medium">{u.nome}</TableCell>
+                      <TableCell>{u.email}</TableCell>
+                      <TableCell>
+                        <Badge variant={u.role === "admin" ? "default" : "secondary"} className="gap-1">
+                          {u.role === "admin" ? <Shield className="h-3 w-3" /> : <Factory className="h-3 w-3" />}
+                          {u.role === "admin" ? "Administrador" : "Produção"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{new Date(u.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                    </TableRow>
+                  ))}
+                  {users.filter(u => u.role !== "sem_role").length === 0 && (
+                    <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">Nenhum usuário cadastrado.</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="requests">
+          <Card>
+            <CardContent className="pt-6">
+              {pendingRequests.length > 0 && (
+                <div className="flex items-center gap-2 mb-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                  <Bell className="h-4 w-4 text-amber-600" />
+                  <span className="text-sm text-amber-700 dark:text-amber-400 font-medium">
+                    {pendingRequests.length} solicitação(ões) aguardando aprovação
+                  </span>
+                </div>
               )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Solicitado em</TableHead>
+                    <TableHead>Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {requests.map((r) => (
+                    <TableRow key={r.id}>
+                      <TableCell className="font-medium">{r.nome || "—"}</TableCell>
+                      <TableCell>{r.email}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={r.status === "pendente" ? "outline" : r.status === "aprovado" ? "default" : "destructive"}
+                          className="gap-1"
+                        >
+                          {r.status === "pendente" && <Clock className="h-3 w-3" />}
+                          {r.status === "aprovado" && <CheckCircle className="h-3 w-3" />}
+                          {r.status === "rejeitado" && <XCircle className="h-3 w-3" />}
+                          {r.status === "pendente" ? "Pendente" : r.status === "aprovado" ? "Aprovado" : "Rejeitado"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{new Date(r.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                      <TableCell>
+                        {r.status === "pendente" && (
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="default" className="gap-1" onClick={() => handleApprove(r)}>
+                              <CheckCircle className="h-3 w-3" /> Aprovar
+                            </Button>
+                            <Button size="sm" variant="destructive" className="gap-1" onClick={() => handleReject(r)}>
+                              <XCircle className="h-3 w-3" /> Rejeitar
+                            </Button>
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {requests.length === 0 && (
+                    <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">Nenhuma solicitação de acesso.</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

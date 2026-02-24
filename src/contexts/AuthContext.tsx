@@ -3,11 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
 type AppRole = "admin" | "producao" | null;
+type ApprovalStatus = "pendente" | "aprovado" | "rejeitado" | null;
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   role: AppRole;
+  approvalStatus: ApprovalStatus;
   loading: boolean;
   signOut: () => Promise<void>;
 }
@@ -16,6 +18,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
   role: null,
+  approvalStatus: null,
   loading: true,
   signOut: async () => {},
 });
@@ -26,15 +29,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<AppRole>(null);
+  const [approvalStatus, setApprovalStatus] = useState<ApprovalStatus>(null);
   const [loading, setLoading] = useState(true);
 
-  async function fetchRole(userId: string) {
-    const { data } = await (supabase as any)
+  async function fetchRoleAndApproval(userId: string) {
+    // Check role
+    const { data: roleData } = await (supabase as any)
       .from("user_roles")
       .select("role")
       .eq("user_id", userId)
       .maybeSingle();
-    setRole(data?.role || null);
+    
+    if (roleData?.role) {
+      setRole(roleData.role);
+      setApprovalStatus("aprovado");
+      return;
+    }
+
+    // No role — check access_requests
+    const { data: requestData } = await (supabase as any)
+      .from("access_requests")
+      .select("status")
+      .eq("user_id", userId)
+      .maybeSingle();
+    
+    setRole(null);
+    setApprovalStatus(requestData?.status || null);
   }
 
   useEffect(() => {
@@ -43,9 +63,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          await fetchRole(session.user.id);
+          await fetchRoleAndApproval(session.user.id);
         } else {
           setRole(null);
+          setApprovalStatus(null);
         }
         setLoading(false);
       }
@@ -55,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        await fetchRole(session.user.id);
+        await fetchRoleAndApproval(session.user.id);
       }
       setLoading(false);
     });
@@ -68,10 +89,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setSession(null);
     setRole(null);
+    setApprovalStatus(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, role, loading, signOut }}>
+    <AuthContext.Provider value={{ user, session, role, approvalStatus, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );
