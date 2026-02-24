@@ -228,37 +228,46 @@ export default function MonitorProducao() {
                   <span>{pedido.tipo_embalagem}</span>
                 </div>
               </div>
-              <div className="space-y-2">
+              <div className="bg-muted/30 border border-border rounded-xl p-4 space-y-1">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Checklist de Separação</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      {pedido.pedido_producao_itens?.filter((i: any) => i.separado).length || 0}/{pedido.pedido_producao_itens?.length || 0} itens
+                    </span>
+                    <Badge className="bg-primary/10 text-primary border-primary/20 text-sm font-extrabold px-3 py-1">
+                      Total: {pedido.pedido_producao_itens?.reduce((s: number, i: any) => s + (i.quantidade || 0), 0)} un
+                    </Badge>
+                  </div>
+                </div>
                 {pedido.pedido_producao_itens?.map((item: any) => {
                   const isSeparado = item.separado === true;
-                  const totalItens = pedido.pedido_producao_itens?.length || 0;
-                  const separadosCount = pedido.pedido_producao_itens?.filter((i: any) => i.separado).length || 0;
                   return (
                     <div
                       key={item.id}
-                      className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-semibold border transition-all cursor-pointer select-none ${
+                      className={`flex items-center gap-3 rounded-lg px-4 py-3 cursor-pointer select-none transition-all border ${
                         isSeparado
-                          ? "bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-700 line-through opacity-70"
-                          : "bg-muted border-border hover:bg-muted/80"
+                          ? "bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-700"
+                          : "bg-background border-border hover:border-primary/30"
                       }`}
                       onClick={() => toggleSeparado.mutate({ itemId: item.id, separado: !isSeparado })}
                     >
                       <Checkbox
                         checked={isSeparado}
                         onCheckedChange={(checked) => toggleSeparado.mutate({ itemId: item.id, separado: !!checked })}
-                        className="pointer-events-none"
+                        className="pointer-events-none h-5 w-5"
                       />
-                      <span className={isSeparado ? "text-green-700 dark:text-green-400" : ""}>{item.sabores?.nome}</span>
-                      <Badge variant="secondary" className="text-xs font-bold ml-auto">{item.quantidade} un</Badge>
-                      {isSeparado && <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />}
+                      <span className={`flex-1 text-sm font-semibold ${isSeparado ? "line-through text-green-700 dark:text-green-400 opacity-60" : "text-foreground"}`}>
+                        {item.sabores?.nome}
+                      </span>
+                      <span className={`text-lg font-extrabold tabular-nums min-w-[60px] text-right ${isSeparado ? "text-green-600 dark:text-green-400 opacity-60" : "text-primary"}`}>
+                        {item.quantidade}
+                      </span>
+                      <span className={`text-xs ${isSeparado ? "text-green-600/60" : "text-muted-foreground"}`}>un</span>
+                      {isSeparado && <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" />}
                     </div>
                   );
                 })}
-                {pedido.pedido_producao_itens && pedido.pedido_producao_itens.length > 0 && (
-                  <div className="text-xs text-muted-foreground mt-1 pl-1">
-                    {pedido.pedido_producao_itens.filter((i: any) => i.separado).length}/{pedido.pedido_producao_itens.length} sabores separados
-                  </div>
-                )}
               </div>
               {pedido.observacoes && (
                 <div className="flex items-start gap-2 text-sm p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
