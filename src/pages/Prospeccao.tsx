@@ -77,14 +77,6 @@ const EXPLORE_ICON = new L.Icon({
 
 const CLIENT_ICON = makeIcon("blue");
 
-const POI_ICON = new L.DivIcon({
-  html: '<div style="background:hsl(280,60%,55%);width:12px;height:12px;border-radius:50%;border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.3)"></div>',
-  iconSize: [12, 12],
-  iconAnchor: [6, 6],
-  popupAnchor: [0, -8],
-  className: "",
-});
-
 function ClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number) => void }) {
   useMapEvents({ click(e) { onMapClick(e.latlng.lat, e.latlng.lng); } });
   return null;
@@ -135,6 +127,8 @@ export default function Prospeccao() {
   const [exploreRadius, setExploreRadius] = useState(2); // km
   const [quickRegisterOpen, setQuickRegisterOpen] = useState(false);
   const [explorePOIs, setExplorePOIs] = useState<any[]>([]);
+  const [classifyingAI, setClassifyingAI] = useState(false);
+  const [quickRegisterInitial, setQuickRegisterInitial] = useState<any>(null);
 
   useEffect(() => { loadData(); }, []);
 
@@ -270,16 +264,21 @@ export default function Prospeccao() {
 
         setExploreNearby(nearby);
 
-        // Fetch real POIs from OpenStreetMap (bars, restaurants, nightclubs, shops)
+        // Fetch real POIs from OpenStreetMap - EXPANDED search
         try {
           const radiusM = exploreRadius * 1000;
           const overpassQuery = `
-            [out:json][timeout:10];
+            [out:json][timeout:15];
             (
-              node["amenity"~"bar|pub|nightclub|restaurant|cafe"](around:${radiusM},${lat},${lng});
-              node["shop"~"convenience|supermarket|wholesale|beverages"](around:${radiusM},${lat},${lng});
+              node["amenity"~"bar|pub|nightclub|restaurant|cafe|fast_food|biergarten|food_court"](around:${radiusM},${lat},${lng});
+              node["shop"~"convenience|supermarket|wholesale|beverages|wine|alcohol"](around:${radiusM},${lat},${lng});
+              node["leisure"~"dance_hall|adult_gaming_centre"](around:${radiusM},${lat},${lng});
+              node["tourism"~"hotel|motel|guest_house"](around:${radiusM},${lat},${lng});
+              node["name"~"bar|pub|lounge|adega|choperia|espetaria|hamburgueria|drinkeria|tabacaria|conveniência|distribuidora|buffet|evento",i](around:${radiusM},${lat},${lng});
+              way["amenity"~"bar|pub|nightclub|restaurant|cafe|fast_food"](around:${radiusM},${lat},${lng});
+              way["shop"~"convenience|supermarket|wholesale|beverages|wine|alcohol"](around:${radiusM},${lat},${lng});
             );
-            out body 30;
+            out center body 50;
           `;
           const overpassRes = await fetch("https://overpass-api.de/api/interpreter", {
             method: "POST",
@@ -289,25 +288,62 @@ export default function Prospeccao() {
           const overpassData = await overpassRes.json();
           const pois = (overpassData.elements || []).map((el: any) => {
             const tags = el.tags || {};
-            const amenity = tags.amenity || tags.shop || "";
+            const amenity = tags.amenity || tags.shop || tags.leisure || tags.tourism || "";
             const typeMap: Record<string, string> = {
               bar: "🍺 Bar", pub: "🍺 Pub", nightclub: "🌙 Casa Noturna",
-              restaurant: "🍽️ Restaurante", cafe: "☕ Café",
+              restaurant: "🍽️ Restaurante", cafe: "☕ Café", fast_food: "🍔 Lanchonete",
+              biergarten: "🍺 Cervejaria", food_court: "🍽️ Praça de Alimentação",
               convenience: "🏪 Conveniência", supermarket: "🛒 Mercado",
-              wholesale: "📦 Distribuidora", beverages: "🥤 Distribuidora de Bebidas",
+              wholesale: "📦 Distribuidora", beverages: "🥤 Bebidas", wine: "🍷 Adega",
+              alcohol: "🥃 Bebidas", dance_hall: "🌙 Casa de Dança",
+              hotel: "🏨 Hotel", motel: "🏨 Motel", guest_house: "🏨 Pousada",
             };
+            const elLat = el.lat || el.center?.lat;
+            const elLng = el.lon || el.center?.lon;
+            if (!elLat || !elLng) return null;
             return {
               id: `osm-${el.id}`,
-              nome: tags.name || typeMap[amenity] || amenity,
+              nome: tags.name || typeMap[amenity] || amenity || "Estabelecimento",
               tipo_label: typeMap[amenity] || `📍 ${amenity}`,
-              lat: el.lat,
-              lng: el.lon,
+              lat: elLat,
+              lng: elLng,
               amenity,
               telefone: tags.phone || tags["contact:phone"] || null,
               endereco: tags["addr:street"] ? `${tags["addr:street"]}, ${tags["addr:housenumber"] || ""}`.trim() : null,
+              horario: tags.opening_hours || null,
+              cuisine: tags.cuisine || null,
             };
+          }).filter(Boolean);
+          
+          // Deduplicate by name+proximity
+          const uniquePois: any[] = [];
+          pois.forEach((p: any) => {
+            const dup = uniquePois.find((u: any) => 
+              u.nome === p.nome && Math.abs(u.lat - p.lat) < 0.0005 && Math.abs(u.lng - p.lng) < 0.0005
+            );
+            if (!dup) uniquePois.push(p);
           });
-          setExplorePOIs(pois);
+
+          setExplorePOIs(uniquePois);
+
+          // AI Classification
+          if (uniquePois.length > 0) {
+            setClassifyingAI(true);
+            try {
+              const { data: aiData, error: aiError } = await supabase.functions.invoke("classify-pois", {
+                body: { pois: uniquePois },
+              });
+              if (aiError) throw aiError;
+              if (aiData?.classified) {
+                setExplorePOIs(aiData.classified);
+              }
+            } catch (aiErr) {
+              console.error("AI classification error:", aiErr);
+              // Keep POIs without classification
+            } finally {
+              setClassifyingAI(false);
+            }
+          }
         } catch (e) {
           console.error("Overpass error:", e);
           setExplorePOIs([]);
@@ -346,6 +382,29 @@ export default function Prospeccao() {
     setExploreNearby([]);
     setExploreRoute([]);
     setExplorePOIs([]);
+    setClassifyingAI(false);
+  }
+
+  function openQuickRegisterWithPOI(poi?: any) {
+    const amenityToTipo: Record<string, string> = {
+      bar: "bar", pub: "bar", nightclub: "casa_noturna", restaurant: "restaurante_lounge",
+      cafe: "restaurante_lounge", fast_food: "lanchonete", convenience: "mercado",
+      supermarket: "mercado", wholesale: "distribuidora", beverages: "distribuidora",
+      wine: "distribuidora", hotel: "outro", biergarten: "bar",
+    };
+    setQuickRegisterInitial({
+      nome: poi?.nome || "", 
+      tipo: poi ? (amenityToTipo[poi.amenity] || "outro") : "bar",
+      bairro: exploreBairro, 
+      endereco: poi?.endereco || "", 
+      telefone: poi?.telefone || "",
+      contato_nome: "", prioridade: poi?.ai_prioridade || "media", 
+      score: poi?.ai_tag === "cliente_potencial" ? 4 : 3,
+      observacoes_estrategicas: poi?.ai_motivo || "", 
+      volume_potencial: "", perfil_publico: "",
+      script_abordagem: "Olá! Trabalhamos com gelos saborizados premium, ideais para drinks diferenciados. Temos mais de 10 sabores e preços especiais para parceiros comerciais. Posso apresentar nossos produtos?",
+    });
+    setQuickRegisterOpen(true);
   }
 
   // Filters
@@ -523,26 +582,40 @@ export default function Prospeccao() {
                   )}
 
                   {/* POI markers from OpenStreetMap */}
-                  {explorePOIs.map(poi => (
-                    <Marker key={poi.id} position={[poi.lat, poi.lng]} icon={POI_ICON}>
+                  {explorePOIs.map(poi => {
+                    const tagColor = poi.ai_tag === "cliente_potencial" ? "hsl(140,60%,40%)" 
+                      : poi.ai_tag === "nao_compativel" ? "hsl(0,0%,60%)" : "hsl(280,60%,55%)";
+                    const poiIcon = new L.DivIcon({
+                      html: `<div style="background:${tagColor};width:12px;height:12px;border-radius:50%;border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.3)"></div>`,
+                      iconSize: [12, 12], iconAnchor: [6, 6], popupAnchor: [0, -8], className: "",
+                    });
+                    return (
+                    <Marker key={poi.id} position={[poi.lat, poi.lng]} icon={poiIcon}>
                       <Popup>
-                        <div className="min-w-[160px]">
+                        <div className="min-w-[180px]">
                           <p className="font-bold text-sm">{poi.nome}</p>
                           <p className="text-xs text-gray-500">{poi.tipo_label}</p>
+                          {poi.ai_tag && (
+                            <p className={`text-xs font-medium mt-1 ${poi.ai_tag === "cliente_potencial" ? "text-green-600" : poi.ai_tag === "nao_compativel" ? "text-gray-400" : "text-purple-600"}`}>
+                              {poi.ai_tag === "cliente_potencial" ? "✅ Cliente Potencial" : poi.ai_tag === "nao_compativel" ? "❌ Não Compatível" : "🔍 Avaliar"}
+                              {poi.ai_prioridade && ` · ${poi.ai_prioridade}`}
+                            </p>
+                          )}
+                          {poi.ai_motivo && <p className="text-[10px] italic text-gray-400 mt-0.5">{poi.ai_motivo}</p>}
                           {poi.endereco && <p className="text-xs text-gray-400">{poi.endereco}</p>}
                           {poi.telefone && <p className="text-xs">📞 {poi.telefone}</p>}
+                          {poi.horario && <p className="text-xs">🕐 {poi.horario}</p>}
                           <button
                             className="text-xs bg-primary text-white px-2 py-1 rounded mt-2 w-full"
-                            onClick={() => {
-                              setQuickRegisterOpen(true);
-                            }}
+                            onClick={() => openQuickRegisterWithPOI(poi)}
                           >
                             Cadastrar como Prospecto
                           </button>
                         </div>
                       </Popup>
                     </Marker>
-                  ))}
+                    );
+                  })}
 
                   {showRoute && routePoints.length > 1 && !explorePin && (
                     <Polyline positions={routePoints.map(p => [p.lat, p.lng] as [number, number])} color="hsl(200,98%,39%)" weight={3} dashArray="8 4" />
@@ -559,6 +632,9 @@ export default function Prospeccao() {
               const prospectosEncerrados = exploreNearby.filter(n => n._type === "prospecto" && ["pedido_fechado", "sem_interesse"].includes(n.status));
               const cobertura = ativos.length + prospectosAtivos.length;
               const oportunidade = cobertura === 0 ? "alta" : cobertura <= 2 ? "media" : "baixa";
+              const poisPotenciais = explorePOIs.filter((p: any) => p.ai_tag === "cliente_potencial");
+              const poisAvaliar = explorePOIs.filter((p: any) => p.ai_tag === "avaliar" || !p.ai_tag);
+              const poisNaoCompat = explorePOIs.filter((p: any) => p.ai_tag === "nao_compativel");
 
               return (
               <Card className="lg:col-span-1 max-h-[550px] overflow-y-auto">
@@ -584,36 +660,81 @@ export default function Prospeccao() {
                             {oportunidade === "alta" ? "🔥 Oportunidade Alta" : oportunidade === "media" ? "⚡ Oportunidade Média" : "✅ Boa cobertura"}
                           </Badge>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 text-center">
+                        <div className="grid grid-cols-3 gap-2 text-center">
                           <div className="bg-background rounded p-1.5">
                             <p className="text-lg font-bold text-primary">{ativos.length}</p>
-                            <p className="text-[9px] text-muted-foreground">Clientes ativos</p>
+                            <p className="text-[9px] text-muted-foreground">Clientes</p>
                           </div>
                           <div className="bg-background rounded p-1.5">
                             <p className="text-lg font-bold">{prospectosAtivos.length}</p>
-                            <p className="text-[9px] text-muted-foreground">Prospectos abertos</p>
+                            <p className="text-[9px] text-muted-foreground">Prospectos</p>
                           </div>
                           <div className="bg-background rounded p-1.5">
-                            <p className="text-lg font-bold text-amber-500">{inativos.length}</p>
-                            <p className="text-[9px] text-muted-foreground">Inativos (reativar)</p>
-                          </div>
-                          <div className="bg-background rounded p-1.5">
-                            <p className="text-lg font-bold text-muted-foreground">{prospectosEncerrados.length}</p>
-                            <p className="text-[9px] text-muted-foreground">Já visitados</p>
+                            <p className="text-lg font-bold text-green-600">{explorePOIs.length}</p>
+                            <p className="text-[9px] text-muted-foreground">Encontrados</p>
                           </div>
                         </div>
-                        {oportunidade === "alta" && (
-                          <p className="text-[10px] text-destructive font-medium">📍 Região sem cobertura! Ideal para prospectar novos clientes.</p>
+                        {explorePOIs.length > 0 && (
+                          <div className="flex gap-2 text-[9px] text-muted-foreground pt-1">
+                            <span className="text-green-600 font-medium">✅ {poisPotenciais.length} potenciais</span>
+                            <span className="text-purple-600 font-medium">🔍 {poisAvaliar.length} avaliar</span>
+                            <span>{poisNaoCompat.length} outros</span>
+                          </div>
                         )}
-                        {oportunidade === "media" && (
-                          <p className="text-[10px] text-amber-600 font-medium">⚡ Região com pouca cobertura. Há espaço para crescimento.</p>
+                        {classifyingAI && (
+                          <p className="text-[10px] text-primary flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" />IA classificando...</p>
+                        )}
+                        {oportunidade === "alta" && explorePOIs.length > 0 && (
+                          <p className="text-[10px] text-destructive font-medium">🔥 {explorePOIs.length} estabelecimentos sem cobertura! Ideal para prospectar.</p>
                         )}
                       </div>
 
                       {/* Quick register - always prominent */}
-                      <Button size="sm" className="w-full" onClick={() => setQuickRegisterOpen(true)}>
+                      <Button size="sm" className="w-full" onClick={() => openQuickRegisterWithPOI()}>
                         <Plus className="h-4 w-4 mr-1" />Cadastrar Prospecto {exploreBairro ? `em ${exploreBairro}` : "Aqui"}
                       </Button>
+
+                      {/* AI-classified POIs: Potenciais */}
+                      {poisPotenciais.length > 0 && (
+                        <div className="space-y-1.5">
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-green-600">
+                            ✅ Clientes Potenciais ({poisPotenciais.length})
+                          </p>
+                          {poisPotenciais.map((poi: any) => (
+                            <div key={poi.id} className="p-2 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/30 space-y-1">
+                              <div className="flex items-center justify-between">
+                                <p className="text-sm font-medium truncate">{poi.nome}</p>
+                                <Badge variant="outline" className="text-[9px] shrink-0">{poi.ai_prioridade}</Badge>
+                              </div>
+                              <p className="text-[10px] text-muted-foreground">{poi.tipo_label}</p>
+                              {poi.ai_motivo && <p className="text-[9px] italic text-muted-foreground">{poi.ai_motivo}</p>}
+                              {poi.telefone && <p className="text-[10px] text-muted-foreground">📞 {poi.telefone}</p>}
+                              <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => openQuickRegisterWithPOI(poi)}>
+                                <Plus className="h-3 w-3 mr-1" />Cadastrar + Follow-up
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* AI-classified POIs: Avaliar */}
+                      {poisAvaliar.length > 0 && (
+                        <div className="space-y-1.5">
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                            🔍 Avaliar ({poisAvaliar.length})
+                          </p>
+                          {poisAvaliar.slice(0, 10).map((poi: any) => (
+                            <div key={poi.id} className="p-2 rounded-lg bg-accent/30 border border-accent/20 space-y-1">
+                              <p className="text-sm font-medium truncate">{poi.nome}</p>
+                              <p className="text-[10px] text-muted-foreground">{poi.tipo_label}</p>
+                              {poi.ai_motivo && <p className="text-[9px] italic text-muted-foreground">{poi.ai_motivo}</p>}
+                              <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => openQuickRegisterWithPOI(poi)}>
+                                <Plus className="h-3 w-3 mr-1" />Cadastrar
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
 
                       {/* Inactive clients for reactivation */}
                       {inativos.length > 0 && (
@@ -677,37 +798,9 @@ export default function Prospeccao() {
                         </div>
                       )}
 
-                      {/* POIs from OpenStreetMap */}
-                      {explorePOIs.length > 0 && (
-                        <div className="space-y-1.5">
-                          <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                            📍 Estabelecimentos na região ({explorePOIs.length})
-                          </p>
-                          <p className="text-[9px] text-muted-foreground">Dados do OpenStreetMap — potenciais clientes</p>
-                          {explorePOIs.slice(0, 15).map((poi: any) => (
-                            <div key={poi.id} className="p-2 rounded-lg bg-accent/30 border border-accent/20 space-y-1">
-                              <div className="flex items-center justify-between">
-                                <div className="min-w-0">
-                                  <p className="text-sm font-medium truncate">{poi.nome}</p>
-                                  <p className="text-[10px] text-muted-foreground">{poi.tipo_label}</p>
-                                </div>
-                              </div>
-                              {poi.endereco && <p className="text-[10px] text-muted-foreground">{poi.endereco}</p>}
-                              {poi.telefone && <p className="text-[10px] text-muted-foreground">📞 {poi.telefone}</p>}
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-6 text-[10px] px-2"
-                                onClick={() => setQuickRegisterOpen(true)}
-                              >
-                                <Plus className="h-3 w-3 mr-1" />Cadastrar
-                              </Button>
-                            </div>
-                          ))}
-                          {explorePOIs.length > 15 && (
-                            <p className="text-[10px] text-muted-foreground text-center">+{explorePOIs.length - 15} mais estabelecimentos</p>
-                          )}
-                        </div>
+                      {/* Non-compatible count */}
+                      {poisNaoCompat.length > 0 && (
+                        <p className="text-[9px] text-muted-foreground">❌ {poisNaoCompat.length} estabelecimento(s) não compatível(is) oculto(s)</p>
                       )}
 
                       {exploreRoute.length > 1 && (
@@ -937,10 +1030,10 @@ export default function Prospeccao() {
 
       {/* Dialogs */}
       <ProspectoForm open={formOpen} onOpenChange={setFormOpen} onSubmit={handleCreateProspecto} />
-      {/* Quick register from explore panel */}
+      {/* Quick register from explore panel - auto-fills from POI data */}
       <ProspectoForm
         open={quickRegisterOpen}
-        onOpenChange={setQuickRegisterOpen}
+        onOpenChange={(v) => { setQuickRegisterOpen(v); if (!v) setQuickRegisterInitial(null); }}
         onSubmit={async (data: any) => {
           const enriched = {
             ...data,
@@ -950,8 +1043,9 @@ export default function Prospeccao() {
           };
           await handleCreateProspecto(enriched);
           setQuickRegisterOpen(false);
+          setQuickRegisterInitial(null);
         }}
-        initial={{ nome: "", tipo: "bar", bairro: exploreBairro, endereco: "", telefone: "", contato_nome: "", prioridade: "media", score: 3, observacoes_estrategicas: "", volume_potencial: "", perfil_publico: "", script_abordagem: "Olá! Trabalhamos com gelos saborizados premium, ideais para drinks diferenciados. Temos mais de 10 sabores e preços especiais para parceiros comerciais. Posso apresentar nossos produtos?" }}
+        initial={quickRegisterInitial || { nome: "", tipo: "bar", bairro: exploreBairro, endereco: "", telefone: "", contato_nome: "", prioridade: "media", score: 3, observacoes_estrategicas: "", volume_potencial: "", perfil_publico: "", script_abordagem: "Olá! Trabalhamos com gelos saborizados premium, ideais para drinks diferenciados. Temos mais de 10 sabores e preços especiais para parceiros comerciais. Posso apresentar nossos produtos?" }}
       />
       {editingProspecto && (
         <ProspectoForm open={!!editingProspecto} onOpenChange={v => !v && setEditingProspecto(null)} onSubmit={handleEditProspecto} initial={editingProspecto} />
