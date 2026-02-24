@@ -388,7 +388,19 @@ export default function PedidosProducao() {
                       {itens.map((item, idx) => (
                         <TableRow key={idx}>
                           <TableCell>{item.sabor_nome}</TableCell>
-                          <TableCell className="text-right">{item.quantidade}</TableCell>
+                          <TableCell className="text-right">
+                            <Input
+                              type="number"
+                              min="0"
+                              className="w-20 ml-auto text-right"
+                              value={item.quantidade}
+                              onChange={(e) => {
+                                const newItens = [...itens];
+                                newItens[idx] = { ...newItens[idx], quantidade: Number(e.target.value) };
+                                setItens(newItens);
+                              }}
+                            />
+                          </TableCell>
                           <TableCell>
                             <Button variant="ghost" size="icon" onClick={() => removeItem(idx)}>
                               <Trash2 className="h-4 w-4 text-destructive" />
