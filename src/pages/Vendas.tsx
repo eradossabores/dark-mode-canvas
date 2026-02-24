@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,8 @@ function normalizeStr(s: string) {
 }
 
 export default function Vendas() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const clienteFilter = searchParams.get("cliente") || "";
   const [clientes, setClientes] = useState<any[]>([]);
   const [sabores, setSabores] = useState<any[]>([]);
   const [vendas, setVendas] = useState<any[]>([]);
@@ -542,7 +545,17 @@ export default function Vendas() {
       </AlertDialog>
 
       <Card>
-        <CardHeader><CardTitle>Histórico de Vendas</CardTitle></CardHeader>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Histórico de Vendas</CardTitle>
+            {clienteFilter && (
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="text-sm">Filtro: {clienteFilter}</Badge>
+                <Button size="sm" variant="ghost" onClick={() => setSearchParams({})}>Limpar filtro</Button>
+              </div>
+            )}
+          </div>
+        </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
@@ -557,41 +570,52 @@ export default function Vendas() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {vendas.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((v) => (
-                <TableRow key={v.id}>
-                  <TableCell>{new Date(v.created_at).toLocaleDateString("pt-BR")}</TableCell>
-                  <TableCell>{v.clientes?.nome}</TableCell>
-                  <TableCell>R$ {Number(v.total).toFixed(2)}</TableCell>
-                  <TableCell>{getFormaPagamentoLabel(v)}</TableCell>
-                  <TableCell>{v.numero_nf || "-"}</TableCell>
-                  <TableCell>
-                    <Badge variant={v.status === "paga" ? "default" : v.status === "cancelada" ? "destructive" : "secondary"}>{v.status}</Badge>
-                  </TableCell>
-                  <TableCell className="text-right space-x-1">
-                    <Button size="icon" variant="ghost" onClick={() => openDetailDialog(v)}><Eye className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => openEditDialog(v)}><Pencil className="h-4 w-4" /></Button>
-                    {v.status !== "cancelada" && (
-                      <Button size="icon" variant="ghost" onClick={() => setCancelId(v.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {vendas.length === 0 && (
-                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Nenhuma venda.</TableCell></TableRow>
-              )}
+              {(() => {
+                const filtered = clienteFilter
+                  ? vendas.filter(v => normalizeStr(v.clientes?.nome || "").includes(normalizeStr(clienteFilter)))
+                  : vendas;
+                if (filtered.length === 0) return (
+                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Nenhuma venda{clienteFilter ? ` para "${clienteFilter}"` : ""}.</TableCell></TableRow>
+                );
+                return filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((v) => (
+                  <TableRow key={v.id}>
+                    <TableCell>{new Date(v.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                    <TableCell>{v.clientes?.nome}</TableCell>
+                    <TableCell>R$ {Number(v.total).toFixed(2)}</TableCell>
+                    <TableCell>{getFormaPagamentoLabel(v)}</TableCell>
+                    <TableCell>{v.numero_nf || "-"}</TableCell>
+                    <TableCell>
+                      <Badge variant={v.status === "paga" ? "default" : v.status === "cancelada" ? "destructive" : "secondary"}>{v.status}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right space-x-1">
+                      <Button size="icon" variant="ghost" onClick={() => openDetailDialog(v)}><Eye className="h-4 w-4" /></Button>
+                      <Button size="icon" variant="ghost" onClick={() => openEditDialog(v)}><Pencil className="h-4 w-4" /></Button>
+                      {v.status !== "cancelada" && (
+                        <Button size="icon" variant="ghost" onClick={() => setCancelId(v.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ));
+              })()}
             </TableBody>
           </Table>
-          {vendas.length > PAGE_SIZE && (
-            <div className="flex items-center justify-between mt-4">
-              <span className="text-sm text-muted-foreground">
-                {page * PAGE_SIZE + 1}-{Math.min((page + 1) * PAGE_SIZE, vendas.length)} de {vendas.length}
-              </span>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage(p => p - 1)}>Anterior</Button>
-                <Button size="sm" variant="outline" disabled={(page + 1) * PAGE_SIZE >= vendas.length} onClick={() => setPage(p => p + 1)}>Próxima</Button>
+          {(() => {
+            const filtered = clienteFilter
+              ? vendas.filter(v => normalizeStr(v.clientes?.nome || "").includes(normalizeStr(clienteFilter)))
+              : vendas;
+            if (filtered.length > PAGE_SIZE) return (
+              <div className="flex items-center justify-between mt-4">
+                <span className="text-sm text-muted-foreground">
+                  {page * PAGE_SIZE + 1}-{Math.min((page + 1) * PAGE_SIZE, filtered.length)} de {filtered.length}
+                </span>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage(p => p - 1)}>Anterior</Button>
+                  <Button size="sm" variant="outline" disabled={(page + 1) * PAGE_SIZE >= filtered.length} onClick={() => setPage(p => p + 1)}>Próxima</Button>
+                </div>
               </div>
-            </div>
-          )}
+            );
+            return null;
+          })()}
         </CardContent>
       </Card>
     </div>
