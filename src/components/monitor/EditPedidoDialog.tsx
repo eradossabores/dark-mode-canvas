@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Minus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
 
 interface ItemPedido {
   sabor_id: string;
@@ -31,6 +30,17 @@ const statusLabels: Record<string, string> = {
   retirado: "Retirado",
   enviado: "Enviado",
 };
+
+function splitDateTime(value?: string | null) {
+  if (!value) return { date: "", time: "" };
+
+  const normalized = value.replace(" ", "T");
+  const [date = "", timeWithZone = ""] = normalized.split("T");
+  return {
+    date,
+    time: timeWithZone.slice(0, 5),
+  };
+}
 
 export default function EditPedidoDialog({ pedido, open, onOpenChange }: EditPedidoDialogProps) {
   const { toast } = useToast();
@@ -69,9 +79,9 @@ export default function EditPedidoDialog({ pedido, open, onOpenChange }: EditPed
     if (pedido && open) {
       setClienteId(pedido.cliente_id);
       setTipoEmbalagem(pedido.tipo_embalagem);
-      const dt = new Date(pedido.data_entrega);
-      setDataEntrega(format(dt, "yyyy-MM-dd"));
-      setHoraEntrega(format(dt, "HH:mm"));
+      const { date, time } = splitDateTime(pedido.data_entrega);
+      setDataEntrega(date);
+      setHoraEntrega(time);
       setObservacoes(pedido.observacoes || "");
       setStatus(pedido.status);
       setStatusPagamento(pedido.status_pagamento || "aguardando_pagamento");
@@ -90,7 +100,8 @@ export default function EditPedidoDialog({ pedido, open, onOpenChange }: EditPed
   const editMutation = useMutation({
     mutationFn: async () => {
       if (!pedido?.id) throw new Error("Pedido não encontrado");
-      const dataEntregaFormatted = `${dataEntrega}T${horaEntrega}:00`;
+      const horaEntregaComSegundos = horaEntrega.length === 5 ? `${horaEntrega}:00` : horaEntrega;
+      const dataEntregaFormatted = `${dataEntrega}T${horaEntregaComSegundos}`;
       const { error } = await supabase.from("pedidos_producao").update({
         cliente_id: clienteId,
         tipo_embalagem: tipoEmbalagem,
