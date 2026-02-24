@@ -85,11 +85,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setSession(null);
-    setRole(null);
-    setApprovalStatus(null);
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error("Erro ao fazer logout:", e);
+    } finally {
+      setUser(null);
+      setSession(null);
+      setRole(null);
+      setApprovalStatus(null);
+    }
   };
 
   return (
