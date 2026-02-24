@@ -5,9 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Monitor, Clock, User, Package, CalendarClock, MessageSquare, Maximize2, Minimize2, CheckCircle2, PackageCheck, Hourglass, HandMetal, Pencil, Smartphone } from "lucide-react";
+import { Monitor, Clock, User, Package, CalendarClock, MessageSquare, Maximize2, Minimize2, CheckCircle2, PackageCheck, Hourglass, HandMetal, Pencil, Smartphone, Volume2, VolumeX } from "lucide-react";
 import EditPedidoDialog from "@/components/monitor/EditPedidoDialog";
+import MonitorTopBar from "@/components/monitor/MonitorTopBar";
+import { useMonitorAlerts } from "@/hooks/useMonitorAlerts";
 import { useToast } from "@/hooks/use-toast";
 import { format, isPast, isToday, isTomorrow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -38,6 +39,20 @@ const statusBorderColors: Record<string, string> = {
   enviado: "border-l-green-500",
 };
 
+const SABOR_COLORS: Record<string, string> = {
+  melancia: "bg-red-500/90 text-white border-red-600",
+  morango: "bg-pink-500/90 text-white border-pink-600",
+  "maçã verde": "bg-green-500/90 text-white border-green-600",
+  maracujá: "bg-yellow-500/90 text-white border-yellow-600",
+  "água de coco": "bg-cyan-500/90 text-white border-cyan-600",
+  "abacaxi com hortelã": "bg-emerald-500/90 text-white border-emerald-600",
+  "bob marley": "bg-amber-500/90 text-white border-amber-600",
+  limão: "bg-lime-500/90 text-white border-lime-600",
+  "limão com sal": "bg-lime-600/90 text-white border-lime-700",
+  pitaya: "bg-fuchsia-500/90 text-white border-fuchsia-600",
+  "blue ice": "bg-blue-500/90 text-white border-blue-600",
+};
+
 function getUrgencyLabel(dataEntrega: string) {
   const d = new Date(dataEntrega);
   if (isPast(d)) return { label: "ATRASADO", className: "bg-destructive text-destructive-foreground animate-pulse" };
@@ -46,32 +61,50 @@ function getUrgencyLabel(dataEntrega: string) {
   return null;
 }
 
+const getSaborColor = (nome: string) => {
+  const key = nome?.toLowerCase() || "";
+  return SABOR_COLORS[key] || "bg-muted text-foreground border-border";
+};
+
+const REFRESH_INTERVAL = 30; // seconds
+
 export default function MonitorProducao() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [fullscreenPedidoId, setFullscreenPedidoId] = useState<string | null>(null);
   const [editPedido, setEditPedido] = useState<any>(null);
   const [isFullPage, setIsFullPage] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [refreshCountdown, setRefreshCountdown] = useState(REFRESH_INTERVAL);
+
+  // Auto-refresh countdown
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setRefreshCountdown((prev) => {
+        if (prev <= 1) {
+          queryClient.invalidateQueries({ queryKey: ["monitor-pedidos"] });
+          queryClient.invalidateQueries({ queryKey: ["monitor-gelos"] });
+          return REFRESH_INTERVAL;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [queryClient]);
 
   const toggleFullPage = useCallback(async () => {
     try {
       if (!document.fullscreenElement) {
         await document.documentElement.requestFullscreen();
-        // Try to lock orientation to landscape on mobile
         if (screen.orientation && (screen.orientation as any).lock) {
           try {
             await (screen.orientation as any).lock("landscape");
-          } catch (e) {
-            // orientation lock not supported or denied — ignore
-          }
+          } catch (e) {}
         }
         setIsFullPage(true);
       } else {
-        // Unlock orientation first
         if (screen.orientation && (screen.orientation as any).unlock) {
-          try {
-            (screen.orientation as any).unlock();
-          } catch (e) {}
+          try { (screen.orientation as any).unlock(); } catch (e) {}
         }
         await document.exitFullscreen();
         setIsFullPage(false);
@@ -119,24 +152,8 @@ export default function MonitorProducao() {
     },
   });
 
-  const SABOR_COLORS: Record<string, string> = {
-    melancia: "bg-red-500/90 text-white border-red-600",
-    morango: "bg-pink-500/90 text-white border-pink-600",
-    "maçã verde": "bg-green-500/90 text-white border-green-600",
-    maracujá: "bg-yellow-500/90 text-white border-yellow-600",
-    "água de coco": "bg-cyan-500/90 text-white border-cyan-600",
-    "abacaxi com hortelã": "bg-emerald-500/90 text-white border-emerald-600",
-    "bob marley": "bg-amber-500/90 text-white border-amber-600",
-    limão: "bg-lime-500/90 text-white border-lime-600",
-    "limão com sal": "bg-lime-600/90 text-white border-lime-700",
-    pitaya: "bg-fuchsia-500/90 text-white border-fuchsia-600",
-    "blue ice": "bg-blue-500/90 text-white border-blue-600",
-  };
-
-  const getSaborColor = (nome: string) => {
-    const key = nome?.toLowerCase() || "";
-    return SABOR_COLORS[key] || "bg-muted text-foreground border-border";
-  };
+  // Sound alerts
+  useMonitorAlerts(pedidos, soundEnabled);
 
   const totalGelos = (gelos || []).reduce((s: number, g: any) => s + (g.quantidade || 0), 0);
 
@@ -151,11 +168,7 @@ export default function MonitorProducao() {
   }, [queryClient]);
 
   const toggleFullscreen = (pedidoId: string) => {
-    if (fullscreenPedidoId === pedidoId) {
-      setFullscreenPedidoId(null);
-    } else {
-      setFullscreenPedidoId(pedidoId);
-    }
+    setFullscreenPedidoId(fullscreenPedidoId === pedidoId ? null : pedidoId);
   };
 
   const updateStatus = useMutation({
@@ -229,24 +242,31 @@ export default function MonitorProducao() {
     );
   };
 
+  // TV mode classes
+  const tvCard = isFullPage ? "text-lg" : "";
+  const tvText = isFullPage ? "text-2xl" : "text-xl";
+  const tvBadge = isFullPage ? "text-base px-4 py-1.5" : "text-sm px-3 py-1";
+  const tvItemText = isFullPage ? "text-base" : "text-sm";
+  const tvQuantity = isFullPage ? "text-2xl" : "text-lg";
+
   const renderCard = (pedido: any, index: number) => {
     const urgency = getUrgencyLabel(pedido.data_entrega);
     const isExpanded = fullscreenPedidoId === pedido.id;
     return (
       <Card
         key={pedido.id}
-        className={`border-l-[6px] ${statusBorderColors[pedido.status]} shadow-md animate-fade-in transition-all duration-300 ${isExpanded ? "fixed inset-0 z-50 border-l-8 rounded-none overflow-auto bg-gradient-to-br from-sky-50 via-blue-50 to-sky-100 dark:from-sky-950 dark:via-blue-950 dark:to-sky-900" : ""}`}
+        className={`border-l-[6px] ${statusBorderColors[pedido.status]} shadow-md animate-fade-in transition-all duration-300 ${isExpanded ? "fixed inset-0 z-50 border-l-8 rounded-none overflow-auto bg-gradient-to-br from-sky-50 via-blue-50 to-sky-100 dark:from-sky-950 dark:via-blue-950 dark:to-sky-900" : ""} ${tvCard}`}
         style={{ animationDelay: `${index * 80}ms`, ...(isExpanded ? { backgroundImage: "radial-gradient(circle at 20% 50%, rgba(186,230,253,0.4) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(147,197,253,0.3) 0%, transparent 50%), radial-gradient(circle at 50% 80%, rgba(186,230,253,0.2) 0%, transparent 50%)" } : {}) }}
       >
         <CardContent className={`p-5 md:p-6 ${isExpanded ? "max-w-4xl mx-auto py-10" : ""}`}>
           <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-5">
             <div className="flex-1 space-y-4">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge className={`${statusColors[pedido.status]} text-sm px-3 py-1 font-bold tracking-wide`}>
+                <Badge className={`${statusColors[pedido.status]} ${tvBadge} font-bold tracking-wide`}>
                   {statusLabels[pedido.status]}
                 </Badge>
                 {urgency && (
-                  <Badge className={`${urgency.className} text-sm px-3 py-1 font-bold`}>⚠ {urgency.label}</Badge>
+                  <Badge className={`${urgency.className} ${tvBadge} font-bold`}>⚠ {urgency.label}</Badge>
                 )}
                 <Button variant="ghost" size="sm" onClick={() => setEditPedido(pedido)} className="ml-auto" title="Editar pedido">
                   <Pencil className="h-4 w-4" />
@@ -256,10 +276,10 @@ export default function MonitorProducao() {
                 </Button>
               </div>
               <div className="flex items-center gap-2">
-                <User className="h-5 w-5 text-primary" />
-                <span className="text-xl font-bold text-foreground">{pedido.clientes?.nome}</span>
+                <User className={`${isFullPage ? "h-6 w-6" : "h-5 w-5"} text-primary`} />
+                <span className={`${tvText} font-bold text-foreground`}>{pedido.clientes?.nome}</span>
               </div>
-              <div className="flex flex-wrap gap-5 text-sm text-muted-foreground">
+              <div className={`flex flex-wrap gap-5 ${isFullPage ? "text-base" : "text-sm"} text-muted-foreground`}>
                 <div className="flex items-center gap-1.5">
                   <Clock className="h-4 w-4" />
                   <span>Pedido: {format(new Date(pedido.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
@@ -277,12 +297,12 @@ export default function MonitorProducao() {
               </div>
               <div className="bg-muted/30 border border-border rounded-xl p-4 space-y-1">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Checklist de Separação</span>
+                  <span className={`${isFullPage ? "text-sm" : "text-xs"} font-bold uppercase tracking-wider text-muted-foreground`}>Checklist de Separação</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">
+                    <span className={`${isFullPage ? "text-sm" : "text-xs"} text-muted-foreground`}>
                       {pedido.pedido_producao_itens?.filter((i: any) => i.separado).length || 0}/{pedido.pedido_producao_itens?.length || 0} itens
                     </span>
-                    <Badge className="bg-primary/10 text-primary border-primary/20 text-sm font-extrabold px-3 py-1">
+                    <Badge className={`bg-primary/10 text-primary border-primary/20 ${isFullPage ? "text-base" : "text-sm"} font-extrabold px-3 py-1`}>
                       Total: {pedido.pedido_producao_itens?.reduce((s: number, i: any) => s + (i.quantidade || 0), 0)} un
                     </Badge>
                   </div>
@@ -292,7 +312,7 @@ export default function MonitorProducao() {
                   return (
                     <div
                       key={item.id}
-                      className={`flex items-center gap-3 rounded-lg px-4 py-3 cursor-pointer select-none transition-all border ${
+                      className={`flex items-center gap-3 rounded-lg px-4 ${isFullPage ? "py-4" : "py-3"} cursor-pointer select-none transition-all border ${
                         isSeparado
                           ? "bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-700"
                           : "bg-background border-border hover:border-primary/30"
@@ -302,22 +322,22 @@ export default function MonitorProducao() {
                       <Checkbox
                         checked={isSeparado}
                         onCheckedChange={(checked) => toggleSeparado.mutate({ itemId: item.id, separado: !!checked })}
-                        className="pointer-events-none h-5 w-5"
+                        className={`pointer-events-none ${isFullPage ? "h-6 w-6" : "h-5 w-5"}`}
                       />
-                      <span className={`flex-1 text-sm font-semibold ${isSeparado ? "line-through text-green-700 dark:text-green-400 opacity-60" : "text-foreground"}`}>
+                      <span className={`flex-1 ${tvItemText} font-semibold ${isSeparado ? "line-through text-green-700 dark:text-green-400 opacity-60" : "text-foreground"}`}>
                         {item.sabores?.nome}
                       </span>
-                      <span className={`text-lg font-extrabold tabular-nums min-w-[60px] text-right ${isSeparado ? "text-green-600 dark:text-green-400 opacity-60" : "text-primary"}`}>
+                      <span className={`${tvQuantity} font-extrabold tabular-nums min-w-[60px] text-right ${isSeparado ? "text-green-600 dark:text-green-400 opacity-60" : "text-primary"}`}>
                         {item.quantidade}
                       </span>
                       <span className={`text-xs ${isSeparado ? "text-green-600/60" : "text-muted-foreground"}`}>un</span>
-                      {isSeparado && <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" />}
+                      {isSeparado && <CheckCircle2 className={`${isFullPage ? "h-6 w-6" : "h-5 w-5"} text-green-600 dark:text-green-400 shrink-0`} />}
                     </div>
                   );
                 })}
               </div>
               {pedido.observacoes && (
-                <div className="flex items-start gap-2 text-sm p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
+                <div className={`flex items-start gap-2 ${tvItemText} p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800`}>
                   <MessageSquare className="h-4 w-4 mt-0.5 text-amber-600 shrink-0" />
                   <span className="text-amber-800 dark:text-amber-200">{pedido.observacoes}</span>
                 </div>
@@ -328,7 +348,7 @@ export default function MonitorProducao() {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="flex-1 gap-2 h-14 text-base font-bold border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-300 dark:hover:bg-purple-950"
+                  className={`flex-1 gap-2 ${isFullPage ? "h-16 text-lg" : "h-14 text-base"} font-bold border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-300 dark:hover:bg-purple-950`}
                   onClick={() => updateStatus.mutate({ id: pedido.id, status: "separado_para_entrega" })}
                 >
                   <PackageCheck className="h-5 w-5" /> Separado p/ Entrega
@@ -338,7 +358,7 @@ export default function MonitorProducao() {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="flex-1 gap-2 h-14 text-base font-bold border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-700 dark:text-orange-300 dark:hover:bg-orange-950"
+                  className={`flex-1 gap-2 ${isFullPage ? "h-16 text-lg" : "h-14 text-base"} font-bold border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-700 dark:text-orange-300 dark:hover:bg-orange-950`}
                   onClick={() => updateStatus.mutate({ id: pedido.id, status: "retirado" })}
                 >
                   <HandMetal className="h-5 w-5" /> Retirado
@@ -347,7 +367,7 @@ export default function MonitorProducao() {
               {pedido.status !== "enviado" && (
                 <Button
                   size="lg"
-                  className="flex-1 gap-2 h-14 text-base font-bold bg-green-600 hover:bg-green-700 text-white"
+                  className={`flex-1 gap-2 ${isFullPage ? "h-16 text-lg" : "h-14 text-base"} font-bold bg-green-600 hover:bg-green-700 text-white`}
                   onClick={() => updateStatus.mutate({ id: pedido.id, status: "enviado" })}
                 >
                   <CheckCircle2 className="h-5 w-5" /> Enviado
@@ -362,45 +382,75 @@ export default function MonitorProducao() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${isFullPage ? "pt-16" : ""}`}>
+      {/* Top bar for TV mode */}
+      <MonitorTopBar
+        isFullPage={isFullPage}
+        activeCount={activeOrders.length}
+        aguardandoCount={filaEspera.length}
+        emProducaoCount={emAndamento.length}
+        totalGelos={totalGelos}
+        soundEnabled={soundEnabled}
+        onToggleSound={() => setSoundEnabled(!soundEnabled)}
+        onToggleFullPage={toggleFullPage}
+        refreshCountdown={refreshCountdown}
+      />
+
       {fullscreenPedidoId && <div className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm" onClick={() => setFullscreenPedidoId(null)} />}
+      
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Monitor className="h-7 w-7 text-primary" />
-          <h1 className="text-2xl font-bold text-foreground">Monitor da Produção</h1>
-          <Badge variant="secondary" className="ml-2 text-base px-3 py-1">{activeOrders.length} pedido(s)</Badge>
+          <Monitor className={`${isFullPage ? "h-8 w-8" : "h-7 w-7"} text-primary`} />
+          <h1 className={`${isFullPage ? "text-3xl" : "text-2xl"} font-bold text-foreground`}>Monitor da Produção</h1>
+          <Badge variant="secondary" className={`ml-2 ${isFullPage ? "text-lg px-4 py-1.5" : "text-base px-3 py-1"}`}>{activeOrders.length} pedido(s)</Badge>
         </div>
-        <Button
-          variant={isFullPage ? "default" : "outline"}
-          size="sm"
-          onClick={toggleFullPage}
-          className="gap-2"
-          title={isFullPage ? "Sair da tela cheia" : "Tela cheia (rotação automática no celular)"}
-        >
-          {isFullPage ? <Minimize2 className="h-4 w-4" /> : <Smartphone className="h-4 w-4" />}
-          {isFullPage ? "Sair" : "Tela Cheia"}
-        </Button>
+        <div className="flex items-center gap-2">
+          {!isFullPage && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSoundEnabled(!soundEnabled)}
+                title={soundEnabled ? "Desativar alertas sonoros" : "Ativar alertas sonoros"}
+              >
+                {soundEnabled ? <Volume2 className="h-4 w-4 text-primary" /> : <VolumeX className="h-4 w-4 text-muted-foreground" />}
+              </Button>
+              {/* Mini refresh indicator */}
+              <span className="text-xs text-muted-foreground tabular-nums font-mono">{refreshCountdown}s</span>
+            </>
+          )}
+          <Button
+            variant={isFullPage ? "default" : "outline"}
+            size="sm"
+            onClick={toggleFullPage}
+            className="gap-2"
+            title={isFullPage ? "Sair da tela cheia" : "Tela cheia (rotação automática no celular)"}
+          >
+            {isFullPage ? <Minimize2 className="h-4 w-4" /> : <Smartphone className="h-4 w-4" />}
+            {isFullPage ? "Sair" : "Tela Cheia"}
+          </Button>
+        </div>
       </div>
 
       {/* Cards de estoque por sabor */}
       {gelos && gelos.length > 0 && (
         <div>
-          <p className="text-sm text-muted-foreground font-medium mb-2">Gelos por Sabor</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+          <p className={`${isFullPage ? "text-base" : "text-sm"} text-muted-foreground font-medium mb-2`}>Gelos por Sabor</p>
+          <div className={`grid ${isFullPage ? "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-8 gap-3" : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2"}`}>
             {[...(gelos || [])]
               .sort((a: any, b: any) => (b.quantidade || 0) - (a.quantidade || 0))
               .map((g: any) => (
                 <div
                   key={g.id}
-                  className={`rounded-lg border px-3 py-2.5 text-center transition-all hover:scale-[1.03] ${getSaborColor(g.sabores?.nome)}`}
+                  className={`rounded-lg border ${isFullPage ? "px-4 py-3" : "px-3 py-2.5"} text-center transition-all hover:scale-[1.03] ${getSaborColor(g.sabores?.nome)}`}
                 >
-                  <p className="text-[11px] font-semibold truncate">{g.sabores?.nome}</p>
-                  <p className="text-lg font-extrabold mt-0.5">{(g.quantidade || 0).toLocaleString()}</p>
+                  <p className={`${isFullPage ? "text-xs" : "text-[11px]"} font-semibold truncate`}>{g.sabores?.nome}</p>
+                  <p className={`${isFullPage ? "text-xl" : "text-lg"} font-extrabold mt-0.5`}>{(g.quantidade || 0).toLocaleString()}</p>
                 </div>
               ))}
-            <div className="rounded-lg border px-3 py-2.5 text-center transition-all hover:scale-[1.03] bg-gray-700/90 text-white border-gray-800">
-              <p className="text-[11px] font-semibold truncate">TOTAL</p>
-              <p className="text-lg font-extrabold mt-0.5">{totalGelos.toLocaleString()}</p>
+            <div className={`rounded-lg border ${isFullPage ? "px-4 py-3" : "px-3 py-2.5"} text-center transition-all hover:scale-[1.03] bg-gray-700/90 text-white border-gray-800`}>
+              <p className={`${isFullPage ? "text-xs" : "text-[11px]"} font-semibold truncate`}>TOTAL</p>
+              <p className={`${isFullPage ? "text-xl" : "text-lg"} font-extrabold mt-0.5`}>{totalGelos.toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -418,12 +468,11 @@ export default function MonitorProducao() {
         </Card>
       ) : (
         <div className="space-y-8">
-          {/* Em andamento */}
           {emAndamento.length > 0 && (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <div className="h-3 w-3 rounded-full bg-blue-500 animate-pulse" />
-                <h2 className="text-lg font-bold text-foreground">Em Andamento</h2>
+                <h2 className={`${isFullPage ? "text-xl" : "text-lg"} font-bold text-foreground`}>Em Andamento</h2>
                 <Badge variant="secondary">{emAndamento.length}</Badge>
               </div>
               <div className="grid gap-5">
@@ -432,12 +481,11 @@ export default function MonitorProducao() {
             </div>
           )}
 
-          {/* Fila de espera */}
           {filaEspera.length > 0 && (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Hourglass className="h-5 w-5 text-amber-500" />
-                <h2 className="text-lg font-bold text-foreground">Fila de Espera</h2>
+                <h2 className={`${isFullPage ? "text-xl" : "text-lg"} font-bold text-foreground`}>Fila de Espera</h2>
                 <Badge variant="secondary">{filaEspera.length}</Badge>
               </div>
               <div className="grid gap-5">
