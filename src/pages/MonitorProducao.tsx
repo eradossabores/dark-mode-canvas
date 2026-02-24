@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Monitor, Clock, User, Package, CalendarClock, MessageSquare, Maximize2, Minimize2, CheckCircle2, PackageCheck, Hourglass, HandMetal } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -130,6 +131,22 @@ export default function MonitorProducao() {
     },
   });
 
+  const toggleSeparado = useMutation({
+    mutationFn: async ({ itemId, separado }: { itemId: string; separado: boolean }) => {
+      const { error } = await (supabase as any)
+        .from("pedido_producao_itens")
+        .update({ separado })
+        .eq("id", itemId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["monitor-pedidos"] });
+    },
+    onError: (err: any) => {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    },
+  });
+
   const activeOrders = pedidos?.filter((p: any) => p.status !== "enviado") || [];
   const filaEspera = pedidos?.filter((p: any) => p.status === "aguardando_producao") || [];
   const emAndamento = pedidos?.filter((p: any) => p.status === "em_producao" || p.status === "separado_para_entrega" || p.status === "retirado") || [];
@@ -211,13 +228,37 @@ export default function MonitorProducao() {
                   <span>{pedido.tipo_embalagem}</span>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {pedido.pedido_producao_itens?.map((item: any) => (
-                  <div key={item.id} className="bg-muted border border-border rounded-lg px-4 py-2 text-sm font-semibold flex items-center gap-2">
-                    <span>{item.sabores?.nome}</span>
-                    <Badge variant="secondary" className="text-xs font-bold">{item.quantidade} un</Badge>
+              <div className="space-y-2">
+                {pedido.pedido_producao_itens?.map((item: any) => {
+                  const isSeparado = item.separado === true;
+                  const totalItens = pedido.pedido_producao_itens?.length || 0;
+                  const separadosCount = pedido.pedido_producao_itens?.filter((i: any) => i.separado).length || 0;
+                  return (
+                    <div
+                      key={item.id}
+                      className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-semibold border transition-all cursor-pointer select-none ${
+                        isSeparado
+                          ? "bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-700 line-through opacity-70"
+                          : "bg-muted border-border hover:bg-muted/80"
+                      }`}
+                      onClick={() => toggleSeparado.mutate({ itemId: item.id, separado: !isSeparado })}
+                    >
+                      <Checkbox
+                        checked={isSeparado}
+                        onCheckedChange={(checked) => toggleSeparado.mutate({ itemId: item.id, separado: !!checked })}
+                        className="pointer-events-none"
+                      />
+                      <span className={isSeparado ? "text-green-700 dark:text-green-400" : ""}>{item.sabores?.nome}</span>
+                      <Badge variant="secondary" className="text-xs font-bold ml-auto">{item.quantidade} un</Badge>
+                      {isSeparado && <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />}
+                    </div>
+                  );
+                })}
+                {pedido.pedido_producao_itens && pedido.pedido_producao_itens.length > 0 && (
+                  <div className="text-xs text-muted-foreground mt-1 pl-1">
+                    {pedido.pedido_producao_itens.filter((i: any) => i.separado).length}/{pedido.pedido_producao_itens.length} sabores separados
                   </div>
-                ))}
+                )}
               </div>
               {pedido.observacoes && (
                 <div className="flex items-start gap-2 text-sm p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">

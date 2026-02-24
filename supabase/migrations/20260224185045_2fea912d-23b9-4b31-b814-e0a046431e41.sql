@@ -1,0 +1,1 @@
+ALTER TABLE public.pedido_producao_itens ADD COLUMN separado boolean NOT NULL DEFAULT false;

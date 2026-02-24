@@ -405,18 +405,21 @@ export type Database = {
           pedido_id: string
           quantidade: number
           sabor_id: string
+          separado: boolean
         }
         Insert: {
           id?: string
           pedido_id: string
           quantidade: number
           sabor_id: string
+          separado?: boolean
         }
         Update: {
           id?: string
           pedido_id?: string
           quantidade?: number
           sabor_id?: string
+          separado?: boolean
         }
         Relationships: [
           {
