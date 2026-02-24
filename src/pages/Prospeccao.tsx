@@ -77,6 +77,14 @@ const EXPLORE_ICON = new L.Icon({
 
 const CLIENT_ICON = makeIcon("blue");
 
+const POI_ICON = new L.DivIcon({
+  html: '<div style="background:hsl(280,60%,55%);width:12px;height:12px;border-radius:50%;border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.3)"></div>',
+  iconSize: [12, 12],
+  iconAnchor: [6, 6],
+  popupAnchor: [0, -8],
+  className: "",
+});
+
 function ClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number) => void }) {
   useMapEvents({ click(e) { onMapClick(e.latlng.lat, e.latlng.lng); } });
   return null;
@@ -126,6 +134,7 @@ export default function Prospeccao() {
   const [exploreRoute, setExploreRoute] = useState<{ lat: number; lng: number; id: string }[]>([]);
   const [exploreRadius, setExploreRadius] = useState(2); // km
   const [quickRegisterOpen, setQuickRegisterOpen] = useState(false);
+  const [explorePOIs, setExplorePOIs] = useState<any[]>([]);
 
   useEffect(() => { loadData(); }, []);
 
@@ -261,6 +270,49 @@ export default function Prospeccao() {
 
         setExploreNearby(nearby);
 
+        // Fetch real POIs from OpenStreetMap (bars, restaurants, nightclubs, shops)
+        try {
+          const radiusM = exploreRadius * 1000;
+          const overpassQuery = `
+            [out:json][timeout:10];
+            (
+              node["amenity"~"bar|pub|nightclub|restaurant|cafe"](around:${radiusM},${lat},${lng});
+              node["shop"~"convenience|supermarket|wholesale|beverages"](around:${radiusM},${lat},${lng});
+            );
+            out body 30;
+          `;
+          const overpassRes = await fetch("https://overpass-api.de/api/interpreter", {
+            method: "POST",
+            body: `data=${encodeURIComponent(overpassQuery)}`,
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          });
+          const overpassData = await overpassRes.json();
+          const pois = (overpassData.elements || []).map((el: any) => {
+            const tags = el.tags || {};
+            const amenity = tags.amenity || tags.shop || "";
+            const typeMap: Record<string, string> = {
+              bar: "🍺 Bar", pub: "🍺 Pub", nightclub: "🌙 Casa Noturna",
+              restaurant: "🍽️ Restaurante", cafe: "☕ Café",
+              convenience: "🏪 Conveniência", supermarket: "🛒 Mercado",
+              wholesale: "📦 Distribuidora", beverages: "🥤 Distribuidora de Bebidas",
+            };
+            return {
+              id: `osm-${el.id}`,
+              nome: tags.name || typeMap[amenity] || amenity,
+              tipo_label: typeMap[amenity] || `📍 ${amenity}`,
+              lat: el.lat,
+              lng: el.lon,
+              amenity,
+              telefone: tags.phone || tags["contact:phone"] || null,
+              endereco: tags["addr:street"] ? `${tags["addr:street"]}, ${tags["addr:housenumber"] || ""}`.trim() : null,
+            };
+          });
+          setExplorePOIs(pois);
+        } catch (e) {
+          console.error("Overpass error:", e);
+          setExplorePOIs([]);
+        }
+
         // Generate route from pin through all nearby with coordinates
         const withCoords = nearby.filter(n => n.latitude && n.longitude);
         const startPoint = { lat, lng, id: "start" };
@@ -293,6 +345,7 @@ export default function Prospeccao() {
     setExploreBairro("");
     setExploreNearby([]);
     setExploreRoute([]);
+    setExplorePOIs([]);
   }
 
   // Filters
@@ -469,6 +522,28 @@ export default function Prospeccao() {
                     <Polyline positions={exploreRoute.map(p => [p.lat, p.lng] as [number, number])} color="hsl(38,90%,50%)" weight={4} dashArray="10 5" />
                   )}
 
+                  {/* POI markers from OpenStreetMap */}
+                  {explorePOIs.map(poi => (
+                    <Marker key={poi.id} position={[poi.lat, poi.lng]} icon={POI_ICON}>
+                      <Popup>
+                        <div className="min-w-[160px]">
+                          <p className="font-bold text-sm">{poi.nome}</p>
+                          <p className="text-xs text-gray-500">{poi.tipo_label}</p>
+                          {poi.endereco && <p className="text-xs text-gray-400">{poi.endereco}</p>}
+                          {poi.telefone && <p className="text-xs">📞 {poi.telefone}</p>}
+                          <button
+                            className="text-xs bg-primary text-white px-2 py-1 rounded mt-2 w-full"
+                            onClick={() => {
+                              setQuickRegisterOpen(true);
+                            }}
+                          >
+                            Cadastrar como Prospecto
+                          </button>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  ))}
+
                   {showRoute && routePoints.length > 1 && !explorePin && (
                     <Polyline positions={routePoints.map(p => [p.lat, p.lng] as [number, number])} color="hsl(200,98%,39%)" weight={3} dashArray="8 4" />
                   )}
@@ -599,6 +674,39 @@ export default function Prospeccao() {
                               <p className="text-[10px] text-muted-foreground">👤 Cliente ativo{n.bairro && ` · ${n.bairro}`}</p>
                             </div>
                           ))}
+                        </div>
+                      )}
+
+                      {/* POIs from OpenStreetMap */}
+                      {explorePOIs.length > 0 && (
+                        <div className="space-y-1.5">
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                            📍 Estabelecimentos na região ({explorePOIs.length})
+                          </p>
+                          <p className="text-[9px] text-muted-foreground">Dados do OpenStreetMap — potenciais clientes</p>
+                          {explorePOIs.slice(0, 15).map((poi: any) => (
+                            <div key={poi.id} className="p-2 rounded-lg bg-accent/30 border border-accent/20 space-y-1">
+                              <div className="flex items-center justify-between">
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium truncate">{poi.nome}</p>
+                                  <p className="text-[10px] text-muted-foreground">{poi.tipo_label}</p>
+                                </div>
+                              </div>
+                              {poi.endereco && <p className="text-[10px] text-muted-foreground">{poi.endereco}</p>}
+                              {poi.telefone && <p className="text-[10px] text-muted-foreground">📞 {poi.telefone}</p>}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 text-[10px] px-2"
+                                onClick={() => setQuickRegisterOpen(true)}
+                              >
+                                <Plus className="h-3 w-3 mr-1" />Cadastrar
+                              </Button>
+                            </div>
+                          ))}
+                          {explorePOIs.length > 15 && (
+                            <p className="text-[10px] text-muted-foreground text-center">+{explorePOIs.length - 15} mais estabelecimentos</p>
+                          )}
                         </div>
                       )}
 
