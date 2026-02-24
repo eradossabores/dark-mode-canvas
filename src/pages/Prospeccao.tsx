@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,9 +14,10 @@ import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import ProspectoForm from "@/components/prospeccao/ProspectoForm";
 import RegistrarVisitaDialog from "@/components/prospeccao/RegistrarVisitaDialog";
+import FollowUpTab from "@/components/prospeccao/FollowUpTab";
 import {
   Plus, MapPin, Star, Search, ClipboardCheck, Route, BarChart3,
-  Users, Target, TrendingUp, Eye, Pencil, Trash2, Phone, FileText, RefreshCw,
+  Users, Target, TrendingUp, Eye, Pencil, Trash2, Phone, FileText, RefreshCw, MessageSquare,
 } from "lucide-react";
 
 // Leaflet icon fix
@@ -103,6 +104,7 @@ export default function Prospeccao() {
   const [filterBairro, setFilterBairro] = useState("todos");
   const [placingId, setPlacingId] = useState<string | null>(null);
   const [showRoute, setShowRoute] = useState(false);
+  const followUpRef = useRef<{ loadFollowups: () => void } | null>(null);
   const [scriptView, setScriptView] = useState<string | null>(null);
 
   useEffect(() => { loadData(); }, []);
@@ -151,15 +153,50 @@ export default function Prospeccao() {
 
   async function handleRegistrarVisita(data: any) {
     try {
-      await (supabase as any).from("prospecto_visitas").insert({
+      // Insert visit
+      const { data: visitaData } = await (supabase as any).from("prospecto_visitas").insert({
         prospecto_id: visitaDialogId, ...data, operador,
-      });
+      }).select().single();
       await (supabase as any).from("prospectos").update({ status: data.resultado }).eq("id", visitaDialogId);
       toast({ title: "Visita registrada!" });
+
+      // Auto-generate follow-up for visitado/interessado
+      if (["visitado", "interessado"].includes(data.resultado)) {
+        const prospecto = prospectos.find(p => p.id === visitaDialogId);
+        if (prospecto) {
+          generateFollowUp(prospecto, visitaData || data);
+        }
+      }
+
       setVisitaDialogId(null);
       loadData();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+  }
+
+  async function generateFollowUp(prospecto: any, visita: any) {
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-followup", {
+        body: { prospecto, visita },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      const { addDays, format } = await import("date-fns");
+      const dataAgendada = format(addDays(new Date(), 5), "yyyy-MM-dd");
+      
+      await (supabase as any).from("followup_mensagens").insert({
+        prospecto_id: prospecto.id,
+        visita_id: visita.id || null,
+        mensagem_gerada: data.mensagem,
+        data_agendada: dataAgendada,
+        tom: "informal",
+      });
+      toast({ title: "🤖 Follow-up IA gerado!", description: "Mensagem agendada para 5 dias." });
+    } catch (e: any) {
+      console.error("Follow-up generation failed:", e);
+      // Non-blocking - don't show error toast for auto-generation
     }
   }
 
@@ -235,6 +272,7 @@ export default function Prospeccao() {
         <TabsList className="mb-4">
           <TabsTrigger value="mapa" className="gap-1"><MapPin className="h-4 w-4" />Mapa</TabsTrigger>
           <TabsTrigger value="lista" className="gap-1"><Users className="h-4 w-4" />Lista</TabsTrigger>
+          <TabsTrigger value="followup" className="gap-1"><MessageSquare className="h-4 w-4" />Follow-Up IA</TabsTrigger>
           <TabsTrigger value="relatorio" className="gap-1"><BarChart3 className="h-4 w-4" />Relatório</TabsTrigger>
         </TabsList>
 
@@ -403,6 +441,11 @@ export default function Prospeccao() {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* ========= FOLLOW-UP IA ========= */}
+        <TabsContent value="followup">
+          <FollowUpTab prospectos={prospectos} onReload={loadData} />
         </TabsContent>
 
         {/* ========= RELATÓRIO ========= */}

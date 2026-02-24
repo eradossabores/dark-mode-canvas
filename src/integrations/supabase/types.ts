@@ -309,6 +309,69 @@ export type Database = {
           },
         ]
       }
+      followup_mensagens: {
+        Row: {
+          created_at: string
+          data_agendada: string
+          data_envio: string | null
+          id: string
+          mensagem_editada: string | null
+          mensagem_gerada: string
+          prospecto_id: string
+          resposta_cliente: string | null
+          resultado: string | null
+          status: string
+          tom: string | null
+          updated_at: string
+          visita_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          data_agendada: string
+          data_envio?: string | null
+          id?: string
+          mensagem_editada?: string | null
+          mensagem_gerada: string
+          prospecto_id: string
+          resposta_cliente?: string | null
+          resultado?: string | null
+          status?: string
+          tom?: string | null
+          updated_at?: string
+          visita_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          data_agendada?: string
+          data_envio?: string | null
+          id?: string
+          mensagem_editada?: string | null
+          mensagem_gerada?: string
+          prospecto_id?: string
+          resposta_cliente?: string | null
+          resultado?: string | null
+          status?: string
+          tom?: string | null
+          updated_at?: string
+          visita_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "followup_mensagens_prospecto_id_fkey"
+            columns: ["prospecto_id"]
+            isOneToOne: false
+            referencedRelation: "prospectos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "followup_mensagens_visita_id_fkey"
+            columns: ["visita_id"]
+            isOneToOne: false
+            referencedRelation: "prospecto_visitas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       funcionarios: {
         Row: {
           ativo: boolean
