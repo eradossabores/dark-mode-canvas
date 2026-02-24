@@ -53,6 +53,7 @@ export default function PedidosProducao() {
   const [horaEntrega, setHoraEntrega] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [itens, setItens] = useState<ItemPedido[]>([]);
+  const [statusPagamento, setStatusPagamento] = useState("aguardando_pagamento");
   const [saborSel, setSaborSel] = useState("");
   const [qtdSel, setQtdSel] = useState("");
 
@@ -64,6 +65,7 @@ export default function PedidosProducao() {
   const [editObservacoes, setEditObservacoes] = useState("");
   const [editStatus, setEditStatus] = useState("");
   const [editItens, setEditItens] = useState<ItemPedido[]>([]);
+  const [editStatusPagamento, setEditStatusPagamento] = useState("aguardando_pagamento");
   const [editSaborSel, setEditSaborSel] = useState("");
   const [editQtdSel, setEditQtdSel] = useState("");
 
@@ -129,6 +131,7 @@ export default function PedidosProducao() {
           tipo_embalagem: tipoEmbalagem,
           data_entrega: `${dataEntrega}T${horaEntrega}`,
           observacoes: observacoes || null,
+          status_pagamento: statusPagamento,
         })
         .select()
         .single();
@@ -180,6 +183,7 @@ export default function PedidosProducao() {
         data_entrega: `${editDataEntrega}T${editHoraEntrega}`,
         observacoes: editObservacoes || null,
         status: editStatus as any,
+        status_pagamento: editStatusPagamento,
       }).eq("id", editOrder.id);
       if (error) throw error;
 
@@ -212,6 +216,7 @@ export default function PedidosProducao() {
     setDataEntrega("");
     setHoraEntrega("");
     setObservacoes("");
+    setStatusPagamento("aguardando_pagamento");
     setItens([]);
   }
 
@@ -241,6 +246,7 @@ export default function PedidosProducao() {
     setEditHoraEntrega(format(dt, "HH:mm"));
     setEditObservacoes(p.observacoes || "");
     setEditStatus(p.status);
+    setEditStatusPagamento(p.status_pagamento || "aguardando_pagamento");
     // Load existing items
     setEditItens(
       (p.pedido_producao_itens || []).map((i: any) => ({
@@ -329,6 +335,16 @@ export default function PedidosProducao() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label>Status de Pagamento *</Label>
+                  <Select value={statusPagamento} onValueChange={setStatusPagamento}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pago">Já está pago</SelectItem>
+                      <SelectItem value="aguardando_pagamento">Aguardando pagamento</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -412,6 +428,7 @@ export default function PedidosProducao() {
                   <TableHead>Entrega</TableHead>
                   <TableHead>Embalagem</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Pagamento</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -429,6 +446,11 @@ export default function PedidosProducao() {
                     <TableCell>
                       <Badge variant="outline" className={statusColors[p.status] || ""}>
                         {statusLabels[p.status] || p.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={p.status_pagamento === 'pago' ? 'bg-green-500/20 text-green-700 border-green-300' : 'bg-yellow-500/20 text-yellow-700 border-yellow-300'}>
+                        {p.status_pagamento === 'pago' ? 'Pago' : 'Aguardando'}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right space-x-1">
@@ -468,6 +490,11 @@ export default function PedidosProducao() {
                 <div><span className="text-muted-foreground">Pedido:</span> {format(new Date(detailOrder.created_at), "dd/MM/yy HH:mm", { locale: ptBR })}</div>
                 <div><span className="text-muted-foreground">Entrega:</span> {format(new Date(detailOrder.data_entrega), "dd/MM/yy HH:mm", { locale: ptBR })}</div>
                 <div><span className="text-muted-foreground">Embalagem:</span> {detailOrder.tipo_embalagem}</div>
+                <div><span className="text-muted-foreground">Pagamento:</span>{" "}
+                  <Badge variant="outline" className={detailOrder.status_pagamento === 'pago' ? 'bg-green-500/20 text-green-700 border-green-300' : 'bg-yellow-500/20 text-yellow-700 border-yellow-300'}>
+                    {detailOrder.status_pagamento === 'pago' ? 'Já está pago' : 'Aguardando pagamento'}
+                  </Badge>
+                </div>
               </div>
               {detailOrder.observacoes && (
                 <div className="text-sm"><span className="text-muted-foreground">Obs:</span> {detailOrder.observacoes}</div>
@@ -540,6 +567,16 @@ export default function PedidosProducao() {
                   {Object.entries(statusLabels).map(([k, v]) => (
                     <SelectItem key={k} value={k}>{v}</SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Status de Pagamento</Label>
+              <Select value={editStatusPagamento} onValueChange={setEditStatusPagamento}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pago">Já está pago</SelectItem>
+                  <SelectItem value="aguardando_pagamento">Aguardando pagamento</SelectItem>
                 </SelectContent>
               </Select>
             </div>

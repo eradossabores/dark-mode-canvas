@@ -444,6 +444,7 @@ export type Database = {
           observacoes: string | null
           operador: string
           status: Database["public"]["Enums"]["status_pedido_producao"]
+          status_pagamento: string
           tipo_embalagem: string
           updated_at: string
         }
@@ -455,6 +456,7 @@ export type Database = {
           observacoes?: string | null
           operador?: string
           status?: Database["public"]["Enums"]["status_pedido_producao"]
+          status_pagamento?: string
           tipo_embalagem?: string
           updated_at?: string
         }
@@ -466,6 +468,7 @@ export type Database = {
           observacoes?: string | null
           operador?: string
           status?: Database["public"]["Enums"]["status_pedido_producao"]
+          status_pagamento?: string
           tipo_embalagem?: string
           updated_at?: string
         }
