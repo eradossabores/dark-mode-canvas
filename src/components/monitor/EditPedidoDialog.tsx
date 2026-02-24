@@ -89,10 +89,12 @@ export default function EditPedidoDialog({ pedido, open, onOpenChange }: EditPed
 
   const editMutation = useMutation({
     mutationFn: async () => {
+      if (!pedido?.id) throw new Error("Pedido não encontrado");
+      const dataEntregaFormatted = `${dataEntrega}T${horaEntrega}:00`;
       const { error } = await supabase.from("pedidos_producao").update({
         cliente_id: clienteId,
         tipo_embalagem: tipoEmbalagem,
-        data_entrega: `${dataEntrega}T${horaEntrega}`,
+        data_entrega: dataEntregaFormatted,
         observacoes: observacoes || null,
         status: status as any,
         status_pagamento: statusPagamento,
