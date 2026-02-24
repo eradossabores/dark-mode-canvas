@@ -238,7 +238,7 @@ export default function Vendas() {
         newTotal += subtotal;
         if (item.isNew) {
           if (!item.sabor_id || item.quantidade <= 0) continue;
-          await (supabase as any).from("venda_itens").insert({
+          const { error: insertError } = await (supabase as any).from("venda_itens").insert({
             venda_id: editVenda.id,
             sabor_id: item.sabor_id,
             quantidade: item.quantidade,
@@ -246,6 +246,10 @@ export default function Vendas() {
             subtotal: subtotal,
             regra_preco_aplicada: "manual",
           });
+          if (insertError) {
+            console.error("Erro ao inserir item:", insertError);
+            throw insertError;
+          }
         } else {
           await (supabase as any).from("venda_itens").update({
             quantidade: item.quantidade,
