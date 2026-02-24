@@ -49,8 +49,8 @@ const statusLabels: Record<string, string> = {
   aguardando_producao: "AGUARDANDO PRODUÇÃO",
   em_producao: "EM PRODUÇÃO",
   separado_para_entrega: "SEPARADO P/ ENTREGA",
-  retirado: "RETIRADO",
-  enviado: "ENVIADO",
+  retirado: "SEPARADO P/ RETIRADA",
+  enviado: "FINALIZADO",
 };
 
 const statusColors: Record<string, string> = {
@@ -465,7 +465,7 @@ export default function MonitorProducao() {
                   className={`flex-1 gap-2 ${isFullPage ? "h-16 text-lg" : "h-14 text-base"} font-bold border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-700 dark:text-orange-300 dark:hover:bg-orange-950`}
                   onClick={() => updateStatus.mutate({ id: pedido.id, status: "retirado" })}
                 >
-                  <HandMetal className="h-5 w-5" /> Retirado
+                  <HandMetal className="h-5 w-5" /> Separado p/ Retirada
                 </Button>
               )}
               {pedido.status !== "enviado" && (
@@ -474,7 +474,7 @@ export default function MonitorProducao() {
                   className={`flex-1 gap-2 ${isFullPage ? "h-16 text-lg" : "h-14 text-base"} font-bold bg-green-600 hover:bg-green-700 text-white`}
                   onClick={() => updateStatus.mutate({ id: pedido.id, status: "enviado" })}
                 >
-                  <CheckCircle2 className="h-5 w-5" /> Enviado
+                  <CheckCircle2 className="h-5 w-5" /> Finalizado
                 </Button>
               )}
             </div>
