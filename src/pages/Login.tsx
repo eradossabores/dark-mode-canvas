@@ -39,38 +39,45 @@ export default function Login() {
     }
 
     setLoading(true);
-    try {
-      const signInPromise = supabase.auth.signInWithPassword({ email, password });
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("timeout_login")), 12000)
-      );
 
-      const { error } = (await Promise.race([signInPromise, timeoutPromise])) as Awaited<
-        ReturnType<typeof supabase.auth.signInWithPassword>
-      >;
+    let finished = false;
+    const watchdog = window.setTimeout(() => {
+      if (finished) return;
+      finished = true;
+      setLoading(false);
+      toast({
+        title: "Login em processamento",
+        description: "A autenticação já foi enviada. Se não redirecionar, tente novamente.",
+      });
+    }, 12000);
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (finished) return;
 
       if (error) {
+        finished = true;
+        window.clearTimeout(watchdog);
+        setLoading(false);
         toast({ title: "Erro ao entrar", description: error.message, variant: "destructive" });
+        return;
       }
-    } catch (error: any) {
-      // Workaround para casos em que a promise fica pendente, mas a sessão é criada
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
 
-      if (session) {
-        toast({ title: "Login confirmado", description: "Redirecionando para o painel..." });
-      } else {
-        toast({
-          title: "Erro ao entrar",
-          description: error?.message === "timeout_login"
-            ? "A autenticação demorou demais. Tente novamente."
-            : error?.message || "Falha inesperada no login",
-          variant: "destructive",
-        });
-      }
-    } finally {
+      // Em sucesso, o redirecionamento é feito pelo useEffect baseado na sessão/role.
+      finished = true;
+      window.clearTimeout(watchdog);
       setLoading(false);
+    } catch (error: any) {
+      if (finished) return;
+      finished = true;
+      window.clearTimeout(watchdog);
+      setLoading(false);
+      toast({
+        title: "Erro ao entrar",
+        description: error?.message || "Falha inesperada no login",
+        variant: "destructive",
+      });
     }
   }
 
