@@ -72,6 +72,8 @@ export default function MapaClientes() {
       .from("clientes")
       .select("id, nome, bairro, endereco, telefone, status, latitude, longitude, possui_freezer")
       .eq("status", "ativo")
+      .not("nome", "ilike", "%amostra%")
+      .not("nome", "ilike", "%avulso%")
       .order("nome");
     setClientes(data || []);
   }
