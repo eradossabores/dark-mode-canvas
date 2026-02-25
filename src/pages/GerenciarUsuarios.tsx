@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Shield, Factory, Clock, CheckCircle, XCircle, Bell } from "lucide-react";
+import { Plus, Shield, Factory, Clock, CheckCircle, XCircle, Bell, Link2, Copy } from "lucide-react";
 
 interface UserWithRole {
   id: string;
@@ -133,7 +133,19 @@ export default function GerenciarUsuarios() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Gerenciar Usuários</h1>
-        <Button onClick={() => setOpen(true)}><Plus className="h-4 w-4 mr-2" />Novo Usuário</Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              const link = `${window.location.origin}/login`;
+              navigator.clipboard.writeText(link);
+              toast({ title: "Link copiado!", description: link });
+            }}
+          >
+            <Copy className="h-4 w-4 mr-2" />Copiar Link de Cadastro
+          </Button>
+          <Button onClick={() => setOpen(true)}><Plus className="h-4 w-4 mr-2" />Novo Usuário</Button>
+        </div>
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
