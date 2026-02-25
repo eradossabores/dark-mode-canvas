@@ -329,6 +329,7 @@ export default function PlanoProducaoDiario() {
           p_operador: nomesFuncionarios || "sistema",
           p_observacoes: `Produção autorizada conforme estratégia de reposição por giro de vendas.`,
           p_funcionarios: validFuncs.map(f => ({ funcionario_id: f, quantidade_produzida: 0 })),
+          p_ignorar_estoque: true,
         });
       }
 
