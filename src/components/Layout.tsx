@@ -19,8 +19,8 @@ import scratHangingImg from "@/assets/scrat-hanging.png";
 const menuItems = [
   { path: "/painel", label: "Dashboard", icon: LayoutDashboard },
   { path: "/painel/producao", label: "Produção", icon: Factory },
-  { path: "/painel/pedidos-producao", label: "Histórico de Pedidos", icon: ShoppingBag },
   { path: "/painel/monitor-producao", label: "Monitor Produção", icon: Monitor },
+  { path: "/painel/pedidos-producao", label: "Histórico de Pedidos", icon: ShoppingBag },
   { path: "/painel/vendas", label: "Vendas", icon: ShoppingCart },
   { path: "/painel/a-receber", label: "A Receber", icon: DollarSign },
   { path: "/painel/contas-a-pagar", label: "Contas a Pagar", icon: ClipboardList },
