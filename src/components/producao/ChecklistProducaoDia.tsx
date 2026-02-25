@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Check, ClipboardList, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 const SABOR_COLORS: Record<string, string> = {
   melancia: "#ef4444",
@@ -37,24 +36,18 @@ interface ChecklistItem {
 }
 
 export default function ChecklistProducaoDia() {
-  // Usar data local (não UTC) para evitar problemas de fuso horário
   const hoje = new Date();
   const hojeStr = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}-${String(hoje.getDate()).padStart(2, "0")}`;
   const CONCLUIDOS_KEY = `checklist-concluidos-${hojeStr}`;
 
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
-  const [expanded, setExpanded] = useState(true);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchDecisoes();
-  }, []);
+  useEffect(() => { fetchDecisoes(); }, []);
 
   async function fetchDecisoes() {
     setLoading(true);
     try {
-      // Buscar decisões autorizadas de hoje da tabela decisoes_producao
-      // Usar range amplo para cobrir fusos horários (Brasil UTC-3)
       const inicioHoje = `${hojeStr}T00:00:00-03:00`;
       const fimHoje = `${hojeStr}T23:59:59-03:00`;
 
@@ -67,66 +60,53 @@ export default function ChecklistProducaoDia() {
         .order("created_at", { ascending: true });
 
       if (error) throw error;
+      if (!data || data.length === 0) { setChecklist([]); setLoading(false); return; }
 
-      if (!data || data.length === 0) {
-        setChecklist([]);
-        setLoading(false);
-        return;
-      }
-
-      // Recuperar estado de conclusão do localStorage
       let concluidos: Record<string, string> = {};
-      try {
-        const saved = localStorage.getItem(CONCLUIDOS_KEY);
-        if (saved) concluidos = JSON.parse(saved);
-      } catch {}
+      try { const saved = localStorage.getItem(CONCLUIDOS_KEY); if (saved) concluidos = JSON.parse(saved); } catch {}
 
-      // Gerar checklist items a partir das decisões do banco
       const items: ChecklistItem[] = [];
       data.forEach((decisao: any) => {
         for (let l = 1; l <= decisao.lotes_autorizados; l++) {
           const itemId = `${decisao.sabor_id}-${l}`;
           items.push({
-            id: itemId,
-            saborId: decisao.sabor_id,
-            saborNome: decisao.sabor_nome,
-            loteNumero: l,
-            totalLotes: decisao.lotes_autorizados,
-            concluido: !!concluidos[itemId],
-            horaConclusao: concluidos[itemId] || undefined,
+            id: itemId, saborId: decisao.sabor_id, saborNome: decisao.sabor_nome,
+            loteNumero: l, totalLotes: decisao.lotes_autorizados,
+            concluido: !!concluidos[itemId], horaConclusao: concluidos[itemId] || undefined,
           });
         }
       });
-
       setChecklist(items);
-    } catch (e) {
-      console.error("Erro ao carregar checklist:", e);
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { console.error("Erro ao carregar checklist:", e); }
+    finally { setLoading(false); }
   }
 
   function toggleItem(id: string) {
     setChecklist(prev => {
       const updated = prev.map(c =>
         c.id === id ? {
-          ...c,
-          concluido: !c.concluido,
-          horaConclusao: !c.concluido
-            ? new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
-            : undefined
+          ...c, concluido: !c.concluido,
+          horaConclusao: !c.concluido ? new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : undefined
         } : c
       );
-
-      // Salvar apenas os concluídos no localStorage
       const concluidos: Record<string, string> = {};
-      updated.forEach(item => {
-        if (item.concluido && item.horaConclusao) {
-          concluidos[item.id] = item.horaConclusao;
-        }
-      });
+      updated.forEach(item => { if (item.concluido && item.horaConclusao) concluidos[item.id] = item.horaConclusao; });
       localStorage.setItem(CONCLUIDOS_KEY, JSON.stringify(concluidos));
+      return updated;
+    });
+  }
 
+  function toggleSabor(saborId: string) {
+    setChecklist(prev => {
+      const saborItens = prev.filter(c => c.saborId === saborId);
+      const allDone = saborItens.every(c => c.concluido);
+      const now = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+      const updated = prev.map(c =>
+        c.saborId === saborId ? { ...c, concluido: !allDone, horaConclusao: !allDone ? now : undefined } : c
+      );
+      const concluidos: Record<string, string> = {};
+      updated.forEach(item => { if (item.concluido && item.horaConclusao) concluidos[item.id] = item.horaConclusao; });
+      localStorage.setItem(CONCLUIDOS_KEY, JSON.stringify(concluidos));
       return updated;
     });
   }
@@ -143,98 +123,98 @@ export default function ChecklistProducaoDia() {
 
   if (checklist.length === 0) return null;
 
-  const concluidos = checklist.filter(c => c.concluido).length;
-  const total = checklist.length;
-  const progress = Math.round((concluidos / total) * 100);
-  const completo = concluidos === total;
-
   const saboresUnicos = [...new Set(checklist.map(c => c.saborId))];
+  const totalConcluidos = checklist.filter(c => c.concluido).length;
+  const completo = totalConcluidos === checklist.length;
 
   return (
-    <Card className="mb-6">
-      <CardContent className="pt-4 pb-3">
-        <div
-          className="flex items-center justify-between cursor-pointer"
-          onClick={() => setExpanded(!expanded)}
-        >
-          <div className="flex items-center gap-2">
-            <ClipboardList className="h-4 w-4 text-primary" />
-            <span className="font-bold text-sm">Checklist de Produção — Hoje</span>
-            <Badge
-              variant={completo ? "default" : "secondary"}
-              className="text-[10px]"
-              style={completo ? { backgroundColor: "#22c55e" } : {}}
-            >
-              {concluidos}/{total} lotes
-            </Badge>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-20 h-2 rounded-full bg-muted overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${progress}%`,
-                  background: completo ? "#22c55e" : "hsl(var(--primary))",
-                }}
-              />
-            </div>
-            <span className="text-xs text-muted-foreground font-mono">{progress}%</span>
-            {expanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-          </div>
+    <div className="mb-6 space-y-3">
+      {completo && (
+        <div className="text-center py-3 text-sm text-green-600 font-semibold rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
+          ✅ Produção do dia concluída!
         </div>
+      )}
 
-        {expanded && (
-          <div className="mt-3 space-y-2">
-            {saboresUnicos.map(saborId => {
-              const itens = checklist.filter(c => c.saborId === saborId);
-              const nome = itens[0]?.saborNome || "";
-              const color = getSaborColor(nome);
-              const saborConcluidos = itens.filter(c => c.concluido).length;
-              const todosOk = saborConcluidos === itens.length;
+      {saboresUnicos.map(saborId => {
+        const itens = checklist.filter(c => c.saborId === saborId);
+        const nome = itens[0]?.saborNome || "";
+        const color = getSaborColor(nome);
+        const saborConcluidos = itens.filter(c => c.concluido).length;
+        const todosOk = saborConcluidos === itens.length;
 
-              return (
-                <div key={saborId} className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                    <span className={`text-xs font-bold ${todosOk ? "line-through text-muted-foreground" : ""}`}>
-                      {nome}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground">
-                      {saborConcluidos}/{itens.length}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 pl-5">
-                    {itens.map(item => (
-                      <Button
-                        key={item.id}
-                        variant={item.concluido ? "default" : "outline"}
-                        size="sm"
-                        className={`h-8 text-xs gap-1 transition-all duration-200 ${
-                          item.concluido ? "shadow-sm" : ""
-                        }`}
-                        style={item.concluido ? { backgroundColor: color, borderColor: color } : { borderColor: `${color}50` }}
-                        onClick={() => toggleItem(item.id)}
-                      >
-                        {item.concluido && <Check className="h-3 w-3" />}
-                        Lote {item.loteNumero}
-                        {item.concluido && item.horaConclusao && (
-                          <span className="text-[9px] opacity-80 ml-0.5">{item.horaConclusao}</span>
-                        )}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-
-            {completo && (
-              <div className="text-center py-2 text-xs text-green-600 font-semibold">
-                ✅ Produção do dia concluída!
+        return (
+          <div
+            key={saborId}
+            className="rounded-xl border bg-card overflow-hidden shadow-sm"
+            style={{ borderLeftWidth: 4, borderLeftColor: color }}
+          >
+            {/* Sabor header */}
+            <div
+              className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors"
+              onClick={() => toggleSabor(saborId)}
+            >
+              <div className="flex items-center gap-3">
+                <CircleCheck checked={todosOk} color={color} />
+                <span className={`font-semibold text-sm ${todosOk ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                  {nome}
+                </span>
               </div>
-            )}
+              <Badge
+                variant="secondary"
+                className="text-xs font-bold"
+                style={todosOk ? { backgroundColor: `${color}20`, color } : {}}
+              >
+                {saborConcluidos}/{itens.length} lotes
+              </Badge>
+            </div>
+
+            {/* Lote items */}
+            <div className="px-4 pb-3 space-y-1.5">
+              {itens.map(item => (
+                <div
+                  key={item.id}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 ${
+                    item.concluido
+                      ? "bg-green-50 dark:bg-green-950/20"
+                      : "bg-muted/40 hover:bg-muted/60"
+                  }`}
+                  onClick={() => toggleItem(item.id)}
+                >
+                  <CircleCheck checked={item.concluido} color={color} size="sm" />
+                  <span className={`text-sm font-medium ${item.concluido ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                    Lote {item.loteNumero}
+                  </span>
+                  <span className="text-xs text-muted-foreground">84 unidades</span>
+                  {item.concluido && item.horaConclusao && (
+                    <span className="ml-auto text-[10px] text-green-600 font-mono">{item.horaConclusao}</span>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+function CircleCheck({ checked, color, size = "md" }: { checked: boolean; color: string; size?: "sm" | "md" }) {
+  const dim = size === "sm" ? 22 : 28;
+  const r = dim / 2 - 2;
+  return (
+    <svg width={dim} height={dim} viewBox={`0 0 ${dim} ${dim}`} className="shrink-0">
+      <circle
+        cx={dim / 2} cy={dim / 2} r={r}
+        fill={checked ? color : "transparent"}
+        stroke={checked ? color : "hsl(var(--border))"}
+        strokeWidth={2}
+      />
+      {checked && (
+        <polyline
+          points={size === "sm" ? "7,11 10,14 15,8" : "8,14 12,18 20,10"}
+          fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
+        />
+      )}
+    </svg>
   );
 }
