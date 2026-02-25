@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast";
 import {
   Factory, TrendingUp, TrendingDown, Minus, RefreshCw,
-  AlertTriangle, CheckCircle2, Snowflake, BarChart3, Check, X
+  AlertTriangle, CheckCircle2, Snowflake, BarChart3, Check, X,
+  Brain, Sparkles
 } from "lucide-react";
 
 interface SaborAnalise {
@@ -25,6 +26,10 @@ interface SaborAnalise {
   lotesCustom: number;
   prioritario: boolean;
   ordemPrioridade: number;
+  // Learning fields
+  loteAprendido: number | null; // suggestion based on past behavior
+  confianca: number; // 0-100, confidence in the learned value
+  historicoAjustes: number; // how many times user adjusted this flavor
 }
 
 const SABOR_COLORS: Record<string, string> = {
@@ -66,17 +71,66 @@ function ProgressRing({ progress, color, size = 52 }: { progress: number; color:
   );
 }
 
-// Escala fixa: Terça/Quarta = Aghata + Maria, Quinta/Sexta = Jhulia + Aghata
+// Escala fixa
 const ESCALA_PRODUCAO: Record<number, string[]> = {
-  2: ["aghata", "maria"],   // terça
-  3: ["aghata", "maria"],   // quarta
-  4: ["jhulia", "aghata"],  // quinta
-  5: ["jhulia", "aghata"],  // sexta
+  2: ["aghata", "maria"],
+  3: ["aghata", "maria"],
+  4: ["jhulia", "aghata"],
+  5: ["jhulia", "aghata"],
 };
 const NOMES_DIA: Record<number, string> = {
   0: "Domingo", 1: "Segunda-feira", 2: "Terça-feira",
   3: "Quarta-feira", 4: "Quinta-feira", 5: "Sexta-feira", 6: "Sábado",
 };
+
+// Learning engine: analyze past decisions to predict preferred lots
+function calcularAprendizado(
+  decisoes: any[],
+  saborId: string,
+  diaSemana: number,
+  loteSugeridoAtual: number
+): { loteAprendido: number | null; confianca: number; historicoAjustes: number } {
+  // Filter decisions for this flavor, weighted towards same day of week
+  const todasDoSabor = decisoes.filter((d: any) => d.sabor_id === saborId);
+  const doMesmoDia = todasDoSabor.filter((d: any) => d.dia_semana === diaSemana);
+
+  if (todasDoSabor.length < 2) {
+    return { loteAprendido: null, confianca: 0, historicoAjustes: 0 };
+  }
+
+  // Weighted average: same-day decisions weight 3x, others 1x
+  let somaLotes = 0;
+  let somaPeso = 0;
+  const agora = Date.now();
+
+  todasDoSabor.forEach((d: any) => {
+    const idade = (agora - new Date(d.created_at).getTime()) / (1000 * 60 * 60 * 24);
+    const pesoRecencia = Math.max(0.2, 1 - idade / 60); // decay over 60 days
+    const pesoDia = d.dia_semana === diaSemana ? 3 : 1;
+    const peso = pesoRecencia * pesoDia;
+    somaLotes += d.lotes_autorizados * peso;
+    somaPeso += peso;
+  });
+
+  const mediaAprendida = Math.round(somaLotes / somaPeso);
+  
+  // Confidence: based on quantity of data + consistency
+  const lotesAutorizados = todasDoSabor.map((d: any) => d.lotes_autorizados);
+  const desvio = Math.sqrt(
+    lotesAutorizados.reduce((s: number, l: number) => s + Math.pow(l - mediaAprendida, 2), 0) / lotesAutorizados.length
+  );
+  const consistencia = Math.max(0, 100 - desvio * 30);
+  const volumeData = Math.min(100, todasDoSabor.length * 10);
+  const confianca = Math.round((consistencia * 0.6 + volumeData * 0.4));
+
+  const ajustes = todasDoSabor.filter((d: any) => d.ajuste !== 0).length;
+
+  return {
+    loteAprendido: mediaAprendida,
+    confianca: Math.min(100, confianca),
+    historicoAjustes: ajustes,
+  };
+}
 
 export default function PlanoProducaoDiario() {
   const [analises, setAnalises] = useState<SaborAnalise[]>([]);
@@ -85,6 +139,8 @@ export default function PlanoProducaoDiario() {
   const [loading, setLoading] = useState(false);
   const [executando, setExecutando] = useState(false);
   const [executado, setExecutado] = useState(false);
+  const [modoIA, setModoIA] = useState(false); // whether AI suggestions are active
+  const [totalDecisoes, setTotalDecisoes] = useState(0);
 
   const hoje = new Date();
   const diaSemana = hoje.getDay();
@@ -97,17 +153,17 @@ export default function PlanoProducaoDiario() {
     setLoading(true);
     setExecutado(false);
     try {
-      const [vendasRes, gelosRes, saboresRes, funcsRes] = await Promise.all([
+      const [vendasRes, gelosRes, saboresRes, funcsRes, decisoesRes] = await Promise.all([
         (supabase as any).from("venda_itens").select("sabor_id, quantidade, vendas!inner(created_at, status)"),
         (supabase as any).from("estoque_gelos").select("quantidade, sabor_id, sabores(nome, id)"),
         (supabase as any).from("sabores").select("id, nome").eq("ativo", true).order("nome"),
         (supabase as any).from("funcionarios").select("id, nome").eq("ativo", true).order("nome"),
+        (supabase as any).from("decisoes_producao").select("*").order("created_at", { ascending: false }).limit(200),
       ]);
 
       const funcs = funcsRes.data || [];
       setFuncionarios(funcs);
 
-      // Auto-selecionar funcionários da escala do dia
       if (escalaDoDia.length > 0) {
         const ids = escalaDoDia
           .map(nome => funcs.find((f: any) => f.nome.toLowerCase().includes(nome)))
@@ -115,6 +171,13 @@ export default function PlanoProducaoDiario() {
           .map((f: any) => f.id);
         if (ids.length > 0) setFuncSelecionados(ids);
       }
+
+      const decisoes = decisoesRes.data || [];
+      setTotalDecisoes(decisoes.length);
+      
+      // Auto-enable AI mode when enough data
+      if (decisoes.length >= 10) setModoIA(true);
+
       const vendaItens = (vendasRes.data || []).filter((v: any) => v.vendas?.status !== "cancelada");
       const gelos = gelosRes.data || [];
       const saboresAtivos = saboresRes.data || [];
@@ -153,6 +216,17 @@ export default function PlanoProducaoDiario() {
         const idx = prioridadeDiaria.findIndex(p => sabor.nome.toLowerCase().includes(p));
         const prioritario = idx !== -1;
 
+        // Learning engine
+        const aprendizado = calcularAprendizado(decisoes, sabor.id, diaSemana, loteSugerido);
+
+        // If AI mode is on and we have enough confidence, use learned value
+        const usarAprendido = modoIA && aprendizado.loteAprendido !== null && aprendizado.confianca >= 50;
+        const loteFinal = usarAprendido
+          ? aprendizado.loteAprendido!
+          : prioritario
+            ? Math.max(1, loteSugerido || 1)
+            : loteSugerido;
+
         return {
           id: sabor.id,
           nome: sabor.nome,
@@ -163,10 +237,13 @@ export default function PlanoProducaoDiario() {
           tendencia,
           diasCobertura: Math.min(diasCobertura, 99),
           loteSugerido,
-          selecionado: prioritario ? true : loteSugerido > 0,
-          lotesCustom: prioritario ? Math.max(1, loteSugerido || 1) : loteSugerido,
+          selecionado: usarAprendido ? loteFinal > 0 : (prioritario ? true : loteSugerido > 0),
+          lotesCustom: loteFinal,
           prioritario,
           ordemPrioridade: prioritario ? idx : 999,
+          loteAprendido: aprendizado.loteAprendido,
+          confianca: aprendizado.confianca,
+          historicoAjustes: aprendizado.historicoAjustes,
         };
       });
 
@@ -202,6 +279,30 @@ export default function PlanoProducaoDiario() {
     setFuncSelecionados(prev => { const list = [...prev]; list[i] = val; return list; });
   }
 
+  // Log decisions for learning
+  async function registrarDecisoes(itens: SaborAnalise[]) {
+    const validFuncs = funcSelecionados.filter(f => f !== "");
+    const operador = validFuncs
+      .map(f => funcionarios.find(fn => fn.id === f)?.nome)
+      .filter(Boolean)
+      .join(", ") || "sistema";
+
+    const rows = itens.map(item => ({
+      dia_semana: diaSemana,
+      sabor_id: item.id,
+      sabor_nome: item.nome,
+      estoque_no_momento: item.estoqueAtual,
+      vendas_7d: item.vendas7d,
+      media_diaria: item.mediaDiaria,
+      dias_cobertura: item.diasCobertura,
+      lotes_sugeridos: item.loteSugerido,
+      lotes_autorizados: item.lotesCustom,
+      operador,
+    }));
+
+    await (supabase as any).from("decisoes_producao").insert(rows);
+  }
+
   async function autorizarProducao() {
     const itens = analises.filter(a => a.selecionado && a.lotesCustom > 0);
     if (itens.length === 0) return toast({ title: "Selecione ao menos um sabor", variant: "destructive" });
@@ -216,6 +317,9 @@ export default function PlanoProducaoDiario() {
 
     setExecutando(true);
     try {
+      // Log decisions for learning BEFORE production
+      await registrarDecisoes(itens);
+
       for (const item of itens) {
         await realizarProducao({
           p_sabor_id: item.id,
@@ -232,7 +336,7 @@ export default function PlanoProducaoDiario() {
       const totalUnidades = totalLotes * 84;
       toast({
         title: "✅ Produção autorizada!",
-        description: `${itens.length} sabor(es) · ${totalLotes} lote(s) · ${totalUnidades.toLocaleString()} unidades`,
+        description: `${itens.length} sabor(es) · ${totalLotes} lote(s) · ${totalUnidades.toLocaleString()} un · Decisão registrada para aprendizado 🧠`,
       });
       setExecutado(true);
       calcular();
@@ -247,6 +351,9 @@ export default function PlanoProducaoDiario() {
   const totalLotes = selecionados.reduce((s, a) => s + a.lotesCustom, 0);
   const totalUnidades = totalLotes * 84;
   const progressTotal = analises.length > 0 ? Math.round((selecionados.length / analises.length) * 100) : 0;
+  const confiancaMedia = analises.length > 0 
+    ? Math.round(analises.reduce((s, a) => s + a.confianca, 0) / analises.length) 
+    : 0;
 
   const tendenciaIcon = (t: string) => {
     if (t === "alta") return <TrendingUp className="h-3.5 w-3.5 text-green-500" />;
@@ -278,6 +385,55 @@ export default function PlanoProducaoDiario() {
         </Button>
       </div>
 
+      {/* Learning status card */}
+      <Card className={`border-dashed ${totalDecisoes >= 10 ? "border-primary/40 bg-primary/5" : "border-muted"}`}>
+        <CardContent className="py-3 px-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Brain className={`h-4 w-4 ${totalDecisoes >= 10 ? "text-primary" : "text-muted-foreground"}`} />
+              <div>
+                <p className="text-xs font-semibold">
+                  {totalDecisoes < 5
+                    ? "🧠 Aprendendo... (fase inicial)"
+                    : totalDecisoes < 10
+                      ? "🧠 Coletando padrões..."
+                      : totalDecisoes < 20
+                        ? "🧠 Sugestões baseadas no seu comportamento"
+                        : "🤖 Modo inteligente ativo — sugestões automatizadas"}
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  {totalDecisoes} decisões registradas · Confiança média: {confiancaMedia}%
+                </p>
+              </div>
+            </div>
+            {totalDecisoes >= 10 && (
+              <Button
+                variant={modoIA ? "default" : "outline"}
+                size="sm"
+                className="h-7 text-xs gap-1"
+                onClick={() => setModoIA(!modoIA)}
+              >
+                <Sparkles className="h-3 w-3" />
+                {modoIA ? "IA Ativa" : "Ativar IA"}
+              </Button>
+            )}
+          </div>
+          {totalDecisoes < 10 && (
+            <div className="mt-2">
+              <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-500"
+                  style={{ width: `${Math.min(100, totalDecisoes * 10)}%` }}
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                {10 - totalDecisoes} decisões restantes para ativar sugestões inteligentes
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Aviso dia sem produção */}
       {!diaProducao && (
         <Card className="border-amber-500/50 bg-amber-500/5">
@@ -296,7 +452,7 @@ export default function PlanoProducaoDiario() {
         <CardContent className="pt-4 pb-3">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              Escala de Hoje — {NOMES_DIA[diaSemana]}
+              Escala — {NOMES_DIA[diaSemana]}
             </p>
             {diaProducao && (
               <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
@@ -331,18 +487,17 @@ export default function PlanoProducaoDiario() {
 
       {/* Checklist de sabores */}
       <div className="space-y-2">
-        {analises.map((a, index) => {
+        {analises.map((a) => {
           const color = getSaborColor(a.nome);
           const isSelected = a.selecionado && a.lotesCustom > 0;
           const coberturaPercent = Math.min(100, (a.diasCobertura / 14) * 100);
+          const hasLearning = a.loteAprendido !== null && a.confianca >= 30;
 
           return (
             <Card
               key={a.id}
               className={`transition-all duration-300 cursor-pointer overflow-hidden ${
-                isSelected
-                  ? "ring-1 ring-primary/30 shadow-md"
-                  : "hover:shadow-sm"
+                isSelected ? "ring-1 ring-primary/30 shadow-md" : "hover:shadow-sm"
               }`}
               style={{
                 borderLeft: `4px solid ${color}`,
@@ -357,9 +512,7 @@ export default function PlanoProducaoDiario() {
                   {/* Check circle */}
                   <div
                     className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 ${
-                      isSelected
-                        ? "scale-110"
-                        : "bg-muted"
+                      isSelected ? "scale-110" : "bg-muted"
                     }`}
                     style={isSelected ? { backgroundColor: color, boxShadow: `0 0 12px ${color}40` } : {}}
                   >
@@ -382,6 +535,12 @@ export default function PlanoProducaoDiario() {
                       {a.prioritario && (
                         <Badge variant="outline" className="text-[9px] h-4 px-1 border-primary/30 text-primary">
                           PRIORIDADE
+                        </Badge>
+                      )}
+                      {hasLearning && modoIA && (
+                        <Badge variant="outline" className="text-[9px] h-4 px-1 gap-0.5 border-violet-400/50 text-violet-600">
+                          <Brain className="h-2.5 w-2.5" />
+                          {a.confianca}%
                         </Badge>
                       )}
                       <div className="flex items-center gap-0.5 ml-auto">
@@ -414,6 +573,15 @@ export default function PlanoProducaoDiario() {
                         </span>
                       </div>
                     </div>
+
+                    {/* Learning insight */}
+                    {hasLearning && modoIA && a.loteAprendido !== a.loteSugerido && (
+                      <div className="flex items-center gap-1 text-[10px] text-violet-600 mt-1">
+                        <Sparkles className="h-3 w-3" />
+                        Você costuma produzir {a.loteAprendido} lote(s) deste sabor
+                        {a.historicoAjustes > 0 && ` (ajustou ${a.historicoAjustes}x)`}
+                      </div>
+                    )}
 
                     {/* Alerta */}
                     {a.diasCobertura <= 3 && a.diasCobertura !== 999 && (
@@ -465,7 +633,7 @@ export default function PlanoProducaoDiario() {
               <div className="relative">
                 <ProgressRing progress={progressTotal} color="hsl(var(--primary))" size={44} />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <Snowflake className="h-4 w-4 text-primary" />
+                  {modoIA ? <Brain className="h-4 w-4 text-primary" /> : <Snowflake className="h-4 w-4 text-primary" />}
                 </div>
               </div>
               <div>
@@ -474,6 +642,7 @@ export default function PlanoProducaoDiario() {
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {totalLotes} lotes · {totalUnidades.toLocaleString()} un
+                  {modoIA && " · 🧠 IA"}
                 </p>
               </div>
             </div>
