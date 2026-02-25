@@ -37,6 +37,7 @@ const menuItems = [
   { path: "/painel/mapa-entregas", label: "Mapa Entregas", icon: MapPin },
   { path: "/painel/mapa-clientes", label: "Mapa Clientes", icon: Map },
   { path: "/painel/prospeccao", label: "Prospecção", icon: Target },
+  { path: "/painel/plano-producao", label: "Plano Diário", icon: Factory },
 ];
 
 const allCharacters = [
