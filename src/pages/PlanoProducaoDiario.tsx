@@ -173,10 +173,14 @@ export default function PlanoProducaoDiario() {
       }
 
       const decisoes = decisoesRes.data || [];
-      setTotalDecisoes(decisoes.length);
+      // Count unique daily sessions (not individual sabor rows)
+      const diasUnicos = new Set(
+        decisoes.map((d: any) => new Date(d.created_at).toISOString().slice(0, 10))
+      );
+      setTotalDecisoes(diasUnicos.size);
       
-      // Auto-enable AI mode when enough data
-      if (decisoes.length >= 10) setModoIA(true);
+      // Auto-enable AI mode when enough data (10 daily sessions)
+      if (diasUnicos.size >= 10) setModoIA(true);
 
       const vendaItens = (vendasRes.data || []).filter((v: any) => v.vendas?.status !== "cancelada");
       const gelos = gelosRes.data || [];
