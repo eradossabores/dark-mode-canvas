@@ -9,8 +9,18 @@ import { toast } from "@/hooks/use-toast";
 import {
   Factory, TrendingUp, TrendingDown, Minus, RefreshCw,
   AlertTriangle, CheckCircle2, Snowflake, BarChart3, Check, X,
-  Brain, Sparkles
+  Brain, Sparkles, ClipboardList, PartyPopper
 } from "lucide-react";
+
+interface ChecklistItem {
+  id: string;
+  saborId: string;
+  saborNome: string;
+  loteNumero: number;
+  totalLotes: number;
+  concluido: boolean;
+  horaConclusao?: string;
+}
 
 interface SaborAnalise {
   id: string;
@@ -139,8 +149,10 @@ export default function PlanoProducaoDiario() {
   const [loading, setLoading] = useState(false);
   const [executando, setExecutando] = useState(false);
   const [executado, setExecutado] = useState(false);
-  const [modoIA, setModoIA] = useState(false); // whether AI suggestions are active
+  const [modoIA, setModoIA] = useState(false);
   const [totalDecisoes, setTotalDecisoes] = useState(0);
+  const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
+  const [modoChecklist, setModoChecklist] = useState(false);
 
   const hoje = new Date();
   const diaSemana = hoje.getDay();
@@ -341,16 +353,43 @@ export default function PlanoProducaoDiario() {
       const totalUnidades = totalLotes * 84;
       toast({
         title: "✅ Produção autorizada!",
-        description: `${itens.length} sabor(es) · ${totalLotes} lote(s) · ${totalUnidades.toLocaleString()} un · Decisão registrada para aprendizado 🧠`,
+        description: `${itens.length} sabor(es) · ${totalLotes} lote(s) · ${totalUnidades.toLocaleString()} un`,
       });
+
+      // Generate production checklist
+      const checklistItems: ChecklistItem[] = [];
+      itens.forEach(item => {
+        for (let l = 1; l <= item.lotesCustom; l++) {
+          checklistItems.push({
+            id: `${item.id}-${l}`,
+            saborId: item.id,
+            saborNome: item.nome,
+            loteNumero: l,
+            totalLotes: item.lotesCustom,
+            concluido: false,
+          });
+        }
+      });
+      setChecklist(checklistItems);
+      setModoChecklist(true);
       setExecutado(true);
-      calcular();
     } catch (e: any) {
       toast({ title: "Erro na produção", description: e.message, variant: "destructive" });
     } finally {
       setExecutando(false);
     }
   }
+
+  function toggleCheckItem(id: string) {
+    setChecklist(prev => prev.map(c =>
+      c.id === id ? { ...c, concluido: !c.concluido, horaConclusao: !c.concluido ? new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : undefined } : c
+    ));
+  }
+
+  const checklistConcluidos = checklist.filter(c => c.concluido).length;
+  const checklistTotal = checklist.length;
+  const checklistProgress = checklistTotal > 0 ? Math.round((checklistConcluidos / checklistTotal) * 100) : 0;
+  const checklistCompleto = checklistTotal > 0 && checklistConcluidos === checklistTotal;
 
   const selecionados = analises.filter(a => a.selecionado && a.lotesCustom > 0);
   const totalLotes = selecionados.reduce((s, a) => s + a.lotesCustom, 0);
@@ -365,6 +404,152 @@ export default function PlanoProducaoDiario() {
     if (t === "baixa") return <TrendingDown className="h-3.5 w-3.5 text-destructive" />;
     return <Minus className="h-3.5 w-3.5 text-muted-foreground" />;
   };
+
+  // If checklist mode is active, show production checklist
+  if (modoChecklist) {
+    // Group checklist by sabor
+    const saboresUnicos = [...new Set(checklist.map(c => c.saborId))];
+
+    return (
+      <div className="space-y-5 pb-8">
+        {/* Header */}
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <ProgressRing progress={checklistProgress} color={checklistCompleto ? "#22c55e" : "hsl(var(--primary))"} size={56} />
+              <div className="absolute inset-0 flex items-center justify-center">
+                {checklistCompleto ? (
+                  <PartyPopper className="h-5 w-5 text-green-500" />
+                ) : (
+                  <ClipboardList className="h-5 w-5 text-primary" />
+                )}
+              </div>
+            </div>
+            <div>
+              <h1 className="text-xl font-bold">Produção em Andamento</h1>
+              <p className="text-xs text-muted-foreground">
+                {checklistConcluidos} de {checklistTotal} lotes concluídos · {checklistProgress}%
+              </p>
+            </div>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => { setModoChecklist(false); calcular(); }}>
+            <X className="h-4 w-4 mr-1" />
+            Voltar ao Plano
+          </Button>
+        </div>
+
+        {/* Progress bar geral */}
+        <div className="h-3 rounded-full bg-muted overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-700 ease-out"
+            style={{
+              width: `${checklistProgress}%`,
+              background: checklistCompleto
+                ? "linear-gradient(90deg, #22c55e, #16a34a)"
+                : "linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.7))",
+            }}
+          />
+        </div>
+
+        {/* Comanda completa */}
+        {checklistCompleto && (
+          <Card className="border-green-500/50 bg-green-500/5">
+            <CardContent className="py-6 text-center">
+              <PartyPopper className="h-10 w-10 text-green-500 mx-auto mb-2" />
+              <p className="font-bold text-lg">Produção do dia concluída! 🎉</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Todos os {checklistTotal} lotes foram produzidos com sucesso.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Checklist por sabor */}
+        <div className="space-y-3">
+          {saboresUnicos.map(saborId => {
+            const itensDoSabor = checklist.filter(c => c.saborId === saborId);
+            const concluidos = itensDoSabor.filter(c => c.concluido).length;
+            const todosOk = concluidos === itensDoSabor.length;
+            const saborNome = itensDoSabor[0]?.saborNome || "";
+            const color = getSaborColor(saborNome);
+            const progressSabor = Math.round((concluidos / itensDoSabor.length) * 100);
+
+            return (
+              <Card
+                key={saborId}
+                className={`transition-all duration-300 overflow-hidden ${todosOk ? "opacity-70" : ""}`}
+                style={{ borderLeft: `4px solid ${color}` }}
+              >
+                <CardContent className="py-3 px-4">
+                  {/* Sabor header */}
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      {todosOk ? (
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ backgroundColor: "#22c55e" }}>
+                          <Check className="h-4 w-4 text-white" />
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          <ProgressRing progress={progressSabor} color={color} size={28} />
+                        </div>
+                      )}
+                      <span className={`font-bold text-sm ${todosOk ? "line-through text-muted-foreground" : ""}`}>
+                        {saborNome}
+                      </span>
+                    </div>
+                    <Badge variant={todosOk ? "default" : "secondary"} className="text-[10px]" style={todosOk ? { backgroundColor: "#22c55e" } : {}}>
+                      {concluidos}/{itensDoSabor.length} lotes
+                    </Badge>
+                  </div>
+
+                  {/* Lotes individuais */}
+                  <div className="space-y-1">
+                    {itensDoSabor.map(item => (
+                      <div
+                        key={item.id}
+                        className={`flex items-center gap-3 rounded-lg px-3 py-2 cursor-pointer transition-all duration-200 ${
+                          item.concluido
+                            ? "bg-green-500/10 border border-green-500/20"
+                            : "bg-muted/50 border border-transparent hover:border-primary/20 hover:bg-muted"
+                        }`}
+                        onClick={() => toggleCheckItem(item.id)}
+                      >
+                        {/* Check */}
+                        <div
+                          className={`w-7 h-7 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-300 ${
+                            item.concluido
+                              ? "border-green-500 bg-green-500 scale-110"
+                              : "border-muted-foreground/30"
+                          }`}
+                        >
+                          {item.concluido && <Check className="h-4 w-4 text-white" />}
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1">
+                          <span className={`text-sm font-semibold ${item.concluido ? "line-through text-muted-foreground" : ""}`}>
+                            Lote {item.loteNumero}
+                          </span>
+                          <span className="text-xs text-muted-foreground ml-2">84 unidades</span>
+                        </div>
+
+                        {/* Hora conclusão */}
+                        {item.concluido && item.horaConclusao && (
+                          <span className="text-[10px] text-green-600 font-medium">
+                            ✓ {item.horaConclusao}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5 pb-28">
