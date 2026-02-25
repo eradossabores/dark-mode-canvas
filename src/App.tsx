@@ -29,6 +29,7 @@ import PrevisaoDemanda from "@/pages/PrevisaoDemanda";
 import MapaEntregas from "@/pages/MapaEntregas";
 import MapaClientes from "@/pages/MapaClientes";
 import Prospeccao from "@/pages/Prospeccao";
+import Cadastro from "@/pages/Cadastro";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -54,6 +55,7 @@ const App = () => (
             {/* Public */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/cadastro" element={<Cadastro />} />
 
             {/* Admin only routes */}
             <Route path="/painel" element={<AdminRoute><Dashboard /></AdminRoute>} />
