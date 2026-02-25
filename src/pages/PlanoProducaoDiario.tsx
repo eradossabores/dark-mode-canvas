@@ -159,7 +159,22 @@ export default function PlanoProducaoDiario() {
   const diaProducao = diaSemana >= 2 && diaSemana <= 5;
   const escalaDoDia = ESCALA_PRODUCAO[diaSemana] || [];
 
-  useEffect(() => { calcular(); }, []);
+  const hojeStr = hoje.toISOString().slice(0, 10);
+  const CHECKLIST_KEY = `checklist-producao-${hojeStr}`;
+
+  // Recover checklist from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(CHECKLIST_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setChecklist(parsed);
+        setModoChecklist(true);
+        setExecutado(true);
+      } catch {}
+    }
+    calcular();
+  }, []);
 
   async function calcular() {
     setLoading(true);
@@ -370,6 +385,7 @@ export default function PlanoProducaoDiario() {
           });
         }
       });
+      localStorage.setItem(CHECKLIST_KEY, JSON.stringify(checklistItems));
       setChecklist(checklistItems);
       setModoChecklist(true);
       setExecutado(true);
@@ -381,9 +397,13 @@ export default function PlanoProducaoDiario() {
   }
 
   function toggleCheckItem(id: string) {
-    setChecklist(prev => prev.map(c =>
-      c.id === id ? { ...c, concluido: !c.concluido, horaConclusao: !c.concluido ? new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : undefined } : c
-    ));
+    setChecklist(prev => {
+      const updated = prev.map(c =>
+        c.id === id ? { ...c, concluido: !c.concluido, horaConclusao: !c.concluido ? new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : undefined } : c
+      );
+      localStorage.setItem(CHECKLIST_KEY, JSON.stringify(updated));
+      return updated;
+    });
   }
 
   const checklistConcluidos = checklist.filter(c => c.concluido).length;
