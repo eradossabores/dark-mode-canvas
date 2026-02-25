@@ -11,13 +11,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Settings2 } from "lucide-react";
+import { Plus, Settings2, Trash2, Snowflake } from "lucide-react";
 
 export default function Estoque() {
   const [gelos, setGelos] = useState<any[]>([]);
   const [materias, setMaterias] = useState<any[]>([]);
   const [embalagens, setEmbalagens] = useState<any[]>([]);
   const [movimentacoes, setMovimentacoes] = useState<any[]>([]);
+  const [freezers, setFreezers] = useState<any[]>([]);
+  const [clientes, setClientes] = useState<any[]>([]);
+  const [sabores, setSabores] = useState<any[]>([]);
+
+  // Freezer dialog
+  const [openFreezer, setOpenFreezer] = useState(false);
+  const [fzClienteId, setFzClienteId] = useState("");
+  const [fzSaborId, setFzSaborId] = useState("");
+  const [fzQtd, setFzQtd] = useState(0);
 
   const [openMP, setOpenMP] = useState(false);
   const [mpId, setMpId] = useState("");
@@ -44,12 +53,62 @@ export default function Estoque() {
       (supabase as any).from("embalagens").select("*").order("nome"),
       (supabase as any).from("movimentacoes_estoque").select("*").order("created_at", { ascending: false }).limit(50),
     ]);
+    const [fz, cli, sab] = await Promise.all([
+      (supabase as any).from("estoque_freezer").select("*, clientes(nome), sabores(nome)").order("updated_at", { ascending: false }),
+      (supabase as any).from("clientes").select("id, nome").eq("possui_freezer", true).order("nome"),
+      (supabase as any).from("sabores").select("id, nome").eq("ativo", true).order("nome"),
+    ]);
+    setFreezers(fz.data || []);
+    setClientes(cli.data || []);
+    setSabores(sab.data || []);
     setGelos(g.data || []);
     setMaterias(m.data || []);
     setEmbalagens(e.data || []);
     setMovimentacoes(mov.data || []);
   }
 
+  async function addFreezerStock() {
+    if (!fzClienteId || !fzSaborId || fzQtd <= 0) {
+      return toast({ title: "Preencha todos os campos", variant: "destructive" });
+    }
+    try {
+      // Check if entry already exists
+      const { data: existing } = await (supabase as any)
+        .from("estoque_freezer")
+        .select("id, quantidade")
+        .eq("cliente_id", fzClienteId)
+        .eq("sabor_id", fzSaborId)
+        .maybeSingle();
+
+      if (existing) {
+        await (supabase as any)
+          .from("estoque_freezer")
+          .update({ quantidade: existing.quantidade + fzQtd })
+          .eq("id", existing.id);
+      } else {
+        await (supabase as any)
+          .from("estoque_freezer")
+          .insert({ cliente_id: fzClienteId, sabor_id: fzSaborId, quantidade: fzQtd });
+      }
+
+      toast({ title: "Estoque do freezer atualizado!" });
+      setOpenFreezer(false);
+      setFzQtd(0);
+      loadData();
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+  }
+
+  async function removeFreezerItem(id: string) {
+    try {
+      await (supabase as any).from("estoque_freezer").delete().eq("id", id);
+      toast({ title: "Item removido do freezer" });
+      loadData();
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+  }
   function openAjusteDialog(tipo: "gelo" | "mp" | "emb", itemId: string, qtdAtual: number) {
     setAjusteTipo(tipo);
     setAjusteItemId(itemId);
@@ -247,6 +306,7 @@ export default function Estoque() {
       <Tabs defaultValue="gelos">
         <TabsList>
           <TabsTrigger value="gelos">Gelos Prontos</TabsTrigger>
+          <TabsTrigger value="freezers" className="gap-1"><Snowflake className="h-3.5 w-3.5" />Freezers</TabsTrigger>
           <TabsTrigger value="mp">Matéria-Prima</TabsTrigger>
           <TabsTrigger value="emb">Embalagens</TabsTrigger>
           <TabsTrigger value="mov">Movimentações</TabsTrigger>
@@ -446,6 +506,83 @@ export default function Estoque() {
                   ))}
                 </TableBody>
               </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="freezers">
+          <div className="flex justify-end mb-4">
+            <Dialog open={openFreezer} onOpenChange={setOpenFreezer}>
+              <DialogTrigger asChild>
+                <Button><Plus className="h-4 w-4 mr-2" />Adicionar ao Freezer</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Adicionar Estoque ao Freezer</DialogTitle></DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label>Cliente (com freezer)</Label>
+                    <Select value={fzClienteId} onValueChange={setFzClienteId}>
+                      <SelectTrigger><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
+                      <SelectContent>
+                        {clientes.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Sabor</Label>
+                    <Select value={fzSaborId} onValueChange={setFzSaborId}>
+                      <SelectTrigger><SelectValue placeholder="Selecione o sabor" /></SelectTrigger>
+                      <SelectContent>
+                        {sabores.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Quantidade (unidades)</Label>
+                    <Input type="number" min={1} value={fzQtd || ""} onChange={(e) => setFzQtd(Number(e.target.value))} />
+                  </div>
+                  <Button className="w-full" onClick={addFreezerStock}>Confirmar</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+          <Card>
+            <CardContent className="pt-6">
+              {freezers.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">Nenhum item nos freezers. Adicione usando o botão acima.</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Cliente</TableHead>
+                      <TableHead>Sabor</TableHead>
+                      <TableHead>Quantidade</TableHead>
+                      <TableHead>Atualizado</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {freezers.map((f) => (
+                      <TableRow key={f.id}>
+                        <TableCell className="font-medium">{f.clientes?.nome}</TableCell>
+                        <TableCell>{f.sabores?.nome}</TableCell>
+                        <TableCell>{f.quantidade} un.</TableCell>
+                        <TableCell>{new Date(f.updated_at).toLocaleDateString("pt-BR")}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => removeFreezerItem(f.id)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
