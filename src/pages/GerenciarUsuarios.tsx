@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Shield, Factory, Clock, CheckCircle, XCircle, Bell, LinkIcon } from "lucide-react";
+import { Plus, Shield, Factory, Clock, CheckCircle, XCircle, Bell, LinkIcon, KeyRound } from "lucide-react";
 
 interface UserWithRole {
   id: string;
@@ -36,6 +36,34 @@ export default function GerenciarUsuarios() {
   const [form, setForm] = useState({ email: "", password: "", nome: "", role: "producao" });
   const [loading, setLoading] = useState(false);
   const [generatingInvite, setGeneratingInvite] = useState(false);
+  const [passwordDialog, setPasswordDialog] = useState<{ open: boolean; user: UserWithRole | null }>({ open: false, user: null });
+  const [newPassword, setNewPassword] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
+
+  async function handleChangePassword() {
+    if (!passwordDialog.user || !newPassword) {
+      toast({ title: "Preencha a nova senha", variant: "destructive" });
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast({ title: "Senha deve ter pelo menos 6 caracteres", variant: "destructive" });
+      return;
+    }
+    setChangingPassword(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("update-password", {
+        body: { user_id: passwordDialog.user.id, new_password: newPassword },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: `Senha de ${passwordDialog.user.nome || passwordDialog.user.email} alterada com sucesso!` });
+      setPasswordDialog({ open: false, user: null });
+      setNewPassword("");
+    } catch (e: any) {
+      toast({ title: "Erro ao alterar senha", description: e.message, variant: "destructive" });
+    }
+    setChangingPassword(false);
+  }
 
   async function generateInvite(role: "admin" | "producao") {
     setGeneratingInvite(true);
@@ -219,10 +247,11 @@ export default function GerenciarUsuarios() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Perfil</TableHead>
-                    <TableHead>Criado em</TableHead>
+                     <TableHead>Nome</TableHead>
+                     <TableHead>Email</TableHead>
+                     <TableHead>Perfil</TableHead>
+                     <TableHead>Criado em</TableHead>
+                     <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -236,11 +265,16 @@ export default function GerenciarUsuarios() {
                           {u.role === "admin" ? "Administrador" : "Produção"}
                         </Badge>
                       </TableCell>
-                      <TableCell>{new Date(u.created_at).toLocaleDateString("pt-BR")}</TableCell>
-                    </TableRow>
-                  ))}
-                  {users.filter(u => u.role !== "sem_role").length === 0 && (
-                    <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">Nenhum usuário cadastrado.</TableCell></TableRow>
+                       <TableCell>{new Date(u.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                       <TableCell>
+                         <Button size="sm" variant="outline" className="gap-1" onClick={() => { setPasswordDialog({ open: true, user: u }); setNewPassword(""); }}>
+                           <KeyRound className="h-3 w-3" /> Alterar Senha
+                         </Button>
+                       </TableCell>
+                     </TableRow>
+                   ))}
+                   {users.filter(u => u.role !== "sem_role").length === 0 && (
+                     <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">Nenhum usuário cadastrado.</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -309,6 +343,31 @@ export default function GerenciarUsuarios() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={passwordDialog.open} onOpenChange={(o) => { setPasswordDialog({ ...passwordDialog, open: o }); if (!o) setNewPassword(""); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Alterar Senha</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Alterando senha de <strong>{passwordDialog.user?.nome || passwordDialog.user?.email}</strong>
+            </p>
+            <div>
+              <Label>Nova Senha</Label>
+              <Input
+                type="password"
+                placeholder="Mínimo 6 caracteres"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+            </div>
+            <Button className="w-full" onClick={handleChangePassword} disabled={changingPassword}>
+              {changingPassword ? "Alterando..." : "Confirmar Nova Senha"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
