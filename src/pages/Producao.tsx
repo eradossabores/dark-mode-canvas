@@ -32,6 +32,7 @@ export default function Producao() {
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteDayItems, setDeleteDayItems] = useState<any[] | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
   interface ProdItem {
@@ -295,7 +296,6 @@ export default function Producao() {
   async function handleDelete() {
     if (!deleteId) return;
     try {
-      // Delete associated records first
       await (supabase as any).from("producao_funcionarios").delete().eq("producao_id", deleteId);
       const { error } = await (supabase as any).from("producoes").delete().eq("id", deleteId);
       if (error) throw error;
@@ -304,6 +304,21 @@ export default function Producao() {
       loadData();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+  }
+
+  async function handleDeleteDay() {
+    if (!deleteDayItems || deleteDayItems.length === 0) return;
+    try {
+      for (const p of deleteDayItems) {
+        await (supabase as any).from("producao_funcionarios").delete().eq("producao_id", p.id);
+        await (supabase as any).from("producoes").delete().eq("id", p.id);
+      }
+      toast({ title: `${deleteDayItems.length} produção(ões) do dia excluídas!` });
+      setDeleteDayItems(null);
+      loadData();
+    } catch (e: any) {
+      toast({ title: "Erro ao excluir", description: e.message, variant: "destructive" });
     }
   }
 
@@ -548,6 +563,24 @@ export default function Producao() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Delete Day Confirm */}
+      <AlertDialog open={!!deleteDayItems} onOpenChange={(v) => !v && setDeleteDayItems(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Apagar toda produção do dia?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Serão excluídos {deleteDayItems?.length || 0} registro(s) de produção. Esta ação não reverte o estoque automaticamente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteDay} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Apagar Tudo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Top 5 Sabores Mais Produzidos - 3D Chart */}
         <Card className="mb-6">
           <CardHeader className="pb-2">
@@ -659,7 +692,6 @@ export default function Producao() {
                         variant="outline"
                         className="h-7 w-7"
                         onClick={() => {
-                          // Parse day dd/MM/yyyy to Date
                           const [d, m, y] = day.split("/").map(Number);
                           setDataProducao(new Date(y, m - 1, d));
                           resetForm();
@@ -668,6 +700,15 @@ export default function Producao() {
                         }}
                       >
                         <Plus className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="h-7 w-7 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                        onClick={() => setDeleteDayItems(dayItems)}
+                        title="Apagar tudo do dia"
+                      >
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                     <Badge variant="default" className="font-bold text-xs">Total: {dayTotal.toLocaleString("pt-BR")} un</Badge>
