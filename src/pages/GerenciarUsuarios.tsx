@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Shield, Factory, Clock, CheckCircle, XCircle, Bell, LinkIcon, KeyRound, Eye, EyeOff } from "lucide-react";
+import { Plus, Shield, Factory, Clock, CheckCircle, XCircle, Bell, LinkIcon, KeyRound, Eye, EyeOff, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface UserWithRole {
   id: string;
@@ -40,6 +41,26 @@ export default function GerenciarUsuarios() {
   const [newPassword, setNewPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; user: UserWithRole | null }>({ open: false, user: null });
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDeleteUser() {
+    if (!deleteDialog.user) return;
+    setDeleting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("delete-user", {
+        body: { user_id: deleteDialog.user.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: `${deleteDialog.user.nome || deleteDialog.user.email} excluído com sucesso!` });
+      setDeleteDialog({ open: false, user: null });
+      loadUsers();
+    } catch (e: any) {
+      toast({ title: "Erro ao excluir usuário", description: e.message, variant: "destructive" });
+    }
+    setDeleting(false);
+  }
 
   async function handleChangePassword() {
     if (!passwordDialog.user || !newPassword) {
@@ -268,9 +289,14 @@ export default function GerenciarUsuarios() {
                       </TableCell>
                        <TableCell>{new Date(u.created_at).toLocaleDateString("pt-BR")}</TableCell>
                        <TableCell>
-                         <Button size="sm" variant="outline" className="gap-1" onClick={() => { setPasswordDialog({ open: true, user: u }); setNewPassword(""); }}>
-                           <KeyRound className="h-3 w-3" /> Alterar Senha
-                         </Button>
+                         <div className="flex gap-2">
+                           <Button size="sm" variant="outline" className="gap-1" onClick={() => { setPasswordDialog({ open: true, user: u }); setNewPassword(""); }}>
+                             <KeyRound className="h-3 w-3" /> Alterar Senha
+                           </Button>
+                           <Button size="sm" variant="destructive" className="gap-1" onClick={() => setDeleteDialog({ open: true, user: u })}>
+                             <Trash2 className="h-3 w-3" /> Excluir
+                           </Button>
+                         </div>
                        </TableCell>
                      </TableRow>
                    ))}
@@ -381,6 +407,23 @@ export default function GerenciarUsuarios() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={deleteDialog.open} onOpenChange={(o) => setDeleteDialog({ ...deleteDialog, open: o })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Usuário</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <strong>{deleteDialog.user?.nome || deleteDialog.user?.email}</strong>? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteUser} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
