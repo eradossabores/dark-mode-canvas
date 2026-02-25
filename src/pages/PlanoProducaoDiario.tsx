@@ -9,8 +9,13 @@ import { toast } from "@/hooks/use-toast";
 import {
   Factory, TrendingUp, TrendingDown, Minus, RefreshCw,
   AlertTriangle, CheckCircle2, Snowflake, BarChart3, Check, X,
-  Brain, Sparkles, ClipboardList, PartyPopper, History, ChevronDown, ChevronUp, CalendarDays
+  Brain, Sparkles, ClipboardList, PartyPopper, History, ChevronDown, ChevronUp, CalendarDays,
+  Trash2, Pencil
 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface ChecklistItem {
   id: string;
@@ -155,6 +160,9 @@ export default function PlanoProducaoDiario() {
   const [modoChecklist, setModoChecklist] = useState(false);
   const [historicoDecisoes, setHistoricoDecisoes] = useState<any[]>([]);
   const [historicoExpanded, setHistoricoExpanded] = useState(false);
+  const [deleteRegistro, setDeleteRegistro] = useState<any>(null);
+  const [editRegistro, setEditRegistro] = useState<any>(null);
+  const [editItens, setEditItens] = useState<{ id: string; sabor_nome: string; lotes_autorizados: number }[]>([]);
 
   const hoje = new Date();
   const diaSemana = hoje.getDay();
@@ -208,6 +216,49 @@ export default function PlanoProducaoDiario() {
       setHistoricoDecisoes(resultado);
     } catch (e) {
       console.error("Erro ao buscar histórico:", e);
+    }
+  }
+
+  async function handleDeleteRegistro() {
+    if (!deleteRegistro) return;
+    try {
+      const ids = deleteRegistro.itens.map((i: any) => i.id);
+      const { error } = await (supabase as any)
+        .from("decisoes_producao")
+        .delete()
+        .in("id", ids);
+      if (error) throw error;
+      toast({ title: "Plano excluído com sucesso!" });
+      setDeleteRegistro(null);
+      fetchHistorico();
+    } catch (e: any) {
+      toast({ title: "Erro ao excluir", description: e.message, variant: "destructive" });
+    }
+  }
+
+  function openEditRegistro(registro: any) {
+    setEditRegistro(registro);
+    setEditItens(registro.itens.map((i: any) => ({
+      id: i.id,
+      sabor_nome: i.sabor_nome,
+      lotes_autorizados: i.lotes_autorizados,
+    })));
+  }
+
+  async function handleSaveEdit() {
+    if (!editRegistro) return;
+    try {
+      for (const item of editItens) {
+        await (supabase as any)
+          .from("decisoes_producao")
+          .update({ lotes_autorizados: item.lotes_autorizados })
+          .eq("id", item.id);
+      }
+      toast({ title: "Plano atualizado!" });
+      setEditRegistro(null);
+      fetchHistorico();
+    } catch (e: any) {
+      toast({ title: "Erro ao salvar", description: e.message, variant: "destructive" });
     }
   }
 
@@ -934,10 +985,14 @@ export default function PlanoProducaoDiario() {
                         <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
                         <span className="text-sm font-bold">{registro.dia}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>{registro.totalLotes} lotes</span>
-                        <span>·</span>
-                        <span>{registro.totalUnidades.toLocaleString()} un</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">{registro.totalLotes} lotes · {registro.totalUnidades.toLocaleString()} un</span>
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openEditRegistro(registro)}>
+                          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setDeleteRegistro(registro)}>
+                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        </Button>
                       </div>
                     </div>
                     <div className="text-[10px] text-muted-foreground">
@@ -1020,6 +1075,82 @@ export default function PlanoProducaoDiario() {
           </div>
         </div>
       )}
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!deleteRegistro} onOpenChange={(open) => !open && setDeleteRegistro(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir plano?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o plano de {deleteRegistro?.dia}?
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteRegistro} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Edit dialog */}
+      <Dialog open={!!editRegistro} onOpenChange={(open) => !open && setEditRegistro(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Plano — {editRegistro?.dia}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {editItens.map((item, idx) => {
+              const color = getSaborColor(item.sabor_nome);
+              return (
+                <div key={item.id} className="flex items-center gap-3">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                  <span className="text-sm font-medium flex-1">{item.sabor_nome}</span>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline" size="sm" className="h-8 w-8 p-0"
+                      onClick={() => {
+                        const updated = [...editItens];
+                        updated[idx].lotes_autorizados = Math.max(0, updated[idx].lotes_autorizados - 1);
+                        setEditItens(updated);
+                      }}
+                    >−</Button>
+                    <Input
+                      type="number"
+                      className="w-16 h-8 text-center text-sm"
+                      value={item.lotes_autorizados}
+                      onChange={(e) => {
+                        const updated = [...editItens];
+                        updated[idx].lotes_autorizados = Math.max(0, Number(e.target.value));
+                        setEditItens(updated);
+                      }}
+                    />
+                    <Button
+                      variant="outline" size="sm" className="h-8 w-8 p-0"
+                      onClick={() => {
+                        const updated = [...editItens];
+                        updated[idx].lotes_autorizados += 1;
+                        setEditItens(updated);
+                      }}
+                    >+</Button>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground w-12 text-right">
+                    {item.lotes_autorizados * 84}un
+                  </span>
+                </div>
+              );
+            })}
+            <div className="flex justify-between items-center pt-2 border-t">
+              <span className="text-sm font-bold">
+                Total: {editItens.reduce((s, i) => s + i.lotes_autorizados, 0)} lotes · {editItens.reduce((s, i) => s + i.lotes_autorizados * 84, 0)} un
+              </span>
+              <Button onClick={handleSaveEdit}>Salvar</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
