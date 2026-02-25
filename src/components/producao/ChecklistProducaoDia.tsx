@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, ClipboardList, ChevronDown, ChevronUp } from "lucide-react";
+import { Check, ClipboardList, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 
 const SABOR_COLORS: Record<string, string> = {
   melancia: "#ef4444",
@@ -37,17 +38,70 @@ interface ChecklistItem {
 
 export default function ChecklistProducaoDia() {
   const hojeStr = new Date().toISOString().slice(0, 10);
-  const CHECKLIST_KEY = `checklist-producao-${hojeStr}`;
+  const CONCLUIDOS_KEY = `checklist-concluidos-${hojeStr}`;
 
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [expanded, setExpanded] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const saved = localStorage.getItem(CHECKLIST_KEY);
-    if (saved) {
-      try { setChecklist(JSON.parse(saved)); } catch {}
-    }
+    fetchDecisoes();
   }, []);
+
+  async function fetchDecisoes() {
+    setLoading(true);
+    try {
+      // Buscar decisões autorizadas de hoje da tabela decisoes_producao
+      const inicioHoje = `${hojeStr}T00:00:00.000Z`;
+      const fimHoje = `${hojeStr}T23:59:59.999Z`;
+
+      const { data, error } = await (supabase as any)
+        .from("decisoes_producao")
+        .select("*")
+        .gte("created_at", inicioHoje)
+        .lte("created_at", fimHoje)
+        .gt("lotes_autorizados", 0)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        setChecklist([]);
+        setLoading(false);
+        return;
+      }
+
+      // Recuperar estado de conclusão do localStorage
+      let concluidos: Record<string, string> = {};
+      try {
+        const saved = localStorage.getItem(CONCLUIDOS_KEY);
+        if (saved) concluidos = JSON.parse(saved);
+      } catch {}
+
+      // Gerar checklist items a partir das decisões do banco
+      const items: ChecklistItem[] = [];
+      data.forEach((decisao: any) => {
+        for (let l = 1; l <= decisao.lotes_autorizados; l++) {
+          const itemId = `${decisao.sabor_id}-${l}`;
+          items.push({
+            id: itemId,
+            saborId: decisao.sabor_id,
+            saborNome: decisao.sabor_nome,
+            loteNumero: l,
+            totalLotes: decisao.lotes_autorizados,
+            concluido: !!concluidos[itemId],
+            horaConclusao: concluidos[itemId] || undefined,
+          });
+        }
+      });
+
+      setChecklist(items);
+    } catch (e) {
+      console.error("Erro ao carregar checklist:", e);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   function toggleItem(id: string) {
     setChecklist(prev => {
@@ -60,9 +114,28 @@ export default function ChecklistProducaoDia() {
             : undefined
         } : c
       );
-      localStorage.setItem(CHECKLIST_KEY, JSON.stringify(updated));
+
+      // Salvar apenas os concluídos no localStorage
+      const concluidos: Record<string, string> = {};
+      updated.forEach(item => {
+        if (item.concluido && item.horaConclusao) {
+          concluidos[item.id] = item.horaConclusao;
+        }
+      });
+      localStorage.setItem(CONCLUIDOS_KEY, JSON.stringify(concluidos));
+
       return updated;
     });
+  }
+
+  if (loading) {
+    return (
+      <Card className="mb-6">
+        <CardContent className="pt-4 pb-3 flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" /> Carregando checklist...
+        </CardContent>
+      </Card>
+    );
   }
 
   if (checklist.length === 0) return null;
@@ -72,13 +145,11 @@ export default function ChecklistProducaoDia() {
   const progress = Math.round((concluidos / total) * 100);
   const completo = concluidos === total;
 
-  // Group by sabor
   const saboresUnicos = [...new Set(checklist.map(c => c.saborId))];
 
   return (
     <Card className="mb-6">
       <CardContent className="pt-4 pb-3">
-        {/* Header */}
         <div
           className="flex items-center justify-between cursor-pointer"
           onClick={() => setExpanded(!expanded)}
@@ -95,7 +166,6 @@ export default function ChecklistProducaoDia() {
             </Badge>
           </div>
           <div className="flex items-center gap-2">
-            {/* Mini progress bar */}
             <div className="w-20 h-2 rounded-full bg-muted overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-500"
@@ -110,7 +180,6 @@ export default function ChecklistProducaoDia() {
           </div>
         </div>
 
-        {/* Checklist items */}
         {expanded && (
           <div className="mt-3 space-y-2">
             {saboresUnicos.map(saborId => {
