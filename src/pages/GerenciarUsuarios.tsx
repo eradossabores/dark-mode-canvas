@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Shield, Factory, Clock, CheckCircle, XCircle, Bell, LinkIcon, KeyRound } from "lucide-react";
+import { Plus, Shield, Factory, Clock, CheckCircle, XCircle, Bell, LinkIcon, KeyRound, Eye, EyeOff } from "lucide-react";
 
 interface UserWithRole {
   id: string;
@@ -39,6 +39,7 @@ export default function GerenciarUsuarios() {
   const [passwordDialog, setPasswordDialog] = useState<{ open: boolean; user: UserWithRole | null }>({ open: false, user: null });
   const [newPassword, setNewPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function handleChangePassword() {
     if (!passwordDialog.user || !newPassword) {
@@ -355,12 +356,24 @@ export default function GerenciarUsuarios() {
             </p>
             <div>
               <Label>Nova Senha</Label>
-              <Input
-                type="password"
-                placeholder="Mínimo 6 caracteres"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-              />
+              <div className="relative">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Mínimo 6 caracteres"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                </Button>
+              </div>
             </div>
             <Button className="w-full" onClick={handleChangePassword} disabled={changingPassword}>
               {changingPassword ? "Alterando..." : "Confirmar Nova Senha"}
