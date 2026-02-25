@@ -28,6 +28,7 @@ import Diagnostico from "@/pages/Diagnostico";
 import VerificacaoVendas from "@/pages/VerificacaoVendas";
 import GerenciarUsuarios from "@/pages/GerenciarUsuarios";
 import PrevisaoDemanda from "@/pages/PrevisaoDemanda";
+import PlanoProducaoDiario from "@/pages/PlanoProducaoDiario";
 import MapaEntregas from "@/pages/MapaEntregas";
 import MapaClientes from "@/pages/MapaClientes";
 import Prospeccao from "@/pages/Prospeccao";
@@ -79,6 +80,7 @@ const App = () => (
               <Route path="/painel/mapa-entregas" element={<AdminRoute><MapaEntregas /></AdminRoute>} />
               <Route path="/painel/mapa-clientes" element={<AdminRoute><MapaClientes /></AdminRoute>} />
               <Route path="/painel/prospeccao" element={<AdminRoute><Prospeccao /></AdminRoute>} />
+              <Route path="/painel/plano-producao" element={<AdminRoute><PlanoProducaoDiario /></AdminRoute>} />
 
               {/* Production accessible routes */}
               <Route path="/painel/producao" element={<ProdRoute><Producao /></ProdRoute>} />
