@@ -66,13 +66,30 @@ function ProgressRing({ progress, color, size = 52 }: { progress: number; color:
   );
 }
 
+// Escala fixa: Terça/Quarta = Aghata + Maria, Quinta/Sexta = Jhulia + Aghata
+const ESCALA_PRODUCAO: Record<number, string[]> = {
+  2: ["aghata", "maria"],   // terça
+  3: ["aghata", "maria"],   // quarta
+  4: ["jhulia", "aghata"],  // quinta
+  5: ["jhulia", "aghata"],  // sexta
+};
+const NOMES_DIA: Record<number, string> = {
+  0: "Domingo", 1: "Segunda-feira", 2: "Terça-feira",
+  3: "Quarta-feira", 4: "Quinta-feira", 5: "Sexta-feira", 6: "Sábado",
+};
+
 export default function PlanoProducaoDiario() {
   const [analises, setAnalises] = useState<SaborAnalise[]>([]);
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
-  const [funcSelecionados, setFuncSelecionados] = useState<string[]>([""]);
+  const [funcSelecionados, setFuncSelecionados] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [executando, setExecutando] = useState(false);
   const [executado, setExecutado] = useState(false);
+
+  const hoje = new Date();
+  const diaSemana = hoje.getDay();
+  const diaProducao = diaSemana >= 2 && diaSemana <= 5;
+  const escalaDoDia = ESCALA_PRODUCAO[diaSemana] || [];
 
   useEffect(() => { calcular(); }, []);
 
@@ -87,7 +104,17 @@ export default function PlanoProducaoDiario() {
         (supabase as any).from("funcionarios").select("id, nome").eq("ativo", true).order("nome"),
       ]);
 
-      setFuncionarios(funcsRes.data || []);
+      const funcs = funcsRes.data || [];
+      setFuncionarios(funcs);
+
+      // Auto-selecionar funcionários da escala do dia
+      if (escalaDoDia.length > 0) {
+        const ids = escalaDoDia
+          .map(nome => funcs.find((f: any) => f.nome.toLowerCase().includes(nome)))
+          .filter(Boolean)
+          .map((f: any) => f.id);
+        if (ids.length > 0) setFuncSelecionados(ids);
+      }
       const vendaItens = (vendasRes.data || []).filter((v: any) => v.vendas?.status !== "cancelada");
       const gelos = gelosRes.data || [];
       const saboresAtivos = saboresRes.data || [];
@@ -241,7 +268,7 @@ export default function PlanoProducaoDiario() {
           <div>
             <h1 className="text-xl font-bold">Plano de Produção</h1>
             <p className="text-xs text-muted-foreground">
-              {selecionados.length} de {analises.length} sabores · {totalLotes} lotes · {totalUnidades.toLocaleString()} un
+              {NOMES_DIA[diaSemana]} · {selecionados.length} de {analises.length} sabores · {totalLotes} lotes · {totalUnidades.toLocaleString()} un
             </p>
           </div>
         </div>
@@ -251,10 +278,32 @@ export default function PlanoProducaoDiario() {
         </Button>
       </div>
 
-      {/* Responsáveis - compacto */}
+      {/* Aviso dia sem produção */}
+      {!diaProducao && (
+        <Card className="border-amber-500/50 bg-amber-500/5">
+          <CardContent className="py-6 text-center">
+            <AlertTriangle className="h-8 w-8 text-amber-500 mx-auto mb-2" />
+            <p className="font-bold text-sm">Hoje é {NOMES_DIA[diaSemana]}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              A produção opera de <strong>Terça a Sexta-feira</strong>. Você ainda pode planejar para o próximo dia útil.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Escala do dia */}
       <Card className="border-dashed">
         <CardContent className="pt-4 pb-3">
-          <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Responsável(is)</p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              Escala de Hoje — {NOMES_DIA[diaSemana]}
+            </p>
+            {diaProducao && (
+              <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
+                {escalaDoDia.map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(" + ")}
+              </Badge>
+            )}
+          </div>
           <div className="flex flex-wrap gap-2 items-center">
             {funcSelecionados.map((fId, i) => (
               <div key={i} className="flex gap-1 items-center">
