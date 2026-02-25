@@ -43,6 +43,8 @@ export default function GerenciarUsuarios() {
   const [showPassword, setShowPassword] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; user: UserWithRole | null }>({ open: false, user: null });
   const [deleting, setDeleting] = useState(false);
+  const [clearAllDialog, setClearAllDialog] = useState(false);
+  const [clearingAll, setClearingAll] = useState(false);
 
   async function handleDeleteUser() {
     if (!deleteDialog.user) return;
@@ -61,6 +63,31 @@ export default function GerenciarUsuarios() {
       toast({ title: "Erro ao excluir usuário", description: e.message, variant: "destructive" });
     }
     setDeleting(false);
+  }
+
+  async function handleDeleteRequest(requestId: string) {
+    try {
+      const { error } = await (supabase as any).from("access_requests").delete().eq("id", requestId);
+      if (error) throw error;
+      toast({ title: "Solicitação excluída!" });
+      loadRequests();
+    } catch (e: any) {
+      toast({ title: "Erro ao excluir", description: e.message, variant: "destructive" });
+    }
+  }
+
+  async function handleClearAllRequests() {
+    setClearingAll(true);
+    try {
+      const { error } = await (supabase as any).from("access_requests").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      if (error) throw error;
+      toast({ title: "Todas as solicitações foram excluídas!" });
+      setClearAllDialog(false);
+      loadRequests();
+    } catch (e: any) {
+      toast({ title: "Erro ao limpar solicitações", description: e.message, variant: "destructive" });
+    }
+    setClearingAll(false);
   }
 
   async function handleChangePassword() {
@@ -313,14 +340,23 @@ export default function GerenciarUsuarios() {
         <TabsContent value="requests">
           <Card>
             <CardContent className="pt-6">
-              {pendingRequests.length > 0 && (
-                <div className="flex items-center gap-2 mb-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
-                  <Bell className="h-4 w-4 text-amber-600" />
-                  <span className="text-sm text-amber-700 dark:text-amber-400 font-medium">
-                    {pendingRequests.length} solicitação(ões) aguardando aprovação
-                  </span>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  {pendingRequests.length > 0 && (
+                    <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                      <Bell className="h-4 w-4 text-amber-600" />
+                      <span className="text-sm text-amber-700 dark:text-amber-400 font-medium">
+                        {pendingRequests.length} solicitação(ões) aguardando aprovação
+                      </span>
+                    </div>
+                  )}
                 </div>
-              )}
+                {requests.length > 0 && (
+                  <Button variant="destructive" size="sm" className="gap-1" onClick={() => setClearAllDialog(true)}>
+                    <Trash2 className="h-3 w-3" /> Excluir Tudo
+                  </Button>
+                )}
+              </div>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -349,7 +385,7 @@ export default function GerenciarUsuarios() {
                       </TableCell>
                       <TableCell>{new Date(r.created_at).toLocaleDateString("pt-BR")}</TableCell>
                       <TableCell>
-                        {r.status === "pendente" && (
+                         {r.status === "pendente" ? (
                           <div className="flex gap-2">
                             <Button size="sm" variant="default" className="gap-1" onClick={() => handleApprove(r)}>
                               <CheckCircle className="h-3 w-3" /> Aprovar
@@ -358,9 +394,13 @@ export default function GerenciarUsuarios() {
                               <XCircle className="h-3 w-3" /> Rejeitar
                             </Button>
                           </div>
-                        )}
-                      </TableCell>
-                    </TableRow>
+                         ) : (
+                          <Button size="sm" variant="ghost" className="gap-1 text-destructive" onClick={() => handleDeleteRequest(r.id)}>
+                            <Trash2 className="h-3 w-3" /> Excluir
+                          </Button>
+                         )}
+                       </TableCell>
+                     </TableRow>
                   ))}
                   {requests.length === 0 && (
                     <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">Nenhuma solicitação de acesso.</TableCell></TableRow>
@@ -421,6 +461,22 @@ export default function GerenciarUsuarios() {
             <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteUser} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               {deleting ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={clearAllDialog} onOpenChange={setClearAllDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Todas as Solicitações</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir todas as {requests.length} solicitações de acesso? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={clearingAll}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleClearAllRequests} disabled={clearingAll} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {clearingAll ? "Excluindo..." : "Excluir Tudo"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
