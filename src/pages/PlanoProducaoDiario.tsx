@@ -390,6 +390,48 @@ export default function PlanoProducaoDiario() {
         </Button>
       </div>
 
+      {/* Painel de Estoque Atual - visão rápida antes de decidir */}
+      {analises.length > 0 && (
+        <Card>
+          <CardContent className="pt-3 pb-2 px-4">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1">
+              <Snowflake className="h-3 w-3" /> Estoque Atual de Gelos
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {[...analises]
+                .sort((a, b) => b.estoqueAtual - a.estoqueAtual)
+                .map(a => {
+                  const color = getSaborColor(a.nome);
+                  const critico = a.diasCobertura <= 3 && a.diasCobertura !== 999;
+                  const alerta = a.diasCobertura > 3 && a.diasCobertura <= 7;
+                  return (
+                    <div
+                      key={a.id}
+                      className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px]"
+                      style={{
+                        backgroundColor: critico ? "hsl(var(--destructive) / 0.1)" : alerta ? "rgba(245,158,11,0.1)" : `${color}15`,
+                        border: `1px solid ${critico ? "hsl(var(--destructive) / 0.3)" : alerta ? "rgba(245,158,11,0.3)" : `${color}30`}`,
+                      }}
+                    >
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                      <span className="font-medium truncate max-w-[80px]">{a.nome}</span>
+                      <span className={`font-black ${critico ? "text-destructive" : alerta ? "text-amber-600" : ""}`}>
+                        {a.estoqueAtual.toLocaleString()}
+                      </span>
+                    </div>
+                  );
+                })}
+              <div className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] bg-muted border border-border">
+                <span className="font-medium">TOTAL</span>
+                <span className="font-black">
+                  {analises.reduce((s, a) => s + a.estoqueAtual, 0).toLocaleString()}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Learning status card */}
       <Card className={`border-dashed ${totalDecisoes >= 10 ? "border-primary/40 bg-primary/5" : "border-muted"}`}>
         <CardContent className="py-3 px-4">
