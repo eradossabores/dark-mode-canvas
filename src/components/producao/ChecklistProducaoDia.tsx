@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
+import { Loader2, PartyPopper } from "lucide-react";
 
 const SABOR_COLORS: Record<string, string> = {
   melancia: "#ef4444",
@@ -35,6 +35,80 @@ interface ChecklistItem {
   horaConclusao?: string;
 }
 
+/* ─── Progress Ring SVG ─── */
+function ProgressRing({ progress, color, size = 48, strokeWidth = 4, children }: {
+  progress: number; color: string; size?: number; strokeWidth?: number; children?: React.ReactNode;
+}) {
+  const r = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * r;
+  const offset = circumference - (progress / 100) * circumference;
+  return (
+    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="hsl(var(--muted))" strokeWidth={strokeWidth} />
+        <circle
+          cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={strokeWidth}
+          strokeDasharray={circumference} strokeDashoffset={offset}
+          strokeLinecap="round" className="transition-all duration-700 ease-out"
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">{children}</div>
+    </div>
+  );
+}
+
+/* ─── Circle Checkbox ─── */
+function CircleCheck({ checked, color, size = "md" }: { checked: boolean; color: string; size?: "sm" | "md" }) {
+  const dim = size === "sm" ? 22 : 28;
+  const r = dim / 2 - 2;
+  return (
+    <svg width={dim} height={dim} viewBox={`0 0 ${dim} ${dim}`} className="shrink-0">
+      <circle cx={dim / 2} cy={dim / 2} r={r} fill={checked ? color : "transparent"} stroke={checked ? color : "hsl(var(--border))"} strokeWidth={2} className="transition-all duration-300" />
+      {checked && (
+        <polyline points={size === "sm" ? "7,11 10,14 15,8" : "8,14 12,18 20,10"} fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="animate-scale-in" />
+      )}
+    </svg>
+  );
+}
+
+/* ─── Confetti Particle ─── */
+function Confetti() {
+  const particles = useMemo(() =>
+    Array.from({ length: 40 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      delay: Math.random() * 0.5,
+      duration: 1.5 + Math.random() * 1,
+      size: 4 + Math.random() * 6,
+      color: ["#ef4444", "#22c55e", "#f59e0b", "#3b82f6", "#d946ef", "#06b6d4"][i % 6],
+      rotation: Math.random() * 360,
+    }))
+  , []);
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none z-10">
+      {particles.map(p => (
+        <div
+          key={p.id}
+          className="absolute animate-confetti"
+          style={{
+            left: `${p.x}%`,
+            top: "-10px",
+            width: p.size,
+            height: p.size * 1.5,
+            backgroundColor: p.color,
+            borderRadius: "2px",
+            transform: `rotate(${p.rotation}deg)`,
+            animationDelay: `${p.delay}s`,
+            animationDuration: `${p.duration}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* ─── Main Component ─── */
 export default function ChecklistProducaoDia() {
   const hoje = new Date();
   const hojeStr = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}-${String(hoje.getDate()).padStart(2, "0")}`;
@@ -42,6 +116,7 @@ export default function ChecklistProducaoDia() {
 
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   useEffect(() => { fetchDecisoes(); }, []);
 
@@ -50,15 +125,10 @@ export default function ChecklistProducaoDia() {
     try {
       const inicioHoje = `${hojeStr}T00:00:00-03:00`;
       const fimHoje = `${hojeStr}T23:59:59-03:00`;
-
       const { data, error } = await (supabase as any)
-        .from("decisoes_producao")
-        .select("*")
-        .gte("created_at", inicioHoje)
-        .lte("created_at", fimHoje)
-        .gt("lotes_autorizados", 0)
-        .order("created_at", { ascending: true });
-
+        .from("decisoes_producao").select("*")
+        .gte("created_at", inicioHoje).lte("created_at", fimHoje)
+        .gt("lotes_autorizados", 0).order("created_at", { ascending: true });
       if (error) throw error;
       if (!data || data.length === 0) { setChecklist([]); setLoading(false); return; }
 
@@ -66,14 +136,10 @@ export default function ChecklistProducaoDia() {
       try { const saved = localStorage.getItem(CONCLUIDOS_KEY); if (saved) concluidos = JSON.parse(saved); } catch {}
 
       const items: ChecklistItem[] = [];
-      data.forEach((decisao: any) => {
-        for (let l = 1; l <= decisao.lotes_autorizados; l++) {
-          const itemId = `${decisao.sabor_id}-${l}`;
-          items.push({
-            id: itemId, saborId: decisao.sabor_id, saborNome: decisao.sabor_nome,
-            loteNumero: l, totalLotes: decisao.lotes_autorizados,
-            concluido: !!concluidos[itemId], horaConclusao: concluidos[itemId] || undefined,
-          });
+      data.forEach((d: any) => {
+        for (let l = 1; l <= d.lotes_autorizados; l++) {
+          const itemId = `${d.sabor_id}-${l}`;
+          items.push({ id: itemId, saborId: d.sabor_id, saborNome: d.sabor_nome, loteNumero: l, totalLotes: d.lotes_autorizados, concluido: !!concluidos[itemId], horaConclusao: concluidos[itemId] || undefined });
         }
       });
       setChecklist(items);
@@ -81,17 +147,27 @@ export default function ChecklistProducaoDia() {
     finally { setLoading(false); }
   }
 
+  function saveConcluidos(updated: ChecklistItem[]) {
+    const concluidos: Record<string, string> = {};
+    updated.forEach(item => { if (item.concluido && item.horaConclusao) concluidos[item.id] = item.horaConclusao; });
+    localStorage.setItem(CONCLUIDOS_KEY, JSON.stringify(concluidos));
+  }
+
+  function triggerCelebration(updated: ChecklistItem[]) {
+    const allDone = updated.every(c => c.concluido);
+    if (allDone && updated.length > 0) {
+      setShowCelebration(true);
+      setTimeout(() => setShowCelebration(false), 4000);
+    }
+  }
+
   function toggleItem(id: string) {
     setChecklist(prev => {
       const updated = prev.map(c =>
-        c.id === id ? {
-          ...c, concluido: !c.concluido,
-          horaConclusao: !c.concluido ? new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : undefined
-        } : c
+        c.id === id ? { ...c, concluido: !c.concluido, horaConclusao: !c.concluido ? new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : undefined } : c
       );
-      const concluidos: Record<string, string> = {};
-      updated.forEach(item => { if (item.concluido && item.horaConclusao) concluidos[item.id] = item.horaConclusao; });
-      localStorage.setItem(CONCLUIDOS_KEY, JSON.stringify(concluidos));
+      saveConcluidos(updated);
+      triggerCelebration(updated);
       return updated;
     });
   }
@@ -104,9 +180,8 @@ export default function ChecklistProducaoDia() {
       const updated = prev.map(c =>
         c.saborId === saborId ? { ...c, concluido: !allDone, horaConclusao: !allDone ? now : undefined } : c
       );
-      const concluidos: Record<string, string> = {};
-      updated.forEach(item => { if (item.concluido && item.horaConclusao) concluidos[item.id] = item.horaConclusao; });
-      localStorage.setItem(CONCLUIDOS_KEY, JSON.stringify(concluidos));
+      saveConcluidos(updated);
+      triggerCelebration(updated);
       return updated;
     });
   }
@@ -125,58 +200,104 @@ export default function ChecklistProducaoDia() {
 
   const saboresUnicos = [...new Set(checklist.map(c => c.saborId))];
   const totalConcluidos = checklist.filter(c => c.concluido).length;
-  const completo = totalConcluidos === checklist.length;
+  const total = checklist.length;
+  const progressGeral = Math.round((totalConcluidos / total) * 100);
+  const completo = totalConcluidos === total;
 
   return (
-    <div className="mb-6 space-y-3">
-      {completo && (
-        <div className="text-center py-3 text-sm text-green-600 font-semibold rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
-          ✅ Produção do dia concluída!
-        </div>
-      )}
+    <div className="mb-6 space-y-4">
+      {/* ── Barra de progresso geral ── */}
+      <Card className="relative overflow-hidden">
+        {showCelebration && <Confetti />}
+        <CardContent className="pt-5 pb-4">
+          <div className="flex items-center gap-4">
+            <ProgressRing progress={progressGeral} color={completo ? "#22c55e" : "hsl(var(--primary))"} size={56} strokeWidth={5}>
+              <span className="text-xs font-bold text-foreground">{progressGeral}%</span>
+            </ProgressRing>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-bold text-sm text-foreground">Progresso do Dia</span>
+                <Badge variant={completo ? "default" : "secondary"} className="text-xs font-bold" style={completo ? { backgroundColor: "#22c55e" } : {}}>
+                  {totalConcluidos}/{total} lotes
+                </Badge>
+              </div>
+              <div className="w-full h-2.5 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-700 ease-out"
+                  style={{ width: `${progressGeral}%`, background: completo ? "#22c55e" : "hsl(var(--primary))" }}
+                />
+              </div>
+              {/* Mini rings por sabor */}
+              <div className="flex items-center gap-3 mt-3 flex-wrap">
+                {saboresUnicos.map(saborId => {
+                  const itens = checklist.filter(c => c.saborId === saborId);
+                  const nome = itens[0]?.saborNome || "";
+                  const color = getSaborColor(nome);
+                  const done = itens.filter(c => c.concluido).length;
+                  const pct = Math.round((done / itens.length) * 100);
+                  return (
+                    <div key={saborId} className="flex items-center gap-1.5">
+                      <ProgressRing progress={pct} color={color} size={28} strokeWidth={3}>
+                        <span className="text-[7px] font-bold text-foreground">{done}</span>
+                      </ProgressRing>
+                      <span className="text-[10px] text-muted-foreground font-medium truncate max-w-[60px]">{nome}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
 
+          {/* Celebration banner */}
+          {completo && (
+            <div className={`mt-4 flex items-center justify-center gap-2 py-3 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 ${showCelebration ? "animate-scale-in" : "animate-fade-in"}`}>
+              <PartyPopper className="h-5 w-5 text-green-600" />
+              <span className="text-sm font-bold text-green-600">Produção do dia concluída! 🎉</span>
+              <PartyPopper className="h-5 w-5 text-green-600" />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── Cards por sabor ── */}
       {saboresUnicos.map(saborId => {
         const itens = checklist.filter(c => c.saborId === saborId);
         const nome = itens[0]?.saborNome || "";
         const color = getSaborColor(nome);
         const saborConcluidos = itens.filter(c => c.concluido).length;
         const todosOk = saborConcluidos === itens.length;
+        const saborPct = Math.round((saborConcluidos / itens.length) * 100);
 
         return (
           <div
             key={saborId}
-            className="rounded-xl border bg-card overflow-hidden shadow-sm"
+            className={`rounded-xl border bg-card overflow-hidden shadow-sm transition-all duration-300 ${todosOk ? "opacity-75" : ""}`}
             style={{ borderLeftWidth: 4, borderLeftColor: color }}
           >
-            {/* Sabor header */}
-            <div
-              className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors"
-              onClick={() => toggleSabor(saborId)}
-            >
+            <div className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => toggleSabor(saborId)}>
               <div className="flex items-center gap-3">
-                <CircleCheck checked={todosOk} color={color} />
+                <ProgressRing progress={saborPct} color={color} size={36} strokeWidth={3.5}>
+                  {todosOk ? (
+                    <svg width={16} height={16} viewBox="0 0 16 16"><polyline points="3,8 6.5,11.5 13,4.5" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  ) : (
+                    <span className="text-[8px] font-bold text-foreground">{saborPct}%</span>
+                  )}
+                </ProgressRing>
                 <span className={`font-semibold text-sm ${todosOk ? "line-through text-muted-foreground" : "text-foreground"}`}>
                   {nome}
                 </span>
               </div>
-              <Badge
-                variant="secondary"
-                className="text-xs font-bold"
-                style={todosOk ? { backgroundColor: `${color}20`, color } : {}}
-              >
+              <Badge variant="secondary" className="text-xs font-bold" style={todosOk ? { backgroundColor: `${color}20`, color } : {}}>
                 {saborConcluidos}/{itens.length} lotes
               </Badge>
             </div>
 
-            {/* Lote items */}
             <div className="px-4 pb-3 space-y-1.5">
               {itens.map(item => (
                 <div
                   key={item.id}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 ${
-                    item.concluido
-                      ? "bg-green-50 dark:bg-green-950/20"
-                      : "bg-muted/40 hover:bg-muted/60"
+                    item.concluido ? "bg-green-50 dark:bg-green-950/20" : "bg-muted/40 hover:bg-muted/60"
                   }`}
                   onClick={() => toggleItem(item.id)}
                 >
@@ -195,26 +316,5 @@ export default function ChecklistProducaoDia() {
         );
       })}
     </div>
-  );
-}
-
-function CircleCheck({ checked, color, size = "md" }: { checked: boolean; color: string; size?: "sm" | "md" }) {
-  const dim = size === "sm" ? 22 : 28;
-  const r = dim / 2 - 2;
-  return (
-    <svg width={dim} height={dim} viewBox={`0 0 ${dim} ${dim}`} className="shrink-0">
-      <circle
-        cx={dim / 2} cy={dim / 2} r={r}
-        fill={checked ? color : "transparent"}
-        stroke={checked ? color : "hsl(var(--border))"}
-        strokeWidth={2}
-      />
-      {checked && (
-        <polyline
-          points={size === "sm" ? "7,11 10,14 15,8" : "8,14 12,18 20,10"}
-          fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
-        />
-      )}
-    </svg>
   );
 }
