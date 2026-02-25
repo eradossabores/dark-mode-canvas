@@ -370,6 +370,15 @@ export default function MonitorProducao() {
               <CalendarClock className="h-3.5 w-3.5 text-primary" />
               <span className="font-bold text-primary">{format(new Date(pedido.data_entrega), "dd/MM HH:mm", { locale: ptBR })}</span>
             </span>
+            {pedido.tipo_pedido && (
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                pedido.tipo_pedido === "entrega"
+                  ? "bg-violet-500/15 text-violet-700 dark:text-violet-300 border border-violet-300 dark:border-violet-700"
+                  : "bg-orange-500/15 text-orange-700 dark:text-orange-300 border border-orange-300 dark:border-orange-700"
+              }`}>
+                {pedido.tipo_pedido === "entrega" ? "🚚 Entrega" : "🧊 Retirada"}
+              </span>
+            )}
             <span className="flex items-center gap-1">
               <Package className="h-3.5 w-3.5" /> {pedido.tipo_embalagem}
             </span>

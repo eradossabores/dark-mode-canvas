@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { realizarVenda } from "@/lib/supabase-helpers";
@@ -18,7 +18,8 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, ShoppingCart, Pencil, Eye, CalendarIcon, X } from "lucide-react";
+import { Plus, Trash2, ShoppingCart, Pencil, Eye, CalendarIcon, X, Truck, Package } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const FORMAS_PAGAMENTO = [
   { value: "amostra", label: "Amostra (Grátis)" },
@@ -62,6 +63,7 @@ export default function Vendas() {
   const [statusVenda, setStatusVenda] = useState("pendente");
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [sendingToProduction, setSendingToProduction] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [searchCliente, setSearchCliente] = useState("");
   const PAGE_SIZE = 20;
@@ -342,6 +344,94 @@ export default function Vendas() {
     if (v.forma_pagamento) return FORMAS_PAGAMENTO.find(f => f.value === v.forma_pagamento)?.label || v.forma_pagamento;
     const match = v.observacoes?.match(/^\[([^\]]+)\]/);
     return match ? match[1] : "-";
+  }
+
+  async function sendToProduction(venda: any, tipoPedido: "entrega" | "retirada") {
+    if (sendingToProduction) return;
+    setSendingToProduction(venda.id);
+    try {
+      // 1. Validate venda status
+      const { data: freshVenda, error: fetchErr } = await (supabase as any)
+        .from("vendas")
+        .select("id, cliente_id, enviado_producao, status")
+        .eq("id", venda.id)
+        .single();
+      if (fetchErr) throw fetchErr;
+
+      if (freshVenda.enviado_producao) {
+        toast({ title: "Este pedido já foi enviado para produção", variant: "destructive" });
+        return;
+      }
+      if (freshVenda.status === "cancelada") {
+        toast({ title: "Não é possível enviar uma venda cancelada para produção", variant: "destructive" });
+        return;
+      }
+
+      // 2. Get venda items
+      const { data: vendaItens, error: itensErr } = await (supabase as any)
+        .from("venda_itens")
+        .select("sabor_id, quantidade, sabores(nome)")
+        .eq("venda_id", venda.id);
+      if (itensErr) throw itensErr;
+
+      if (!vendaItens || vendaItens.length === 0) {
+        toast({ title: "Venda sem itens para enviar", variant: "destructive" });
+        return;
+      }
+
+      // 3. Create pedido_producao
+      const now = new Date();
+      const dataEntrega = new Date(now.getTime() + 2 * 60 * 60 * 1000); // +2h default
+      const dataEntregaStr = `${dataEntrega.getFullYear()}-${String(dataEntrega.getMonth() + 1).padStart(2, "0")}-${String(dataEntrega.getDate()).padStart(2, "0")}T${String(dataEntrega.getHours()).padStart(2, "0")}:${String(dataEntrega.getMinutes()).padStart(2, "0")}:00`;
+
+      const { data: pedido, error: pedidoErr } = await (supabase as any)
+        .from("pedidos_producao")
+        .insert({
+          cliente_id: freshVenda.cliente_id,
+          tipo_embalagem: "1 saco",
+          data_entrega: dataEntregaStr,
+          observacoes: `Gerado automaticamente da venda. Tipo: ${tipoPedido === "entrega" ? "Entrega" : "Retirada"}`,
+          status: "aguardando_producao",
+          status_pagamento: freshVenda.status === "paga" ? "pago" : "aguardando_pagamento",
+          tipo_pedido: tipoPedido,
+          venda_id: venda.id,
+        })
+        .select()
+        .single();
+      if (pedidoErr) throw pedidoErr;
+
+      // 4. Create pedido items
+      const itensBatch = vendaItens.map((i: any) => ({
+        pedido_id: pedido.id,
+        sabor_id: i.sabor_id,
+        quantidade: i.quantidade,
+      }));
+      const { error: insertErr } = await (supabase as any).from("pedido_producao_itens").insert(itensBatch);
+      if (insertErr) throw insertErr;
+
+      // 5. Mark venda as sent
+      await (supabase as any).from("vendas").update({ enviado_producao: true }).eq("id", venda.id);
+
+      // 6. Auditoria
+      const clienteNome = venda.clientes?.nome || "?";
+      await (supabase as any).from("auditoria").insert({
+        usuario_nome: "sistema",
+        modulo: "vendas",
+        acao: "enviar_producao",
+        registro_afetado: venda.id,
+        descricao: `Venda enviada para produção (${tipoPedido === "entrega" ? "Entrega" : "Retirada"}) - Cliente: ${clienteNome}`,
+      });
+
+      toast({
+        title: tipoPedido === "entrega" ? "🚚 Enviado para Entrega!" : "🧊 Enviado para Retirada!",
+        description: `Pedido criado no Monitor de Produção para ${clienteNome}`,
+      });
+      loadData();
+    } catch (e: any) {
+      toast({ title: "Erro ao enviar para produção", description: e.message, variant: "destructive" });
+    } finally {
+      setSendingToProduction(null);
+    }
   }
 
   return (
@@ -727,13 +817,54 @@ export default function Vendas() {
                     <TableCell>
                       <Badge variant={v.status === "paga" ? "default" : v.status === "cancelada" ? "destructive" : "secondary"}>{v.status}</Badge>
                     </TableCell>
-                    <TableCell className="text-right space-x-1">
-                      <Button size="icon" variant="ghost" onClick={() => openDetailDialog(v)}><Eye className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => openEditDialog(v)}><Pencil className="h-4 w-4" /></Button>
-                      {v.status !== "cancelada" && (
-                        <Button size="icon" variant="ghost" onClick={() => setCancelId(v.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                      )}
-                      <Button size="icon" variant="ghost" onClick={() => setDeleteId(v.id)}><X className="h-4 w-4 text-destructive" /></Button>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-0.5">
+                        <TooltipProvider delayDuration={300}>
+                          {v.status !== "cancelada" && !v.enviado_producao && (
+                            <>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-8 w-8 text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-950"
+                                    disabled={sendingToProduction === v.id}
+                                    onClick={() => sendToProduction(v, "entrega")}
+                                  >
+                                    <Truck className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Enviar para Entrega</TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-8 w-8 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950"
+                                    disabled={sendingToProduction === v.id}
+                                    onClick={() => sendToProduction(v, "retirada")}
+                                  >
+                                    <Package className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Enviar para Retirada</TooltipContent>
+                              </Tooltip>
+                            </>
+                          )}
+                          {v.enviado_producao && (
+                            <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-700 border-green-300 mr-1">
+                              No Monitor
+                            </Badge>
+                          )}
+                        </TooltipProvider>
+                        <Button size="icon" variant="ghost" onClick={() => openDetailDialog(v)}><Eye className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" onClick={() => openEditDialog(v)}><Pencil className="h-4 w-4" /></Button>
+                        {v.status !== "cancelada" && (
+                          <Button size="icon" variant="ghost" onClick={() => setCancelId(v.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                        )}
+                        <Button size="icon" variant="ghost" onClick={() => setDeleteId(v.id)}><X className="h-4 w-4 text-destructive" /></Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ));
