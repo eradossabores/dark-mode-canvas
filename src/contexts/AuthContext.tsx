@@ -93,7 +93,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }, 0);
     };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (event === "TOKEN_REFRESHED" && !nextSession) {
+        // Token refresh failed — session expired
+        console.warn("Sessão expirada, redirecionando...");
+        setUser(null);
+        setSession(null);
+        setRole(null);
+        setApprovalStatus(null);
+        setLoading(false);
+        return;
+      }
+      if (event === "SIGNED_OUT") {
+        setUser(null);
+        setSession(null);
+        setRole(null);
+        setApprovalStatus(null);
+        setLoading(false);
+        return;
+      }
       applyAuthState(nextSession);
     });
 

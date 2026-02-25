@@ -37,6 +37,27 @@ export default function GerenciarUsuarios() {
   const [loading, setLoading] = useState(false);
   const [generatingInvite, setGeneratingInvite] = useState(false);
 
+  async function generateInvite(role: "admin" | "producao") {
+    setGeneratingInvite(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Não autenticado");
+      const { data, error } = await (supabase as any)
+        .from("invites")
+        .insert({ role, created_by: user.id })
+        .select("token")
+        .single();
+      if (error) throw error;
+      const link = `${window.location.origin}/cadastro?token=${data.token}`;
+      await navigator.clipboard.writeText(link);
+      const label = role === "admin" ? "Admin" : "Produção";
+      toast({ title: `Link de convite (${label}) copiado!`, description: "Válido por 7 dias." });
+    } catch (e: any) {
+      toast({ title: "Erro ao gerar convite", description: e.message, variant: "destructive" });
+    }
+    setGeneratingInvite(false);
+  }
+
   useEffect(() => { loadUsers(); loadRequests(); }, []);
 
   async function loadUsers() {
@@ -138,25 +159,7 @@ export default function GerenciarUsuarios() {
           <Button
             variant="outline"
             disabled={generatingInvite}
-            onClick={async () => {
-              setGeneratingInvite(true);
-              try {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) throw new Error("Não autenticado");
-                const { data, error } = await (supabase as any)
-                  .from("invites")
-                  .insert({ role: "admin", created_by: user.id })
-                  .select("token")
-                  .single();
-                if (error) throw error;
-                const link = `${window.location.origin}/cadastro?token=${data.token}`;
-                await navigator.clipboard.writeText(link);
-                toast({ title: "Link de convite (Admin) copiado!", description: "Válido por 7 dias." });
-              } catch (e: any) {
-                toast({ title: "Erro ao gerar convite", description: e.message, variant: "destructive" });
-              }
-              setGeneratingInvite(false);
-            }}
+            onClick={() => generateInvite("admin")}
           >
             <Shield className="h-4 w-4 mr-2" />
             {generatingInvite ? "Gerando..." : "Convite Admin"}
@@ -164,25 +167,7 @@ export default function GerenciarUsuarios() {
           <Button
             variant="outline"
             disabled={generatingInvite}
-            onClick={async () => {
-              setGeneratingInvite(true);
-              try {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) throw new Error("Não autenticado");
-                const { data, error } = await (supabase as any)
-                  .from("invites")
-                  .insert({ role: "producao", created_by: user.id })
-                  .select("token")
-                  .single();
-                if (error) throw error;
-                const link = `${window.location.origin}/cadastro?token=${data.token}`;
-                await navigator.clipboard.writeText(link);
-                toast({ title: "Link de convite (Produção) copiado!", description: "Válido por 7 dias. Envie para o colaborador." });
-              } catch (e: any) {
-                toast({ title: "Erro ao gerar convite", description: e.message, variant: "destructive" });
-              }
-              setGeneratingInvite(false);
-            }}
+            onClick={() => generateInvite("producao")}
           >
             <Factory className="h-4 w-4 mr-2" />
             {generatingInvite ? "Gerando..." : "Convite Colaborador"}
