@@ -20,6 +20,7 @@ import { ptBR } from "date-fns/locale";
 import { Plus, Trash2, Pencil, Eye, TrendingUp, CalendarIcon, AlertTriangle } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import Chart3DBarProducao from "@/components/Chart3DBarProducao";
+import ChecklistProducaoDia from "@/components/producao/ChecklistProducaoDia";
 
 export default function Producao() {
   const [sabores, setSabores] = useState<any[]>([]);
@@ -623,6 +624,9 @@ export default function Producao() {
             })()}
           </CardContent>
         </Card>
+
+      {/* Checklist de Produção do Dia */}
+      <ChecklistProducaoDia />
 
       <Card>
         <CardHeader><CardTitle>Histórico de Produções</CardTitle></CardHeader>
