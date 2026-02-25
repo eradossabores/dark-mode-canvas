@@ -37,7 +37,9 @@ interface ChecklistItem {
 }
 
 export default function ChecklistProducaoDia() {
-  const hojeStr = new Date().toISOString().slice(0, 10);
+  // Usar data local (não UTC) para evitar problemas de fuso horário
+  const hoje = new Date();
+  const hojeStr = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}-${String(hoje.getDate()).padStart(2, "0")}`;
   const CONCLUIDOS_KEY = `checklist-concluidos-${hojeStr}`;
 
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
@@ -52,8 +54,9 @@ export default function ChecklistProducaoDia() {
     setLoading(true);
     try {
       // Buscar decisões autorizadas de hoje da tabela decisoes_producao
-      const inicioHoje = `${hojeStr}T00:00:00.000Z`;
-      const fimHoje = `${hojeStr}T23:59:59.999Z`;
+      // Usar range amplo para cobrir fusos horários (Brasil UTC-3)
+      const inicioHoje = `${hojeStr}T00:00:00-03:00`;
+      const fimHoje = `${hojeStr}T23:59:59-03:00`;
 
       const { data, error } = await (supabase as any)
         .from("decisoes_producao")
