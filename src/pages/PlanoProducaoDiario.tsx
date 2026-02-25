@@ -151,9 +151,10 @@ export default function PlanoProducaoDiario() {
   const [analises, setAnalises] = useState<SaborAnalise[]>([]);
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
   const [funcSelecionados, setFuncSelecionados] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [executando, setExecutando] = useState(false);
   const [executado, setExecutado] = useState(false);
+  const [planoHojeJaFeito, setPlanoHojeJaFeito] = useState(false);
   const [modoIA, setModoIA] = useState(false);
   const [totalDecisoes, setTotalDecisoes] = useState(0);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
@@ -264,7 +265,7 @@ export default function PlanoProducaoDiario() {
 
   async function calcular() {
     setLoading(true);
-    setExecutado(false);
+    // Don't reset executado if we're reloading after authorization
     try {
       const [vendasRes, gelosRes, saboresRes, funcsRes, decisoesRes] = await Promise.all([
         (supabase as any).from("venda_itens").select("sabor_id, quantidade, vendas!inner(created_at, status)"),
@@ -294,6 +295,42 @@ export default function PlanoProducaoDiario() {
       
       // Auto-enable AI mode when enough data (10 daily sessions)
       if (diasUnicos.size >= 10) setModoIA(true);
+
+      // Check if today's plan was already authorized (from DB)
+      const hojeLocal = new Date();
+      const hojeIso = `${hojeLocal.getFullYear()}-${String(hojeLocal.getMonth() + 1).padStart(2, "0")}-${String(hojeLocal.getDate()).padStart(2, "0")}`;
+      const decisoesHoje = decisoes.filter((d: any) => {
+        const dDate = new Date(d.created_at);
+        const dStr = `${dDate.getFullYear()}-${String(dDate.getMonth() + 1).padStart(2, "0")}-${String(dDate.getDate()).padStart(2, "0")}`;
+        return dStr === hojeIso && d.lotes_autorizados > 0;
+      });
+
+      if (decisoesHoje.length > 0) {
+        setPlanoHojeJaFeito(true);
+        // Build checklist from DB decisions if not already in localStorage
+        const savedChecklist = localStorage.getItem(CHECKLIST_KEY);
+        if (!savedChecklist) {
+          const checklistItems: ChecklistItem[] = [];
+          decisoesHoje.forEach((d: any) => {
+            for (let l = 1; l <= d.lotes_autorizados; l++) {
+              checklistItems.push({
+                id: `${d.sabor_id}-${l}`,
+                saborId: d.sabor_id,
+                saborNome: d.sabor_nome,
+                loteNumero: l,
+                totalLotes: d.lotes_autorizados,
+                concluido: false,
+              });
+            }
+          });
+          localStorage.setItem(CHECKLIST_KEY, JSON.stringify(checklistItems));
+          setChecklist(checklistItems);
+        }
+        setModoChecklist(true);
+        setExecutado(true);
+      } else {
+        setPlanoHojeJaFeito(false);
+      }
 
       const vendaItens = (vendasRes.data || []).filter((v: any) => v.vendas?.status !== "cancelada");
       const gelos = gelosRes.data || [];
@@ -538,10 +575,12 @@ export default function PlanoProducaoDiario() {
               </p>
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={() => { setModoChecklist(false); calcular(); }}>
-            <X className="h-4 w-4 mr-1" />
-            Voltar ao Plano
-          </Button>
+          {!planoHojeJaFeito && (
+            <Button variant="outline" size="sm" onClick={() => { setModoChecklist(false); calcular(); }}>
+              <X className="h-4 w-4 mr-1" />
+              Voltar ao Plano
+            </Button>
+          )}
         </div>
 
         {/* Progress bar geral */}
