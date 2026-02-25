@@ -100,8 +100,31 @@ export default function PlanoProducaoDiario() {
         };
       });
 
-      // Ordenar: mais urgente primeiro (menor cobertura)
+      // Prioridade fixa diária: 5 lotes distribuídos nesta ordem
+      const prioridadeDiaria = [
+        "melancia",
+        "maçã verde",
+        "morango",
+        "maracujá",
+        "água de coco",
+      ];
+
+      // Aplicar prioridade fixa: sabores prioritários sempre selecionados com 1 lote cada
+      result.forEach(r => {
+        const idx = prioridadeDiaria.findIndex(p => r.nome.toLowerCase().includes(p));
+        if (idx !== -1) {
+          r.selecionado = true;
+          r.lotesCustom = Math.max(1, r.loteSugerido || 1);
+        }
+      });
+
+      // Ordenar: prioritários primeiro (na ordem definida), depois por cobertura
       result.sort((a, b) => {
+        const idxA = prioridadeDiaria.findIndex(p => a.nome.toLowerCase().includes(p));
+        const idxB = prioridadeDiaria.findIndex(p => b.nome.toLowerCase().includes(p));
+        if (idxA !== -1 && idxB === -1) return -1;
+        if (idxA === -1 && idxB !== -1) return 1;
+        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
         if (a.loteSugerido > 0 && b.loteSugerido === 0) return -1;
         if (a.loteSugerido === 0 && b.loteSugerido > 0) return 1;
         return a.diasCobertura - b.diasCobertura;
