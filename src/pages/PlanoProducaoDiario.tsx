@@ -1,15 +1,14 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { realizarProducao } from "@/lib/supabase-helpers";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import {
-  Factory, TrendingUp, TrendingDown, Minus, PackageCheck, RefreshCw,
-  AlertTriangle, CheckCircle2, Snowflake, BarChart3
+  Factory, TrendingUp, TrendingDown, Minus, RefreshCw,
+  AlertTriangle, CheckCircle2, Snowflake, BarChart3, Check, X
 } from "lucide-react";
 
 interface SaborAnalise {
@@ -24,6 +23,47 @@ interface SaborAnalise {
   loteSugerido: number;
   selecionado: boolean;
   lotesCustom: number;
+  prioritario: boolean;
+  ordemPrioridade: number;
+}
+
+const SABOR_COLORS: Record<string, string> = {
+  melancia: "#ef4444",
+  "maçã verde": "#22c55e",
+  morango: "#f43f5e",
+  maracujá: "#f59e0b",
+  "água de coco": "#06b6d4",
+  "bob marley": "#a3e635",
+  abacaxi: "#eab308",
+  limão: "#84cc16",
+  pitaya: "#d946ef",
+  "blue ice": "#3b82f6",
+};
+
+function getSaborColor(nome: string): string {
+  const lower = nome.toLowerCase();
+  for (const [key, color] of Object.entries(SABOR_COLORS)) {
+    if (lower.includes(key)) return color;
+  }
+  return "#8b5cf6";
+}
+
+function ProgressRing({ progress, color, size = 52 }: { progress: number; color: string; size?: number }) {
+  const stroke = 4;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (Math.min(progress, 100) / 100) * circumference;
+
+  return (
+    <svg width={size} height={size} className="transform -rotate-90">
+      <circle cx={size / 2} cy={size / 2} r={radius} fill="none"
+        stroke="hsl(var(--muted))" strokeWidth={stroke} />
+      <circle cx={size / 2} cy={size / 2} r={radius} fill="none"
+        stroke={color} strokeWidth={stroke} strokeLinecap="round"
+        strokeDasharray={circumference} strokeDashoffset={offset}
+        className="transition-all duration-700 ease-out" />
+    </svg>
+  );
 }
 
 export default function PlanoProducaoDiario() {
@@ -48,7 +88,6 @@ export default function PlanoProducaoDiario() {
       ]);
 
       setFuncionarios(funcsRes.data || []);
-
       const vendaItens = (vendasRes.data || []).filter((v: any) => v.vendas?.status !== "cancelada");
       const gelos = gelosRes.data || [];
       const saboresAtivos = saboresRes.data || [];
@@ -57,7 +96,6 @@ export default function PlanoProducaoDiario() {
       const seteDias = new Date(agora); seteDias.setDate(seteDias.getDate() - 7);
       const trintaDias = new Date(agora); trintaDias.setDate(trintaDias.getDate() - 30);
 
-      // Agrupar vendas por sabor
       const vendaMap: Record<string, { v7d: number; v30d: number }> = {};
       vendaItens.forEach((item: any) => {
         const id = item.sabor_id;
@@ -66,6 +104,8 @@ export default function PlanoProducaoDiario() {
         if (dt >= seteDias) vendaMap[id].v7d += item.quantidade;
         if (dt >= trintaDias) vendaMap[id].v30d += item.quantidade;
       });
+
+      const prioridadeDiaria = ["melancia", "maçã verde", "morango", "maracujá", "água de coco"];
 
       const result: SaborAnalise[] = saboresAtivos.map((sabor: any) => {
         const gelo = gelos.find((g: any) => g.sabor_id === sabor.id);
@@ -79,11 +119,12 @@ export default function PlanoProducaoDiario() {
         else if (mediaDiaria7d < mediaDiaria30d * 0.8) tendencia = "baixa";
 
         const diasCobertura = mediaDiaria7d > 0 ? Math.floor(estoqueAtual / mediaDiaria7d) : 999;
-
-        // Sugerir lotes: cobrir 7 dias de demanda
         const necessario7d = Math.ceil(mediaDiaria7d * 7);
         const deficit = Math.max(0, necessario7d - estoqueAtual);
         const loteSugerido = Math.ceil(deficit / 84);
+
+        const idx = prioridadeDiaria.findIndex(p => sabor.nome.toLowerCase().includes(p));
+        const prioritario = idx !== -1;
 
         return {
           id: sabor.id,
@@ -95,36 +136,17 @@ export default function PlanoProducaoDiario() {
           tendencia,
           diasCobertura: Math.min(diasCobertura, 99),
           loteSugerido,
-          selecionado: loteSugerido > 0,
-          lotesCustom: loteSugerido,
+          selecionado: prioritario ? true : loteSugerido > 0,
+          lotesCustom: prioritario ? Math.max(1, loteSugerido || 1) : loteSugerido,
+          prioritario,
+          ordemPrioridade: prioritario ? idx : 999,
         };
       });
 
-      // Prioridade fixa diária: 5 lotes distribuídos nesta ordem
-      const prioridadeDiaria = [
-        "melancia",
-        "maçã verde",
-        "morango",
-        "maracujá",
-        "água de coco",
-      ];
-
-      // Aplicar prioridade fixa: sabores prioritários sempre selecionados com 1 lote cada
-      result.forEach(r => {
-        const idx = prioridadeDiaria.findIndex(p => r.nome.toLowerCase().includes(p));
-        if (idx !== -1) {
-          r.selecionado = true;
-          r.lotesCustom = Math.max(1, r.loteSugerido || 1);
-        }
-      });
-
-      // Ordenar: prioritários primeiro (na ordem definida), depois por cobertura
       result.sort((a, b) => {
-        const idxA = prioridadeDiaria.findIndex(p => a.nome.toLowerCase().includes(p));
-        const idxB = prioridadeDiaria.findIndex(p => b.nome.toLowerCase().includes(p));
-        if (idxA !== -1 && idxB === -1) return -1;
-        if (idxA === -1 && idxB !== -1) return 1;
-        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+        if (a.prioritario && !b.prioritario) return -1;
+        if (!a.prioritario && b.prioritario) return 1;
+        if (a.prioritario && b.prioritario) return a.ordemPrioridade - b.ordemPrioridade;
         if (a.loteSugerido > 0 && b.loteSugerido === 0) return -1;
         if (a.loteSugerido === 0 && b.loteSugerido > 0) return 1;
         return a.diasCobertura - b.diasCobertura;
@@ -197,6 +219,7 @@ export default function PlanoProducaoDiario() {
   const selecionados = analises.filter(a => a.selecionado && a.lotesCustom > 0);
   const totalLotes = selecionados.reduce((s, a) => s + a.lotesCustom, 0);
   const totalUnidades = totalLotes * 84;
+  const progressTotal = analises.length > 0 ? Math.round((selecionados.length / analises.length) * 100) : 0;
 
   const tendenciaIcon = (t: string) => {
     if (t === "alta") return <TrendingUp className="h-3.5 w-3.5 text-green-500" />;
@@ -205,17 +228,20 @@ export default function PlanoProducaoDiario() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 pb-28">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-primary/10">
-            <Factory className="h-6 w-6 text-primary" />
+          <div className="relative">
+            <ProgressRing progress={progressTotal} color="hsl(var(--primary))" size={56} />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Factory className="h-5 w-5 text-primary" />
+            </div>
           </div>
           <div>
-            <h1 className="text-xl font-bold">Plano de Produção Diário</h1>
+            <h1 className="text-xl font-bold">Plano de Produção</h1>
             <p className="text-xs text-muted-foreground">
-              Análise automática de estoque e vendas · Reposição inteligente por giro
+              {selecionados.length} de {analises.length} sabores · {totalLotes} lotes · {totalUnidades.toLocaleString()} un
             </p>
           </div>
         </div>
@@ -225,41 +251,16 @@ export default function PlanoProducaoDiario() {
         </Button>
       </div>
 
-      {/* Resumo do plano */}
-      {selecionados.length > 0 && (
-        <Card className="border-primary/30 bg-primary/5">
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2 mb-3">
-              <PackageCheck className="h-5 w-5 text-primary" />
-              <span className="font-bold text-sm">Resumo da Produção Autorizada</span>
-            </div>
-            <div className="flex flex-wrap gap-2 mb-3">
-              {selecionados.map(s => (
-                <Badge key={s.id} variant="secondary" className="text-xs font-semibold">
-                  {s.nome}: {s.lotesCustom} lote(s) = {s.lotesCustom * 84} un
-                </Badge>
-              ))}
-            </div>
-            <div className="flex items-center gap-4 text-sm">
-              <span className="text-muted-foreground">Total:</span>
-              <span className="font-bold text-primary text-lg">{totalLotes} lotes · {totalUnidades.toLocaleString()} unidades</span>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Responsáveis */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Responsável(is) pela Produção</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
+      {/* Responsáveis - compacto */}
+      <Card className="border-dashed">
+        <CardContent className="pt-4 pb-3">
+          <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Responsável(is)</p>
+          <div className="flex flex-wrap gap-2 items-center">
             {funcSelecionados.map((fId, i) => (
-              <div key={i} className="flex gap-2 items-center">
+              <div key={i} className="flex gap-1 items-center">
                 <Select value={fId} onValueChange={(v) => updateFunc(i, v)}>
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Selecione o funcionário" />
+                  <SelectTrigger className="h-8 text-xs w-[180px]">
+                    <SelectValue placeholder="Funcionário" />
                   </SelectTrigger>
                   <SelectContent>
                     {funcionarios.map(f => (
@@ -268,114 +269,135 @@ export default function PlanoProducaoDiario() {
                   </SelectContent>
                 </Select>
                 {funcSelecionados.length > 1 && (
-                  <Button variant="ghost" size="sm" onClick={() => removeFunc(i)} className="text-destructive">✕</Button>
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => removeFunc(i)}>
+                    <X className="h-3 w-3" />
+                  </Button>
                 )}
               </div>
             ))}
-            <Button variant="outline" size="sm" onClick={addFunc}>+ Adicionar responsável</Button>
+            <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={addFunc}>+ Adicionar</Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Grid de sabores */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {analises.map(a => (
-          <Card
-            key={a.id}
-            className={`transition-all ${
-              a.selecionado && a.lotesCustom > 0
-                ? "border-primary/50 ring-1 ring-primary/20 bg-primary/[0.02]"
-                : a.diasCobertura <= 3
-                  ? "border-destructive/40"
-                  : a.diasCobertura <= 7
-                    ? "border-amber-500/40"
-                    : ""
-            }`}
-          >
-            <CardContent className="pt-4 space-y-3">
-              {/* Header do card */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    checked={a.selecionado}
-                    onCheckedChange={() => toggleSabor(a.id)}
-                    id={`chk-${a.id}`}
-                  />
-                  <label htmlFor={`chk-${a.id}`} className="font-bold text-sm cursor-pointer">
-                    {a.nome}
-                  </label>
-                </div>
-                <div className="flex items-center gap-1">
-                  {tendenciaIcon(a.tendencia)}
-                  <Badge
-                    variant={a.tendencia === "alta" ? "default" : a.tendencia === "baixa" ? "destructive" : "secondary"}
-                    className="text-[10px]"
+      {/* Checklist de sabores */}
+      <div className="space-y-2">
+        {analises.map((a, index) => {
+          const color = getSaborColor(a.nome);
+          const isSelected = a.selecionado && a.lotesCustom > 0;
+          const coberturaPercent = Math.min(100, (a.diasCobertura / 14) * 100);
+
+          return (
+            <Card
+              key={a.id}
+              className={`transition-all duration-300 cursor-pointer overflow-hidden ${
+                isSelected
+                  ? "ring-1 ring-primary/30 shadow-md"
+                  : "hover:shadow-sm"
+              }`}
+              style={{
+                borderLeft: `4px solid ${color}`,
+                background: isSelected
+                  ? `linear-gradient(135deg, ${color}08 0%, transparent 50%)`
+                  : undefined,
+              }}
+              onClick={() => toggleSabor(a.id)}
+            >
+              <CardContent className="py-3 px-4">
+                <div className="flex items-center gap-3">
+                  {/* Check circle */}
+                  <div
+                    className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 ${
+                      isSelected
+                        ? "scale-110"
+                        : "bg-muted"
+                    }`}
+                    style={isSelected ? { backgroundColor: color, boxShadow: `0 0 12px ${color}40` } : {}}
                   >
-                    {a.tendencia}
-                  </Badge>
-                </div>
-              </div>
+                    {isSelected ? (
+                      <Check className="h-5 w-5 text-white" />
+                    ) : (
+                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                    )}
+                  </div>
 
-              {/* Métricas */}
-              <div className="grid grid-cols-3 gap-2 text-xs">
-                <div>
-                  <span className="text-muted-foreground">Estoque</span>
-                  <p className="font-bold">{a.estoqueAtual} un</p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Média/dia</span>
-                  <p className="font-bold">{a.mediaDiaria}</p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Cobertura</span>
-                  <p className={`font-bold ${
-                    a.diasCobertura <= 3 ? "text-destructive" : a.diasCobertura <= 7 ? "text-amber-500" : "text-green-600"
-                  }`}>
-                    {a.diasCobertura === 99 ? "∞" : `${a.diasCobertura}d`}
-                  </p>
-                </div>
-              </div>
+                  {/* Info principal */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className={`font-bold text-sm ${isSelected ? "" : "text-muted-foreground"}`}>
+                        {a.prioritario && (
+                          <span className="text-xs font-black mr-1" style={{ color }}>#{a.ordemPrioridade + 1}</span>
+                        )}
+                        {a.nome}
+                      </span>
+                      {a.prioritario && (
+                        <Badge variant="outline" className="text-[9px] h-4 px-1 border-primary/30 text-primary">
+                          PRIORIDADE
+                        </Badge>
+                      )}
+                      <div className="flex items-center gap-0.5 ml-auto">
+                        {tendenciaIcon(a.tendencia)}
+                      </div>
+                    </div>
 
-              {/* Vendas 7d / 30d */}
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                <BarChart3 className="h-3 w-3" />
-                <span>7d: <strong className="text-foreground">{a.vendas7d}</strong></span>
-                <span>30d: <strong className="text-foreground">{a.vendas30d}</strong></span>
-              </div>
+                    {/* Barra de cobertura + métricas */}
+                    <div className="flex items-center gap-3 mt-1.5">
+                      <div className="flex-1 max-w-[120px]">
+                        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${coberturaPercent}%`,
+                              backgroundColor: a.diasCobertura <= 3 ? "hsl(var(--destructive))" : a.diasCobertura <= 7 ? "#f59e0b" : color,
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 text-[11px] text-muted-foreground shrink-0">
+                        <span>
+                          <strong className={a.diasCobertura <= 3 ? "text-destructive" : a.diasCobertura <= 7 ? "text-amber-500" : "text-foreground"}>
+                            {a.diasCobertura === 99 ? "∞" : `${a.diasCobertura}d`}
+                          </strong> cobertura
+                        </span>
+                        <span>{a.estoqueAtual} un</span>
+                        <span className="flex items-center gap-0.5">
+                          <BarChart3 className="h-2.5 w-2.5" /> {a.mediaDiaria}/dia
+                        </span>
+                      </div>
+                    </div>
 
-              {/* Alerta de cobertura */}
-              {a.diasCobertura <= 3 && a.diasCobertura !== 999 && (
-                <div className="flex items-center gap-1.5 text-xs text-destructive bg-destructive/10 rounded-md px-2 py-1">
-                  <AlertTriangle className="h-3 w-3" />
-                  Estoque crítico! Risco de ruptura
-                </div>
-              )}
+                    {/* Alerta */}
+                    {a.diasCobertura <= 3 && a.diasCobertura !== 999 && (
+                      <div className="flex items-center gap-1 text-[10px] text-destructive mt-1">
+                        <AlertTriangle className="h-3 w-3" /> Estoque crítico — risco de ruptura
+                      </div>
+                    )}
+                  </div>
 
-              {/* Seletor de lotes */}
-              {a.selecionado && (
-                <div className="pt-2 border-t space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Lotes a produzir:</span>
-                    <div className="flex items-center gap-1">
+                  {/* Lote counter */}
+                  {isSelected && (
+                    <div className="shrink-0 flex items-center gap-1" onClick={e => e.stopPropagation()}>
                       <Button
-                        variant="outline" size="sm" className="h-7 w-7 p-0"
+                        variant="outline" size="sm" className="h-8 w-8 p-0 rounded-full text-lg font-bold"
                         onClick={() => setLotes(a.id, a.lotesCustom - 1)}
                       >−</Button>
-                      <span className="w-8 text-center font-bold text-sm">{a.lotesCustom}</span>
+                      <div className="text-center w-14">
+                        <span className="text-2xl font-black" style={{ color }}>{a.lotesCustom}</span>
+                        <p className="text-[9px] text-muted-foreground leading-none -mt-0.5">
+                          {a.lotesCustom * 84} un
+                        </p>
+                      </div>
                       <Button
-                        variant="outline" size="sm" className="h-7 w-7 p-0"
+                        variant="outline" size="sm" className="h-8 w-8 p-0 rounded-full text-lg font-bold"
                         onClick={() => setLotes(a.id, a.lotesCustom + 1)}
                       >+</Button>
                     </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground text-right">
-                    = <strong className="text-primary">{a.lotesCustom * 84}</strong> unidades
-                  </p>
+                  )}
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {analises.length === 0 && !loading && (
@@ -386,40 +408,46 @@ export default function PlanoProducaoDiario() {
         </Card>
       )}
 
-      {/* Botão de autorização */}
+      {/* Sticky bottom bar */}
       {selecionados.length > 0 && (
-        <div className="sticky bottom-4 z-10">
-          <Card className="border-primary/50 shadow-lg">
-            <CardContent className="py-4 flex items-center justify-between flex-wrap gap-3">
-              <div className="flex items-center gap-2">
-                <Snowflake className="h-5 w-5 text-primary animate-pulse" />
-                <span className="text-sm font-semibold">
-                  {selecionados.length} sabor(es) · {totalLotes} lote(s) · {totalUnidades.toLocaleString()} un
-                </span>
+        <div className="fixed bottom-0 left-0 right-0 z-50 p-3 bg-background/80 backdrop-blur-lg border-t">
+          <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <ProgressRing progress={progressTotal} color="hsl(var(--primary))" size={44} />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Snowflake className="h-4 w-4 text-primary" />
+                </div>
               </div>
-              <Button
-                size="lg"
-                onClick={autorizarProducao}
-                disabled={executando || executado}
-                className="gap-2"
-              >
-                {executando ? (
-                  <><RefreshCw className="h-4 w-4 animate-spin" /> Produzindo...</>
-                ) : executado ? (
-                  <><CheckCircle2 className="h-4 w-4" /> Produção Registrada</>
-                ) : (
-                  <><Factory className="h-4 w-4" /> Autorizar Produção</>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
+              <div>
+                <p className="text-sm font-bold">
+                  {selecionados.length} sabor(es)
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {totalLotes} lotes · {totalUnidades.toLocaleString()} un
+                </p>
+              </div>
+            </div>
+            <Button
+              size="lg"
+              onClick={autorizarProducao}
+              disabled={executando || executado}
+              className="gap-2 rounded-full px-6 shadow-lg"
+              style={!executado && !executando ? {
+                background: `linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.8))`,
+              } : {}}
+            >
+              {executando ? (
+                <><RefreshCw className="h-4 w-4 animate-spin" /> Produzindo...</>
+              ) : executado ? (
+                <><CheckCircle2 className="h-4 w-4" /> Registrada ✓</>
+              ) : (
+                <><Factory className="h-4 w-4" /> Autorizar</>
+              )}
+            </Button>
+          </div>
         </div>
       )}
-
-      {/* Rodapé padrão */}
-      <p className="text-xs text-muted-foreground text-center italic pb-4">
-        "Produção autorizada conforme estratégia de reposição por giro de vendas."
-      </p>
     </div>
   );
 }
