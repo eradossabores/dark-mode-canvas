@@ -471,27 +471,14 @@ export default function PlanoProducaoDiario() {
 
     setExecutando(true);
     try {
-      // Log decisions for learning BEFORE production
+      // Log decisions for learning (planning only - production is registered per lot in checklist)
       await registrarDecisoes(itens);
-
-      for (const item of itens) {
-        await realizarProducao({
-          p_sabor_id: item.id,
-          p_modo: "lote",
-          p_quantidade_lotes: item.lotesCustom,
-          p_quantidade_total: item.lotesCustom * 84,
-          p_operador: nomesFuncionarios || "sistema",
-          p_observacoes: `Produção autorizada conforme estratégia de reposição por giro de vendas.`,
-          p_funcionarios: validFuncs.map(f => ({ funcionario_id: f, quantidade_produzida: 0 })),
-          p_ignorar_estoque: true,
-        });
-      }
 
       const totalLotes = itens.reduce((s, i) => s + i.lotesCustom, 0);
       const totalUnidades = totalLotes * 84;
       toast({
-        title: "✅ Produção autorizada!",
-        description: `${itens.length} sabor(es) · ${totalLotes} lote(s) · ${totalUnidades.toLocaleString()} un`,
+        title: "✅ Plano autorizado!",
+        description: `${itens.length} sabor(es) · ${totalLotes} lote(s) · ${totalUnidades.toLocaleString()} un — marque os lotes conforme for produzindo.`,
       });
 
       // Generate production checklist
@@ -509,24 +496,66 @@ export default function PlanoProducaoDiario() {
         }
       });
       localStorage.setItem(CHECKLIST_KEY, JSON.stringify(checklistItems));
+      // Save func info for production registration on check
+      localStorage.setItem(`${CHECKLIST_KEY}-funcs`, JSON.stringify(validFuncs));
+      localStorage.setItem(`${CHECKLIST_KEY}-operador`, nomesFuncionarios || "sistema");
       setChecklist(checklistItems);
       setModoChecklist(true);
       setExecutado(true);
     } catch (e: any) {
-      toast({ title: "Erro na produção", description: e.message, variant: "destructive" });
+      toast({ title: "Erro ao autorizar", description: e.message, variant: "destructive" });
     } finally {
       setExecutando(false);
     }
   }
 
-  function toggleCheckItem(id: string) {
+  async function toggleCheckItem(id: string) {
+    const item = checklist.find(c => c.id === id);
+    if (!item) return;
+
+    const nowMarking = !item.concluido;
+
+    // Update UI immediately
     setChecklist(prev => {
       const updated = prev.map(c =>
-        c.id === id ? { ...c, concluido: !c.concluido, horaConclusao: !c.concluido ? new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : undefined } : c
+        c.id === id ? { ...c, concluido: nowMarking, horaConclusao: nowMarking ? new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : undefined } : c
       );
       localStorage.setItem(CHECKLIST_KEY, JSON.stringify(updated));
       return updated;
     });
+
+    // Register production in database when marking as done
+    if (nowMarking) {
+      try {
+        const savedFuncs = localStorage.getItem(`${CHECKLIST_KEY}-funcs`);
+        const operador = localStorage.getItem(`${CHECKLIST_KEY}-operador`) || "sistema";
+        const funcIds: string[] = savedFuncs ? JSON.parse(savedFuncs) : [];
+
+        await realizarProducao({
+          p_sabor_id: item.saborId,
+          p_modo: "lote",
+          p_quantidade_lotes: 1,
+          p_quantidade_total: 84,
+          p_operador: operador,
+          p_observacoes: `Lote ${item.loteNumero}/${item.totalLotes} - Checklist produção diária`,
+          p_funcionarios: funcIds.map(f => ({ funcionario_id: f, quantidade_produzida: 0 })),
+          p_ignorar_estoque: true,
+        });
+
+        toast({ title: `✅ Lote ${item.loteNumero} de ${item.saborNome} registrado!` });
+      } catch (e: any) {
+        console.error("Erro ao registrar produção:", e);
+        toast({ title: "Erro ao registrar produção", description: e.message, variant: "destructive" });
+        // Revert check on error
+        setChecklist(prev => {
+          const reverted = prev.map(c =>
+            c.id === id ? { ...c, concluido: false, horaConclusao: undefined } : c
+          );
+          localStorage.setItem(CHECKLIST_KEY, JSON.stringify(reverted));
+          return reverted;
+        });
+      }
+    }
   }
 
   const checklistConcluidos = checklist.filter(c => c.concluido).length;

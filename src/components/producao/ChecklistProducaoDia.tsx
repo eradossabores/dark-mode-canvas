@@ -1,8 +1,10 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { realizarProducao } from "@/lib/supabase-helpers";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, PartyPopper } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 const SABOR_COLORS: Record<string, string> = {
   melancia: "#ef4444",
@@ -161,22 +163,63 @@ export default function ChecklistProducaoDia() {
     }
   }
 
-  function toggleItem(id: string) {
+  async function toggleItem(id: string) {
+    const item = checklist.find(c => c.id === id);
+    if (!item) return;
+
+    const nowMarking = !item.concluido;
+
     setChecklist(prev => {
       const updated = prev.map(c =>
-        c.id === id ? { ...c, concluido: !c.concluido, horaConclusao: !c.concluido ? new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : undefined } : c
+        c.id === id ? { ...c, concluido: nowMarking, horaConclusao: nowMarking ? new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : undefined } : c
       );
       saveConcluidos(updated);
       triggerCelebration(updated);
       return updated;
     });
+
+    if (nowMarking) {
+      try {
+        const savedFuncs = localStorage.getItem(`checklist-producao-${hojeStr}-funcs`);
+        const operador = localStorage.getItem(`checklist-producao-${hojeStr}-operador`) || "sistema";
+        const funcIds: string[] = savedFuncs ? JSON.parse(savedFuncs) : [];
+
+        await realizarProducao({
+          p_sabor_id: item.saborId,
+          p_modo: "lote",
+          p_quantidade_lotes: 1,
+          p_quantidade_total: 84,
+          p_operador: operador,
+          p_observacoes: `Lote ${item.loteNumero}/${item.totalLotes} - Checklist produção diária`,
+          p_funcionarios: funcIds.map(f => ({ funcionario_id: f, quantidade_produzida: 0 })),
+          p_ignorar_estoque: true,
+        });
+
+        toast({ title: `✅ Lote ${item.loteNumero} de ${item.saborNome} registrado!` });
+      } catch (e: any) {
+        console.error("Erro ao registrar produção:", e);
+        toast({ title: "Erro ao registrar", description: e.message, variant: "destructive" });
+        // Revert
+        setChecklist(prev => {
+          const reverted = prev.map(c =>
+            c.id === id ? { ...c, concluido: false, horaConclusao: undefined } : c
+          );
+          saveConcluidos(reverted);
+          return reverted;
+        });
+      }
+    }
   }
 
-  function toggleSabor(saborId: string) {
+  async function toggleSabor(saborId: string) {
+    const saborItens = checklist.filter(c => c.saborId === saborId);
+    const allDone = saborItens.every(c => c.concluido);
+    const now = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+    // Only register production for items being newly marked
+    const itensParaRegistrar = allDone ? [] : saborItens.filter(c => !c.concluido);
+
     setChecklist(prev => {
-      const saborItens = prev.filter(c => c.saborId === saborId);
-      const allDone = saborItens.every(c => c.concluido);
-      const now = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
       const updated = prev.map(c =>
         c.saborId === saborId ? { ...c, concluido: !allDone, horaConclusao: !allDone ? now : undefined } : c
       );
@@ -184,6 +227,31 @@ export default function ChecklistProducaoDia() {
       triggerCelebration(updated);
       return updated;
     });
+
+    if (itensParaRegistrar.length > 0) {
+      try {
+        const savedFuncs = localStorage.getItem(`checklist-producao-${hojeStr}-funcs`);
+        const operador = localStorage.getItem(`checklist-producao-${hojeStr}-operador`) || "sistema";
+        const funcIds: string[] = savedFuncs ? JSON.parse(savedFuncs) : [];
+
+        for (const item of itensParaRegistrar) {
+          await realizarProducao({
+            p_sabor_id: item.saborId,
+            p_modo: "lote",
+            p_quantidade_lotes: 1,
+            p_quantidade_total: 84,
+            p_operador: operador,
+            p_observacoes: `Lote ${item.loteNumero}/${item.totalLotes} - Checklist produção diária`,
+            p_funcionarios: funcIds.map(f => ({ funcionario_id: f, quantidade_produzida: 0 })),
+            p_ignorar_estoque: true,
+          });
+        }
+        toast({ title: `✅ ${itensParaRegistrar.length} lote(s) de ${saborItens[0]?.saborNome} registrados!` });
+      } catch (e: any) {
+        console.error("Erro ao registrar produção:", e);
+        toast({ title: "Erro ao registrar", description: e.message, variant: "destructive" });
+      }
+    }
   }
 
   if (loading) {
