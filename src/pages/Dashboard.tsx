@@ -54,11 +54,14 @@ function buildChartData(data: any[], days: number, dateKey: string, valueKey: st
   return Object.entries(map).map(([dia, val]) => ({ dia, [isSum ? "valor" : "total"]: val }));
 }
 
+type FaturamentoPeriodo = "total" | "semanal" | "anual";
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalGelos: 0, totalClientes: 0, totalVendas: 0,
     totalProducoes: 0, faturamento: 0, clientesInativos: 0,
+    faturamentoSemanal: 0, faturamentoAnual: 0,
   });
   const [topSabores, setTopSabores] = useState<any[]>([]);
   const [vendasPorDia, setVendasPorDia] = useState<any[]>([]);
@@ -70,6 +73,7 @@ export default function Dashboard() {
   const [periodoProducao, setPeriodoProducao] = useState<PeriodoFiltro>("7dias");
   const [allVendas, setAllVendas] = useState<any[]>([]);
   const [allProducoes, setAllProducoes] = useState<any[]>([]);
+  const [fatPeriodo, setFatPeriodo] = useState<FaturamentoPeriodo>("total");
 
   useEffect(() => { loadStats(); }, []);
 
@@ -104,7 +108,19 @@ export default function Dashboard() {
       ]);
 
       const totalGelos = (gelos.data || []).reduce((s: number, g: any) => s + g.quantidade, 0);
-      const faturamento = (vendas.data || []).filter((v: any) => v.status !== "cancelada")
+      const validVendasAll = (vendas.data || []).filter((v: any) => v.status !== "cancelada");
+      const faturamento = validVendasAll.reduce((s: number, v: any) => s + Number(v.total), 0);
+
+      // Faturamento semanal (últimos 7 dias)
+      const seteDiasAtras = new Date(); seteDiasAtras.setDate(seteDiasAtras.getDate() - 7);
+      const faturamentoSemanal = validVendasAll
+        .filter((v: any) => new Date(v.created_at) >= seteDiasAtras)
+        .reduce((s: number, v: any) => s + Number(v.total), 0);
+
+      // Faturamento anual (ano corrente)
+      const anoAtual = new Date().getFullYear();
+      const faturamentoAnual = validVendasAll
+        .filter((v: any) => new Date(v.created_at).getFullYear() === anoAtual)
         .reduce((s: number, v: any) => s + Number(v.total), 0);
 
       // Top sabores vendidos
@@ -157,18 +173,22 @@ export default function Dashboard() {
       setStats({
         totalGelos, totalClientes: clientes.data?.length || 0,
         totalVendas: vendas.data?.length || 0, totalProducoes: producoes.data?.length || 0,
-        faturamento, clientesInativos: inativos.data?.length || 0,
+        faturamento, faturamentoSemanal, faturamentoAnual,
+        clientesInativos: inativos.data?.length || 0,
       });
     } catch (e) {
       console.error("Dashboard error:", e);
     }
   }
 
+  const faturamentoValor = fatPeriodo === "semanal" ? stats.faturamentoSemanal : fatPeriodo === "anual" ? stats.faturamentoAnual : stats.faturamento;
+  const faturamentoLabel = fatPeriodo === "semanal" ? "Fat. Semanal" : fatPeriodo === "anual" ? "Fat. Anual" : "Faturamento Total";
+
   const cards = [
     { title: "Gelos em Estoque", value: stats.totalGelos.toLocaleString(), icon: Package, color: "text-primary", href: "/estoque" },
     { title: "Clientes Ativos", value: stats.totalClientes, icon: Users, color: "text-secondary-foreground", href: "/clientes" },
     { title: "Total Vendas", value: stats.totalVendas, icon: ShoppingCart, color: "text-accent", href: "/vendas" },
-    { title: "Faturamento", value: `R$ ${stats.faturamento.toFixed(2)}`, icon: TrendingUp, color: "text-primary", href: "/vendas" },
+    { title: faturamentoLabel, value: `R$ ${faturamentoValor.toFixed(2)}`, icon: TrendingUp, color: "text-primary", href: "/vendas", isFaturamento: true },
     { title: "Produções", value: stats.totalProducoes, icon: Factory, color: "text-secondary-foreground", href: "/producao" },
     { title: "A Receber", value: `R$ ${contasReceber.total.toFixed(2)}`, icon: DollarSign, color: contasReceber.vencidas > 0 ? "text-destructive" : "text-primary", href: "/a-receber" },
   ];
@@ -287,11 +307,11 @@ export default function Dashboard() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-        {cards.map((c) => (
+        {cards.map((c: any) => (
           <Card
             key={c.title}
             className="cursor-pointer transition-all hover:scale-[1.03] hover:shadow-md"
-            onClick={() => navigate(c.href)}
+            onClick={() => !c.isFaturamento && navigate(c.href)}
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground">{c.title}</CardTitle>
@@ -299,6 +319,23 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <p className="text-lg font-bold">{c.value}</p>
+              {c.isFaturamento && (
+                <div className="flex gap-1 mt-2">
+                  {(["total", "semanal", "anual"] as FaturamentoPeriodo[]).map((p) => (
+                    <button
+                      key={p}
+                      onClick={(e) => { e.stopPropagation(); setFatPeriodo(p); }}
+                      className={`px-1.5 py-0.5 text-[9px] rounded-full transition-colors ${
+                        fatPeriodo === p
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      }`}
+                    >
+                      {p === "total" ? "Total" : p === "semanal" ? "Semana" : "Ano"}
+                    </button>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}
