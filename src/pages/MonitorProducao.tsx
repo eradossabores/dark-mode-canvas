@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { Monitor, Clock, User, Package, CalendarClock, MessageSquare, Maximize2, Minimize2, CheckCircle2, PackageCheck, Hourglass, HandMetal, Pencil, Smartphone, Volume2, VolumeX, Printer, Timer, AlertTriangle } from "lucide-react";
+import { Monitor, Clock, User, Package, CalendarClock, MessageSquare, Maximize2, Minimize2, CheckCircle2, PackageCheck, Hourglass, HandMetal, Pencil, Smartphone, Volume2, VolumeX, Printer, Timer, AlertTriangle, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import EditPedidoDialog from "@/components/monitor/EditPedidoDialog";
 import MonitorTopBar from "@/components/monitor/MonitorTopBar";
 import { useMonitorAlerts } from "@/hooks/useMonitorAlerts";
@@ -118,6 +119,7 @@ export default function MonitorProducao() {
   const [editPedido, setEditPedido] = useState<any>(null);
   const [isFullPage, setIsFullPage] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [refreshCountdown, setRefreshCountdown] = useState(REFRESH_INTERVAL);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [prevTheme, setPrevTheme] = useState<string | null>(null);
@@ -253,6 +255,23 @@ export default function MonitorProducao() {
     onError: (err: any) => { toast({ title: "Erro", description: err.message, variant: "destructive" }); },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await supabase.from("pedido_producao_itens").delete().eq("pedido_id", id);
+      const { error } = await supabase.from("pedidos_producao").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["monitor-pedidos"] });
+      queryClient.invalidateQueries({ queryKey: ["pedidos-producao"] });
+      toast({ title: "Pedido excluído!" });
+      setDeleteId(null);
+    },
+    onError: (err: any) => {
+      toast({ title: "Erro ao excluir", description: err.message, variant: "destructive" });
+    },
+  });
+
   const activeOrders = pedidos?.filter((p: any) => p.status !== "enviado") || [];
   const filaEspera = pedidos?.filter((p: any) => p.status === "aguardando_producao") || [];
   const emAndamento = pedidos?.filter((p: any) => p.status === "em_producao" || p.status === "separado_para_entrega" || p.status === "retirado") || [];
@@ -324,6 +343,9 @@ export default function MonitorProducao() {
             </Button>
             <Button variant="ghost" size="icon" className="h-7 w-7 text-white/80 hover:text-white hover:bg-white/20" onClick={() => setFullscreenPedidoId(pedido.id)}>
               <Maximize2 className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-white/80 hover:text-white hover:bg-red-500/30" onClick={() => setDeleteId(pedido.id)}>
+              <Trash2 className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
@@ -587,6 +609,26 @@ export default function MonitorProducao() {
       )}
 
       <EditPedidoDialog pedido={editPedido} open={!!editPedido} onOpenChange={(open) => { if (!open) setEditPedido(null); }} />
+
+      <AlertDialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir pedido?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. O pedido e todos os seus itens serão removidos permanentemente do monitor.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteId && deleteMutation.mutate(deleteId)}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
