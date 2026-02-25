@@ -214,6 +214,62 @@ export type Database = {
         }
         Relationships: []
       }
+      decisoes_producao: {
+        Row: {
+          ajuste: number | null
+          created_at: string
+          dia_semana: number
+          dias_cobertura: number
+          estoque_no_momento: number
+          id: string
+          lotes_autorizados: number
+          lotes_sugeridos: number
+          media_diaria: number
+          operador: string
+          sabor_id: string
+          sabor_nome: string
+          vendas_7d: number
+        }
+        Insert: {
+          ajuste?: number | null
+          created_at?: string
+          dia_semana: number
+          dias_cobertura?: number
+          estoque_no_momento?: number
+          id?: string
+          lotes_autorizados?: number
+          lotes_sugeridos?: number
+          media_diaria?: number
+          operador?: string
+          sabor_id: string
+          sabor_nome: string
+          vendas_7d?: number
+        }
+        Update: {
+          ajuste?: number | null
+          created_at?: string
+          dia_semana?: number
+          dias_cobertura?: number
+          estoque_no_momento?: number
+          id?: string
+          lotes_autorizados?: number
+          lotes_sugeridos?: number
+          media_diaria?: number
+          operador?: string
+          sabor_id?: string
+          sabor_nome?: string
+          vendas_7d?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decisoes_producao_sabor_id_fkey"
+            columns: ["sabor_id"]
+            isOneToOne: false
+            referencedRelation: "sabores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       embalagens: {
         Row: {
           created_at: string
