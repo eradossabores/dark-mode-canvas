@@ -19,23 +19,26 @@ Deno.serve(async (req) => {
       });
     }
 
+    const token = authHeader.replace("Bearer ", "");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Verify caller is admin
+    // Validate caller token explicitly
     const callerClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: { user: caller } } = await callerClient.auth.getUser();
-    if (!caller) {
-      return new Response(JSON.stringify({ error: "Não autorizado" }), {
+    const { data: { user: caller }, error: authError } = await callerClient.auth.getUser(token);
+    if (authError || !caller) {
+      return new Response(JSON.stringify({ error: "Token inválido" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const adminClient = createClient(supabaseUrl, serviceKey);
+
+    // Verify caller is admin
     const { data: roleData } = await adminClient
       .from("user_roles")
       .select("role")
@@ -58,7 +61,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Prevent self-deletion
     if (user_id === caller.id) {
       return new Response(JSON.stringify({ error: "Você não pode excluir seu próprio usuário" }), {
         status: 400,
@@ -66,10 +68,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Delete role, profile, then auth user
+    // Delete from all related tables
     await adminClient.from("user_roles").delete().eq("user_id", user_id);
+    await adminClient.from("access_requests").delete().eq("user_id", user_id);
     await adminClient.from("profiles").delete().eq("id", user_id);
-    
+
     const { error: deleteError } = await adminClient.auth.admin.deleteUser(user_id);
     if (deleteError) {
       return new Response(JSON.stringify({ error: deleteError.message }), {

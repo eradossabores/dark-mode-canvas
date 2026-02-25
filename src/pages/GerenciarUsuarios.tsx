@@ -56,6 +56,7 @@ export default function GerenciarUsuarios() {
       toast({ title: `${deleteDialog.user.nome || deleteDialog.user.email} excluído com sucesso!` });
       setDeleteDialog({ open: false, user: null });
       loadUsers();
+      loadRequests();
     } catch (e: any) {
       toast({ title: "Erro ao excluir usuário", description: e.message, variant: "destructive" });
     }
