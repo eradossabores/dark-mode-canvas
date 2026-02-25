@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import { LogIn } from "lucide-react";
 import {
@@ -128,6 +129,20 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
+      <Helmet>
+        <title>A Era dos Sabores | Gelo Saborizado em Boa Vista, Roraima</title>
+        <meta name="description" content="Fábrica de gelo saborizado artesanal em Boa Vista, Roraima. Morango, maracujá, maçã verde e Bob Marley. Peça agora!" />
+        <link rel="canonical" href="https://aeradossabores.com.br" />
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "LocalBusiness",
+          "name": "A Era dos Sabores",
+          "description": "Fábrica de gelo saborizado artesanal em Boa Vista, Roraima",
+          "address": { "@type": "PostalAddress", "addressLocality": "Boa Vista", "addressRegion": "RR", "addressCountry": "BR" },
+          "url": "https://aeradossabores.com.br",
+          "image": "/favicon.png"
+        })}</script>
+      </Helmet>
 
       {/* ─── HEADER ─── */}
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">

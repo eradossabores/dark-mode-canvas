@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import GlobalSearch from "@/components/GlobalSearch";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Layout from "@/components/Layout";
 import LandingPage from "@/pages/LandingPage";
@@ -45,49 +47,52 @@ const ProdRoute = ({ children }: { children: React.ReactNode }) => (
 );
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            {/* Public */}
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/cadastro" element={<Cadastro />} />
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <GlobalSearch />
+            <Routes>
+              {/* Public */}
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/cadastro" element={<Cadastro />} />
 
-            {/* Admin only routes */}
-            <Route path="/painel" element={<AdminRoute><Dashboard /></AdminRoute>} />
-            <Route path="/painel/vendas" element={<AdminRoute><Vendas /></AdminRoute>} />
-            <Route path="/painel/a-receber" element={<AdminRoute><AReceber /></AdminRoute>} />
-            <Route path="/painel/contas-a-pagar" element={<AdminRoute><ContasAPagar /></AdminRoute>} />
-            <Route path="/painel/clientes" element={<AdminRoute><Clientes /></AdminRoute>} />
-            <Route path="/painel/funcionarios" element={<AdminRoute><Funcionarios /></AdminRoute>} />
-            <Route path="/painel/sabores" element={<AdminRoute><Sabores /></AdminRoute>} />
-            <Route path="/painel/relatorios" element={<AdminRoute><Relatorios /></AdminRoute>} />
-            <Route path="/painel/importar-planilha" element={<AdminRoute><ImportarPlanilha /></AdminRoute>} />
-            <Route path="/painel/auditoria" element={<AdminRoute><Auditoria /></AdminRoute>} />
-            <Route path="/painel/diagnostico" element={<AdminRoute><Diagnostico /></AdminRoute>} />
-            <Route path="/painel/verificacao-vendas" element={<AdminRoute><VerificacaoVendas /></AdminRoute>} />
-            <Route path="/painel/usuarios" element={<AdminRoute><GerenciarUsuarios /></AdminRoute>} />
-            <Route path="/painel/previsao-demanda" element={<AdminRoute><PrevisaoDemanda /></AdminRoute>} />
-            <Route path="/painel/mapa-entregas" element={<AdminRoute><MapaEntregas /></AdminRoute>} />
-            <Route path="/painel/mapa-clientes" element={<AdminRoute><MapaClientes /></AdminRoute>} />
-            <Route path="/painel/prospeccao" element={<AdminRoute><Prospeccao /></AdminRoute>} />
+              {/* Admin only routes */}
+              <Route path="/painel" element={<AdminRoute><Dashboard /></AdminRoute>} />
+              <Route path="/painel/vendas" element={<AdminRoute><Vendas /></AdminRoute>} />
+              <Route path="/painel/a-receber" element={<AdminRoute><AReceber /></AdminRoute>} />
+              <Route path="/painel/contas-a-pagar" element={<AdminRoute><ContasAPagar /></AdminRoute>} />
+              <Route path="/painel/clientes" element={<AdminRoute><Clientes /></AdminRoute>} />
+              <Route path="/painel/funcionarios" element={<AdminRoute><Funcionarios /></AdminRoute>} />
+              <Route path="/painel/sabores" element={<AdminRoute><Sabores /></AdminRoute>} />
+              <Route path="/painel/relatorios" element={<AdminRoute><Relatorios /></AdminRoute>} />
+              <Route path="/painel/importar-planilha" element={<AdminRoute><ImportarPlanilha /></AdminRoute>} />
+              <Route path="/painel/auditoria" element={<AdminRoute><Auditoria /></AdminRoute>} />
+              <Route path="/painel/diagnostico" element={<AdminRoute><Diagnostico /></AdminRoute>} />
+              <Route path="/painel/verificacao-vendas" element={<AdminRoute><VerificacaoVendas /></AdminRoute>} />
+              <Route path="/painel/usuarios" element={<AdminRoute><GerenciarUsuarios /></AdminRoute>} />
+              <Route path="/painel/previsao-demanda" element={<AdminRoute><PrevisaoDemanda /></AdminRoute>} />
+              <Route path="/painel/mapa-entregas" element={<AdminRoute><MapaEntregas /></AdminRoute>} />
+              <Route path="/painel/mapa-clientes" element={<AdminRoute><MapaClientes /></AdminRoute>} />
+              <Route path="/painel/prospeccao" element={<AdminRoute><Prospeccao /></AdminRoute>} />
 
-            {/* Production accessible routes */}
-            <Route path="/painel/producao" element={<ProdRoute><Producao /></ProdRoute>} />
-            <Route path="/painel/pedidos-producao" element={<ProdRoute><PedidosProducao /></ProdRoute>} />
-            <Route path="/painel/monitor-producao" element={<ProdRoute><MonitorProducao /></ProdRoute>} />
-            <Route path="/painel/estoque" element={<ProdRoute><Estoque /></ProdRoute>} />
+              {/* Production accessible routes */}
+              <Route path="/painel/producao" element={<ProdRoute><Producao /></ProdRoute>} />
+              <Route path="/painel/pedidos-producao" element={<ProdRoute><PedidosProducao /></ProdRoute>} />
+              <Route path="/painel/monitor-producao" element={<ProdRoute><MonitorProducao /></ProdRoute>} />
+              <Route path="/painel/estoque" element={<ProdRoute><Estoque /></ProdRoute>} />
 
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
