@@ -49,6 +49,9 @@ export default function Vendas() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [prodDialog, setProdDialog] = useState<{ venda: any; tipo: "entrega" | "retirada" } | null>(null);
+  const [prodHora, setProdHora] = useState("");
+  const [prodEmbalagem, setProdEmbalagem] = useState("1 saco");
 
   const [clienteId, setClienteId] = useState("");
   const [formaPagamento, setFormaPagamento] = useState("dinheiro");
@@ -380,15 +383,30 @@ export default function Vendas() {
       }
 
       // 3. Create pedido_producao
-      const now = new Date();
-      const dataEntrega = new Date(now.getTime() + 2 * 60 * 60 * 1000); // +2h default
-      const dataEntregaStr = `${dataEntrega.getFullYear()}-${String(dataEntrega.getMonth() + 1).padStart(2, "0")}-${String(dataEntrega.getDate()).padStart(2, "0")}T${String(dataEntrega.getHours()).padStart(2, "0")}:${String(dataEntrega.getMinutes()).padStart(2, "0")}:00`;
+      const dataEntregaStr = prodDialog
+        ? (() => {
+            const base = new Date();
+            if (prodHora) {
+              const [h, m] = prodHora.split(":").map(Number);
+              base.setHours(h, m, 0, 0);
+            } else {
+              base.setHours(base.getHours() + 2);
+            }
+            return `${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2, "0")}-${String(base.getDate()).padStart(2, "0")}T${String(base.getHours()).padStart(2, "0")}:${String(base.getMinutes()).padStart(2, "0")}:00`;
+          })()
+        : (() => {
+            const now = new Date();
+            const dataEntrega = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+            return `${dataEntrega.getFullYear()}-${String(dataEntrega.getMonth() + 1).padStart(2, "0")}-${String(dataEntrega.getDate()).padStart(2, "0")}T${String(dataEntrega.getHours()).padStart(2, "0")}:${String(dataEntrega.getMinutes()).padStart(2, "0")}:00`;
+          })();
+
+      const embalagemEscolhida = prodDialog ? prodEmbalagem : "1 saco";
 
       const { data: pedido, error: pedidoErr } = await (supabase as any)
         .from("pedidos_producao")
         .insert({
           cliente_id: freshVenda.cliente_id,
-          tipo_embalagem: "1 saco",
+          tipo_embalagem: embalagemEscolhida,
           data_entrega: dataEntregaStr,
           observacoes: `Gerado automaticamente da venda. Tipo: ${tipoPedido === "entrega" ? "Entrega" : "Retirada"}`,
           status: "aguardando_producao",
@@ -426,6 +444,7 @@ export default function Vendas() {
         title: tipoPedido === "entrega" ? "🚚 Enviado para Entrega!" : "🧊 Enviado para Retirada!",
         description: `Pedido criado no Monitor de Produção para ${clienteNome}`,
       });
+      setProdDialog(null);
       loadData();
     } catch (e: any) {
       toast({ title: "Erro ao enviar para produção", description: e.message, variant: "destructive" });
@@ -829,7 +848,7 @@ export default function Vendas() {
                                     variant="ghost"
                                     className="h-8 w-8 text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-950"
                                     disabled={sendingToProduction === v.id}
-                                    onClick={() => sendToProduction(v, "entrega")}
+                                    onClick={() => { setProdHora(""); setProdEmbalagem("1 saco"); setProdDialog({ venda: v, tipo: "entrega" }); }}
                                   >
                                     <Truck className="h-4 w-4" />
                                   </Button>
@@ -843,7 +862,7 @@ export default function Vendas() {
                                     variant="ghost"
                                     className="h-8 w-8 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950"
                                     disabled={sendingToProduction === v.id}
-                                    onClick={() => sendToProduction(v, "retirada")}
+                                    onClick={() => { setProdHora(""); setProdEmbalagem("1 saco"); setProdDialog({ venda: v, tipo: "retirada" }); }}
                                   >
                                     <Package className="h-4 w-4" />
                                   </Button>
@@ -893,6 +912,43 @@ export default function Vendas() {
           })()}
         </CardContent>
       </Card>
+
+      {/* Dialog de enviar para produção com hora e embalagem */}
+      <Dialog open={!!prodDialog} onOpenChange={(v) => !v && setProdDialog(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              {prodDialog?.tipo === "entrega" ? "🚚 Enviar para Entrega" : "🧊 Enviar para Retirada"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Horário da {prodDialog?.tipo === "entrega" ? "Entrega" : "Retirada"} *</Label>
+              <Input type="time" value={prodHora} onChange={(e) => setProdHora(e.target.value)} />
+            </div>
+            <div>
+              <Label>Tipo de Embalagem</Label>
+              <Select value={prodEmbalagem} onValueChange={setProdEmbalagem}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1 saco">1 Saco</SelectItem>
+                  <SelectItem value="2 sacos">2 Sacos</SelectItem>
+                  <SelectItem value="sacola_alca">Sacola com Alça</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              className="w-full"
+              disabled={!prodHora || sendingToProduction === prodDialog?.venda?.id}
+              onClick={() => {
+                if (prodDialog) sendToProduction(prodDialog.venda, prodDialog.tipo);
+              }}
+            >
+              Confirmar e Enviar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
