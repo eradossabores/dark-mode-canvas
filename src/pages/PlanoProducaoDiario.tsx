@@ -9,7 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   Factory, TrendingUp, TrendingDown, Minus, RefreshCw,
   AlertTriangle, CheckCircle2, Snowflake, BarChart3, Check, X,
-  Brain, Sparkles, ClipboardList, PartyPopper
+  Brain, Sparkles, ClipboardList, PartyPopper, History, ChevronDown, ChevronUp, CalendarDays
 } from "lucide-react";
 
 interface ChecklistItem {
@@ -153,6 +153,8 @@ export default function PlanoProducaoDiario() {
   const [totalDecisoes, setTotalDecisoes] = useState(0);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [modoChecklist, setModoChecklist] = useState(false);
+  const [historicoDecisoes, setHistoricoDecisoes] = useState<any[]>([]);
+  const [historicoExpanded, setHistoricoExpanded] = useState(false);
 
   const hoje = new Date();
   const diaSemana = hoje.getDay();
@@ -174,7 +176,40 @@ export default function PlanoProducaoDiario() {
       } catch {}
     }
     calcular();
+    fetchHistorico();
   }, []);
+
+  async function fetchHistorico() {
+    try {
+      const { data, error } = await (supabase as any)
+        .from("decisoes_producao")
+        .select("*")
+        .gt("lotes_autorizados", 0)
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (error) throw error;
+
+      // Agrupar por dia
+      const porDia: Record<string, any[]> = {};
+      (data || []).forEach((d: any) => {
+        const dia = new Date(d.created_at).toLocaleDateString("pt-BR");
+        if (!porDia[dia]) porDia[dia] = [];
+        porDia[dia].push(d);
+      });
+
+      const resultado = Object.entries(porDia).map(([dia, itens]) => ({
+        dia,
+        itens,
+        totalLotes: itens.reduce((s: number, i: any) => s + i.lotes_autorizados, 0),
+        totalUnidades: itens.reduce((s: number, i: any) => s + i.lotes_autorizados * 84, 0),
+        operador: itens[0]?.operador || "sistema",
+      }));
+
+      setHistoricoDecisoes(resultado);
+    } catch (e) {
+      console.error("Erro ao buscar histórico:", e);
+    }
+  }
 
   async function calcular() {
     setLoading(true);
@@ -868,6 +903,73 @@ export default function PlanoProducaoDiario() {
           );
         })}
       </div>
+
+      {/* Histórico de Planos */}
+      {historicoDecisoes.length > 0 && (
+        <Card>
+          <CardContent className="pt-4 pb-3">
+            <div
+              className="flex items-center justify-between cursor-pointer"
+              onClick={() => setHistoricoExpanded(!historicoExpanded)}
+            >
+              <div className="flex items-center gap-2">
+                <History className="h-4 w-4 text-primary" />
+                <span className="font-bold text-sm">Histórico de Planos</span>
+                <Badge variant="secondary" className="text-[10px]">
+                  {historicoDecisoes.length} dia(s)
+                </Badge>
+              </div>
+              {historicoExpanded
+                ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                : <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              }
+            </div>
+
+            {historicoExpanded && (
+              <div className="mt-3 space-y-3">
+                {historicoDecisoes.map((registro, idx) => (
+                  <div key={idx} className="border rounded-lg p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-sm font-bold">{registro.dia}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>{registro.totalLotes} lotes</span>
+                        <span>·</span>
+                        <span>{registro.totalUnidades.toLocaleString()} un</span>
+                      </div>
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      Operador: {registro.operador}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {registro.itens.map((item: any) => {
+                        const color = getSaborColor(item.sabor_nome);
+                        return (
+                          <div
+                            key={item.id}
+                            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px]"
+                            style={{
+                              backgroundColor: `${color}15`,
+                              border: `1px solid ${color}30`,
+                            }}
+                          >
+                            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                            <span className="font-medium">{item.sabor_nome}</span>
+                            <span className="font-black">{item.lotes_autorizados}L</span>
+                            <span className="text-muted-foreground">({item.lotes_autorizados * 84}un)</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {analises.length === 0 && !loading && (
         <Card>
