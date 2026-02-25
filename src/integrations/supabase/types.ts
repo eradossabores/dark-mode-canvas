@@ -518,7 +518,9 @@ export type Database = {
           status: Database["public"]["Enums"]["status_pedido_producao"]
           status_pagamento: string
           tipo_embalagem: string
+          tipo_pedido: string
           updated_at: string
+          venda_id: string | null
         }
         Insert: {
           cliente_id: string
@@ -530,7 +532,9 @@ export type Database = {
           status?: Database["public"]["Enums"]["status_pedido_producao"]
           status_pagamento?: string
           tipo_embalagem?: string
+          tipo_pedido?: string
           updated_at?: string
+          venda_id?: string | null
         }
         Update: {
           cliente_id?: string
@@ -542,7 +546,9 @@ export type Database = {
           status?: Database["public"]["Enums"]["status_pedido_producao"]
           status_pagamento?: string
           tipo_embalagem?: string
+          tipo_pedido?: string
           updated_at?: string
+          venda_id?: string | null
         }
         Relationships: [
           {
@@ -550,6 +556,13 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedidos_producao_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vendas"
             referencedColumns: ["id"]
           },
         ]
@@ -946,6 +959,7 @@ export type Database = {
         Row: {
           cliente_id: string
           created_at: string
+          enviado_producao: boolean
           forma_pagamento: string
           id: string
           numero_nf: string | null
@@ -958,6 +972,7 @@ export type Database = {
         Insert: {
           cliente_id: string
           created_at?: string
+          enviado_producao?: boolean
           forma_pagamento?: string
           id?: string
           numero_nf?: string | null
@@ -970,6 +985,7 @@ export type Database = {
         Update: {
           cliente_id?: string
           created_at?: string
+          enviado_producao?: boolean
           forma_pagamento?: string
           id?: string
           numero_nf?: string | null
