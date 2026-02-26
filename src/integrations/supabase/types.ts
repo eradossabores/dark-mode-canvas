@@ -221,6 +221,7 @@ export type Database = {
           descricao: string
           id: string
           mes_referencia: string | null
+          pago_mes: boolean
           parcela_atual: number | null
           responsavel: string | null
           tipo: string
@@ -236,6 +237,7 @@ export type Database = {
           descricao: string
           id?: string
           mes_referencia?: string | null
+          pago_mes?: boolean
           parcela_atual?: number | null
           responsavel?: string | null
           tipo?: string
@@ -251,6 +253,7 @@ export type Database = {
           descricao?: string
           id?: string
           mes_referencia?: string | null
+          pago_mes?: boolean
           parcela_atual?: number | null
           responsavel?: string | null
           tipo?: string
