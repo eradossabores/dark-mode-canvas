@@ -1,0 +1,1 @@
+UPDATE contas_a_pagar SET parcela_atual = 1, valor_restante = 4500.00 WHERE id = 'd69442df-c830-42f4-9614-891ce7314ff0';
