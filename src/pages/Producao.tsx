@@ -21,6 +21,7 @@ import { Plus, Trash2, Pencil, Eye, TrendingUp, CalendarIcon, AlertTriangle } fr
 import { Checkbox } from "@/components/ui/checkbox";
 import Chart3DBarProducao from "@/components/Chart3DBarProducao";
 import ChecklistProducaoDia from "@/components/producao/ChecklistProducaoDia";
+import EditDayProducoesDialog from "@/components/producao/EditDayProducoesDialog";
 
 export default function Producao() {
   const [sabores, setSabores] = useState<any[]>([]);
@@ -33,6 +34,7 @@ export default function Producao() {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteDayItems, setDeleteDayItems] = useState<any[] | null>(null);
+  const [editDayItems, setEditDayItems] = useState<any[] | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
   interface ProdItem {
@@ -658,6 +660,16 @@ export default function Producao() {
           </CardContent>
         </Card>
 
+      {/* Edit Day Dialog */}
+      <EditDayProducoesDialog
+        open={!!editDayItems}
+        onOpenChange={(v) => !v && setEditDayItems(null)}
+        dayItems={editDayItems || []}
+        sabores={sabores}
+        funcionarios={funcionarios}
+        onSaved={loadData}
+      />
+
       {/* Checklist de Produção do Dia */}
       <ChecklistProducaoDia />
 
@@ -700,6 +712,15 @@ export default function Producao() {
                         }}
                       >
                         <Plus className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="h-7 w-7"
+                        onClick={() => setEditDayItems(dayItems)}
+                        title="Editar produções do dia"
+                      >
+                        <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
                         size="icon"
