@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { DollarSign, Plus, Pencil, Trash2, Loader2, TrendingDown, Receipt, CircleDollarSign, AlertTriangle } from "lucide-react";
+import { DollarSign, Plus, Pencil, Trash2, Loader2, TrendingDown, Receipt, CircleDollarSign, AlertTriangle, Check, X } from "lucide-react";
 
 interface ContaPagar {
   id: string;
@@ -25,6 +25,7 @@ interface ContaPagar {
   valor_restante: number;
   mes_referencia: string;
   ativa: boolean;
+  pago_mes: boolean;
 }
 
 export default function ContasAPagar() {
@@ -137,8 +138,16 @@ export default function ContasAPagar() {
     await (supabase as any).from("contas_a_pagar").update({
       parcela_atual: novaParcela,
       valor_restante: novoRestante,
+      pago_mes: true,
     }).eq("id", c.id);
     toast({ title: `Parcela ${novaParcela}/${c.total_parcelas} paga!` });
+    loadContas();
+  }
+
+  async function togglePagoMes(c: ContaPagar) {
+    const novo = !c.pago_mes;
+    await (supabase as any).from("contas_a_pagar").update({ pago_mes: novo }).eq("id", c.id);
+    toast({ title: novo ? `✅ ${c.descricao} — parcela do mês marcada como paga` : `${c.descricao} — parcela do mês desmarcada` });
     loadContas();
   }
 
@@ -297,6 +306,7 @@ export default function ContasAPagar() {
                 <TableRow>
                   <TableHead>Custo</TableHead>
                   <TableHead>Responsável</TableHead>
+                  <TableHead className="text-center">Mês Pago?</TableHead>
                   <TableHead className="text-right">Parcela</TableHead>
                   <TableHead className="text-center">Progresso</TableHead>
                   <TableHead className="text-right">Total</TableHead>
@@ -313,6 +323,17 @@ export default function ContasAPagar() {
                     <TableRow key={c.id} className={quitado ? "opacity-60" : ""}>
                       <TableCell className="font-medium">{c.descricao}</TableCell>
                       <TableCell>{c.responsavel || "—"}</TableCell>
+                      <TableCell className="text-center">
+                        <Button
+                          size="sm"
+                          variant={c.pago_mes ? "default" : "outline"}
+                          className={`h-7 w-7 p-0 ${c.pago_mes ? "bg-green-600 hover:bg-green-700" : "hover:bg-red-50 dark:hover:bg-red-950/30"}`}
+                          onClick={() => togglePagoMes(c)}
+                          title={c.pago_mes ? "Parcela do mês paga ✅" : "Parcela do mês pendente"}
+                        >
+                          {c.pago_mes ? <Check className="h-4 w-4 text-white" /> : <X className="h-4 w-4 text-destructive" />}
+                        </Button>
+                      </TableCell>
                       <TableCell className="text-right font-mono">{R(c.valor_parcela)}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -371,6 +392,7 @@ export default function ContasAPagar() {
                 <TableRow>
                   <TableHead>Custo</TableHead>
                   <TableHead>Responsável</TableHead>
+                  <TableHead className="text-center">Mês Pago?</TableHead>
                   <TableHead className="text-right">Valor Mensal</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -380,6 +402,17 @@ export default function ContasAPagar() {
                   <TableRow key={c.id}>
                     <TableCell className="font-medium">{c.descricao}</TableCell>
                     <TableCell>{c.responsavel || "—"}</TableCell>
+                    <TableCell className="text-center">
+                      <Button
+                        size="sm"
+                        variant={c.pago_mes ? "default" : "outline"}
+                        className={`h-7 w-7 p-0 ${c.pago_mes ? "bg-green-600 hover:bg-green-700" : "hover:bg-red-50 dark:hover:bg-red-950/30"}`}
+                        onClick={() => togglePagoMes(c)}
+                        title={c.pago_mes ? "Pago este mês ✅" : "Pendente este mês"}
+                      >
+                        {c.pago_mes ? <Check className="h-4 w-4 text-white" /> : <X className="h-4 w-4 text-destructive" />}
+                      </Button>
+                    </TableCell>
                     <TableCell className="text-right font-mono">{R(c.valor_parcela)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
