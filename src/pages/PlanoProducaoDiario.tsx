@@ -138,6 +138,16 @@ function calcularAprendizado(
   };
 }
 
+function getProximoDiaUtil(a_partir_de: Date): Date {
+  const d = new Date(a_partir_de);
+  d.setDate(d.getDate() + 1);
+  // Avança até Terça-Sexta (2-5)
+  while (d.getDay() < 2 || d.getDay() > 5) {
+    d.setDate(d.getDate() + 1);
+  }
+  return d;
+}
+
 export default function PlanoProducaoDiario() {
   const [analises, setAnalises] = useState<SaborAnalise[]>([]);
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
@@ -153,18 +163,21 @@ export default function PlanoProducaoDiario() {
   const [deleteRegistro, setDeleteRegistro] = useState<any>(null);
   const [editRegistro, setEditRegistro] = useState<any>(null);
   const [editItens, setEditItens] = useState<{ id: string; sabor_nome: string; lotes_autorizados: number }[]>([]);
+  const [planejandoAmanha, setPlanejandoAmanha] = useState(false);
 
   const hoje = new Date();
-  const diaSemana = hoje.getDay();
+  const proximoDiaUtil = getProximoDiaUtil(hoje);
+  const dataAlvo = planejandoAmanha ? proximoDiaUtil : hoje;
+  const diaSemana = dataAlvo.getDay();
   const diaProducao = diaSemana >= 2 && diaSemana <= 5;
   const escalaDoDia = ESCALA_PRODUCAO[diaSemana] || [];
 
-  
+  const dataAlvoLabel = dataAlvo.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "2-digit" });
 
   useEffect(() => {
     calcular();
     fetchHistorico();
-  }, []);
+  }, [planejandoAmanha]);
 
   async function fetchHistorico() {
     try {
@@ -274,20 +287,20 @@ export default function PlanoProducaoDiario() {
       // Auto-enable AI mode when enough data (10 daily sessions)
       if (diasUnicos.size >= 10) setModoIA(true);
 
-      // Check if today's plan was already authorized (from DB)
-      const hojeLocal = new Date();
-      const hojeIso = `${hojeLocal.getFullYear()}-${String(hojeLocal.getMonth() + 1).padStart(2, "0")}-${String(hojeLocal.getDate()).padStart(2, "0")}`;
-      const decisoesHoje = decisoes.filter((d: any) => {
+      // Check if target date's plan was already authorized (from DB)
+      const alvoIso = `${dataAlvo.getFullYear()}-${String(dataAlvo.getMonth() + 1).padStart(2, "0")}-${String(dataAlvo.getDate()).padStart(2, "0")}`;
+      const decisoesAlvo = decisoes.filter((d: any) => {
         const dDate = new Date(d.created_at);
         const dStr = `${dDate.getFullYear()}-${String(dDate.getMonth() + 1).padStart(2, "0")}-${String(dDate.getDate()).padStart(2, "0")}`;
-        return dStr === hojeIso && d.lotes_autorizados > 0;
+        return dStr === alvoIso && d.lotes_autorizados > 0;
       });
 
-      if (decisoesHoje.length > 0) {
+      if (decisoesAlvo.length > 0) {
         setPlanoHojeJaFeito(true);
         setExecutado(true);
       } else {
         setPlanoHojeJaFeito(false);
+        setExecutado(false);
       }
 
       const vendaItens = (vendasRes.data || []).filter((v: any) => v.vendas?.status !== "cancelada");
@@ -399,6 +412,9 @@ export default function PlanoProducaoDiario() {
       .filter(Boolean)
       .join(", ") || "sistema";
 
+    // Use target date for created_at so next-day plans are saved on correct date
+    const alvoIso = `${dataAlvo.getFullYear()}-${String(dataAlvo.getMonth() + 1).padStart(2, "0")}-${String(dataAlvo.getDate()).padStart(2, "0")}T08:00:00`;
+
     const rows = itens.map(item => ({
       dia_semana: diaSemana,
       sabor_id: item.id,
@@ -410,6 +426,7 @@ export default function PlanoProducaoDiario() {
       lotes_sugeridos: item.loteSugerido,
       lotes_autorizados: item.lotesCustom,
       operador,
+      created_at: alvoIso,
     }));
 
     await (supabase as any).from("decisoes_producao").insert(rows);
@@ -431,17 +448,18 @@ export default function PlanoProducaoDiario() {
     try {
       await registrarDecisoes(itens);
 
-      // Save func info for ChecklistProducaoDia component
-      const hojeStr = hoje.toISOString().slice(0, 10);
-      const CHECKLIST_KEY = `checklist-producao-${hojeStr}`;
+      // Save func info for ChecklistProducaoDia component (use target date)
+      const alvoStr = `${dataAlvo.getFullYear()}-${String(dataAlvo.getMonth() + 1).padStart(2, "0")}-${String(dataAlvo.getDate()).padStart(2, "0")}`;
+      const CHECKLIST_KEY = `checklist-producao-${alvoStr}`;
       localStorage.setItem(`${CHECKLIST_KEY}-funcs`, JSON.stringify(validFuncs));
       localStorage.setItem(`${CHECKLIST_KEY}-operador`, nomesFuncionarios || "sistema");
 
       const totalLotes = itens.reduce((s, i) => s + i.lotesCustom, 0);
       const totalUnidades = totalLotes * 84;
+      const labelDia = planejandoAmanha ? `para ${dataAlvo.toLocaleDateString("pt-BR")}` : "de hoje";
       toast({
         title: "✅ Plano autorizado!",
-        description: `${itens.length} sabor(es) · ${totalLotes} lote(s) · ${totalUnidades.toLocaleString()} un — vá para Produção para acompanhar o checklist.`,
+        description: `${itens.length} sabor(es) · ${totalLotes} lote(s) · ${totalUnidades.toLocaleString()} un ${labelDia} — vá para Produção para acompanhar o checklist.`,
       });
 
       setExecutado(true);
@@ -483,13 +501,35 @@ export default function PlanoProducaoDiario() {
           <div>
             <h1 className="text-xl font-bold">Plano de Produção</h1>
             <p className="text-xs text-muted-foreground">
-              {NOMES_DIA[diaSemana]} · {selecionados.length} de {analises.length} sabores · {totalLotes} lotes · {totalUnidades.toLocaleString()} un
+              {dataAlvoLabel} · {selecionados.length} de {analises.length} sabores · {totalLotes} lotes · {totalUnidades.toLocaleString()} un
             </p>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={calcular} disabled={loading}>
+        <Button variant="outline" size="sm" onClick={() => { setLoading(true); calcular(); }} disabled={loading}>
           <RefreshCw className={`h-4 w-4 mr-1 ${loading ? "animate-spin" : ""}`} />
           Recalcular
+        </Button>
+      </div>
+
+      {/* Seletor Hoje / Próximo dia útil */}
+      <div className="flex gap-2">
+        <Button
+          variant={!planejandoAmanha ? "default" : "outline"}
+          size="sm"
+          className="gap-1.5"
+          onClick={() => setPlanejandoAmanha(false)}
+        >
+          <CalendarDays className="h-3.5 w-3.5" />
+          Hoje
+        </Button>
+        <Button
+          variant={planejandoAmanha ? "default" : "outline"}
+          size="sm"
+          className="gap-1.5"
+          onClick={() => setPlanejandoAmanha(true)}
+        >
+          <CalendarDays className="h-3.5 w-3.5" />
+          {proximoDiaUtil.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" })}
         </Button>
       </div>
 
@@ -589,9 +629,9 @@ export default function PlanoProducaoDiario() {
         <Card className="border-amber-500/50 bg-amber-500/5">
           <CardContent className="py-6 text-center">
             <AlertTriangle className="h-8 w-8 text-amber-500 mx-auto mb-2" />
-            <p className="font-bold text-sm">Hoje é {NOMES_DIA[diaSemana]}</p>
+            <p className="font-bold text-sm">{dataAlvoLabel}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              A produção opera de <strong>Terça a Sexta-feira</strong>. Você ainda pode planejar para o próximo dia útil.
+              A produção opera de <strong>Terça a Sexta-feira</strong>. {planejandoAmanha ? "Esse dia não tem produção." : "Você ainda pode planejar para o próximo dia útil."}
             </p>
           </CardContent>
         </Card>
@@ -602,7 +642,7 @@ export default function PlanoProducaoDiario() {
         <CardContent className="pt-4 pb-3">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              Escala — {NOMES_DIA[diaSemana]}
+              Escala — {dataAlvoLabel}
             </p>
             {diaProducao && (
               <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
