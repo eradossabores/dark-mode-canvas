@@ -164,6 +164,7 @@ export default function PlanoProducaoDiario() {
   const [editRegistro, setEditRegistro] = useState<any>(null);
   const [editItens, setEditItens] = useState<{ id: string; sabor_nome: string; lotes_autorizados: number }[]>([]);
   const [planejandoAmanha, setPlanejandoAmanha] = useState(false);
+  const [decisoesAlvoIds, setDecisoesAlvoIds] = useState<string[]>([]);
 
   const hoje = new Date();
   const proximoDiaUtil = getProximoDiaUtil(hoje);
@@ -298,9 +299,11 @@ export default function PlanoProducaoDiario() {
       if (decisoesAlvo.length > 0) {
         setPlanoHojeJaFeito(true);
         setExecutado(true);
+        setDecisoesAlvoIds(decisoesAlvo.map((d: any) => d.id));
       } else {
         setPlanoHojeJaFeito(false);
         setExecutado(false);
+        setDecisoesAlvoIds([]);
       }
 
       const vendaItens = (vendasRes.data || []).filter((v: any) => v.vendas?.status !== "cancelada");
@@ -430,6 +433,21 @@ export default function PlanoProducaoDiario() {
     }));
 
     await (supabase as any).from("decisoes_producao").insert(rows);
+  }
+  async function editarPlanoExistente() {
+    if (decisoesAlvoIds.length === 0) return;
+    try {
+      await (supabase as any)
+        .from("decisoes_producao")
+        .delete()
+        .in("id", decisoesAlvoIds);
+      setDecisoesAlvoIds([]);
+      setPlanoHojeJaFeito(false);
+      setExecutado(false);
+      toast({ title: "Plano desbloqueado para edição" });
+    } catch (e: any) {
+      toast({ title: "Erro ao desbloquear", description: e.message, variant: "destructive" });
+    }
   }
 
   async function autorizarProducao() {
@@ -887,7 +905,7 @@ export default function PlanoProducaoDiario() {
       )}
 
       {/* Sticky bottom bar */}
-      {selecionados.length > 0 && (
+      {(selecionados.length > 0 || (planejandoAmanha && executado && decisoesAlvoIds.length > 0)) && (
         <div className="fixed bottom-0 left-0 right-0 z-50 p-3 bg-background/80 backdrop-blur-lg border-t">
           <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -907,23 +925,35 @@ export default function PlanoProducaoDiario() {
                 </p>
               </div>
             </div>
-            <Button
-              size="lg"
-              onClick={autorizarProducao}
-              disabled={executando || executado}
-              className="gap-2 rounded-full px-6 shadow-lg"
-              style={!executado && !executando ? {
-                background: `linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.8))`,
-              } : {}}
-            >
-              {executando ? (
-                <><RefreshCw className="h-4 w-4 animate-spin" /> Produzindo...</>
-              ) : executado ? (
-                <><CheckCircle2 className="h-4 w-4" /> Registrada ✓</>
-              ) : (
-                <><Factory className="h-4 w-4" /> Autorizar</>
+            <div className="flex gap-2">
+              {planejandoAmanha && executado && decisoesAlvoIds.length > 0 && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={editarPlanoExistente}
+                  className="gap-2 rounded-full px-6"
+                >
+                  <Pencil className="h-4 w-4" /> Editar
+                </Button>
               )}
-            </Button>
+              <Button
+                size="lg"
+                onClick={autorizarProducao}
+                disabled={executando || executado}
+                className="gap-2 rounded-full px-6 shadow-lg"
+                style={!executado && !executando ? {
+                  background: `linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.8))`,
+                } : {}}
+              >
+                {executando ? (
+                  <><RefreshCw className="h-4 w-4 animate-spin" /> Produzindo...</>
+                ) : executado ? (
+                  <><CheckCircle2 className="h-4 w-4" /> Registrada ✓</>
+                ) : (
+                  <><Factory className="h-4 w-4" /> Autorizar</>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       )}
