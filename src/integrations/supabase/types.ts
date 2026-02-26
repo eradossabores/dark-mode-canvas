@@ -214,6 +214,54 @@ export type Database = {
         }
         Relationships: []
       }
+      contas_a_pagar: {
+        Row: {
+          ativa: boolean
+          created_at: string
+          descricao: string
+          id: string
+          mes_referencia: string | null
+          parcela_atual: number | null
+          responsavel: string | null
+          tipo: string
+          total_parcelas: number | null
+          updated_at: string
+          valor_parcela: number
+          valor_restante: number | null
+          valor_total: number | null
+        }
+        Insert: {
+          ativa?: boolean
+          created_at?: string
+          descricao: string
+          id?: string
+          mes_referencia?: string | null
+          parcela_atual?: number | null
+          responsavel?: string | null
+          tipo?: string
+          total_parcelas?: number | null
+          updated_at?: string
+          valor_parcela?: number
+          valor_restante?: number | null
+          valor_total?: number | null
+        }
+        Update: {
+          ativa?: boolean
+          created_at?: string
+          descricao?: string
+          id?: string
+          mes_referencia?: string | null
+          parcela_atual?: number | null
+          responsavel?: string | null
+          tipo?: string
+          total_parcelas?: number | null
+          updated_at?: string
+          valor_parcela?: number
+          valor_restante?: number | null
+          valor_total?: number | null
+        }
+        Relationships: []
+      }
       decisoes_producao: {
         Row: {
           ajuste: number | null
