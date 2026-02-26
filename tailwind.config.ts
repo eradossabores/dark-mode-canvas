@@ -72,9 +72,20 @@ export default {
 				from: { height: 'var(--radix-accordion-content-height)' },
 				to: { height: '0' }
 			},
-			'confetti-fall': {
+		'confetti-fall': {
 				'0%': { transform: 'translateY(0) rotate(0deg)', opacity: '1' },
+				'50%': { opacity: '1' },
 				'100%': { transform: 'translateY(600px) rotate(720deg)', opacity: '0' }
+			},
+			'firework-spark': {
+				'0%': { transform: 'translate(0,0) scale(1)', opacity: '0' },
+				'20%': { opacity: '1' },
+				'100%': { transform: 'translate(var(--spark-x),var(--spark-y)) scale(0)', opacity: '0' }
+			},
+			'firework-flash': {
+				'0%': { transform: 'scale(0)', opacity: '0' },
+				'30%': { transform: 'scale(3)', opacity: '1' },
+				'100%': { transform: 'scale(0)', opacity: '0' }
 			},
 			'scale-in': {
 				'0%': { transform: 'scale(0.9)', opacity: '0' },

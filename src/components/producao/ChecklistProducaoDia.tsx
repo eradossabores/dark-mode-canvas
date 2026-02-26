@@ -73,38 +73,90 @@ function CircleCheck({ checked, color, size = "md" }: { checked: boolean; color:
   );
 }
 
-/* ─── Confetti Particle ─── */
-function Confetti() {
-  const particles = useMemo(() =>
-    Array.from({ length: 40 }, (_, i) => ({
+/* ─── Celebration: Confetti + Fireworks ─── */
+function Celebration() {
+  const confetti = useMemo(() =>
+    Array.from({ length: 80 }, (_, i) => ({
       id: i,
       x: Math.random() * 100,
-      delay: Math.random() * 0.5,
-      duration: 1.5 + Math.random() * 1,
-      size: 4 + Math.random() * 6,
-      color: ["#ef4444", "#22c55e", "#f59e0b", "#3b82f6", "#d946ef", "#06b6d4"][i % 6],
+      delay: Math.random() * 2,
+      duration: 2 + Math.random() * 2,
+      size: 4 + Math.random() * 8,
+      color: ["#ef4444", "#22c55e", "#f59e0b", "#3b82f6", "#d946ef", "#06b6d4", "#f97316", "#ec4899", "#14b8a6", "#a855f7"][i % 10],
       rotation: Math.random() * 360,
+      sway: (Math.random() - 0.5) * 120,
+      type: Math.random() > 0.5 ? "rect" : "circle",
+    }))
+  , []);
+
+  const fireworks = useMemo(() =>
+    Array.from({ length: 5 }, (_, i) => ({
+      id: i,
+      x: 15 + Math.random() * 70,
+      y: 20 + Math.random() * 40,
+      delay: i * 0.8 + Math.random() * 0.5,
+      sparks: Array.from({ length: 12 }, (_, j) => ({
+        id: j,
+        angle: (j / 12) * 360,
+        distance: 30 + Math.random() * 50,
+        color: ["#ef4444", "#f59e0b", "#3b82f6", "#22c55e", "#d946ef", "#06b6d4"][j % 6],
+        size: 3 + Math.random() * 4,
+      })),
     }))
   , []);
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-10">
-      {particles.map(p => (
+      {/* Confetti */}
+      {confetti.map(p => (
         <div
-          key={p.id}
-          className="absolute animate-confetti"
+          key={`c-${p.id}`}
+          className="absolute"
           style={{
             left: `${p.x}%`,
             top: "-10px",
             width: p.size,
-            height: p.size * 1.5,
+            height: p.type === "rect" ? p.size * 1.5 : p.size,
             backgroundColor: p.color,
-            borderRadius: "2px",
+            borderRadius: p.type === "circle" ? "50%" : "2px",
             transform: `rotate(${p.rotation}deg)`,
-            animationDelay: `${p.delay}s`,
-            animationDuration: `${p.duration}s`,
+            animation: `confetti-fall ${p.duration}s ease-out ${p.delay}s forwards`,
+            opacity: 0,
           }}
         />
+      ))}
+      {/* Fireworks */}
+      {fireworks.map(fw => (
+        <div
+          key={`fw-${fw.id}`}
+          className="absolute"
+          style={{ left: `${fw.x}%`, top: `${fw.y}%` }}
+        >
+          {fw.sparks.map(s => (
+            <div
+              key={s.id}
+              className="absolute rounded-full"
+              style={{
+                width: s.size,
+                height: s.size,
+                backgroundColor: s.color,
+                animation: `firework-spark 1s ease-out ${fw.delay}s forwards`,
+                '--spark-x': `${Math.cos(s.angle * Math.PI / 180) * s.distance}px`,
+                '--spark-y': `${Math.sin(s.angle * Math.PI / 180) * s.distance}px`,
+                opacity: 0,
+              } as React.CSSProperties}
+            />
+          ))}
+          {/* Flash */}
+          <div
+            className="absolute w-4 h-4 rounded-full -translate-x-1/2 -translate-y-1/2"
+            style={{
+              backgroundColor: "white",
+              animation: `firework-flash 0.5s ease-out ${fw.delay}s forwards`,
+              opacity: 0,
+            }}
+          />
+        </div>
       ))}
     </div>
   );
@@ -159,7 +211,7 @@ export default function ChecklistProducaoDia() {
     const allDone = updated.every(c => c.concluido);
     if (allDone && updated.length > 0) {
       setShowCelebration(true);
-      setTimeout(() => setShowCelebration(false), 4000);
+      setTimeout(() => setShowCelebration(false), 5000);
     }
   }
 
@@ -169,14 +221,12 @@ export default function ChecklistProducaoDia() {
 
     const nowMarking = !item.concluido;
 
-    setChecklist(prev => {
-      const updated = prev.map(c =>
-        c.id === id ? { ...c, concluido: nowMarking, horaConclusao: nowMarking ? new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : undefined } : c
-      );
-      saveConcluidos(updated);
-      triggerCelebration(updated);
-      return updated;
-    });
+    const updated = checklist.map(c =>
+      c.id === id ? { ...c, concluido: nowMarking, horaConclusao: nowMarking ? new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : undefined } : c
+    );
+    saveConcluidos(updated);
+    setChecklist(updated);
+    triggerCelebration(updated);
 
     if (nowMarking) {
       try {
@@ -219,14 +269,12 @@ export default function ChecklistProducaoDia() {
     // Only register production for items being newly marked
     const itensParaRegistrar = allDone ? [] : saborItens.filter(c => !c.concluido);
 
-    setChecklist(prev => {
-      const updated = prev.map(c =>
-        c.saborId === saborId ? { ...c, concluido: !allDone, horaConclusao: !allDone ? now : undefined } : c
-      );
-      saveConcluidos(updated);
-      triggerCelebration(updated);
-      return updated;
-    });
+    const updated = checklist.map(c =>
+      c.saborId === saborId ? { ...c, concluido: !allDone, horaConclusao: !allDone ? now : undefined } : c
+    );
+    saveConcluidos(updated);
+    setChecklist(updated);
+    triggerCelebration(updated);
 
     if (itensParaRegistrar.length > 0) {
       try {
@@ -276,7 +324,7 @@ export default function ChecklistProducaoDia() {
     <div className="mb-6 space-y-4">
       {/* ── Barra de progresso geral ── */}
       <Card className="relative overflow-hidden">
-        {showCelebration && <Confetti />}
+        {showCelebration && <Celebration />}
         <CardContent className="pt-5 pb-4">
           <div className="flex items-center gap-4">
             <ProgressRing progress={progressGeral} color={completo ? "#22c55e" : "hsl(var(--primary))"} size={56} strokeWidth={5}>
