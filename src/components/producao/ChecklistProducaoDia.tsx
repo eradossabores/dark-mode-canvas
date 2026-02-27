@@ -167,12 +167,28 @@ export default function ChecklistProducaoDia() {
   const hoje = new Date();
   const hojeStr = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}-${String(hoje.getDate()).padStart(2, "0")}`;
   const CONCLUIDOS_KEY = `checklist-concluidos-${hojeStr}`;
+  const REGISTRADOS_KEY = `checklist-registrados-${hojeStr}`;
 
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCelebration, setShowCelebration] = useState(false);
+  // Track which items have already been registered in the DB to prevent duplicates
+  const [registrados, setRegistrados] = useState<Set<string>>(new Set());
 
   useEffect(() => { fetchDecisoes(); }, []);
+
+  // Load registered items from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(REGISTRADOS_KEY);
+      if (saved) setRegistrados(new Set(JSON.parse(saved)));
+    } catch {}
+  }, []);
+
+  function saveRegistrados(newSet: Set<string>) {
+    setRegistrados(newSet);
+    localStorage.setItem(REGISTRADOS_KEY, JSON.stringify([...newSet]));
+  }
 
   async function fetchDecisoes() {
     setLoading(true);
@@ -228,7 +244,8 @@ export default function ChecklistProducaoDia() {
     setChecklist(updated);
     triggerCelebration(updated);
 
-    if (nowMarking) {
+    // Only register if marking AND not already registered
+    if (nowMarking && !registrados.has(id)) {
       try {
         const savedFuncs = localStorage.getItem(`checklist-producao-${hojeStr}-funcs`);
         const operador = localStorage.getItem(`checklist-producao-${hojeStr}-operador`) || "sistema";
@@ -241,9 +258,13 @@ export default function ChecklistProducaoDia() {
           p_quantidade_total: 84,
           p_operador: operador,
           p_observacoes: `Lote ${item.loteNumero}/${item.totalLotes} - Checklist produção diária`,
-          p_funcionarios: funcIds.map(f => ({ funcionario_id: f, quantidade_produzida: 0 })),
+          p_funcionarios: funcIds.filter(f => f !== "patroes").map(f => ({ funcionario_id: f, quantidade_produzida: 0 })),
           p_ignorar_estoque: true,
         });
+
+        const newRegistrados = new Set(registrados);
+        newRegistrados.add(id);
+        saveRegistrados(newRegistrados);
 
         toast({ title: `✅ Lote ${item.loteNumero} de ${item.saborNome} registrado!` });
       } catch (e: any) {
@@ -266,8 +287,8 @@ export default function ChecklistProducaoDia() {
     const allDone = saborItens.every(c => c.concluido);
     const now = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
-    // Only register production for items being newly marked
-    const itensParaRegistrar = allDone ? [] : saborItens.filter(c => !c.concluido);
+    // Only register production for items being newly marked AND not already registered
+    const itensParaRegistrar = allDone ? [] : saborItens.filter(c => !c.concluido && !registrados.has(c.id));
 
     const updated = checklist.map(c =>
       c.saborId === saborId ? { ...c, concluido: !allDone, horaConclusao: !allDone ? now : undefined } : c
@@ -290,10 +311,15 @@ export default function ChecklistProducaoDia() {
             p_quantidade_total: 84,
             p_operador: operador,
             p_observacoes: `Lote ${item.loteNumero}/${item.totalLotes} - Checklist produção diária`,
-            p_funcionarios: funcIds.map(f => ({ funcionario_id: f, quantidade_produzida: 0 })),
+            p_funcionarios: funcIds.filter(f => f !== "patroes").map(f => ({ funcionario_id: f, quantidade_produzida: 0 })),
             p_ignorar_estoque: true,
           });
         }
+
+        const newRegistrados = new Set(registrados);
+        itensParaRegistrar.forEach(item => newRegistrados.add(item.id));
+        saveRegistrados(newRegistrados);
+
         toast({ title: `✅ ${itensParaRegistrar.length} lote(s) de ${saborItens[0]?.saborNome} registrados!` });
       } catch (e: any) {
         console.error("Erro ao registrar produção:", e);
