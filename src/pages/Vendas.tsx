@@ -62,6 +62,8 @@ export default function Vendas() {
   const [valorTotal, setValorTotal] = useState("");
   const [valorEntrada, setValorEntrada] = useState("");
   const [valorRestante, setValorRestante] = useState("");
+  const [dataVencimento, setDataVencimento] = useState<Date | undefined>(undefined);
+  const [calendarVencOpen, setCalendarVencOpen] = useState(false);
   const [ignorarEstoque, setIgnorarEstoque] = useState(false);
   const [statusVenda, setStatusVenda] = useState("pendente");
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -156,18 +158,26 @@ export default function Vendas() {
         const day = String(d.getDate()).padStart(2, "0");
         return `${y}-${m}-${day}`;
       };
+      const vencimentoStr = dataVencimento
+        ? toLocalDateStr(dataVencimento)
+        : toLocalDateStr(new Date(dataVenda.getTime() + 30 * 86400000));
       const parcelasData = formaPagamento === "parcelado" && valorEntrada
         ? [
             { valor: Number(valorEntrada), vencimento: toLocalDateStr(dataVenda) },
-            ...(Number(valorRestante) > 0 ? [{ valor: Number(valorRestante), vencimento: toLocalDateStr(new Date(dataVenda.getTime() + 30 * 86400000)) }] : []),
+            ...(Number(valorRestante) > 0 ? [{ valor: Number(valorRestante), vencimento: vencimentoStr }] : []),
           ]
+        : formaPagamento === "boleto"
+        ? [{ valor: itensValidos.reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0), vencimento: vencimentoStr }]
         : undefined;
 
+      const vencInfo = (formaPagamento === "boleto" || formaPagamento === "parcelado") && dataVencimento
+        ? ` | Vencimento: ${format(dataVencimento, "dd/MM/yyyy")}`
+        : "";
       await realizarVenda({
         p_cliente_id: clienteId, p_operador: "sistema",
         p_observacoes: observacoes
-          ? `[${formaPagamento}]${formaPagamento === "parcelado" && valorTotal ? ` Valor: R$${valorTotal} | Entrada: R$${valorEntrada} | Restante: R$${valorRestante}` : ""} ${observacoes}`
-          : `[${formaPagamento}]${formaPagamento === "parcelado" && valorTotal ? ` Valor: R$${valorTotal} | Entrada: R$${valorEntrada} | Restante: R$${valorRestante}` : ""}`,
+          ? `[${formaPagamento}]${formaPagamento === "parcelado" && valorTotal ? ` Valor: R$${valorTotal} | Entrada: R$${valorEntrada} | Restante: R$${valorRestante}` : ""}${vencInfo} ${observacoes}`
+          : `[${formaPagamento}]${formaPagamento === "parcelado" && valorTotal ? ` Valor: R$${valorTotal} | Entrada: R$${valorEntrada} | Restante: R$${valorRestante}` : ""}${vencInfo}`,
         p_itens: itensValidos,
         ...(parcelasData ? { p_parcelas: parcelasData } : {}),
         p_ignorar_estoque: ignorarEstoque,
@@ -206,7 +216,7 @@ export default function Vendas() {
       });
 
       toast({ title: "Venda registrada com sucesso!" });
-      setOpen(false); setItens([]); setClienteId(""); setFormaPagamento("dinheiro"); setObservacoes(""); setNumeroNf(""); setDataVenda(new Date()); setValorTotal(""); setValorEntrada(""); setValorRestante(""); setIgnorarEstoque(false); setStatusVenda("pendente");
+      setOpen(false); setItens([]); setClienteId(""); setFormaPagamento("dinheiro"); setObservacoes(""); setNumeroNf(""); setDataVenda(new Date()); setValorTotal(""); setValorEntrada(""); setValorRestante(""); setDataVencimento(undefined); setIgnorarEstoque(false); setStatusVenda("pendente");
       loadData();
     } catch (e: any) {
       toast({ title: "Erro na venda", description: e.message, variant: "destructive" });
@@ -545,7 +555,7 @@ export default function Vendas() {
                 )}
               </div>
               <div><Label>Forma de Pagamento</Label>
-                <Select value={formaPagamento} onValueChange={(v) => { setFormaPagamento(v); if (v !== "parcelado") { setValorTotal(""); setValorEntrada(""); setValorRestante(""); } }}>
+                <Select value={formaPagamento} onValueChange={(v) => { setFormaPagamento(v); if (v !== "parcelado") { setValorTotal(""); setValorEntrada(""); setValorRestante(""); } if (v !== "boleto" && v !== "parcelado") { setDataVencimento(undefined); } }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{FORMAS_PAGAMENTO.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}</SelectContent>
                 </Select>
@@ -559,30 +569,60 @@ export default function Vendas() {
                   </SelectContent>
                 </Select>
               </div>
-              {formaPagamento === "parcelado" && (
+              {(formaPagamento === "boleto" || formaPagamento === "parcelado") && (
                 <div className="space-y-3 p-3 border rounded-lg bg-muted/30">
                   <div>
-                    <Label>Valor Total (R$)</Label>
-                    <Input type="number" step="0.01" min="0" value={valorTotal} onChange={(e) => {
-                      setValorTotal(e.target.value);
-                      const total = Number(e.target.value) || 0;
-                      const entrada = Number(valorEntrada) || 0;
-                      setValorRestante((total - entrada).toFixed(2));
-                    }} placeholder="0.00" />
+                    <Label>Data de Vencimento / Pagamento Restante</Label>
+                    <Popover open={calendarVencOpen} onOpenChange={setCalendarVencOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn("w-full justify-start text-left font-normal", !dataVencimento && "text-muted-foreground")}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {dataVencimento ? format(dataVencimento, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data de vencimento"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={dataVencimento}
+                          onSelect={(d) => {
+                            if (d) setDataVencimento(d);
+                            setCalendarVencOpen(false);
+                          }}
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
-                  <div>
-                    <Label>Valor da Entrada (R$)</Label>
-                    <Input type="number" step="0.01" min="0" value={valorEntrada} onChange={(e) => {
-                      setValorEntrada(e.target.value);
-                      const total = Number(valorTotal) || 0;
-                      const entrada = Number(e.target.value) || 0;
-                      setValorRestante((total - entrada).toFixed(2));
-                    }} placeholder="0.00" />
-                  </div>
-                  <div>
-                    <Label>Valor Restante (R$)</Label>
-                    <Input type="number" step="0.01" value={valorRestante} readOnly className="bg-muted" />
-                  </div>
+                  {formaPagamento === "parcelado" && (
+                    <>
+                      <div>
+                        <Label>Valor Total (R$)</Label>
+                        <Input type="number" step="0.01" min="0" value={valorTotal} onChange={(e) => {
+                          setValorTotal(e.target.value);
+                          const total = Number(e.target.value) || 0;
+                          const entrada = Number(valorEntrada) || 0;
+                          setValorRestante((total - entrada).toFixed(2));
+                        }} placeholder="0.00" />
+                      </div>
+                      <div>
+                        <Label>Valor da Entrada (R$)</Label>
+                        <Input type="number" step="0.01" min="0" value={valorEntrada} onChange={(e) => {
+                          setValorEntrada(e.target.value);
+                          const total = Number(valorTotal) || 0;
+                          const entrada = Number(e.target.value) || 0;
+                          setValorRestante((total - entrada).toFixed(2));
+                        }} placeholder="0.00" />
+                      </div>
+                      <div>
+                        <Label>Valor Restante (R$)</Label>
+                        <Input type="number" step="0.01" value={valorRestante} readOnly className="bg-muted" />
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
               <div><Label>Observações</Label><Input value={observacoes} onChange={(e) => setObservacoes(e.target.value)} /></div>
