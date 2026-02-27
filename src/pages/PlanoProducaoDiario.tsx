@@ -141,11 +141,6 @@ function calcularAprendizado(
   };
 }
 
-function getProximoDia(a_partir_de: Date): Date {
-  const d = new Date(a_partir_de);
-  d.setDate(d.getDate() + 1);
-  return d;
-}
 
 export default function PlanoProducaoDiario() {
   const [analises, setAnalises] = useState<SaborAnalise[]>([]);
@@ -162,12 +157,17 @@ export default function PlanoProducaoDiario() {
   const [deleteRegistro, setDeleteRegistro] = useState<any>(null);
   const [editRegistro, setEditRegistro] = useState<any>(null);
   const [editItens, setEditItens] = useState<{ id: string; sabor_nome: string; lotes_autorizados: number }[]>([]);
-  const [planejandoAmanha, setPlanejandoAmanha] = useState(false);
+  const [diaOffset, setDiaOffset] = useState(0);
   const [decisoesAlvoIds, setDecisoesAlvoIds] = useState<string[]>([]);
 
   const hoje = new Date();
-  const proximoDia = getProximoDia(hoje);
-  const dataAlvo = planejandoAmanha ? proximoDia : hoje;
+  // Generate 5 days: today + next 4 days
+  const diasDisponiveis = Array.from({ length: 5 }, (_, i) => {
+    const d = new Date(hoje);
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+  const dataAlvo = diasDisponiveis[diaOffset] || hoje;
   const diaSemana = dataAlvo.getDay();
   const escalaDoDia = ESCALA_PRODUCAO[diaSemana] || [];
 
@@ -176,7 +176,7 @@ export default function PlanoProducaoDiario() {
   useEffect(() => {
     calcular();
     fetchHistorico();
-  }, [planejandoAmanha]);
+  }, [diaOffset]);
 
   async function fetchHistorico() {
     try {
@@ -472,7 +472,7 @@ export default function PlanoProducaoDiario() {
 
       const totalLotes = itens.reduce((s, i) => s + i.lotesCustom, 0);
       const totalUnidades = totalLotes * 84;
-      const labelDia = planejandoAmanha ? `para ${dataAlvo.toLocaleDateString("pt-BR")}` : "de hoje";
+      const labelDia = diaOffset > 0 ? `para ${dataAlvo.toLocaleDateString("pt-BR")}` : "de hoje";
       toast({
         title: "✅ Plano autorizado!",
         description: `${itens.length} sabor(es) · ${totalLotes} lote(s) · ${totalUnidades.toLocaleString()} un ${labelDia} — vá para Produção para acompanhar o checklist.`,
@@ -527,26 +527,20 @@ export default function PlanoProducaoDiario() {
         </Button>
       </div>
 
-      {/* Seletor Hoje / Próximo dia útil */}
-      <div className="flex gap-2">
-        <Button
-          variant={!planejandoAmanha ? "default" : "outline"}
-          size="sm"
-          className="gap-1.5"
-          onClick={() => setPlanejandoAmanha(false)}
-        >
-          <CalendarDays className="h-3.5 w-3.5" />
-          Hoje
-        </Button>
-        <Button
-          variant={planejandoAmanha ? "default" : "outline"}
-          size="sm"
-          className="gap-1.5"
-          onClick={() => setPlanejandoAmanha(true)}
-        >
-          <CalendarDays className="h-3.5 w-3.5" />
-          {proximoDia.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" })}
-        </Button>
+      {/* Seletor de dias */}
+      <div className="flex gap-2 flex-wrap">
+        {diasDisponiveis.map((dia, i) => (
+          <Button
+            key={i}
+            variant={diaOffset === i ? "default" : "outline"}
+            size="sm"
+            className="gap-1.5"
+            onClick={() => setDiaOffset(i)}
+          >
+            <CalendarDays className="h-3.5 w-3.5" />
+            {i === 0 ? "Hoje" : dia.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" })}
+          </Button>
+        ))}
       </div>
 
       {/* Painel de Estoque Atual - visão rápida antes de decidir */}
@@ -892,7 +886,7 @@ export default function PlanoProducaoDiario() {
       )}
 
       {/* Sticky bottom bar */}
-      {(selecionados.length > 0 || (planejandoAmanha && executado && decisoesAlvoIds.length > 0)) && (
+      {(selecionados.length > 0 || (diaOffset > 0 && executado && decisoesAlvoIds.length > 0)) && (
         <div className="fixed bottom-0 left-0 right-0 z-50 p-3 bg-background/80 backdrop-blur-lg border-t">
           <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -913,7 +907,7 @@ export default function PlanoProducaoDiario() {
               </div>
             </div>
             <div className="flex gap-2">
-              {planejandoAmanha && executado && decisoesAlvoIds.length > 0 && (
+              {diaOffset > 0 && executado && decisoesAlvoIds.length > 0 && (
                 <Button
                   size="lg"
                   variant="outline"
