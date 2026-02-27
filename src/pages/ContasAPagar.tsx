@@ -9,9 +9,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { DollarSign, Plus, Pencil, Trash2, Loader2, TrendingDown, Receipt, CircleDollarSign, AlertTriangle, Check, X } from "lucide-react";
+import { DollarSign, Plus, Pencil, Trash2, Loader2, TrendingDown, Receipt, CircleDollarSign, AlertTriangle, Check, X, CalendarDays } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface ContaPagar {
   id: string;
@@ -26,6 +30,7 @@ interface ContaPagar {
   mes_referencia: string;
   ativa: boolean;
   pago_mes: boolean;
+  proxima_parcela_data: string | null;
 }
 
 export default function ContasAPagar() {
@@ -35,6 +40,8 @@ export default function ContasAPagar() {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [pagarConta, setPagarConta] = useState<ContaPagar | null>(null);
+  const [pagarData, setPagarData] = useState<Date | undefined>(undefined);
 
   // Form state
   const [descricao, setDescricao] = useState("");
@@ -131,7 +138,7 @@ export default function ContasAPagar() {
     setDeleteId(null); loadContas();
   }
 
-  async function avancarParcela(c: ContaPagar) {
+  async function avancarParcela(c: ContaPagar, proximaData?: Date) {
     if (c.tipo !== "parcelado" || c.parcela_atual >= c.total_parcelas) return;
     const novaParcela = c.parcela_atual + 1;
     const novoRestante = Math.max(0, c.valor_restante - c.valor_parcela);
@@ -139,8 +146,11 @@ export default function ContasAPagar() {
       parcela_atual: novaParcela,
       valor_restante: novoRestante,
       pago_mes: true,
+      proxima_parcela_data: proximaData ? format(proximaData, "yyyy-MM-dd") : null,
     }).eq("id", c.id);
     toast({ title: `Parcela ${novaParcela}/${c.total_parcelas} paga!` });
+    setPagarConta(null);
+    setPagarData(undefined);
     loadContas();
   }
 
@@ -308,6 +318,7 @@ export default function ContasAPagar() {
                   <TableHead>Responsável</TableHead>
                   <TableHead className="text-center">Mês Pago?</TableHead>
                   <TableHead className="text-right">Parcela</TableHead>
+                  <TableHead>Próx. Vencimento</TableHead>
                   <TableHead className="text-center">Progresso</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead className="text-right">Faltam</TableHead>
@@ -336,6 +347,16 @@ export default function ContasAPagar() {
                       </TableCell>
                       <TableCell className="text-right font-mono">{R(c.valor_parcela)}</TableCell>
                       <TableCell>
+                        {c.proxima_parcela_data ? (
+                          <Badge variant="outline" className="text-xs gap-1">
+                            <CalendarDays className="h-3 w-3" />
+                            {new Date(c.proxima_parcela_data + "T12:00:00").toLocaleDateString("pt-BR")}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <div className="flex items-center gap-2">
                           <Progress value={pct} className="h-2 flex-1" />
                           <Badge variant={quitado ? "default" : quaseQuitando ? "secondary" : "outline"} className="text-xs font-mono whitespace-nowrap">
@@ -348,7 +369,7 @@ export default function ContasAPagar() {
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
                           {!quitado && (
-                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => avancarParcela(c)} title="Pagar próxima parcela">
+                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { setPagarConta(c); setPagarData(undefined); }} title="Pagar próxima parcela">
                               💰 Pagar
                             </Button>
                           )}
@@ -364,8 +385,9 @@ export default function ContasAPagar() {
                   );
                 })}
                 <TableRow className="bg-muted/50 font-bold">
-                  <TableCell colSpan={2}>TOTAL PARCELADAS</TableCell>
+                  <TableCell colSpan={3}>TOTAL PARCELADAS</TableCell>
                   <TableCell className="text-right font-mono">{R(totalParcelado)}</TableCell>
+                  <TableCell />
                   <TableCell />
                   <TableCell className="text-right font-mono">{R(parceladas.reduce((s, c) => s + c.valor_total, 0))}</TableCell>
                   <TableCell className="text-right font-mono text-destructive">{R(totalRestante)}</TableCell>
@@ -448,7 +470,51 @@ export default function ContasAPagar() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirm */}
+      {/* Pagar Parcela Dialog */}
+      <Dialog open={!!pagarConta} onOpenChange={v => { if (!v) { setPagarConta(null); setPagarData(undefined); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Pagar Parcela</DialogTitle>
+          </DialogHeader>
+          {pagarConta && (
+            <div className="space-y-4">
+              <div className="rounded-lg bg-muted p-3 space-y-1">
+                <p className="text-sm font-bold">{pagarConta.descricao}</p>
+                <p className="text-xs text-muted-foreground">
+                  Parcela {pagarConta.parcela_atual + 1}/{pagarConta.total_parcelas} · {R(pagarConta.valor_parcela)}
+                </p>
+              </div>
+              <div>
+                <Label className="text-xs mb-1.5 block">Data da próxima parcela (opcional)</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn("w-full justify-start text-left font-normal", !pagarData && "text-muted-foreground")}
+                    >
+                      <CalendarDays className="h-4 w-4 mr-2" />
+                      {pagarData ? format(pagarData, "dd/MM/yyyy") : "Selecionar data"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={pagarData}
+                      onSelect={setPagarData}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <Button className="w-full" onClick={() => avancarParcela(pagarConta, pagarData)}>
+                💰 Confirmar Pagamento
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <AlertDialog open={!!deleteId} onOpenChange={v => !v && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

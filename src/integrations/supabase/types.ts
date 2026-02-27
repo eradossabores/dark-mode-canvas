@@ -223,6 +223,7 @@ export type Database = {
           mes_referencia: string | null
           pago_mes: boolean
           parcela_atual: number | null
+          proxima_parcela_data: string | null
           responsavel: string | null
           tipo: string
           total_parcelas: number | null
@@ -239,6 +240,7 @@ export type Database = {
           mes_referencia?: string | null
           pago_mes?: boolean
           parcela_atual?: number | null
+          proxima_parcela_data?: string | null
           responsavel?: string | null
           tipo?: string
           total_parcelas?: number | null
@@ -255,6 +257,7 @@ export type Database = {
           mes_referencia?: string | null
           pago_mes?: boolean
           parcela_atual?: number | null
+          proxima_parcela_data?: string | null
           responsavel?: string | null
           tipo?: string
           total_parcelas?: number | null
