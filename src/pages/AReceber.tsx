@@ -3,13 +3,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { DollarSign, CheckCircle, AlertTriangle } from "lucide-react";
+import { DollarSign, CheckCircle, AlertTriangle, MinusCircle } from "lucide-react";
 
 export default function AReceber() {
   const [vendas, setVendas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [abaterVenda, setAbaterVenda] = useState<any>(null);
+  const [valorAbater, setValorAbater] = useState("");
 
   useEffect(() => { loadData(); }, []);
 
@@ -26,9 +31,10 @@ export default function AReceber() {
 
   async function marcarComoPaga(id: string) {
     try {
+      const venda = vendas.find(v => v.id === id);
       const { error } = await (supabase as any)
         .from("vendas")
-        .update({ status: "paga" })
+        .update({ status: "paga", valor_pago: venda?.total || 0 })
         .eq("id", id);
       if (error) throw error;
       toast({ title: "Venda marcada como paga!" });
@@ -38,10 +44,53 @@ export default function AReceber() {
     }
   }
 
+  async function abaterValor() {
+    if (!abaterVenda) return;
+    const valor = parseFloat(valorAbater.replace(",", "."));
+    if (isNaN(valor) || valor <= 0) {
+      return toast({ title: "Informe um valor válido", variant: "destructive" });
+    }
+
+    const totalVenda = Number(abaterVenda.total);
+    const jasPago = Number(abaterVenda.valor_pago || 0);
+    const restante = totalVenda - jasPago;
+
+    if (valor > restante) {
+      return toast({ title: "Valor maior que o restante", description: `Restante: R$ ${restante.toFixed(2)}`, variant: "destructive" });
+    }
+
+    const novoValorPago = jasPago + valor;
+    const quitou = novoValorPago >= totalVenda;
+
+    try {
+      const { error } = await (supabase as any)
+        .from("vendas")
+        .update({
+          valor_pago: novoValorPago,
+          status: quitou ? "paga" : "pendente",
+        })
+        .eq("id", abaterVenda.id);
+      if (error) throw error;
+
+      toast({
+        title: quitou ? "✅ Venda quitada!" : "💰 Valor abatido!",
+        description: quitou
+          ? `R$ ${valor.toFixed(2)} recebido. Venda totalmente paga.`
+          : `R$ ${valor.toFixed(2)} recebido. Restante: R$ ${(restante - valor).toFixed(2)}`,
+      });
+
+      setAbaterVenda(null);
+      setValorAbater("");
+      loadData();
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+  }
+
   const hoje = new Date().toISOString().split("T")[0];
-  const totalPendente = vendas.reduce((s, v) => s + Number(v.total), 0);
+  const totalPendente = vendas.reduce((s, v) => s + (Number(v.total) - Number(v.valor_pago || 0)), 0);
   const vencidas = vendas.filter(v => v.created_at.split("T")[0] < hoje);
-  const totalVencido = vencidas.reduce((s, v) => s + Number(v.total), 0);
+  const totalVencido = vencidas.reduce((s, v) => s + (Number(v.total) - Number(v.valor_pago || 0)), 0);
 
   return (
     <div>
@@ -91,8 +140,9 @@ export default function AReceber() {
                 <TableHead>Data</TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Total</TableHead>
+                <TableHead>Pago</TableHead>
+                <TableHead>Restante</TableHead>
                 <TableHead>Pagamento</TableHead>
-                <TableHead>NF</TableHead>
                 <TableHead>Situação</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -100,21 +150,43 @@ export default function AReceber() {
             <TableBody>
               {vendas.map((v) => {
                 const isVencida = v.created_at.split("T")[0] < hoje;
+                const pago = Number(v.valor_pago || 0);
+                const total = Number(v.total);
+                const restante = total - pago;
+                const temAbatimento = pago > 0 && pago < total;
                 return (
                   <TableRow key={v.id}>
                     <TableCell>{new Date(v.created_at).toLocaleDateString("pt-BR")}</TableCell>
-                    <TableCell>{v.clientes?.nome}</TableCell>
-                    <TableCell>R$ {Number(v.total).toFixed(2)}</TableCell>
-                    <TableCell className="capitalize">{v.forma_pagamento?.replace("_", " ")}</TableCell>
-                    <TableCell>{v.numero_nf || "-"}</TableCell>
+                    <TableCell className="font-medium">{v.clientes?.nome}</TableCell>
+                    <TableCell>R$ {total.toFixed(2)}</TableCell>
                     <TableCell>
-                      <Badge variant={isVencida ? "destructive" : "secondary"}>
-                        {isVencida ? "Vencida" : "Em dia"}
+                      {pago > 0 ? (
+                        <span className="text-green-600 font-medium">R$ {pago.toFixed(2)}</span>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <span className={`font-bold ${temAbatimento ? "text-amber-600" : ""}`}>
+                        R$ {restante.toFixed(2)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="capitalize">{v.forma_pagamento?.replace("_", " ")}</TableCell>
+                    <TableCell>
+                      <Badge variant={isVencida ? "destructive" : temAbatimento ? "outline" : "secondary"}>
+                        {temAbatimento ? "Parcial" : isVencida ? "Vencida" : "Em dia"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right space-x-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => { setAbaterVenda(v); setValorAbater(""); }}
+                      >
+                        <MinusCircle className="h-3.5 w-3.5 mr-1" /> Abater
+                      </Button>
                       <Button size="sm" variant="outline" onClick={() => marcarComoPaga(v.id)}>
-                        <CheckCircle className="h-3.5 w-3.5 mr-1" /> Receber
+                        <CheckCircle className="h-3.5 w-3.5 mr-1" /> Quitar
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -122,7 +194,7 @@ export default function AReceber() {
               })}
               {vendas.length === 0 && !loading && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground">
                     Nenhuma venda pendente. 🎉
                   </TableCell>
                 </TableRow>
@@ -131,6 +203,61 @@ export default function AReceber() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Dialog Abater Valor */}
+      <Dialog open={!!abaterVenda} onOpenChange={(open) => { if (!open) setAbaterVenda(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Abater Valor</DialogTitle>
+          </DialogHeader>
+          {abaterVenda && (
+            <div className="space-y-4">
+              <div className="rounded-lg bg-muted p-3 space-y-1">
+                <p className="text-sm font-medium">{abaterVenda.clientes?.nome}</p>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Total da venda:</span>
+                  <span className="font-bold text-foreground">R$ {Number(abaterVenda.total).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Já pago:</span>
+                  <span className="font-bold text-green-600">R$ {Number(abaterVenda.valor_pago || 0).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="font-semibold">Restante:</span>
+                  <span className="font-black text-amber-600">
+                    R$ {(Number(abaterVenda.total) - Number(abaterVenda.valor_pago || 0)).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <Label>Valor a abater (R$)</Label>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0,00"
+                  value={valorAbater}
+                  onChange={(e) => setValorAbater(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button className="flex-1" onClick={abaterValor}>
+                  Confirmar Abatimento
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const restante = Number(abaterVenda.total) - Number(abaterVenda.valor_pago || 0);
+                    setValorAbater(restante.toFixed(2).replace(".", ","));
+                  }}
+                >
+                  Quitar Tudo
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
