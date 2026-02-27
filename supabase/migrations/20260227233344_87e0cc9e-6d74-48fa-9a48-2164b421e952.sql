@@ -1,0 +1,1 @@
+ALTER TABLE public.vendas ADD COLUMN IF NOT EXISTS valor_pago numeric NOT NULL DEFAULT 0;
