@@ -77,12 +77,15 @@ function ProgressRing({ progress, color, size = 52 }: { progress: number; color:
   );
 }
 
-// Escala fixa
+// Escala fixa (todos os dias da semana)
 const ESCALA_PRODUCAO: Record<number, string[]> = {
+  0: [], // Domingo
+  1: [], // Segunda
   2: ["aghata", "maria"],
   3: ["aghata", "maria"],
   4: ["jhulia", "aghata"],
   5: ["jhulia", "aghata"],
+  6: [], // Sábado
 };
 const NOMES_DIA: Record<number, string> = {
   0: "Domingo", 1: "Segunda-feira", 2: "Terça-feira",
@@ -138,13 +141,9 @@ function calcularAprendizado(
   };
 }
 
-function getProximoDiaUtil(a_partir_de: Date): Date {
+function getProximoDia(a_partir_de: Date): Date {
   const d = new Date(a_partir_de);
   d.setDate(d.getDate() + 1);
-  // Avança até Terça-Sexta (2-5)
-  while (d.getDay() < 2 || d.getDay() > 5) {
-    d.setDate(d.getDate() + 1);
-  }
   return d;
 }
 
@@ -167,10 +166,9 @@ export default function PlanoProducaoDiario() {
   const [decisoesAlvoIds, setDecisoesAlvoIds] = useState<string[]>([]);
 
   const hoje = new Date();
-  const proximoDiaUtil = getProximoDiaUtil(hoje);
-  const dataAlvo = planejandoAmanha ? proximoDiaUtil : hoje;
+  const proximoDia = getProximoDia(hoje);
+  const dataAlvo = planejandoAmanha ? proximoDia : hoje;
   const diaSemana = dataAlvo.getDay();
-  const diaProducao = diaSemana >= 2 && diaSemana <= 5;
   const escalaDoDia = ESCALA_PRODUCAO[diaSemana] || [];
 
   const dataAlvoLabel = dataAlvo.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "2-digit" });
@@ -411,7 +409,7 @@ export default function PlanoProducaoDiario() {
   async function registrarDecisoes(itens: SaborAnalise[]) {
     const validFuncs = funcSelecionados.filter(f => f !== "");
     const operador = validFuncs
-      .map(f => funcionarios.find(fn => fn.id === f)?.nome)
+      .map(f => f === "patroes" ? "Patrões" : funcionarios.find(fn => fn.id === f)?.nome)
       .filter(Boolean)
       .join(", ") || "sistema";
 
@@ -458,7 +456,7 @@ export default function PlanoProducaoDiario() {
     if (validFuncs.length === 0) return toast({ title: "Selecione ao menos um responsável", variant: "destructive" });
 
     const nomesFuncionarios = validFuncs
-      .map(f => funcionarios.find(fn => fn.id === f)?.nome)
+      .map(f => f === "patroes" ? "Patrões" : funcionarios.find(fn => fn.id === f)?.nome)
       .filter(Boolean)
       .join(", ");
 
@@ -547,7 +545,7 @@ export default function PlanoProducaoDiario() {
           onClick={() => setPlanejandoAmanha(true)}
         >
           <CalendarDays className="h-3.5 w-3.5" />
-          {proximoDiaUtil.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" })}
+          {proximoDia.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" })}
         </Button>
       </div>
 
@@ -642,18 +640,6 @@ export default function PlanoProducaoDiario() {
         </CardContent>
       </Card>
 
-      {/* Aviso dia sem produção */}
-      {!diaProducao && (
-        <Card className="border-amber-500/50 bg-amber-500/5">
-          <CardContent className="py-6 text-center">
-            <AlertTriangle className="h-8 w-8 text-amber-500 mx-auto mb-2" />
-            <p className="font-bold text-sm">{dataAlvoLabel}</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              A produção opera de <strong>Terça a Sexta-feira</strong>. {planejandoAmanha ? "Esse dia não tem produção." : "Você ainda pode planejar para o próximo dia útil."}
-            </p>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Escala do dia */}
       <Card className="border-dashed">
@@ -662,7 +648,7 @@ export default function PlanoProducaoDiario() {
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               Escala — {dataAlvoLabel}
             </p>
-            {diaProducao && (
+            {escalaDoDia.length > 0 && (
               <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
                 {escalaDoDia.map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(" + ")}
               </Badge>
@@ -675,7 +661,8 @@ export default function PlanoProducaoDiario() {
                   <SelectTrigger className="h-8 text-xs w-[180px]">
                     <SelectValue placeholder="Funcionário" />
                   </SelectTrigger>
-                  <SelectContent>
+                   <SelectContent>
+                    <SelectItem value="patroes">👑 Patrões</SelectItem>
                     {funcionarios.map(f => (
                       <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>
                     ))}
