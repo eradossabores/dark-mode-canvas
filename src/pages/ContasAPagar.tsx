@@ -83,15 +83,20 @@ export default function ContasAPagar() {
   async function handleAdd() {
     if (!descricao || !valorParcela) return toast({ title: "Preencha descrição e valor", variant: "destructive" });
     setSaving(true);
+    const vp = parseFloat(valorParcela);
+    const tp = tipo === "parcelado" ? parseInt(totalParcelas || "0") : 0;
+    const pa = tipo === "parcelado" ? parseInt(parcelaAtual || "0") : 0;
+    const vt = tipo === "parcelado" ? vp * tp : 0;
+    const vr = tipo === "parcelado" ? vp * (tp - pa) : 0;
     const { error } = await (supabase as any).from("contas_a_pagar").insert({
       descricao,
       responsavel: responsavel || null,
-      valor_parcela: parseFloat(valorParcela),
-      parcela_atual: tipo === "parcelado" ? parseInt(parcelaAtual || "0") : 0,
-      total_parcelas: tipo === "parcelado" ? parseInt(totalParcelas || "0") : 0,
+      valor_parcela: vp,
+      parcela_atual: pa,
+      total_parcelas: tp,
       tipo,
-      valor_total: parseFloat(valorTotal || "0"),
-      valor_restante: parseFloat(valorRestante || "0"),
+      valor_total: vt,
+      valor_restante: Math.max(0, vr),
     });
     setSaving(false);
     if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
@@ -115,15 +120,20 @@ export default function ContasAPagar() {
   async function handleEdit() {
     if (!editDescricao || !editValorParcela) return toast({ title: "Preencha descrição e valor", variant: "destructive" });
     setSaving(true);
+    const vp = parseFloat(editValorParcela);
+    const tp = editTipo === "parcelado" ? parseInt(editTotalParcelas || "0") : 0;
+    const pa = editTipo === "parcelado" ? parseInt(editParcelaAtual || "0") : 0;
+    const vt = editTipo === "parcelado" ? vp * tp : 0;
+    const vr = editTipo === "parcelado" ? vp * (tp - pa) : 0;
     const { error } = await (supabase as any).from("contas_a_pagar").update({
       descricao: editDescricao,
       responsavel: editResponsavel || null,
-      valor_parcela: parseFloat(editValorParcela),
-      parcela_atual: editTipo === "parcelado" ? parseInt(editParcelaAtual || "0") : 0,
-      total_parcelas: editTipo === "parcelado" ? parseInt(editTotalParcelas || "0") : 0,
+      valor_parcela: vp,
+      parcela_atual: pa,
+      total_parcelas: tp,
       tipo: editTipo,
-      valor_total: parseFloat(editValorTotal || "0"),
-      valor_restante: parseFloat(editValorRestante || "0"),
+      valor_total: vt,
+      valor_restante: Math.max(0, vr),
     }).eq("id", editId);
     setSaving(false);
     if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
@@ -223,11 +233,11 @@ export default function ContasAPagar() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Valor Total</Label>
-                <Input type="number" step="0.01" value={vt} onChange={e => setVt(e.target.value)} placeholder="0,00" />
+                <Input type="number" step="0.01" value={(parseFloat(vp || "0") * parseInt(tp || "0")).toFixed(2)} disabled className="bg-muted" />
               </div>
               <div>
                 <Label>Valor Restante</Label>
-                <Input type="number" step="0.01" value={vr} onChange={e => setVr(e.target.value)} placeholder="0,00" />
+                <Input type="number" step="0.01" value={Math.max(0, parseFloat(vp || "0") * (parseInt(tp || "0") - parseInt(pa || "0"))).toFixed(2)} disabled className="bg-muted" />
               </div>
             </div>
           </>
