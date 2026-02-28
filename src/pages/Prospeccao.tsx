@@ -362,6 +362,7 @@ export default function Prospeccao() {
           setExplorePOIs(uniquePois);
 
           // AI Classification
+          let finalPois = uniquePois;
           if (uniquePois.length > 0) {
             setClassifyingAI(true);
             try {
@@ -370,12 +371,61 @@ export default function Prospeccao() {
               });
               if (aiError) throw aiError;
               if (aiData?.classified) {
-                setExplorePOIs(aiData.classified);
+                finalPois = aiData.classified;
+                setExplorePOIs(finalPois);
               }
             } catch (aiErr) {
               console.error("AI classification error:", aiErr);
             } finally {
               setClassifyingAI(false);
+            }
+          }
+
+          // Auto-save POIs as prospectos (skip duplicates by name)
+          if (finalPois.length > 0) {
+            try {
+              const amenityToTipo: Record<string, string> = {
+                bar: "bar", pub: "bar", nightclub: "casa_noturna", restaurant: "restaurante_lounge",
+                cafe: "restaurante_lounge", fast_food: "lanchonete", convenience: "mercado",
+                supermarket: "mercado", wholesale: "distribuidora", beverages: "distribuidora",
+                wine: "distribuidora", hotel: "outro", biergarten: "bar",
+                ice_cream: "lanchonete", marketplace: "mercado", kiosk: "outro",
+                deli: "restaurante_lounge", general: "mercado",
+              };
+              // Get existing prospecto names to avoid duplicates
+              const { data: existingProspectos } = await (supabase as any)
+                .from("prospectos").select("nome");
+              const existingNames = new Set((existingProspectos || []).map((p: any) => p.nome?.toLowerCase()));
+              
+              const newProspectos = finalPois
+                .filter((p: any) => !existingNames.has(p.nome?.toLowerCase()))
+                .map((p: any) => ({
+                  nome: p.nome,
+                  tipo: amenityToTipo[p.amenity] || "outro",
+                  bairro: exploreBairro || null,
+                  endereco: p.endereco || null,
+                  telefone: p.telefone || null,
+                  latitude: p.lat,
+                  longitude: p.lng,
+                  prioridade: p.ai_prioridade || "media",
+                  score: p.ai_tag === "cliente_potencial" ? 4 : 3,
+                  observacoes_estrategicas: p.ai_motivo || null,
+                  operador,
+                  status: "novo",
+                }));
+              
+              if (newProspectos.length > 0) {
+                const { error: insertError } = await (supabase as any)
+                  .from("prospectos").insert(newProspectos);
+                if (insertError) throw insertError;
+                toast({ title: `${newProspectos.length} prospecto(s) salvos automaticamente!` });
+                loadData();
+              } else {
+                toast({ title: "Todos os estabelecimentos já estão cadastrados." });
+              }
+            } catch (saveErr: any) {
+              console.error("Auto-save POIs error:", saveErr);
+              toast({ title: "Erro ao salvar prospectos", description: saveErr.message, variant: "destructive" });
             }
           }
         } catch (e) {
