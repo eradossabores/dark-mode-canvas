@@ -47,10 +47,10 @@ export default function Funcionarios() {
       if (editingId) {
         const { error } = await (supabase as any).from("funcionarios").update(payload).eq("id", editingId);
         if (error) throw error;
-        toast({ title: "Funcionário atualizado!" });
+        toast({ title: "Colaborador atualizado!" });
       } else {
         await insertRow("funcionarios", payload);
-        toast({ title: "Funcionário cadastrado!" });
+        toast({ title: "Colaborador cadastrado!" });
       }
       setOpen(false);
       setEditingId(null);
@@ -63,7 +63,7 @@ export default function Funcionarios() {
   async function handleToggleStatus(f: any) {
     try {
       await (supabase as any).from("funcionarios").update({ ativo: !f.ativo }).eq("id", f.id);
-      toast({ title: `Funcionário ${!f.ativo ? "ativado" : "desativado"}!` });
+      toast({ title: `Colaborador ${!f.ativo ? "ativado" : "desativado"}!` });
       loadData();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
@@ -75,7 +75,7 @@ export default function Funcionarios() {
     try {
       const { error } = await (supabase as any).from("funcionarios").update({ ativo: false }).eq("id", deleteId);
       if (error) throw error;
-      toast({ title: "Funcionário desativado!" });
+      toast({ title: "Colaborador desativado!" });
       setDeleteId(null);
       loadData();
     } catch (e: any) {
@@ -86,13 +86,13 @@ export default function Funcionarios() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Funcionários</h1>
-        <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" />Novo Funcionário</Button>
+        <h1 className="text-2xl font-bold">Colaboradores</h1>
+        <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" />Novo Colaborador</Button>
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{editingId ? "Editar Funcionário" : "Novo Funcionário"}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editingId ? "Editar Colaborador" : "Novo Colaborador"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div><Label>Nome *</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
             <div>
@@ -117,8 +117,8 @@ export default function Funcionarios() {
       <AlertDialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Desativar funcionário?</AlertDialogTitle>
-            <AlertDialogDescription>O funcionário será marcado como inativo.</AlertDialogDescription>
+            <AlertDialogTitle>Desativar colaborador?</AlertDialogTitle>
+            <AlertDialogDescription>O colaborador será marcado como inativo.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
@@ -159,7 +159,7 @@ export default function Funcionarios() {
                 </TableRow>
               ))}
               {funcionarios.length === 0 && (
-                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">Nenhum funcionário.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">Nenhum colaborador.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
