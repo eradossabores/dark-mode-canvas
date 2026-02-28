@@ -21,7 +21,7 @@ const pages = [
   { path: "/painel/contas-a-pagar", label: "Contas a Pagar", icon: ClipboardList, keywords: "despesas pagamentos" },
   { path: "/painel/estoque", label: "Estoque", icon: Warehouse, keywords: "materias primas embalagens gelos" },
   { path: "/painel/clientes", label: "Clientes", icon: Users, keywords: "cliente freezer" },
-  { path: "/painel/funcionarios", label: "Funcionários", icon: UserCog, keywords: "funcionario colaborador" },
+  { path: "/painel/funcionarios", label: "Colaboradores", icon: UserCog, keywords: "funcionario colaborador" },
   { path: "/painel/sabores", label: "Sabores", icon: Package, keywords: "sabor receita" },
   { path: "/painel/relatorios", label: "Relatórios", icon: BarChart3, keywords: "relatorio exportar pdf" },
   { path: "/painel/importar-planilha", label: "Upload Planilha", icon: FileUp, keywords: "importar excel xlsx" },

@@ -653,7 +653,7 @@ export default function PlanoProducaoDiario() {
               <div key={i} className="flex gap-1 items-center">
                 <Select value={fId} onValueChange={(v) => updateFunc(i, v)}>
                   <SelectTrigger className="h-8 text-xs w-[180px]">
-                    <SelectValue placeholder="Funcionário" />
+                    <SelectValue placeholder="Colaborador" />
                   </SelectTrigger>
                    <SelectContent>
                     <SelectItem value="patroes">👑 Patrões</SelectItem>

@@ -27,7 +27,7 @@ const menuItems = [
   { path: "/painel/contas-a-pagar", label: "Contas a Pagar", icon: ClipboardList },
   { path: "/painel/estoque", label: "Estoque", icon: Warehouse },
   { path: "/painel/clientes", label: "Clientes", icon: Users },
-  { path: "/painel/funcionarios", label: "Funcionários", icon: UserCog },
+  { path: "/painel/funcionarios", label: "Colaboradores", icon: UserCog },
   { path: "/painel/sabores", label: "Sabores", icon: Package },
   { path: "/painel/relatorios", label: "Relatórios", icon: BarChart3 },
   { path: "/painel/importar-planilha", label: "Upload Planilha", icon: FileUp },

@@ -434,7 +434,7 @@ export default function Producao() {
                 {funcList.map((f, i) => (
                   <div key={i} className="flex gap-2 mb-2">
                     <Select value={f} onValueChange={(v) => updateFunc(i, v)}>
-                      <SelectTrigger className="flex-1"><SelectValue placeholder="Funcionário" /></SelectTrigger>
+                      <SelectTrigger className="flex-1"><SelectValue placeholder="Colaborador" /></SelectTrigger>
                       <SelectContent>{funcionarios.map((fn) => <SelectItem key={fn.id} value={fn.id}>{fn.nome}</SelectItem>)}</SelectContent>
                     </Select>
                     <Button size="icon" variant="ghost" onClick={() => removeFunc(i)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
@@ -511,7 +511,7 @@ export default function Producao() {
               {editFuncList.map((f, i) => (
                 <div key={i} className="flex gap-2 mb-2">
                   <Select value={f} onValueChange={(v) => updateEditFunc(i, v)}>
-                    <SelectTrigger className="flex-1"><SelectValue placeholder="Funcionário" /></SelectTrigger>
+                    <SelectTrigger className="flex-1"><SelectValue placeholder="Colaborador" /></SelectTrigger>
                     <SelectContent>{funcionarios.map((fn) => <SelectItem key={fn.id} value={fn.id}>{fn.nome}</SelectItem>)}</SelectContent>
                   </Select>
                   <Button size="icon" variant="ghost" onClick={() => removeEditFunc(i)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
@@ -540,7 +540,7 @@ export default function Producao() {
               {detailProd.observacoes && <p><strong>Obs:</strong> {detailProd.observacoes}</p>}
               {detailFuncs.length > 0 && (
                 <div>
-                  <strong>Funcionários:</strong>
+                  <strong>Colaboradores:</strong>
                   <ul className="list-disc ml-5 mt-1">
                     {detailFuncs.map(f => <li key={f.id}>{f.funcionarios?.nome}</li>)}
                   </ul>

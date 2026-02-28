@@ -250,7 +250,7 @@ export default function EditDayProducoesDialog({ open, onOpenChange, dayItems, s
                   {item.funcIds.map((f, fi) => (
                     <div key={fi} className="flex gap-2 mb-1">
                       <Select value={f} onValueChange={(v) => updateFunc(idx, fi, v)}>
-                        <SelectTrigger className="flex-1 h-8 text-xs"><SelectValue placeholder="Funcionário" /></SelectTrigger>
+                        <SelectTrigger className="flex-1 h-8 text-xs"><SelectValue placeholder="Colaborador" /></SelectTrigger>
                         <SelectContent>{funcionarios.map(fn => <SelectItem key={fn.id} value={fn.id}>{fn.nome}</SelectItem>)}</SelectContent>
                       </Select>
                       <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => removeFunc(idx, fi)}>
