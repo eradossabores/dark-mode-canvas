@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, ShoppingCart, Pencil, Eye, CalendarIcon, X, Truck, Package } from "lucide-react";
+import { Plus, Trash2, ShoppingCart, Pencil, Eye, CalendarIcon, X, Truck, Package, History } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const FORMAS_PAGAMENTO = [
@@ -86,8 +86,19 @@ export default function Vendas() {
   // Detail state
   const [detailVenda, setDetailVenda] = useState<any>(null);
   const [detailItens, setDetailItens] = useState<any[]>([]);
+  const [historicoVenda, setHistoricoVenda] = useState<any>(null);
+  const [historico, setHistorico] = useState<any[]>([]);
 
   useEffect(() => { loadData(); }, []);
+
+  async function loadHistorico(vendaId: string) {
+    const { data } = await (supabase as any)
+      .from("abatimentos_historico")
+      .select("*")
+      .eq("venda_id", vendaId)
+      .order("created_at", { ascending: true });
+    setHistorico(data || []);
+  }
 
   async function loadData() {
     const [c, s, v, vi] = await Promise.all([
@@ -917,6 +928,13 @@ export default function Vendas() {
                             </Badge>
                           )}
                         </TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button size="icon" variant="ghost" onClick={() => { setHistoricoVenda(v); loadHistorico(v.id); }}>
+                              <History className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                        </Tooltip>
                         <Button size="icon" variant="ghost" onClick={() => openDetailDialog(v)}><Eye className="h-4 w-4" /></Button>
                         <Button size="icon" variant="ghost" onClick={() => openEditDialog(v)}><Pencil className="h-4 w-4" /></Button>
                         {v.status !== "cancelada" && (
@@ -987,6 +1005,55 @@ export default function Vendas() {
               Confirmar e Enviar
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Histórico de Abatimentos */}
+      <Dialog open={!!historicoVenda} onOpenChange={(open) => { if (!open) setHistoricoVenda(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Histórico de Abatimentos</DialogTitle>
+          </DialogHeader>
+          {historicoVenda && (
+            <div className="space-y-3">
+              <div className="rounded-lg bg-muted p-3 space-y-1">
+                <p className="text-sm font-medium">{historicoVenda.clientes?.nome}</p>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Total da venda:</span>
+                  <span className="font-bold text-foreground">R$ {Number(historicoVenda.total).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Valor pago:</span>
+                  <span className="font-bold text-foreground">R$ {Number(historicoVenda.valor_pago || 0).toFixed(2)}</span>
+                </div>
+              </div>
+
+              {historico.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">Nenhum abatimento registrado.</p>
+              ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {historico.map((h, i) => (
+                    <div key={h.id} className="flex items-center justify-between rounded-md border p-3">
+                      <div>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(h.created_at).toLocaleDateString("pt-BR")} às{" "}
+                          {new Date(h.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Abatimento #{i + 1}</p>
+                      </div>
+                      <span className="font-bold text-green-600">R$ {Number(h.valor).toFixed(2)}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between pt-2 border-t text-sm font-semibold">
+                    <span>Total abatido:</span>
+                    <span className="text-green-600">
+                      R$ {historico.reduce((s: number, h: any) => s + Number(h.valor), 0).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
