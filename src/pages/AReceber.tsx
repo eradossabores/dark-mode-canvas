@@ -8,13 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { DollarSign, CheckCircle, AlertTriangle, MinusCircle } from "lucide-react";
+import { DollarSign, CheckCircle, AlertTriangle, MinusCircle, History } from "lucide-react";
 
 export default function AReceber() {
   const [vendas, setVendas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [abaterVenda, setAbaterVenda] = useState<any>(null);
   const [valorAbater, setValorAbater] = useState("");
+  const [historicoVenda, setHistoricoVenda] = useState<any>(null);
+  const [historico, setHistorico] = useState<any[]>([]);
 
   useEffect(() => { loadData(); }, []);
 
@@ -29,14 +31,34 @@ export default function AReceber() {
     setLoading(false);
   }
 
+  async function loadHistorico(vendaId: string) {
+    const { data } = await (supabase as any)
+      .from("abatimentos_historico")
+      .select("*")
+      .eq("venda_id", vendaId)
+      .order("created_at", { ascending: true });
+    setHistorico(data || []);
+  }
+
   async function marcarComoPaga(id: string) {
     try {
       const venda = vendas.find(v => v.id === id);
+      const restante = (venda?.total || 0) - (venda?.valor_pago || 0);
+
       const { error } = await (supabase as any)
         .from("vendas")
         .update({ status: "paga", valor_pago: venda?.total || 0 })
         .eq("id", id);
       if (error) throw error;
+
+      // Registrar no histórico
+      if (restante > 0) {
+        await (supabase as any).from("abatimentos_historico").insert({
+          venda_id: id,
+          valor: restante,
+        });
+      }
+
       toast({ title: "Venda marcada como paga!" });
       loadData();
     } catch (e: any) {
@@ -71,6 +93,12 @@ export default function AReceber() {
         })
         .eq("id", abaterVenda.id);
       if (error) throw error;
+
+      // Registrar no histórico
+      await (supabase as any).from("abatimentos_historico").insert({
+        venda_id: abaterVenda.id,
+        valor,
+      });
 
       toast({
         title: quitou ? "✅ Venda quitada!" : "💰 Valor abatido!",
@@ -180,6 +208,14 @@ export default function AReceber() {
                     <TableCell className="text-right space-x-1">
                       <Button
                         size="sm"
+                        variant="ghost"
+                        onClick={() => { setHistoricoVenda(v); loadHistorico(v.id); }}
+                        title="Histórico de abatimentos"
+                      >
+                        <History className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="sm"
                         variant="outline"
                         onClick={() => { setAbaterVenda(v); setValorAbater(""); }}
                       >
@@ -254,6 +290,55 @@ export default function AReceber() {
                   Quitar Tudo
                 </Button>
               </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Histórico de Abatimentos */}
+      <Dialog open={!!historicoVenda} onOpenChange={(open) => { if (!open) setHistoricoVenda(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Histórico de Abatimentos</DialogTitle>
+          </DialogHeader>
+          {historicoVenda && (
+            <div className="space-y-3">
+              <div className="rounded-lg bg-muted p-3 space-y-1">
+                <p className="text-sm font-medium">{historicoVenda.clientes?.nome}</p>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Total da venda:</span>
+                  <span className="font-bold text-foreground">R$ {Number(historicoVenda.total).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Já pago:</span>
+                  <span className="font-bold text-green-600">R$ {Number(historicoVenda.valor_pago || 0).toFixed(2)}</span>
+                </div>
+              </div>
+
+              {historico.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">Nenhum abatimento registrado.</p>
+              ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {historico.map((h, i) => (
+                    <div key={h.id} className="flex items-center justify-between rounded-md border p-3">
+                      <div>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(h.created_at).toLocaleDateString("pt-BR")} às{" "}
+                          {new Date(h.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Abatimento #{i + 1}</p>
+                      </div>
+                      <span className="font-bold text-green-600">R$ {Number(h.valor).toFixed(2)}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between pt-2 border-t text-sm font-semibold">
+                    <span>Total abatido:</span>
+                    <span className="text-green-600">
+                      R$ {historico.reduce((s: number, h: any) => s + Number(h.valor), 0).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

@@ -14,6 +14,35 @@ export type Database = {
   }
   public: {
     Tables: {
+      abatimentos_historico: {
+        Row: {
+          created_at: string
+          id: string
+          valor: number
+          venda_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          valor: number
+          venda_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          valor?: number
+          venda_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abatimentos_historico_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       access_requests: {
         Row: {
           created_at: string
