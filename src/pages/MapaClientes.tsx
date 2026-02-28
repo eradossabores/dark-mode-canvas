@@ -1,13 +1,14 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { MapPin, Save, X, Users, RefreshCw } from "lucide-react";
+import { MapPin, Save, X, Users, RefreshCw, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // Fix leaflet default icons
@@ -59,11 +60,23 @@ function ClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number) =
   return null;
 }
 
+function FlyToClient({ target }: { target: { lat: number; lng: number } | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (target) {
+      map.flyTo([target.lat, target.lng], 17, { duration: 1.2 });
+    }
+  }, [target, map]);
+  return null;
+}
+
 export default function MapaClientes() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [placingClienteId, setPlacingClienteId] = useState<string | null>(null);
   const [tempMarker, setTempMarker] = useState<[number, number] | null>(null);
   const [filterBairro, setFilterBairro] = useState<string>("todos");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [flyTarget, setFlyTarget] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => { loadClientes(); }, []);
 
@@ -85,6 +98,17 @@ export default function MapaClientes() {
   const clientesFiltrados = filterBairro === "todos"
     ? comCoordenadas
     : comCoordenadas.filter(c => c.bairro === filterBairro);
+
+  const searchResults = searchTerm.length >= 2
+    ? comCoordenadas.filter(c => c.nome.toLowerCase().includes(searchTerm.toLowerCase()))
+    : [];
+
+  function focusCliente(c: Cliente) {
+    if (c.latitude && c.longitude) {
+      setFlyTarget({ lat: c.latitude, lng: c.longitude });
+      setSearchTerm("");
+    }
+  }
 
   function startPlacing(clienteId: string) {
     setPlacingClienteId(clienteId);
@@ -166,6 +190,39 @@ export default function MapaClientes() {
         </CardContent></Card>
       </div>
 
+      {/* Search */}
+      <div className="relative mb-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar cliente no mapa..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        {searchResults.length > 0 && (
+          <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-y-auto">
+            {searchResults.map(c => (
+              <button
+                key={c.id}
+                className="w-full text-left px-3 py-2 hover:bg-muted text-sm flex items-center gap-2"
+                onClick={() => focusCliente(c)}
+              >
+                <MapPin className="h-3 w-3 text-primary shrink-0" />
+                <span className="font-medium">{c.nome}</span>
+                {c.bairro && <span className="text-muted-foreground text-xs">— {c.bairro}</span>}
+              </button>
+            ))}
+          </div>
+        )}
+        {searchTerm.length >= 2 && searchResults.length === 0 && (
+          <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg px-3 py-2 text-sm text-muted-foreground">
+            Nenhum cliente encontrado no mapa
+          </div>
+        )}
+      </div>
+
       {/* Placing mode banner */}
       {placingClienteId && (
         <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-300 rounded-lg flex items-center justify-between">
@@ -202,7 +259,7 @@ export default function MapaClientes() {
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
                 <ClickHandler onMapClick={handleMapClick} />
-
+                <FlyToClient target={flyTarget} />
                 {/* Client markers */}
                 {clientesFiltrados.map(c => (
                   <Marker
