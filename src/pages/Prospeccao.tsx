@@ -267,27 +267,59 @@ export default function Prospeccao() {
         // Fetch real POIs from OpenStreetMap - EXPANDED search
         try {
           const radiusM = exploreRadius * 1000;
+          // Use multiple Overpass endpoints for resilience
+          const overpassEndpoints = [
+            "https://overpass-api.de/api/interpreter",
+            "https://overpass.kumi.systems/api/interpreter",
+          ];
           const overpassQuery = `
-            [out:json][timeout:15];
+            [out:json][timeout:30];
             (
-              node["amenity"~"bar|pub|nightclub|restaurant|cafe|fast_food|biergarten|food_court"](around:${radiusM},${lat},${lng});
-              node["shop"~"convenience|supermarket|wholesale|beverages|wine|alcohol"](around:${radiusM},${lat},${lng});
-              node["leisure"~"dance_hall|adult_gaming_centre"](around:${radiusM},${lat},${lng});
-              node["tourism"~"hotel|motel|guest_house"](around:${radiusM},${lat},${lng});
-              node["name"~"bar|pub|lounge|adega|choperia|espetaria|hamburgueria|drinkeria|tabacaria|conveniência|distribuidora|buffet|evento",i](around:${radiusM},${lat},${lng});
-              way["amenity"~"bar|pub|nightclub|restaurant|cafe|fast_food"](around:${radiusM},${lat},${lng});
-              way["shop"~"convenience|supermarket|wholesale|beverages|wine|alcohol"](around:${radiusM},${lat},${lng});
+              node["amenity"~"bar|pub|nightclub|restaurant|cafe|fast_food|biergarten|food_court|ice_cream|marketplace"](around:${radiusM},${lat},${lng});
+              node["shop"~"convenience|supermarket|wholesale|beverages|wine|alcohol|deli|kiosk|general"](around:${radiusM},${lat},${lng});
+              node["leisure"~"dance_hall|adult_gaming_centre|bowling_alley"](around:${radiusM},${lat},${lng});
+              node["tourism"~"hotel|motel|guest_house|hostel"](around:${radiusM},${lat},${lng});
+              node["name"](around:${radiusM},${lat},${lng});
+              way["amenity"~"bar|pub|nightclub|restaurant|cafe|fast_food|biergarten|food_court|ice_cream|marketplace"](around:${radiusM},${lat},${lng});
+              way["shop"~"convenience|supermarket|wholesale|beverages|wine|alcohol|deli|kiosk|general"](around:${radiusM},${lat},${lng});
+              way["leisure"~"dance_hall|adult_gaming_centre"](around:${radiusM},${lat},${lng});
+              way["tourism"~"hotel|motel|guest_house|hostel"](around:${radiusM},${lat},${lng});
+              way["name"](around:${radiusM},${lat},${lng});
             );
-            out center body 50;
+            out center body 200;
           `;
-          const overpassRes = await fetch("https://overpass-api.de/api/interpreter", {
-            method: "POST",
-            body: `data=${encodeURIComponent(overpassQuery)}`,
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          });
-          const overpassData = await overpassRes.json();
-          const pois = (overpassData.elements || []).map((el: any) => {
+
+          let overpassData: any = null;
+          for (const endpoint of overpassEndpoints) {
+            try {
+              const overpassRes = await fetch(endpoint, {
+                method: "POST",
+                body: `data=${encodeURIComponent(overpassQuery)}`,
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+              });
+              if (overpassRes.ok) {
+                overpassData = await overpassRes.json();
+                break;
+              }
+            } catch (endpointErr) {
+              console.warn(`Overpass endpoint ${endpoint} failed:`, endpointErr);
+            }
+          }
+
+          if (!overpassData) {
+            // Fallback: simpler query with just name
+            const fallbackQuery = `[out:json][timeout:30];node["name"](around:${radiusM},${lat},${lng});out body 200;`;
+            const fbRes = await fetch(overpassEndpoints[0], {
+              method: "POST",
+              body: `data=${encodeURIComponent(fallbackQuery)}`,
+              headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            });
+            overpassData = await fbRes.json();
+          }
+
+          const pois = (overpassData?.elements || []).map((el: any) => {
             const tags = el.tags || {};
+            if (!tags.name) return null; // Skip unnamed POIs
             const amenity = tags.amenity || tags.shop || tags.leisure || tags.tourism || "";
             const typeMap: Record<string, string> = {
               bar: "🍺 Bar", pub: "🍺 Pub", nightclub: "🌙 Casa Noturna",
@@ -297,17 +329,19 @@ export default function Prospeccao() {
               wholesale: "📦 Distribuidora", beverages: "🥤 Bebidas", wine: "🍷 Adega",
               alcohol: "🥃 Bebidas", dance_hall: "🌙 Casa de Dança",
               hotel: "🏨 Hotel", motel: "🏨 Motel", guest_house: "🏨 Pousada",
+              hostel: "🏨 Hostel", ice_cream: "🍦 Sorveteria", marketplace: "🏪 Mercado",
+              kiosk: "🏪 Quiosque", deli: "🍽️ Delicatessen", general: "🏪 Loja",
             };
             const elLat = el.lat || el.center?.lat;
             const elLng = el.lon || el.center?.lon;
             if (!elLat || !elLng) return null;
             return {
               id: `osm-${el.id}`,
-              nome: tags.name || typeMap[amenity] || amenity || "Estabelecimento",
-              tipo_label: typeMap[amenity] || `📍 ${amenity}`,
+              nome: tags.name,
+              tipo_label: typeMap[amenity] || (amenity ? `📍 ${amenity}` : "📍 Estabelecimento"),
               lat: elLat,
               lng: elLng,
-              amenity,
+              amenity: amenity || "unknown",
               telefone: tags.phone || tags["contact:phone"] || null,
               endereco: tags["addr:street"] ? `${tags["addr:street"]}, ${tags["addr:housenumber"] || ""}`.trim() : null,
               horario: tags.opening_hours || null,
@@ -324,6 +358,7 @@ export default function Prospeccao() {
             if (!dup) uniquePois.push(p);
           });
 
+          console.log(`Overpass: found ${overpassData?.elements?.length || 0} elements, ${uniquePois.length} unique named POIs`);
           setExplorePOIs(uniquePois);
 
           // AI Classification
@@ -339,7 +374,6 @@ export default function Prospeccao() {
               }
             } catch (aiErr) {
               console.error("AI classification error:", aiErr);
-              // Keep POIs without classification
             } finally {
               setClassifyingAI(false);
             }
