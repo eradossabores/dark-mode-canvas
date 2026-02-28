@@ -495,7 +495,20 @@ export default function Estoque() {
                   </div>
                   <div>
                     <Label>Motivo <span className="text-destructive">*</span></Label>
-                    <Textarea placeholder="Ex: Derreteu ao colocar no freezer, embalagem furada..." value={avariaMotivo} onChange={(e) => setAvariaMotivo(e.target.value)} />
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {["Derreteu no transporte", "Embalagem furada", "Caiu no chão", "Defeito de produção"].map((m) => (
+                        <Button
+                          key={m}
+                          type="button"
+                          size="sm"
+                          variant={avariaMotivo === m ? "default" : "outline"}
+                          onClick={() => setAvariaMotivo(avariaMotivo === m ? "" : m)}
+                        >
+                          {m}
+                        </Button>
+                      ))}
+                    </div>
+                    <Textarea placeholder="Ou descreva outro motivo..." value={avariaMotivo} onChange={(e) => setAvariaMotivo(e.target.value)} />
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox id="avaria-emb" checked={avariaComEmbalagem} onCheckedChange={(v) => setAvariaComEmbalagem(!!v)} />
