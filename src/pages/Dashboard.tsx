@@ -191,12 +191,12 @@ export default function Dashboard() {
   const faturamentoLabel = fatPeriodo === "semanal" ? "Fat. Semanal" : fatPeriodo === "mensal" ? "Fat. Mensal" : fatPeriodo === "anual" ? "Fat. Anual" : "Faturamento Total";
 
   const cards = [
-    { title: "Gelos em Estoque", value: stats.totalGelos.toLocaleString(), icon: Package, color: "text-primary", href: "/estoque" },
-    { title: "Clientes Ativos", value: stats.totalClientes, icon: Users, color: "text-secondary-foreground", href: "/clientes" },
-    { title: "Total Vendas", value: stats.totalVendas, icon: ShoppingCart, color: "text-accent", href: "/vendas" },
-    { title: faturamentoLabel, value: `R$ ${faturamentoValor.toFixed(2)}`, icon: TrendingUp, color: "text-primary", href: "/vendas", isFaturamento: true },
-    { title: "Produções", value: stats.totalProducoes, icon: Factory, color: "text-secondary-foreground", href: "/producao" },
-    { title: "A Receber", value: `R$ ${contasReceber.total.toFixed(2)}`, icon: DollarSign, color: contasReceber.vencidas > 0 ? "text-destructive" : "text-primary", href: "/a-receber" },
+    { title: "Gelos em Estoque", value: stats.totalGelos.toLocaleString(), icon: Package, color: "text-primary", href: "/painel/estoque" },
+    { title: "Clientes Ativos", value: stats.totalClientes, icon: Users, color: "text-secondary-foreground", href: "/painel/clientes" },
+    { title: "Total Vendas", value: stats.totalVendas, icon: ShoppingCart, color: "text-accent", href: "/painel/vendas" },
+    { title: faturamentoLabel, value: `R$ ${faturamentoValor.toFixed(2)}`, icon: TrendingUp, color: "text-primary", href: "/painel/vendas", isFaturamento: true },
+    { title: "Produções", value: stats.totalProducoes, icon: Factory, color: "text-secondary-foreground", href: "/painel/producao" },
+    { title: "A Receber", value: `R$ ${contasReceber.total.toFixed(2)}`, icon: DollarSign, color: contasReceber.vencidas > 0 ? "text-destructive" : "text-primary", href: "/painel/a-receber" },
   ];
 
   return (
