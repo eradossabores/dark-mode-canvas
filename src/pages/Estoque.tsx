@@ -71,7 +71,21 @@ export default function Estoque() {
     setSabores(sab.data || []);
     setAvarias(av.data || []);
     setGelos(g.data || []);
-    setMaterias(m.data || []);
+    // Ordenar matérias-primas na sequência fixa desejada
+    const ordemMP: Record<string, number> = {
+      "saborizante melancia": 1,
+      "saborizante morango": 2,
+      "saborizante maçã verde": 3,
+      "saborizante maracujá": 4,
+      "saborizante água de coco": 5,
+      "saborizante abacaxi com hortelã": 6,
+    };
+    const sortedMaterias = (m.data || []).sort((a: any, b: any) => {
+      const oA = ordemMP[a.nome?.toLowerCase()] ?? 99;
+      const oB = ordemMP[b.nome?.toLowerCase()] ?? 99;
+      return oA - oB || a.nome.localeCompare(b.nome);
+    });
+    setMaterias(sortedMaterias);
     setEmbalagens(e.data || []);
     setMovimentacoes(mov.data || []);
   }
