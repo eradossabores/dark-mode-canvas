@@ -157,6 +157,7 @@ export default function PlanoProducaoDiario() {
   const [deleteRegistro, setDeleteRegistro] = useState<any>(null);
   const [editRegistro, setEditRegistro] = useState<any>(null);
   const [editItens, setEditItens] = useState<{ id: string; sabor_nome: string; lotes_autorizados: number }[]>([]);
+  const [editFuncSelecionados, setEditFuncSelecionados] = useState<string[]>([]);
   const [diaOffset, setDiaOffset] = useState(0);
   const [decisoesAlvoIds, setDecisoesAlvoIds] = useState<string[]>([]);
 
@@ -234,17 +235,45 @@ export default function PlanoProducaoDiario() {
       sabor_nome: i.sabor_nome,
       lotes_autorizados: i.lotes_autorizados,
     })));
+    // Parse existing operador names back to IDs
+    const operadorStr: string = registro.operador || "";
+    const nomes = operadorStr.split(",").map((n: string) => n.trim()).filter(Boolean);
+    const ids = nomes.map((nome: string) => {
+      if (nome.toLowerCase() === "patrões") return "patroes";
+      const found = funcionarios.find((f: any) => f.nome.toLowerCase() === nome.toLowerCase());
+      return found ? found.id : "";
+    }).filter((id: string) => id !== "");
+    setEditFuncSelecionados(ids.length > 0 ? ids : [""]);
   }
 
   async function handleSaveEdit() {
     if (!editRegistro) return;
     try {
+      const validFuncs = editFuncSelecionados.filter(f => f !== "");
+      const nomesFuncionarios = validFuncs
+        .map(f => f === "patroes" ? "Patrões" : funcionarios.find((fn: any) => fn.id === f)?.nome)
+        .filter(Boolean)
+        .join(", ");
+
       for (const item of editItens) {
+        const updatePayload: any = { lotes_autorizados: item.lotes_autorizados };
+        if (nomesFuncionarios) updatePayload.operador = nomesFuncionarios;
         await (supabase as any)
           .from("decisoes_producao")
-          .update({ lotes_autorizados: item.lotes_autorizados })
+          .update(updatePayload)
           .eq("id", item.id);
       }
+
+      // Also update localStorage for ChecklistProducaoDia
+      if (nomesFuncionarios) {
+        const alvoDate = editRegistro.itens[0]?.created_at ? new Date(editRegistro.itens[0].created_at) : null;
+        if (alvoDate) {
+          const alvoStr = `${alvoDate.getFullYear()}-${String(alvoDate.getMonth() + 1).padStart(2, "0")}-${String(alvoDate.getDate()).padStart(2, "0")}`;
+          localStorage.setItem(`checklist-producao-${alvoStr}-funcs`, JSON.stringify(validFuncs));
+          localStorage.setItem(`checklist-producao-${alvoStr}-operador`, nomesFuncionarios);
+        }
+      }
+
       toast({ title: "Plano atualizado!" });
       setEditRegistro(null);
       fetchHistorico();
@@ -1005,6 +1034,40 @@ export default function PlanoProducaoDiario() {
                 </div>
               );
             })}
+            {/* Colaboradores */}
+            <div className="pt-2 border-t space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold">Colaboradores</Label>
+                <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => setEditFuncSelecionados(prev => [...prev, ""])}>
+                  + Adicionar
+                </Button>
+              </div>
+              {editFuncSelecionados.map((fId, i) => (
+                <div key={i} className="flex gap-1 items-center">
+                  <Select value={fId} onValueChange={(v) => {
+                    setEditFuncSelecionados(prev => { const list = [...prev]; list[i] = v; return list; });
+                  }}>
+                    <SelectTrigger className="h-8 text-xs flex-1">
+                      <SelectValue placeholder="Colaborador" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="patroes">👑 Patrões</SelectItem>
+                      {funcionarios.map((f: any) => (
+                        <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {editFuncSelecionados.length > 1 && (
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => {
+                      setEditFuncSelecionados(prev => prev.filter((_, idx) => idx !== i));
+                    }}>
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+
             <div className="flex justify-between items-center pt-2 border-t">
               <span className="text-sm font-bold">
                 Total: {editItens.reduce((s, i) => s + i.lotes_autorizados, 0)} lotes · {editItens.reduce((s, i) => s + i.lotes_autorizados * 84, 0)} un
