@@ -109,6 +109,41 @@ export type Database = {
         }
         Relationships: []
       }
+      avarias: {
+        Row: {
+          created_at: string
+          id: string
+          motivo: string
+          operador: string
+          quantidade: number
+          sabor_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          motivo: string
+          operador?: string
+          quantidade: number
+          sabor_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          motivo?: string
+          operador?: string
+          quantidade?: number
+          sabor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avarias_sabor_id_fkey"
+            columns: ["sabor_id"]
+            isOneToOne: false
+            referencedRelation: "sabores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cliente_preco_sabor: {
         Row: {
           cliente_id: string

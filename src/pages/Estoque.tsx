@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Settings2, Trash2, Snowflake } from "lucide-react";
+import { Plus, Settings2, Trash2, Snowflake, AlertTriangle } from "lucide-react";
 
 export default function Estoque() {
   const [gelos, setGelos] = useState<any[]>([]);
@@ -44,6 +44,13 @@ export default function Estoque() {
   const [ajusteNovaQtd, setAjusteNovaQtd] = useState(0);
   const [ajusteMotivo, setAjusteMotivo] = useState("");
 
+  // Avaria
+  const [avarias, setAvarias] = useState<any[]>([]);
+  const [openAvaria, setOpenAvaria] = useState(false);
+  const [avariaSaborId, setAvariaSaborId] = useState("");
+  const [avariaQtd, setAvariaQtd] = useState(0);
+  const [avariaMotivo, setAvariaMotivo] = useState("");
+
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
@@ -53,14 +60,16 @@ export default function Estoque() {
       (supabase as any).from("embalagens").select("*").order("nome"),
       (supabase as any).from("movimentacoes_estoque").select("*").order("created_at", { ascending: false }).limit(50),
     ]);
-    const [fz, cli, sab] = await Promise.all([
+    const [fz, cli, sab, av] = await Promise.all([
       (supabase as any).from("estoque_freezer").select("*, clientes(nome), sabores(nome)").order("updated_at", { ascending: false }),
       (supabase as any).from("clientes").select("id, nome").eq("possui_freezer", true).order("nome"),
       (supabase as any).from("sabores").select("id, nome").eq("ativo", true).order("nome"),
+      (supabase as any).from("avarias").select("*, sabores(nome)").order("created_at", { ascending: false }).limit(100),
     ]);
     setFreezers(fz.data || []);
     setClientes(cli.data || []);
     setSabores(sab.data || []);
+    setAvarias(av.data || []);
     setGelos(g.data || []);
     setMaterias(m.data || []);
     setEmbalagens(e.data || []);
@@ -224,6 +233,58 @@ export default function Estoque() {
     }
   }
 
+  async function handleAvaria() {
+    if (!avariaSaborId || avariaQtd <= 0) return toast({ title: "Selecione o sabor e quantidade", variant: "destructive" });
+    if (!avariaMotivo.trim()) return toast({ title: "Informe o motivo da avaria", variant: "destructive" });
+    try {
+      const geloItem = gelos.find((g: any) => g.sabor_id === avariaSaborId);
+      const saborNome = sabores.find((s: any) => s.id === avariaSaborId)?.nome || "Desconhecido";
+
+      // Insert avaria record
+      await (supabase as any).from("avarias").insert({
+        sabor_id: avariaSaborId,
+        quantidade: avariaQtd,
+        motivo: avariaMotivo,
+        operador: "sistema",
+      });
+
+      // Deduct from stock
+      if (geloItem) {
+        await (supabase as any).from("estoque_gelos")
+          .update({ quantidade: geloItem.quantidade - avariaQtd })
+          .eq("sabor_id", avariaSaborId);
+      }
+
+      // Movement record
+      await (supabase as any).from("movimentacoes_estoque").insert({
+        tipo_item: "gelo_pronto",
+        item_id: avariaSaborId,
+        tipo_movimentacao: "saida",
+        quantidade: avariaQtd,
+        referencia: "avaria",
+        operador: "sistema",
+      });
+
+      // Audit
+      await (supabase as any).from("auditoria").insert({
+        usuario_nome: "sistema",
+        modulo: "estoque",
+        acao: "avaria",
+        registro_afetado: avariaSaborId,
+        descricao: `Avaria de ${avariaQtd} un. de ${saborNome}. Motivo: ${avariaMotivo}`,
+      });
+
+      toast({ title: "Avaria registrada!", description: `${avariaQtd} un. de ${saborNome} descontadas do estoque` });
+      setOpenAvaria(false);
+      setAvariaQtd(0);
+      setAvariaMotivo("");
+      setAvariaSaborId("");
+      loadData();
+    } catch (e: any) {
+      toast({ title: "Erro ao registrar avaria", description: e.message, variant: "destructive" });
+    }
+  }
+
   const SABOR_COLORS: Record<string, string> = {
     melancia: "bg-red-500/90 text-white border-red-600",
     morango: "bg-pink-500/90 text-white border-pink-600",
@@ -306,6 +367,7 @@ export default function Estoque() {
       <Tabs defaultValue="gelos">
         <TabsList>
           <TabsTrigger value="gelos">Gelos Prontos</TabsTrigger>
+          <TabsTrigger value="avarias" className="gap-1"><AlertTriangle className="h-3.5 w-3.5" />Avarias</TabsTrigger>
           <TabsTrigger value="freezers" className="gap-1"><Snowflake className="h-3.5 w-3.5" />Freezers</TabsTrigger>
           <TabsTrigger value="mp">Matéria-Prima</TabsTrigger>
           <TabsTrigger value="emb">Embalagens</TabsTrigger>
@@ -336,6 +398,14 @@ export default function Estoque() {
                         >
                           <Settings2 className="h-3 w-3 mr-1" /> Ajustar
                         </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive ml-1"
+                          onClick={() => { setAvariaSaborId(g.sabor_id); setOpenAvaria(true); }}
+                        >
+                          <AlertTriangle className="h-3 w-3 mr-1" /> Avaria
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -343,6 +413,94 @@ export default function Estoque() {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="avarias">
+          <div className="flex justify-end mb-4">
+            <Dialog open={openAvaria} onOpenChange={setOpenAvaria}>
+              <DialogTrigger asChild>
+                <Button variant="destructive"><AlertTriangle className="h-4 w-4 mr-2" />Registrar Avaria</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Registrar Avaria de Gelo</DialogTitle></DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label>Sabor</Label>
+                    <Select value={avariaSaborId} onValueChange={setAvariaSaborId}>
+                      <SelectTrigger><SelectValue placeholder="Selecione o sabor" /></SelectTrigger>
+                      <SelectContent>
+                        {sabores.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Quantidade perdida</Label>
+                    <Input type="number" min={1} value={avariaQtd || ""} onChange={(e) => setAvariaQtd(Number(e.target.value))} />
+                  </div>
+                  <div>
+                    <Label>Motivo <span className="text-destructive">*</span></Label>
+                    <Textarea placeholder="Ex: Derreteu ao colocar no freezer, embalagem furada..." value={avariaMotivo} onChange={(e) => setAvariaMotivo(e.target.value)} />
+                  </div>
+                  <Button className="w-full" variant="destructive" onClick={handleAvaria}>Confirmar Avaria</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {avarias.length > 0 && (
+            <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <Card><CardContent className="pt-4 pb-3 text-center">
+                <p className="text-xs text-muted-foreground">Total Avarias</p>
+                <p className="text-2xl font-bold text-destructive">{avarias.reduce((s: number, a: any) => s + a.quantidade, 0).toLocaleString()} un.</p>
+              </CardContent></Card>
+              <Card><CardContent className="pt-4 pb-3 text-center">
+                <p className="text-xs text-muted-foreground">Registros</p>
+                <p className="text-2xl font-bold">{avarias.length}</p>
+              </CardContent></Card>
+              <Card><CardContent className="pt-4 pb-3 text-center">
+                <p className="text-xs text-muted-foreground">Sabor Mais Afetado</p>
+                <p className="text-sm font-bold truncate">{(() => {
+                  const counts: Record<string, number> = {};
+                  avarias.forEach((a: any) => { counts[a.sabores?.nome || "?"] = (counts[a.sabores?.nome || "?"] || 0) + a.quantidade; });
+                  return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || "-";
+                })()}</p>
+              </CardContent></Card>
+              <Card><CardContent className="pt-4 pb-3 text-center">
+                <p className="text-xs text-muted-foreground">Este Mês</p>
+                <p className="text-2xl font-bold text-destructive">{avarias.filter((a: any) => {
+                  const d = new Date(a.created_at); const now = new Date();
+                  return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+                }).reduce((s: number, a: any) => s + a.quantidade, 0).toLocaleString()} un.</p>
+              </CardContent></Card>
+            </div>
+          )}
+
+          <Card><CardContent className="pt-6">
+            {avarias.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">Nenhuma avaria registrada.</p>
+            ) : (
+              <Table>
+                <TableHeader><TableRow>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Sabor</TableHead>
+                  <TableHead>Quantidade</TableHead>
+                  <TableHead>Motivo</TableHead>
+                  <TableHead>Operador</TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {avarias.map((a: any) => (
+                    <TableRow key={a.id}>
+                      <TableCell>{new Date(a.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                      <TableCell className="font-medium">{a.sabores?.nome}</TableCell>
+                      <TableCell className="text-destructive font-semibold">-{a.quantidade}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">{a.motivo}</TableCell>
+                      <TableCell>{a.operador}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent></Card>
         </TabsContent>
 
         <TabsContent value="mp">
