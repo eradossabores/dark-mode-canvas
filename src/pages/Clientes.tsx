@@ -18,6 +18,7 @@ const emptyForm = {
   nome: "", telefone: "", email: "", endereco: "", bairro: "", cidade: "",
   estado: "RR", cep: "", cpf_cnpj: "", possui_freezer: false,
   freezer_identificacao: "", preco_padrao_personalizado: "", observacoes: "",
+  latitude: "", longitude: "",
 };
 
 export default function Clientes() {
@@ -58,6 +59,8 @@ export default function Clientes() {
       freezer_identificacao: c.freezer_identificacao || "",
       preco_padrao_personalizado: c.preco_padrao_personalizado ? String(c.preco_padrao_personalizado) : "",
       observacoes: c.observacoes || "",
+      latitude: c.latitude != null ? String(c.latitude) : "",
+      longitude: c.longitude != null ? String(c.longitude) : "",
     });
     setOpen(true);
   }
@@ -69,6 +72,8 @@ export default function Clientes() {
       if (!payload.preco_padrao_personalizado) payload.preco_padrao_personalizado = null;
       else payload.preco_padrao_personalizado = Number(payload.preco_padrao_personalizado);
       if (!payload.cpf_cnpj) payload.cpf_cnpj = null;
+      payload.latitude = payload.latitude ? Number(payload.latitude) : null;
+      payload.longitude = payload.longitude ? Number(payload.longitude) : null;
 
       if (editingId) {
         const { error } = await (supabase as any).from("clientes").update(payload).eq("id", editingId);
@@ -170,6 +175,10 @@ export default function Clientes() {
               <div><Label>ID do Freezer</Label><Input value={form.freezer_identificacao} onChange={(e) => setForm({ ...form, freezer_identificacao: e.target.value })} /></div>
             )}
             <div><Label>Preço Padrão Personalizado (R$)</Label><Input type="number" step="0.01" value={form.preco_padrao_personalizado} onChange={(e) => setForm({ ...form, preco_padrao_personalizado: e.target.value })} /></div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><Label>Latitude</Label><Input type="number" step="0.0001" placeholder="Ex: 2.8195" value={form.latitude} onChange={(e) => setForm({ ...form, latitude: e.target.value })} /></div>
+              <div><Label>Longitude</Label><Input type="number" step="0.0001" placeholder="Ex: -60.6714" value={form.longitude} onChange={(e) => setForm({ ...form, longitude: e.target.value })} /></div>
+            </div>
             <div><Label>Observações</Label><Input value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} /></div>
             <Button className="w-full" onClick={handleSubmit}>{editingId ? "Salvar Alterações" : "Cadastrar"}</Button>
           </div>
