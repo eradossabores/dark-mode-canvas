@@ -54,14 +54,14 @@ function buildChartData(data: any[], days: number, dateKey: string, valueKey: st
   return Object.entries(map).map(([dia, val]) => ({ dia, [isSum ? "valor" : "total"]: val }));
 }
 
-type FaturamentoPeriodo = "total" | "semanal" | "anual";
+type FaturamentoPeriodo = "total" | "semanal" | "mensal" | "anual";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalGelos: 0, totalClientes: 0, totalVendas: 0,
     totalProducoes: 0, faturamento: 0, clientesInativos: 0,
-    faturamentoSemanal: 0, faturamentoAnual: 0,
+    faturamentoSemanal: 0, faturamentoMensal: 0, faturamentoAnual: 0,
   });
   const [topSabores, setTopSabores] = useState<any[]>([]);
   const [vendasPorDia, setVendasPorDia] = useState<any[]>([]);
@@ -117,8 +117,14 @@ export default function Dashboard() {
         .filter((v: any) => new Date(v.created_at) >= seteDiasAtras)
         .reduce((s: number, v: any) => s + Number(v.total), 0);
 
+      // Faturamento mensal (mês corrente)
+      const now = new Date();
+      const faturamentoMensal = validVendasAll
+        .filter((v: any) => { const d = new Date(v.created_at); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); })
+        .reduce((s: number, v: any) => s + Number(v.total), 0);
+
       // Faturamento anual (ano corrente)
-      const anoAtual = new Date().getFullYear();
+      const anoAtual = now.getFullYear();
       const faturamentoAnual = validVendasAll
         .filter((v: any) => new Date(v.created_at).getFullYear() === anoAtual)
         .reduce((s: number, v: any) => s + Number(v.total), 0);
@@ -173,7 +179,7 @@ export default function Dashboard() {
       setStats({
         totalGelos, totalClientes: clientes.data?.length || 0,
         totalVendas: vendas.data?.length || 0, totalProducoes: producoes.data?.length || 0,
-        faturamento, faturamentoSemanal, faturamentoAnual,
+        faturamento, faturamentoSemanal, faturamentoMensal, faturamentoAnual,
         clientesInativos: inativos.data?.length || 0,
       });
     } catch (e) {
@@ -181,8 +187,8 @@ export default function Dashboard() {
     }
   }
 
-  const faturamentoValor = fatPeriodo === "semanal" ? stats.faturamentoSemanal : fatPeriodo === "anual" ? stats.faturamentoAnual : stats.faturamento;
-  const faturamentoLabel = fatPeriodo === "semanal" ? "Fat. Semanal" : fatPeriodo === "anual" ? "Fat. Anual" : "Faturamento Total";
+  const faturamentoValor = fatPeriodo === "semanal" ? stats.faturamentoSemanal : fatPeriodo === "mensal" ? stats.faturamentoMensal : fatPeriodo === "anual" ? stats.faturamentoAnual : stats.faturamento;
+  const faturamentoLabel = fatPeriodo === "semanal" ? "Fat. Semanal" : fatPeriodo === "mensal" ? "Fat. Mensal" : fatPeriodo === "anual" ? "Fat. Anual" : "Faturamento Total";
 
   const cards = [
     { title: "Gelos em Estoque", value: stats.totalGelos.toLocaleString(), icon: Package, color: "text-primary", href: "/estoque" },
@@ -321,7 +327,7 @@ export default function Dashboard() {
               <p className="text-lg font-bold">{c.value}</p>
               {c.isFaturamento && (
                 <div className="flex gap-1 mt-2">
-                  {(["total", "semanal", "anual"] as FaturamentoPeriodo[]).map((p) => (
+                  {(["total", "semanal", "mensal", "anual"] as FaturamentoPeriodo[]).map((p) => (
                     <button
                       key={p}
                       onClick={(e) => { e.stopPropagation(); setFatPeriodo(p); }}
@@ -331,7 +337,7 @@ export default function Dashboard() {
                           : "bg-muted text-muted-foreground hover:bg-muted/80"
                       }`}
                     >
-                      {p === "total" ? "Total" : p === "semanal" ? "Semana" : "Ano"}
+                      {p === "total" ? "Total" : p === "semanal" ? "Semana" : p === "mensal" ? "Mês" : "Ano"}
                     </button>
                   ))}
                 </div>
