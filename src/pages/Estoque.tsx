@@ -11,7 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Settings2, Trash2, Snowflake, AlertTriangle } from "lucide-react";
+import { Plus, Settings2, Trash2, Snowflake, AlertTriangle, Pencil } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 
 export default function Estoque() {
@@ -54,6 +55,13 @@ export default function Estoque() {
   const [avariaComEmbalagem, setAvariaComEmbalagem] = useState(false);
   const [avariaLoading, setAvariaLoading] = useState(false);
 
+  // Edit/Delete avaria
+  const [editAvaria, setEditAvaria] = useState<any>(null);
+  const [editAvariaQtd, setEditAvariaQtd] = useState(0);
+  const [editAvariaMotivo, setEditAvariaMotivo] = useState("");
+  const [editAvariaLoading, setEditAvariaLoading] = useState(false);
+  const [deleteAvariaId, setDeleteAvariaId] = useState<string | null>(null);
+  const [deleteAvariaLoading, setDeleteAvariaLoading] = useState(false);
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
@@ -346,6 +354,74 @@ export default function Estoque() {
     }
   }
 
+  function openEditAvaria(a: any) {
+    setEditAvaria(a);
+    setEditAvariaQtd(a.quantidade);
+    setEditAvariaMotivo(a.motivo);
+  }
+
+  async function handleEditAvaria() {
+    if (editAvariaLoading || !editAvaria) return;
+    if (editAvariaQtd <= 0) return toast({ title: "Quantidade inválida", variant: "destructive" });
+    if (!editAvariaMotivo.trim()) return toast({ title: "Informe o motivo", variant: "destructive" });
+    setEditAvariaLoading(true);
+    try {
+      const diff = editAvariaQtd - editAvaria.quantidade;
+      // Update avaria record
+      await (supabase as any).from("avarias").update({
+        quantidade: editAvariaQtd,
+        motivo: editAvariaMotivo,
+      }).eq("id", editAvaria.id);
+      // Adjust stock (if qty changed)
+      if (diff !== 0) {
+        const geloItem = gelos.find((g: any) => g.sabor_id === editAvaria.sabor_id);
+        if (geloItem) {
+          await (supabase as any).from("estoque_gelos")
+            .update({ quantidade: geloItem.quantidade - diff })
+            .eq("sabor_id", editAvaria.sabor_id);
+        }
+      }
+      toast({ title: "Avaria atualizada!" });
+      setEditAvaria(null);
+      loadData();
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    } finally {
+      setEditAvariaLoading(false);
+    }
+  }
+
+  async function handleDeleteAvaria() {
+    if (deleteAvariaLoading || !deleteAvariaId) return;
+    setDeleteAvariaLoading(true);
+    try {
+      const avaria = avarias.find((a: any) => a.id === deleteAvariaId);
+      if (avaria) {
+        // Restore stock
+        const geloItem = gelos.find((g: any) => g.sabor_id === avaria.sabor_id);
+        if (geloItem) {
+          await (supabase as any).from("estoque_gelos")
+            .update({ quantidade: geloItem.quantidade + avaria.quantidade })
+            .eq("sabor_id", avaria.sabor_id);
+        }
+        // Delete related movements
+        await (supabase as any).from("movimentacoes_estoque")
+          .delete()
+          .eq("referencia", "avaria")
+          .eq("item_id", avaria.sabor_id)
+          .eq("quantidade", avaria.quantidade);
+      }
+      await (supabase as any).from("avarias").delete().eq("id", deleteAvariaId);
+      toast({ title: "Avaria excluída e estoque restaurado!" });
+      setDeleteAvariaId(null);
+      loadData();
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    } finally {
+      setDeleteAvariaLoading(false);
+    }
+  }
+
   const SABOR_COLORS: Record<string, string> = {
     melancia: "bg-red-500/90 text-white border-red-600",
     morango: "bg-pink-500/90 text-white border-pink-600",
@@ -566,6 +642,7 @@ export default function Estoque() {
                   <TableHead>Quantidade</TableHead>
                   <TableHead>Motivo</TableHead>
                   <TableHead>Operador</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
                   {avarias.map((a: any) => (
@@ -575,12 +652,58 @@ export default function Estoque() {
                       <TableCell className="text-destructive font-semibold">-{a.quantidade}</TableCell>
                       <TableCell className="max-w-[200px] truncate">{a.motivo}</TableCell>
                       <TableCell>{a.operador}</TableCell>
+                      <TableCell className="text-right space-x-1">
+                        <Button variant="ghost" size="sm" onClick={() => openEditAvaria(a)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDeleteAvariaId(a.id)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             )}
           </CardContent></Card>
+
+          {/* Edit Avaria Dialog */}
+          <Dialog open={!!editAvaria} onOpenChange={(o) => !o && setEditAvaria(null)}>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Editar Avaria — {editAvaria?.sabores?.nome}</DialogTitle></DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label>Quantidade</Label>
+                  <Input type="number" min={1} value={editAvariaQtd || ""} onChange={(e) => setEditAvariaQtd(Number(e.target.value))} />
+                </div>
+                <div>
+                  <Label>Motivo</Label>
+                  <Textarea value={editAvariaMotivo} onChange={(e) => setEditAvariaMotivo(e.target.value)} />
+                </div>
+                <Button className="w-full" onClick={handleEditAvaria} disabled={editAvariaLoading}>
+                  {editAvariaLoading ? "Salvando..." : "Salvar Alterações"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Delete Avaria Confirmation */}
+          <AlertDialog open={!!deleteAvariaId} onOpenChange={(o) => !o && setDeleteAvariaId(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Excluir Avaria?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  O estoque será restaurado automaticamente. Essa ação não pode ser desfeita.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteAvaria} disabled={deleteAvariaLoading} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  {deleteAvariaLoading ? "Excluindo..." : "Excluir"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </TabsContent>
 
         <TabsContent value="mp">
