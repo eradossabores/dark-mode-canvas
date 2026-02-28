@@ -65,6 +65,21 @@ export default function Clientes() {
     setOpen(true);
   }
 
+  async function geocodeAddress(endereco: string, bairro: string, cidade: string, estado: string): Promise<{ lat: number; lng: number } | null> {
+    try {
+      const parts = [endereco, bairro, cidade || "Boa Vista", estado || "RR", "Brasil"].filter(Boolean);
+      const query = encodeURIComponent(parts.join(", "));
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`);
+      const data = await res.json();
+      if (data && data.length > 0) {
+        return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+      }
+    } catch (e) {
+      console.warn("Geocoding falhou:", e);
+    }
+    return null;
+  }
+
   async function handleSubmit() {
     if (!form.nome) return toast({ title: "Nome obrigatório", variant: "destructive" });
     try {
@@ -74,6 +89,16 @@ export default function Clientes() {
       if (!payload.cpf_cnpj) payload.cpf_cnpj = null;
       payload.latitude = payload.latitude ? Number(payload.latitude) : null;
       payload.longitude = payload.longitude ? Number(payload.longitude) : null;
+
+      // Auto-geocode se tem endereço mas não tem coordenadas
+      if (!payload.latitude && !payload.longitude && payload.endereco) {
+        const coords = await geocodeAddress(payload.endereco, payload.bairro, payload.cidade, payload.estado);
+        if (coords) {
+          payload.latitude = coords.lat;
+          payload.longitude = coords.lng;
+          toast({ title: "📍 Localização encontrada automaticamente!" });
+        }
+      }
 
       if (editingId) {
         const { error } = await (supabase as any).from("clientes").update(payload).eq("id", editingId);
