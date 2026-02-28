@@ -436,10 +436,23 @@ export default function Estoque() {
     "blue ice": "bg-blue-500/90 text-white border-blue-600",
   };
 
+  const getItemColor = (nome: string) => {
+    const key = nome?.toLowerCase() || "";
+    // Check sabor colors first
+    for (const [k, v] of Object.entries(SABOR_COLORS)) {
+      if (key.includes(k)) return v;
+    }
+    return "bg-muted text-foreground border-border";
+  };
+
   const getSaborColor = (nome: string) => {
     const key = nome?.toLowerCase() || "";
     return SABOR_COLORS[key] || "bg-muted text-foreground border-border";
   };
+
+  const totalMaterias = materias.reduce((s, m) => s + (Number(m.estoque_atual) || 0), 0);
+  const totalEmbalagens = embalagens.reduce((s, e) => s + (e.estoque_atual || 0), 0);
+  const totalFreezers = freezers.reduce((s, f) => s + (f.quantidade || 0), 0);
 
   const totalGelos = gelos.reduce((s, g) => s + (g.quantidade || 0), 0);
 
@@ -604,31 +617,57 @@ export default function Estoque() {
           </div>
 
           {avarias.length > 0 && (
-            <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <Card><CardContent className="pt-4 pb-3 text-center">
-                <p className="text-xs text-muted-foreground">Total Avarias</p>
-                <p className="text-2xl font-bold text-destructive">{avarias.reduce((s: number, a: any) => s + a.quantidade, 0).toLocaleString()} un.</p>
-              </CardContent></Card>
-              <Card><CardContent className="pt-4 pb-3 text-center">
-                <p className="text-xs text-muted-foreground">Registros</p>
-                <p className="text-2xl font-bold">{avarias.length}</p>
-              </CardContent></Card>
-              <Card><CardContent className="pt-4 pb-3 text-center">
-                <p className="text-xs text-muted-foreground">Sabor Mais Afetado</p>
-                <p className="text-sm font-bold truncate">{(() => {
-                  const counts: Record<string, number> = {};
-                  avarias.forEach((a: any) => { counts[a.sabores?.nome || "?"] = (counts[a.sabores?.nome || "?"] || 0) + a.quantidade; });
-                  return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || "-";
-                })()}</p>
-              </CardContent></Card>
-              <Card><CardContent className="pt-4 pb-3 text-center">
-                <p className="text-xs text-muted-foreground">Este Mês</p>
-                <p className="text-2xl font-bold text-destructive">{avarias.filter((a: any) => {
-                  const d = new Date(a.created_at); const now = new Date();
-                  return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-                }).reduce((s: number, a: any) => s + a.quantidade, 0).toLocaleString()} un.</p>
-              </CardContent></Card>
-            </div>
+            <>
+              <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <Card><CardContent className="pt-4 pb-3 text-center">
+                  <p className="text-xs text-muted-foreground">Total Avarias</p>
+                  <p className="text-2xl font-bold text-destructive">{avarias.reduce((s: number, a: any) => s + a.quantidade, 0).toLocaleString()} un.</p>
+                </CardContent></Card>
+                <Card><CardContent className="pt-4 pb-3 text-center">
+                  <p className="text-xs text-muted-foreground">Registros</p>
+                  <p className="text-2xl font-bold">{avarias.length}</p>
+                </CardContent></Card>
+                <Card><CardContent className="pt-4 pb-3 text-center">
+                  <p className="text-xs text-muted-foreground">Sabor Mais Afetado</p>
+                  <p className="text-sm font-bold truncate">{(() => {
+                    const counts: Record<string, number> = {};
+                    avarias.forEach((a: any) => { counts[a.sabores?.nome || "?"] = (counts[a.sabores?.nome || "?"] || 0) + a.quantidade; });
+                    return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || "-";
+                  })()}</p>
+                </CardContent></Card>
+                <Card><CardContent className="pt-4 pb-3 text-center">
+                  <p className="text-xs text-muted-foreground">Este Mês</p>
+                  <p className="text-2xl font-bold text-destructive">{avarias.filter((a: any) => {
+                    const d = new Date(a.created_at); const now = new Date();
+                    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+                  }).reduce((s: number, a: any) => s + a.quantidade, 0).toLocaleString()} un.</p>
+                </CardContent></Card>
+              </div>
+              <div className="mb-6">
+                <p className="text-sm text-muted-foreground font-medium mb-3">Avarias por Sabor</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                  {(() => {
+                    const porSabor: Record<string, { nome: string; qtd: number }> = {};
+                    avarias.forEach((a: any) => {
+                      const sn = a.sabores?.nome || "?";
+                      if (!porSabor[sn]) porSabor[sn] = { nome: sn, qtd: 0 };
+                      porSabor[sn].qtd += a.quantidade;
+                    });
+                    return Object.values(porSabor)
+                      .sort((a, b) => b.qtd - a.qtd)
+                      .map((s) => (
+                        <div
+                          key={s.nome}
+                          className={`rounded-lg border px-3 py-2.5 text-center transition-all hover:scale-[1.03] ${getSaborColor(s.nome)} opacity-80`}
+                        >
+                          <p className="text-[11px] font-semibold truncate">{s.nome}</p>
+                          <p className="text-lg font-extrabold mt-0.5">-{s.qtd.toLocaleString()}</p>
+                        </div>
+                      ));
+                  })()}
+                </div>
+              </div>
+            </>
           )}
 
           <Card><CardContent className="pt-6">
@@ -707,6 +746,30 @@ export default function Estoque() {
         </TabsContent>
 
         <TabsContent value="mp">
+          {materias.length > 0 && (
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm text-muted-foreground font-medium">Matérias-Primas</p>
+                <Badge variant="secondary" className="text-xs font-bold">Total: {(totalMaterias / 1000).toFixed(1)} kg</Badge>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                {materias.map((m) => (
+                  <div
+                    key={m.id}
+                    className={`rounded-lg border px-3 py-2.5 text-center transition-all hover:scale-[1.03] cursor-pointer ${getItemColor(m.nome)}`}
+                    onClick={() => openAjusteDialog("mp", m.id, m.estoque_atual)}
+                  >
+                    <p className="text-[11px] font-semibold truncate">{m.nome}</p>
+                    <p className="text-lg font-extrabold mt-0.5">{(Number(m.estoque_atual) / 1000).toFixed(1)}kg</p>
+                  </div>
+                ))}
+                <div className="rounded-lg border px-3 py-2.5 text-center transition-all hover:scale-[1.03] bg-gray-700/90 text-white border-gray-800">
+                  <p className="text-[11px] font-semibold truncate">TOTAL</p>
+                  <p className="text-lg font-extrabold mt-0.5">{(totalMaterias / 1000).toFixed(1)}kg</p>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="flex justify-end mb-4">
             <Dialog open={openMP} onOpenChange={setOpenMP}>
               <DialogTrigger asChild>
@@ -749,13 +812,13 @@ export default function Estoque() {
             <CardContent className="pt-6">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Estoque</TableHead>
-                    <TableHead>Unidade</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
+                   <TableRow>
+                     <TableHead>Nome</TableHead>
+                     <TableHead>Estoque</TableHead>
+                     <TableHead>Unidade</TableHead>
+                     <TableHead className="text-right">Ações</TableHead>
+                   </TableRow>
+                 </TableHeader>
                 <TableBody>
                   {materias.map((m) => (
                     <TableRow key={m.id}>
@@ -780,6 +843,30 @@ export default function Estoque() {
         </TabsContent>
 
         <TabsContent value="emb">
+          {embalagens.length > 0 && (
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm text-muted-foreground font-medium">Embalagens por Tipo</p>
+                <Badge variant="secondary" className="text-xs font-bold">Total: {totalEmbalagens.toLocaleString()} un.</Badge>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                {embalagens.map((e) => (
+                  <div
+                    key={e.id}
+                    className={`rounded-lg border px-3 py-2.5 text-center transition-all hover:scale-[1.03] cursor-pointer ${getItemColor(e.nome)}`}
+                    onClick={() => openAjusteDialog("emb", e.id, e.estoque_atual)}
+                  >
+                    <p className="text-[11px] font-semibold truncate">{e.nome}</p>
+                    <p className="text-lg font-extrabold mt-0.5">{(e.estoque_atual || 0).toLocaleString()}</p>
+                  </div>
+                ))}
+                <div className="rounded-lg border px-3 py-2.5 text-center transition-all hover:scale-[1.03] bg-gray-700/90 text-white border-gray-800">
+                  <p className="text-[11px] font-semibold truncate">TOTAL</p>
+                  <p className="text-lg font-extrabold mt-0.5">{totalEmbalagens.toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="flex justify-end mb-4">
             <Dialog open={openEmb} onOpenChange={setOpenEmb}>
               <DialogTrigger asChild>
@@ -839,6 +926,26 @@ export default function Estoque() {
         </TabsContent>
 
         <TabsContent value="mov">
+          {movimentacoes.length > 0 && (
+            <div className="mb-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <Card><CardContent className="pt-4 pb-3 text-center">
+                <p className="text-xs text-muted-foreground">Total Entradas</p>
+                <p className="text-2xl font-bold text-emerald-600">{movimentacoes.filter(m => m.tipo_movimentacao === "entrada").reduce((s, m) => s + Number(m.quantidade), 0).toLocaleString()}</p>
+              </CardContent></Card>
+              <Card><CardContent className="pt-4 pb-3 text-center">
+                <p className="text-xs text-muted-foreground">Total Saídas</p>
+                <p className="text-2xl font-bold text-destructive">{movimentacoes.filter(m => m.tipo_movimentacao === "saida").reduce((s, m) => s + Number(m.quantidade), 0).toLocaleString()}</p>
+              </CardContent></Card>
+              <Card><CardContent className="pt-4 pb-3 text-center">
+                <p className="text-xs text-muted-foreground">Registros</p>
+                <p className="text-2xl font-bold">{movimentacoes.length}</p>
+              </CardContent></Card>
+              <Card><CardContent className="pt-4 pb-3 text-center">
+                <p className="text-xs text-muted-foreground">Última Mov.</p>
+                <p className="text-sm font-bold">{movimentacoes[0] ? new Date(movimentacoes[0].created_at).toLocaleDateString("pt-BR") : "-"}</p>
+              </CardContent></Card>
+            </div>
+          )}
           <Card>
             <CardContent className="pt-6">
               <Table>
@@ -872,6 +979,39 @@ export default function Estoque() {
         </TabsContent>
 
         <TabsContent value="freezers">
+          {freezers.length > 0 && (
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm text-muted-foreground font-medium">Freezers por Sabor</p>
+                <Badge variant="secondary" className="text-xs font-bold">Total: {totalFreezers.toLocaleString()} un.</Badge>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                {(() => {
+                  const porSabor: Record<string, { nome: string; qtd: number }> = {};
+                  freezers.forEach((f) => {
+                    const sn = f.sabores?.nome || "?";
+                    if (!porSabor[sn]) porSabor[sn] = { nome: sn, qtd: 0 };
+                    porSabor[sn].qtd += f.quantidade || 0;
+                  });
+                  return Object.values(porSabor)
+                    .sort((a, b) => b.qtd - a.qtd)
+                    .map((s) => (
+                      <div
+                        key={s.nome}
+                        className={`rounded-lg border px-3 py-2.5 text-center transition-all hover:scale-[1.03] ${getSaborColor(s.nome)}`}
+                      >
+                        <p className="text-[11px] font-semibold truncate">{s.nome}</p>
+                        <p className="text-lg font-extrabold mt-0.5">{s.qtd.toLocaleString()}</p>
+                      </div>
+                    ));
+                })()}
+                <div className="rounded-lg border px-3 py-2.5 text-center transition-all hover:scale-[1.03] bg-gray-700/90 text-white border-gray-800">
+                  <p className="text-[11px] font-semibold truncate">TOTAL</p>
+                  <p className="text-lg font-extrabold mt-0.5">{totalFreezers.toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="flex justify-end mb-4">
             <Dialog open={openFreezer} onOpenChange={setOpenFreezer}>
               <DialogTrigger asChild>
