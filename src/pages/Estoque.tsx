@@ -52,6 +52,7 @@ export default function Estoque() {
   const [avariaQtd, setAvariaQtd] = useState(0);
   const [avariaMotivo, setAvariaMotivo] = useState("");
   const [avariaComEmbalagem, setAvariaComEmbalagem] = useState(false);
+  const [avariaLoading, setAvariaLoading] = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
@@ -264,8 +265,10 @@ export default function Estoque() {
   }
 
   async function handleAvaria() {
+    if (avariaLoading) return;
     if (!avariaSaborId || avariaQtd <= 0) return toast({ title: "Selecione o sabor e quantidade", variant: "destructive" });
     if (!avariaMotivo.trim()) return toast({ title: "Informe o motivo da avaria", variant: "destructive" });
+    setAvariaLoading(true);
     try {
       const geloItem = gelos.find((g: any) => g.sabor_id === avariaSaborId);
       const saborNome = sabores.find((s: any) => s.id === avariaSaborId)?.nome || "Desconhecido";
@@ -338,6 +341,8 @@ export default function Estoque() {
       loadData();
     } catch (e: any) {
       toast({ title: "Erro ao registrar avaria", description: e.message, variant: "destructive" });
+    } finally {
+      setAvariaLoading(false);
     }
   }
 
@@ -514,7 +519,9 @@ export default function Estoque() {
                     <Checkbox id="avaria-emb" checked={avariaComEmbalagem} onCheckedChange={(v) => setAvariaComEmbalagem(!!v)} />
                     <Label htmlFor="avaria-emb" className="cursor-pointer text-sm">Perda inclui embalagem</Label>
                   </div>
-                  <Button className="w-full" variant="destructive" onClick={handleAvaria}>Confirmar Avaria</Button>
+                  <Button className="w-full" variant="destructive" onClick={handleAvaria} disabled={avariaLoading}>
+                    {avariaLoading ? "Registrando..." : "Confirmar Avaria"}
+                  </Button>
                 </div>
               </DialogContent>
             </Dialog>
