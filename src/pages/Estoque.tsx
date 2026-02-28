@@ -86,7 +86,21 @@ export default function Estoque() {
       return oA - oB || a.nome.localeCompare(b.nome);
     });
     setMaterias(sortedMaterias);
-    setEmbalagens(e.data || []);
+    // Ordenar embalagens na mesma sequência
+    const ordemEmb: Record<string, number> = {
+      "embalagem melancia": 1,
+      "embalagem morango": 2,
+      "embalagem maçã verde": 3,
+      "embalagem maracujá": 4,
+      "embalagem água de coco": 5,
+      "embalagem abacaxi com hortelã": 6,
+    };
+    const sortedEmb = (e.data || []).sort((a: any, b: any) => {
+      const oA = ordemEmb[a.nome?.toLowerCase()] ?? 99;
+      const oB = ordemEmb[b.nome?.toLowerCase()] ?? 99;
+      return oA - oB || a.nome.localeCompare(b.nome);
+    });
+    setEmbalagens(sortedEmb);
     setMovimentacoes(mov.data || []);
   }
 
