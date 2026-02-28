@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Plus, Settings2, Trash2, Snowflake, AlertTriangle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function Estoque() {
   const [gelos, setGelos] = useState<any[]>([]);
@@ -50,6 +51,7 @@ export default function Estoque() {
   const [avariaSaborId, setAvariaSaborId] = useState("");
   const [avariaQtd, setAvariaQtd] = useState(0);
   const [avariaMotivo, setAvariaMotivo] = useState("");
+  const [avariaComEmbalagem, setAvariaComEmbalagem] = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
@@ -293,13 +295,38 @@ export default function Estoque() {
         operador: "sistema",
       });
 
+      // Deduct embalagem if checked
+      let embDescricao = "";
+      if (avariaComEmbalagem) {
+        const { data: receita } = await (supabase as any)
+          .from("sabor_receita")
+          .select("embalagem_id")
+          .eq("sabor_id", avariaSaborId)
+          .single();
+        if (receita?.embalagem_id) {
+          await (supabase as any)
+            .from("embalagens")
+            .update({ estoque_atual: (embalagens.find((e: any) => e.id === receita.embalagem_id)?.estoque_atual || 0) - avariaQtd })
+            .eq("id", receita.embalagem_id);
+          await (supabase as any).from("movimentacoes_estoque").insert({
+            tipo_item: "embalagem",
+            item_id: receita.embalagem_id,
+            tipo_movimentacao: "saida",
+            quantidade: avariaQtd,
+            referencia: "avaria",
+            operador: "sistema",
+          });
+          embDescricao = " (com perda de embalagem)";
+        }
+      }
+
       // Audit
       await (supabase as any).from("auditoria").insert({
         usuario_nome: "sistema",
         modulo: "estoque",
         acao: "avaria",
         registro_afetado: avariaSaborId,
-        descricao: `Avaria de ${avariaQtd} un. de ${saborNome}. Motivo: ${avariaMotivo}`,
+        descricao: `Avaria de ${avariaQtd} un. de ${saborNome}${embDescricao}. Motivo: ${avariaMotivo}`,
       });
 
       toast({ title: "Avaria registrada!", description: `${avariaQtd} un. de ${saborNome} descontadas do estoque` });
@@ -307,6 +334,7 @@ export default function Estoque() {
       setAvariaQtd(0);
       setAvariaMotivo("");
       setAvariaSaborId("");
+      setAvariaComEmbalagem(false);
       loadData();
     } catch (e: any) {
       toast({ title: "Erro ao registrar avaria", description: e.message, variant: "destructive" });
@@ -468,6 +496,10 @@ export default function Estoque() {
                   <div>
                     <Label>Motivo <span className="text-destructive">*</span></Label>
                     <Textarea placeholder="Ex: Derreteu ao colocar no freezer, embalagem furada..." value={avariaMotivo} onChange={(e) => setAvariaMotivo(e.target.value)} />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox id="avaria-emb" checked={avariaComEmbalagem} onCheckedChange={(v) => setAvariaComEmbalagem(!!v)} />
+                    <Label htmlFor="avaria-emb" className="cursor-pointer text-sm">Perda inclui embalagem</Label>
                   </div>
                   <Button className="w-full" variant="destructive" onClick={handleAvaria}>Confirmar Avaria</Button>
                 </div>
