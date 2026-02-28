@@ -577,7 +577,7 @@ export default function Estoque() {
                   <div>
                     <Label>Motivo <span className="text-destructive">*</span></Label>
                     <div className="flex flex-wrap gap-2 mb-2">
-                      {["Derreteu no transporte", "Embalagem furada", "Caiu no chão", "Defeito de produção"].map((m) => (
+                      {["Derreteu no transporte", "Derreteu na freezer", "Embalagem furada", "Caiu no chão", "Defeito de produção"].map((m) => (
                         <Button
                           key={m}
                           type="button"
