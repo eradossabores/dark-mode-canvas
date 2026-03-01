@@ -25,6 +25,7 @@ import saborMacaVerde from "@/assets/sabor-maca-verde.jpg";
 import saborMorango from "@/assets/sabor-morango2.jpg";
 import saborMaracuja from "@/assets/sabor-maracuja2.jpg";
 import saborAguaCoco from "@/assets/sabor-agua-coco.jpg";
+import saborAbacaxiHortela from "@/assets/sabor-abacaxi-hortela.jpg";
 import { z } from "zod";
 
 const WHATSAPP_NUMBER = "5595991725677";
@@ -41,6 +42,8 @@ const SABOR_IMAGES: Record<string, string> = {
   "maracuja coco": geloMaracujaCoco,
   "água de coco": saborAguaCoco,
   "agua de coco": saborAguaCoco,
+  "abacaxi com hortelã": saborAbacaxiHortela,
+  "abacaxi": saborAbacaxiHortela,
 };
 
 const SABOR_EMOJIS: Record<string, string> = {
@@ -54,6 +57,8 @@ const SABOR_EMOJIS: Record<string, string> = {
   limão: "🍋",
   manga: "🥭",
   uva: "🍇",
+  "abacaxi com hortelã": "🍍",
+  "abacaxi": "🍍",
 };
 
 function getSaborImage(nome: string): string | null {
@@ -84,6 +89,7 @@ function getSaborGradient(nome: string): string {
   if (lower.includes("limão")) return "from-lime-400/20 to-yellow-400/10";
   if (lower.includes("manga")) return "from-orange-400/20 to-amber-400/10";
   if (lower.includes("uva")) return "from-purple-500/20 to-violet-400/10";
+  if (lower.includes("abacaxi")) return "from-yellow-300/20 to-emerald-400/10";
   return "from-primary/10 to-secondary/10";
 }
 
