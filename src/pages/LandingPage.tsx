@@ -20,22 +20,37 @@ import geloMaracuja from "@/assets/gelo-maracuja.png";
 import geloMacaVerde from "@/assets/gelo-maca-verde.png";
 import geloProducao from "@/assets/gelo-producao.png";
 import geloBobMarleyDetalhe from "@/assets/gelo-bob-marley-detalhe.png";
+import saborMelancia from "@/assets/sabor-melancia.jpg";
+import saborMacaVerde from "@/assets/sabor-maca-verde.jpg";
+import saborMorango from "@/assets/sabor-morango2.jpg";
+import saborMaracuja from "@/assets/sabor-maracuja2.jpg";
+import saborAguaCoco from "@/assets/sabor-agua-coco.jpg";
 
 const sabores = [
   {
+    nome: "Gelo de Melancia 🍉",
+    desc: "Vermelho intenso e sabor refrescante de melancia natural. Transforma qualquer drink!",
+    img: saborMelancia,
+  },
+  {
     nome: "Gelo de Morango 🍓",
     desc: "Feito com morango de verdade, cor vibrante e sabor intenso. Perfeito para drinks e sucos.",
-    img: geloMorango,
+    img: saborMorango,
   },
   {
     nome: "Gelo de Maracujá 🔥",
     desc: "Maracujá concentrado com acidez equilibrada. Ideal para coquetéis e águas saborizadas.",
-    img: geloMaracuja,
+    img: saborMaracuja,
   },
   {
     nome: "Gelo Maçã Verde 🍏",
     desc: "Refrescante e com aroma marcante. Surpreende em qualquer bebida com seu toque especial.",
-    img: geloMacaVerde,
+    img: saborMacaVerde,
+  },
+  {
+    nome: "Gelo Água de Coco 🥥",
+    desc: "Leve, natural e hidratante. O toque tropical perfeito para suas bebidas.",
+    img: saborAguaCoco,
   },
   {
     nome: "Gelo Bob Marley 🇯🇲",

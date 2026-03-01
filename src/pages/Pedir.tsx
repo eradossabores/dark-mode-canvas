@@ -20,20 +20,27 @@ import geloMelanciaMaca from "@/assets/gelo-melancia-maca.png";
 import geloMaracujaCoco from "@/assets/gelo-maracuja-coco.png";
 import geloBobMarleyDetalhe from "@/assets/gelo-bob-marley-detalhe.png";
 import geloProducao from "@/assets/gelo-producao.png";
+import saborMelancia from "@/assets/sabor-melancia.jpg";
+import saborMacaVerde from "@/assets/sabor-maca-verde.jpg";
+import saborMorango from "@/assets/sabor-morango2.jpg";
+import saborMaracuja from "@/assets/sabor-maracuja2.jpg";
+import saborAguaCoco from "@/assets/sabor-agua-coco.jpg";
 import { z } from "zod";
 
 const WHATSAPP_NUMBER = "5595991725677";
 
 // Map sabor names to images
 const SABOR_IMAGES: Record<string, string> = {
-  morango: geloMorango,
+  morango: saborMorango,
   "bob marley": geloBobMarley,
-  maracujá: geloMaracuja,
-  "maçã verde": geloMacaVerde,
-  "maçã": geloMacaVerde,
-  "melancia": geloMelanciaMaca,
+  maracujá: saborMaracuja,
+  "maçã verde": saborMacaVerde,
+  "maçã": saborMacaVerde,
+  "melancia": saborMelancia,
   "maracujá com coco": geloMaracujaCoco,
   "maracuja coco": geloMaracujaCoco,
+  "água de coco": saborAguaCoco,
+  "agua de coco": saborAguaCoco,
 };
 
 const SABOR_EMOJIS: Record<string, string> = {
