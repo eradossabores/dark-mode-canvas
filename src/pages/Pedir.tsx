@@ -110,8 +110,8 @@ const pedidoSchema = z.object({
 });
 
 const FAIXAS_PRECO = [
-  { min: 100, preco: 1.99, label: "100+ un", destaque: "Atacado" },
-  { min: 30, preco: 2.50, label: "30+ un", destaque: "Popular" },
+  { min: 100, preco: 1.99, label: "100+ un", destaque: "Pacote Festa" },
+  { min: 30, preco: 2.50, label: "30+ un", destaque: "Familiar" },
   { min: 10, preco: 3.99, label: "10+ un", destaque: "Econômico" },
   { min: 1, preco: 4.99, label: "1-9 un", destaque: "" },
 ];

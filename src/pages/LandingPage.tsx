@@ -418,7 +418,7 @@ export default function LandingPage() {
             <div className="relative rounded-2xl border-2 border-primary bg-gradient-to-b from-primary/10 to-card p-6 text-center shadow-xl shadow-primary/10 scale-105 transition-all hover:-translate-y-1">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                 <span className="bg-primary text-primary-foreground text-[11px] font-bold px-3 py-1 rounded-full flex items-center gap-1">
-                  <Star className="h-3 w-3" /> Mais Popular
+                  <Star className="h-3 w-3" /> Familiar
                 </span>
               </div>
               <div className="text-4xl mb-3">🔥</div>
@@ -438,7 +438,7 @@ export default function LandingPage() {
             {/* Pacote 4 - 100+ */}
             <div className="relative rounded-2xl border-2 border-accent/50 bg-gradient-to-b from-accent/10 to-card p-6 text-center transition-all hover:shadow-lg hover:-translate-y-1 hover:border-accent">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <span className="bg-accent text-accent-foreground text-[11px] font-bold px-3 py-1 rounded-full">Atacado</span>
+                <span className="bg-accent text-accent-foreground text-[11px] font-bold px-3 py-1 rounded-full">Pacote Festa</span>
               </div>
               <div className="text-4xl mb-3">🚛</div>
               <p className="text-sm font-semibold text-muted-foreground mb-1">A partir de 100 un</p>
