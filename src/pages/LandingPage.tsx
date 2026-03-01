@@ -533,7 +533,7 @@ export default function LandingPage() {
             <div>
               <h4 className="font-semibold mb-4">Redes Sociais</h4>
               <div className="flex gap-3">
-                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors">
+                <a href="https://www.instagram.com/aeradossaboresrr?igsh=MXU3ODd0ZWlkNzB3cg%3D%3D&utm_source=qr" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors">
                   <Instagram className="h-5 w-5 text-primary" />
                 </a>
                 <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors">
