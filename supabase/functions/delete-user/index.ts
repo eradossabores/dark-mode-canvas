@@ -1,14 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsResponse = handleCors(req);
+  if (corsResponse) return corsResponse;
+  const corsHeaders = getCorsHeaders(req);
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -24,7 +20,6 @@ Deno.serve(async (req) => {
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Validate JWT using getClaims
     const callerClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -37,11 +32,8 @@ Deno.serve(async (req) => {
     }
 
     const callerId = claimsData.claims.sub;
-
-    // Use service role for admin operations
     const adminClient = createClient(supabaseUrl, serviceKey);
 
-    // Verify caller is admin
     const { data: roleData } = await adminClient
       .from("user_roles")
       .select("role")
@@ -71,7 +63,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Delete from all related tables using service role (bypasses RLS)
     await adminClient.from("user_roles").delete().eq("user_id", user_id);
     await adminClient.from("access_requests").delete().eq("user_id", user_id);
     await adminClient.from("profiles").delete().eq("id", user_id);
