@@ -19,7 +19,7 @@ import geloMacaVerde from "@/assets/gelo-maca-verde.png";
 import geloMelanciaMaca from "@/assets/gelo-melancia-maca.png";
 import geloMaracujaCoco from "@/assets/gelo-maracuja-coco.png";
 import geloBobMarleyDetalhe from "@/assets/gelo-bob-marley-detalhe.png";
-import heroGelos from "@/assets/hero-gelos.jpg";
+import geloProducao from "@/assets/gelo-producao.png";
 import { z } from "zod";
 
 const WHATSAPP_NUMBER = "5595991725677";
@@ -251,7 +251,7 @@ export default function Pedir() {
             <div className="absolute inset-0">
               <div className="absolute inset-0 bg-gradient-to-b from-foreground/80 via-foreground/60 to-background z-10" />
               <img
-                src={heroGelos}
+                src={geloProducao}
                 alt="Gelos artesanais"
                 className="h-full w-full object-cover"
               />
