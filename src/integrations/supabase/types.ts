@@ -1039,6 +1039,7 @@ export type Database = {
           ativo: boolean
           created_at: string
           id: string
+          imagem_url: string | null
           nome: string
           updated_at: string
         }
@@ -1046,6 +1047,7 @@ export type Database = {
           ativo?: boolean
           created_at?: string
           id?: string
+          imagem_url?: string | null
           nome: string
           updated_at?: string
         }
@@ -1053,6 +1055,7 @@ export type Database = {
           ativo?: boolean
           created_at?: string
           id?: string
+          imagem_url?: string | null
           nome?: string
           updated_at?: string
         }
