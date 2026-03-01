@@ -25,6 +25,7 @@ import saborMacaVerde from "@/assets/sabor-maca-verde.jpg";
 import saborMorango from "@/assets/sabor-morango2.jpg";
 import saborMaracuja from "@/assets/sabor-maracuja2.jpg";
 import saborAguaCoco from "@/assets/sabor-agua-coco.jpg";
+import saborAbacaxiHortela from "@/assets/sabor-abacaxi-hortela.jpg";
 
 const sabores = [
   {
@@ -51,6 +52,11 @@ const sabores = [
     nome: "Gelo Água de Coco 🥥",
     desc: "Leve, natural e hidratante. O toque tropical perfeito para suas bebidas.",
     img: saborAguaCoco,
+  },
+  {
+    nome: "Gelo Abacaxi com Hortelã 🍍",
+    desc: "Frescor tropical com toque mentolado. A combinação perfeita para drinks refrescantes!",
+    img: saborAbacaxiHortela,
   },
   {
     nome: "Gelo Bob Marley 🇯🇲",
