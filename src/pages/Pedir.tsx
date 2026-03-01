@@ -216,7 +216,9 @@ export default function Pedir() {
     setTimeout(() => catalogoRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
   };
 
-  const handleEnviar = () => {
+  const [enviando, setEnviando] = useState(false);
+
+  const handleEnviar = async () => {
     const result = pedidoSchema.safeParse({ nome, telefone, endereco, bairro, formaPagamento, observacoes });
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
@@ -227,7 +229,39 @@ export default function Pedir() {
       return;
     }
     setErrors({});
+    setEnviando(true);
 
+    try {
+      // Save order to database
+      const itensJson = cart.map((i) => ({
+        sabor_id: i.sabor_id,
+        nome: i.nome,
+        quantidade: i.quantidade,
+      }));
+
+      const { error: insertError } = await supabase.from("pedidos_publicos" as any).insert({
+        nome_cliente: nome.trim(),
+        telefone: telefone.trim(),
+        endereco: endereco.trim(),
+        bairro: bairro.trim(),
+        forma_pagamento: formaPagamento,
+        observacoes: observacoes?.trim() || null,
+        itens: itensJson,
+        total_itens: totalItens,
+        preco_unitario: precoAtual,
+        valor_total: totalValor,
+        status: "pendente",
+      } as any);
+
+      if (insertError) {
+        console.error("Erro ao salvar pedido:", insertError);
+        // Continue to WhatsApp even if save fails
+      }
+    } catch (err) {
+      console.error("Erro ao salvar pedido:", err);
+    }
+
+    // Build WhatsApp message
     const pagLabel: Record<string, string> = {
       dinheiro: "💵 Dinheiro",
       pix: "📱 PIX",
@@ -261,7 +295,17 @@ export default function Pedir() {
 
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
     window.open(url, "_blank");
-    toast({ title: "Pedido gerado! ✅", description: "Finalize o envio no WhatsApp." });
+    
+    setEnviando(false);
+    setCart([]);
+    setNome("");
+    setTelefone("");
+    setEndereco("");
+    setBairro("");
+    setFormaPagamento("");
+    setObservacoes("");
+    setStep("hero");
+    toast({ title: "Pedido enviado! ✅", description: "Seu pedido foi registrado e enviado pelo WhatsApp." });
   };
 
   return (
@@ -751,9 +795,10 @@ export default function Pedir() {
               <Button
                 className="w-full h-14 rounded-2xl text-base font-bold shadow-lg gap-3 mt-2"
                 onClick={handleEnviar}
+                disabled={enviando}
               >
                 <Send className="h-5 w-5" />
-                Enviar Pedido pelo WhatsApp
+                {enviando ? "Enviando..." : "Enviar Pedido pelo WhatsApp"}
               </Button>
 
               <p className="text-[11px] text-muted-foreground text-center">

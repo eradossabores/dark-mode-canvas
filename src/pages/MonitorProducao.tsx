@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { Monitor, Clock, User, Package, CalendarClock, MessageSquare, Maximize2, Minimize2, CheckCircle2, PackageCheck, Hourglass, HandMetal, Pencil, Smartphone, Volume2, VolumeX, Printer, Timer, AlertTriangle, Trash2 } from "lucide-react";
+import { Monitor, Clock, User, Package, CalendarClock, MessageSquare, Maximize2, Minimize2, CheckCircle2, PackageCheck, Hourglass, HandMetal, Pencil, Smartphone, Volume2, VolumeX, Printer, Timer, AlertTriangle, Trash2, Globe, ThumbsUp, ThumbsDown, MapPin, Phone, CreditCard } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import EditPedidoDialog from "@/components/monitor/EditPedidoDialog";
 import MonitorTopBar from "@/components/monitor/MonitorTopBar";
@@ -13,7 +13,6 @@ import { useMonitorAlerts } from "@/hooks/useMonitorAlerts";
 import { useToast } from "@/hooks/use-toast";
 import { format, isPast, isToday, isTomorrow, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-
 function getElapsedTime(createdAt: string): string {
   return formatDistanceToNow(new Date(createdAt), { locale: ptBR, addSuffix: false });
 }
@@ -165,6 +164,7 @@ export default function MonitorProducao() {
         if (prev <= 1) {
           queryClient.invalidateQueries({ queryKey: ["monitor-pedidos"] });
           queryClient.invalidateQueries({ queryKey: ["monitor-gelos"] });
+          queryClient.invalidateQueries({ queryKey: ["monitor-pedidos-publicos"] });
           return REFRESH_INTERVAL;
         }
         return prev - 1;
@@ -226,6 +226,20 @@ export default function MonitorProducao() {
     },
   });
 
+  // Public portal orders
+  const { data: pedidosPublicos } = useQuery({
+    queryKey: ["monitor-pedidos-publicos"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("pedidos_publicos")
+        .select("*")
+        .eq("status", "pendente")
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   useMonitorAlerts(pedidos, soundEnabled);
   const totalGelos = (gelos || []).reduce((s: number, g: any) => s + (g.quantidade || 0), 0);
 
@@ -233,9 +247,98 @@ export default function MonitorProducao() {
     const channel = supabase.channel("monitor-pedidos-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "pedidos_producao" }, () => {
         queryClient.invalidateQueries({ queryKey: ["monitor-pedidos"] });
-      }).subscribe();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "pedidos_publicos" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["monitor-pedidos-publicos"] });
+      })
+      .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [queryClient]);
+
+  // Approve public order → create client + pedido_producao
+  const approvePublicOrder = useMutation({
+    mutationFn: async (order: any) => {
+      // 1. Find or create client by phone
+      let clienteId: string;
+      const { data: existingClient } = await supabase
+        .from("clientes")
+        .select("id")
+        .eq("telefone", order.telefone)
+        .maybeSingle();
+
+      if (existingClient) {
+        clienteId = existingClient.id;
+      } else {
+        const { data: newClient, error: clientError } = await supabase
+          .from("clientes")
+          .insert({
+            nome: order.nome_cliente,
+            telefone: order.telefone,
+            endereco: order.endereco,
+            bairro: order.bairro,
+          })
+          .select("id")
+          .single();
+        if (clientError) throw clientError;
+        clienteId = newClient.id;
+      }
+
+      // 2. Create pedido_producao
+      const now = new Date();
+      now.setHours(now.getHours() + 2); // default delivery in 2h
+      const { data: pedido, error: pedidoError } = await supabase
+        .from("pedidos_producao")
+        .insert({
+          cliente_id: clienteId,
+          data_entrega: now.toISOString(),
+          operador: "portal",
+          observacoes: `🌐 Portal | ${order.forma_pagamento?.toUpperCase()} | ${order.endereco}, ${order.bairro}${order.observacoes ? ` | ${order.observacoes}` : ""}`,
+          tipo_pedido: "entrega",
+          status: "aguardando_producao",
+          status_pagamento: order.forma_pagamento === "fiado" ? "fiado" : "aguardando_pagamento",
+        } as any)
+        .select("id")
+        .single();
+      if (pedidoError) throw pedidoError;
+
+      // 3. Create pedido items
+      const itens = order.itens || [];
+      for (const item of itens) {
+        await (supabase as any).from("pedido_producao_itens").insert({
+          pedido_id: pedido.id,
+          sabor_id: item.sabor_id,
+          quantidade: item.quantidade,
+        });
+      }
+
+      // 4. Mark public order as approved
+      await (supabase as any)
+        .from("pedidos_publicos")
+        .update({ status: "aprovado" })
+        .eq("id", order.id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["monitor-pedidos"] });
+      queryClient.invalidateQueries({ queryKey: ["monitor-pedidos-publicos"] });
+      toast({ title: "✅ Pedido aprovado!", description: "Criado no monitor para separação." });
+    },
+    onError: (err: any) => {
+      toast({ title: "Erro ao aprovar", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const rejectPublicOrder = useMutation({
+    mutationFn: async (orderId: string) => {
+      await (supabase as any)
+        .from("pedidos_publicos")
+        .update({ status: "rejeitado" })
+        .eq("id", orderId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["monitor-pedidos-publicos"] });
+      toast({ title: "Pedido recusado" });
+    },
+  });
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
@@ -564,11 +667,112 @@ export default function MonitorProducao() {
         </div>
       )}
 
+      {/* 🌐 Portal Orders - Pending Approval */}
+      {(pedidosPublicos || []).length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2.5">
+            <Globe className="h-4 w-4 text-cyan-500" />
+            <h2 className={`${tv ? "text-lg" : "text-base"} font-bold text-foreground`}>Pedidos do Portal</h2>
+            <span className="text-xs font-bold bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 px-2 py-0.5 rounded-full animate-pulse">
+              {(pedidosPublicos || []).length} novo(s)
+            </span>
+          </div>
+          <div className={`grid gap-4 ${tv ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1 md:grid-cols-2"}`}>
+            {(pedidosPublicos || []).map((order: any, i: number) => {
+              const pagLabels: Record<string, string> = { dinheiro: "💵 Dinheiro", pix: "📱 PIX", cartao: "💳 Cartão", fiado: "📝 Fiado" };
+              const itens = order.itens || [];
+              return (
+                <div key={order.id} className="rounded-2xl overflow-hidden shadow-lg shadow-cyan-500/10 bg-card border border-cyan-500/30 animate-fade-in" style={{ animationDelay: `${i * 60}ms` }}>
+                  {/* Header */}
+                  <div className="bg-gradient-to-r from-cyan-500 to-teal-500 px-5 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-4 w-4 text-white" />
+                      <span className="font-black text-white text-sm tracking-widest uppercase">🌐 PORTAL</span>
+                    </div>
+                    <span className="text-xs text-white/80 font-medium">
+                      {formatDistanceToNow(new Date(order.created_at), { locale: ptBR, addSuffix: true })}
+                    </span>
+                  </div>
+
+                  <div className="px-5 pt-4 pb-3">
+                    {/* Client info */}
+                    <div className="flex items-center gap-2.5 mb-3">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center">
+                        <User className="h-4 w-4 text-white" />
+                      </div>
+                      <div>
+                        <h3 className={`${tv ? "text-xl" : "text-base"} font-extrabold text-foreground leading-tight`}>
+                          {order.nome_cliente}
+                        </h3>
+                        <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> {order.telefone}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Address & payment */}
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mb-3">
+                      <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5 text-cyan-500" /> {order.endereco}, {order.bairro}</span>
+                      <span className="flex items-center gap-1"><CreditCard className="h-3.5 w-3.5" /> {pagLabels[order.forma_pagamento] || order.forma_pagamento}</span>
+                    </div>
+
+                    {order.observacoes && (
+                      <div className="flex items-start gap-2 text-xs p-2.5 mb-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                        <MessageSquare className="h-3.5 w-3.5 mt-0.5 text-amber-600 shrink-0" />
+                        <span className="text-amber-700 dark:text-amber-300">{order.observacoes}</span>
+                      </div>
+                    )}
+
+                    {/* Items */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">Itens</span>
+                        <span className="text-xs font-extrabold bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 px-2.5 py-0.5 rounded-full">
+                          {order.total_itens} un · R$ {Number(order.valor_total).toFixed(2)}
+                        </span>
+                      </div>
+                      {itens.map((item: any, idx: number) => (
+                        <div key={idx} className="flex items-center gap-3 rounded-xl px-3 py-2 bg-muted/30">
+                          <div className={`w-2 h-2 rounded-full ${getSaborDot(item.nome)} shrink-0`} />
+                          <span className="flex-1 text-[13px] font-semibold text-foreground">{item.nome}</span>
+                          <span className="text-lg font-black tabular-nums text-foreground">{item.quantidade}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Approval actions */}
+                  <div className="px-4 py-3 bg-muted/20 border-t border-border/50 flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      className="flex-1 gap-1.5 font-bold text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-9"
+                      onClick={() => approvePublicOrder.mutate(order)}
+                      disabled={approvePublicOrder.isPending}
+                    >
+                      <ThumbsUp className="h-3.5 w-3.5" /> Aprovar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 gap-1.5 font-bold text-xs border-red-300 text-red-700 hover:bg-red-50 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-950 rounded-xl h-9"
+                      onClick={() => rejectPublicOrder.mutate(order.id)}
+                      disabled={rejectPublicOrder.isPending}
+                    >
+                      <ThumbsDown className="h-3.5 w-3.5" /> Recusar
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
           <div className="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
         </div>
-      ) : !pedidos?.length ? (
+      ) : !pedidos?.length && !(pedidosPublicos || []).length ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="w-20 h-20 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
             <Monitor className="h-10 w-10 text-muted-foreground/30" />
