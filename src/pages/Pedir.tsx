@@ -310,7 +310,7 @@ export default function Pedir() {
               {/* Trust badges */}
               <div className="flex flex-wrap justify-center gap-3 mb-10">
                 {[
-                  { icon: Snowflake, text: "100% Natural" },
+                  { icon: Snowflake, text: "100% Saborizado" },
                   { icon: Truck, text: "Entrega Rápida" },
                   { icon: Star, text: "+500 Clientes" },
                 ].map((b) => (
