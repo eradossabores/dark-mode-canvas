@@ -41,6 +41,11 @@ export default function EditDayProducoesDialog({ open, onOpenChange, dayItems, s
   const [newDate, setNewDate] = useState<Date>(new Date());
   const [loading, setLoading] = useState(false);
   const [loadingFuncs, setLoadingFuncs] = useState(true);
+  // Global collaborators for the whole day
+  const [globalFuncIds, setGlobalFuncIds] = useState<string[]>([]);
+
+  const PATROES_ID = "patroes";
+  const allOptions = [{ id: PATROES_ID, nome: "👑 Patrões" }, ...funcionarios];
 
   useEffect(() => {
     if (open && dayItems.length > 0) {
@@ -52,12 +57,16 @@ export default function EditDayProducoesDialog({ open, onOpenChange, dayItems, s
 
   async function loadFuncionarios() {
     setLoadingFuncs(true);
+    // Collect unique func ids from all productions of the day
+    const allFuncIds = new Set<string>();
     const mapped: EditableProd[] = [];
     for (const p of dayItems) {
       const { data } = await (supabase as any)
         .from("producao_funcionarios")
         .select("funcionario_id")
         .eq("producao_id", p.id);
+      const ids: string[] = data?.length ? data.map((d: any) => d.funcionario_id) : [];
+      ids.forEach(id => allFuncIds.add(id));
       mapped.push({
         id: p.id,
         sabor_id: p.sabor_id,
@@ -67,9 +76,14 @@ export default function EditDayProducoesDialog({ open, onOpenChange, dayItems, s
         quantidade_total: p.quantidade_total || 84,
         observacoes: p.observacoes || "",
         operador: p.operador || "",
-        funcIds: data?.length ? data.map((d: any) => d.funcionario_id) : [],
+        funcIds: ids,
       });
     }
+    // Check if "patroes" was stored in operador field
+    const hasPatroes = dayItems.some((p: any) => (p.operador || "").toLowerCase().includes("patr"));
+    if (hasPatroes) allFuncIds.add(PATROES_ID);
+    
+    setGlobalFuncIds(allFuncIds.size > 0 ? [...allFuncIds] : []);
     setItems(mapped);
     setLoadingFuncs(false);
   }
@@ -78,7 +92,6 @@ export default function EditDayProducoesDialog({ open, onOpenChange, dayItems, s
     setItems(prev => {
       const updated = [...prev];
       const item = { ...updated[idx], [field]: value };
-      // Auto-calculate total when lotes change
       if (field === "quantidade_lotes" && item.modo === "lote") {
         item.quantidade_total = value * 84;
       }
@@ -90,40 +103,20 @@ export default function EditDayProducoesDialog({ open, onOpenChange, dayItems, s
     });
   }
 
-  function updateFuncList(idx: number, funcIds: string[]) {
-    setItems(prev => {
-      const updated = [...prev];
-      updated[idx] = { ...updated[idx], funcIds };
-      return updated;
-    });
-  }
-
-  function addFunc(idx: number) {
-    const item = items[idx];
-    updateFuncList(idx, [...item.funcIds, ""]);
-  }
-
-  function removeFunc(itemIdx: number, funcIdx: number) {
-    const item = items[itemIdx];
-    updateFuncList(itemIdx, item.funcIds.filter((_, i) => i !== funcIdx));
-  }
-
-  function updateFunc(itemIdx: number, funcIdx: number, val: string) {
-    const item = items[itemIdx];
-    const list = [...item.funcIds];
-    list[funcIdx] = val;
-    updateFuncList(itemIdx, list);
-  }
-
   async function handleSaveAll() {
     setLoading(true);
     try {
+      const validFuncs = globalFuncIds.filter(f => f !== "" && f !== PATROES_ID);
+      const hasPatroes = globalFuncIds.includes(PATROES_ID);
+      const nomes: string[] = [];
+      if (hasPatroes) nomes.push("👑 Patrões");
+      validFuncs.forEach(f => {
+        const fn = funcionarios.find((fn: any) => fn.id === f);
+        if (fn) nomes.push(fn.nome);
+      });
+      const operadorStr = nomes.join(", ") || "sistema";
+
       for (const item of items) {
-        const validFuncs = item.funcIds.filter(f => f !== "");
-        const nomesFuncionarios = validFuncs
-          .map(f => funcionarios.find(fn => fn.id === f)?.nome)
-          .filter(Boolean)
-          .join(", ");
         const finalTotal = item.modo === "lote" ? item.quantidade_lotes * 84 : item.quantidade_total;
 
         const { error } = await (supabase as any).from("producoes").update({
@@ -132,12 +125,12 @@ export default function EditDayProducoesDialog({ open, onOpenChange, dayItems, s
           quantidade_lotes: item.modo === "lote" ? item.quantidade_lotes : 0,
           quantidade_total: finalTotal,
           observacoes: item.observacoes || null,
-          operador: nomesFuncionarios || item.operador || "sistema",
+          operador: operadorStr,
           created_at: newDate.toISOString(),
         }).eq("id", item.id);
         if (error) throw error;
 
-        // Update funcionarios
+        // Update funcionarios for all productions with the same global list
         await (supabase as any).from("producao_funcionarios").delete().eq("producao_id", item.id);
         if (validFuncs.length > 0) {
           await (supabase as any).from("producao_funcionarios").insert(
@@ -239,28 +232,40 @@ export default function EditDayProducoesDialog({ open, onOpenChange, dayItems, s
                   </div>
                 </div>
 
-                {/* Funcionários */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <Label className="text-xs">Responsáveis</Label>
-                    <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => addFunc(idx)}>
-                      <Plus className="h-3 w-3 mr-1" />Add
-                    </Button>
-                  </div>
-                  {item.funcIds.map((f, fi) => (
-                    <div key={fi} className="flex gap-2 mb-1">
-                      <Select value={f} onValueChange={(v) => updateFunc(idx, fi, v)}>
-                        <SelectTrigger className="flex-1 h-8 text-xs"><SelectValue placeholder="Colaborador" /></SelectTrigger>
-                        <SelectContent>{funcionarios.map(fn => <SelectItem key={fn.id} value={fn.id}>{fn.nome}</SelectItem>)}</SelectContent>
-                      </Select>
-                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => removeFunc(idx, fi)}>
-                        <Trash2 className="h-3 w-3 text-destructive" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
               </div>
             ))}
+
+            {/* Responsáveis do Dia (global) */}
+            <div className="rounded-lg border bg-primary/5 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-semibold">👥 Responsáveis do Dia</Label>
+                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setGlobalFuncIds([...globalFuncIds, ""])}>
+                  <Plus className="h-3 w-3 mr-1" />Add
+                </Button>
+              </div>
+              {globalFuncIds.length === 0 && (
+                <p className="text-xs text-muted-foreground">Nenhum responsável adicionado. Clique em + Add.</p>
+              )}
+              {globalFuncIds.map((f, fi) => (
+                <div key={fi} className="flex gap-2">
+                  <Select value={f} onValueChange={(v) => {
+                    const list = [...globalFuncIds];
+                    list[fi] = v;
+                    setGlobalFuncIds(list);
+                  }}>
+                    <SelectTrigger className="flex-1 h-8 text-xs"><SelectValue placeholder="Colaborador" /></SelectTrigger>
+                    <SelectContent>
+                      {allOptions.map(fn => (
+                        <SelectItem key={fn.id} value={fn.id}>{fn.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setGlobalFuncIds(globalFuncIds.filter((_, i) => i !== fi))}>
+                    <Trash2 className="h-3 w-3 text-destructive" />
+                  </Button>
+                </div>
+              ))}
+            </div>
 
             <Button className="w-full" onClick={handleSaveAll} disabled={loading}>
               {loading ? (
