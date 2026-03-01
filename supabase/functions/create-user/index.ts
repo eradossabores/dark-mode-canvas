@@ -1,17 +1,12 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsResponse = handleCors(req);
+  if (corsResponse) return corsResponse;
+  const corsHeaders = getCorsHeaders(req);
 
   try {
-    // Verify the calling user is admin
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Não autorizado" }), {
@@ -24,7 +19,6 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Verify caller is admin using their token
     const callerClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -36,7 +30,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check if caller is admin
     const adminClient = createClient(supabaseUrl, serviceKey);
     const { data: roleData } = await adminClient
       .from("user_roles")
@@ -61,7 +54,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Create user with service role (bypasses signup restrictions)
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
       email,
       password,
@@ -76,7 +68,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Assign role
     const { error: roleError } = await adminClient
       .from("user_roles")
       .insert({ user_id: newUser.user.id, role });
