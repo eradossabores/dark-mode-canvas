@@ -400,57 +400,78 @@ export default function Pedir() {
                 </div>
 
                 {/* TABELA DE PACOTES / PREÇOS */}
-                <div className="mb-8 rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/5 via-card to-accent/5 p-5 shadow-lg">
-                  <div className="text-center mb-4">
-                    <h3 className="text-lg font-black text-foreground flex items-center justify-center gap-2">
-                      🔥 Quanto mais, mais barato!
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-1">Preço por unidade diminui conforme a quantidade</p>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {[...FAIXAS_PRECO].reverse().map((f) => {
-                      const isActive = faixaAtual === f && totalItens > 0;
-                      return (
-                        <div
-                          key={f.min}
-                          className={`
-                            relative rounded-xl border-2 p-3 text-center transition-all duration-300
-                            ${isActive
-                              ? "border-primary bg-primary/10 shadow-md shadow-primary/20 scale-105"
-                              : "border-border/60 bg-card/80 hover:border-primary/30"
-                            }
-                          `}
-                        >
-                          {f.destaque && (
-                            <span className={`
-                              absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-bold px-2 py-0.5 rounded-full
-                              ${isActive ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}
-                            `}>
-                              {f.destaque}
-                            </span>
-                          )}
-                          <p className="text-[11px] text-muted-foreground mt-1 font-medium">{f.label}</p>
-                          <p className={`text-2xl font-black mt-1 ${isActive ? "text-primary" : "text-foreground"}`}>
-                            R$ {f.preco.toFixed(2).replace('.', ',')}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground">por unidade</p>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Progress hint */}
-                  {totalItens > 0 && proximaFaixa && (
-                    <div className="mt-4 text-center">
-                      <div className="inline-flex items-center gap-2 rounded-full bg-accent/15 border border-accent/30 px-4 py-2">
-                        <Sparkles className="h-4 w-4 text-accent-foreground" />
-                        <span className="text-sm font-semibold text-accent-foreground">
-                          Adicione mais <strong>{faltamParaProxima}</strong> un e pague apenas <strong>R$ {proximaFaixa.preco.toFixed(2).replace('.', ',')}</strong>/un!
-                        </span>
-                      </div>
+                <div className="mb-8 rounded-3xl overflow-hidden shadow-xl relative">
+                  {/* Gradient background */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600" />
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.15),transparent_50%)]" />
+                  
+                  <div className="relative p-5 pb-6">
+                    <div className="text-center mb-5">
+                      <h3 className="text-xl font-black text-white flex items-center justify-center gap-2">
+                        🔥 Quanto mais, mais barato!
+                      </h3>
+                      <p className="text-xs text-white/70 mt-1">Preço por unidade diminui conforme a quantidade</p>
                     </div>
-                  )}
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {[
+                        { ...FAIXAS_PRECO[3], emoji: "🧊", color: "from-slate-50 to-white", ring: "ring-slate-200", economia: "" },
+                        { ...FAIXAS_PRECO[2], emoji: "📦", color: "from-emerald-50 to-white", ring: "ring-emerald-300", economia: "~20% off" },
+                        { ...FAIXAS_PRECO[1], emoji: "👨‍👩‍👧‍👦", color: "from-amber-50 to-white", ring: "ring-amber-400", economia: "~50% off" },
+                        { ...FAIXAS_PRECO[0], emoji: "🎉", color: "from-rose-50 to-white", ring: "ring-rose-400", economia: "~60% off" },
+                      ].map((f, i) => {
+                        const isActive = faixaAtual.min === f.min && totalItens > 0;
+                        const isBest = f.min === 30;
+                        return (
+                          <div
+                            key={f.min}
+                            className={`
+                              relative rounded-2xl bg-gradient-to-b ${f.color} p-3.5 text-center transition-all duration-300
+                              ring-2 ${isActive ? "ring-white shadow-lg shadow-white/30 scale-[1.06]" : f.ring}
+                              ${isBest ? "sm:-mt-2 sm:mb-[-8px]" : ""}
+                            `}
+                          >
+                            {f.destaque && (
+                              <span className={`
+                                absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full whitespace-nowrap shadow-sm
+                                ${isBest 
+                                  ? "bg-gradient-to-r from-amber-400 to-orange-500 text-white" 
+                                  : f.min === 100 
+                                    ? "bg-gradient-to-r from-rose-500 to-pink-500 text-white"
+                                    : "bg-gradient-to-r from-emerald-400 to-teal-500 text-white"
+                                }
+                              `}>
+                                {f.destaque}
+                              </span>
+                            )}
+                            <div className="text-2xl mt-1 mb-1">{f.emoji}</div>
+                            <p className="text-[11px] text-slate-500 font-semibold">{f.label}</p>
+                            <p className={`text-2xl font-black mt-1 ${isActive ? "text-purple-600" : "text-slate-800"}`}>
+                              R$ {f.preco.toFixed(2).replace('.', ',')}
+                            </p>
+                            <p className="text-[10px] text-slate-400 font-medium">por unidade</p>
+                            {f.economia && (
+                              <p className="text-[10px] font-bold text-emerald-600 mt-1 bg-emerald-50 rounded-full px-2 py-0.5 mx-auto inline-block">
+                                {f.economia}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Progress hint */}
+                    {totalItens > 0 && proximaFaixa && (
+                      <div className="mt-4 text-center">
+                        <div className="inline-flex items-center gap-2 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 px-4 py-2">
+                          <Sparkles className="h-4 w-4 text-yellow-300" />
+                          <span className="text-sm font-semibold text-white">
+                            +<strong>{faltamParaProxima}</strong> un → <strong>R$ {proximaFaixa.preco.toFixed(2).replace('.', ',')}</strong>/un 🎯
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {loading ? (
