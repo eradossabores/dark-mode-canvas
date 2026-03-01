@@ -109,7 +109,19 @@ const pedidoSchema = z.object({
   observacoes: z.string().max(500).optional(),
 });
 
-const PRECO_UNITARIO = 4.99;
+const FAIXAS_PRECO = [
+  { min: 100, preco: 1.99, label: "100+ un", destaque: "Atacado" },
+  { min: 30, preco: 2.50, label: "30+ un", destaque: "Popular" },
+  { min: 10, preco: 3.99, label: "10+ un", destaque: "Econômico" },
+  { min: 1, preco: 4.99, label: "1-9 un", destaque: "" },
+];
+
+function getPrecoUnitario(qtd: number): number {
+  for (const f of FAIXAS_PRECO) {
+    if (qtd >= f.min) return f.preco;
+  }
+  return 4.99;
+}
 
 export default function Pedir() {
   const [sabores, setSabores] = useState<Sabor[]>([]);
@@ -192,8 +204,12 @@ export default function Pedir() {
 
 
   const totalItens = cart.reduce((s, i) => s + i.quantidade, 0);
-  const totalValor = cart.reduce((s, i) => s + i.quantidade * PRECO_UNITARIO, 0);
+  const precoAtual = getPrecoUnitario(totalItens);
+  const totalValor = totalItens * precoAtual;
   const getQty = (id: string) => cart.find((i) => i.sabor_id === id)?.quantidade ?? 0;
+  const faixaAtual = FAIXAS_PRECO.find(f => totalItens >= f.min) || FAIXAS_PRECO[FAIXAS_PRECO.length - 1];
+  const proximaFaixa = FAIXAS_PRECO.find(f => f.min > totalItens && f.preco < precoAtual);
+  const faltamParaProxima = proximaFaixa ? proximaFaixa.min - totalItens : 0;
 
   const scrollToCatalogo = () => {
     setStep("catalogo");
@@ -220,7 +236,7 @@ export default function Pedir() {
     };
 
     const itensText = cart
-      .map((i) => `  • ${i.nome} — ${i.quantidade} un (R$ ${(i.quantidade * PRECO_UNITARIO).toFixed(2)})`)
+      .map((i) => `  • ${i.nome} — ${i.quantidade} un (R$ ${(i.quantidade * precoAtual).toFixed(2)})`)
       .join("\n");
 
     const msg = [
@@ -234,7 +250,7 @@ export default function Pedir() {
       `🛒 *Itens do Pedido:*`,
       itensText,
       ``,
-      `📦 *Total:* ${totalItens} unidades`,
+      `📦 *Total:* ${totalItens} unidades (R$ ${precoAtual.toFixed(2)}/un)`,
       `💰 *Valor Total:* R$ ${totalValor.toFixed(2)}`,
       ``,
       `💳 *Pagamento:* ${pagLabel[formaPagamento] ?? formaPagamento}`,
@@ -383,6 +399,60 @@ export default function Pedir() {
                   </p>
                 </div>
 
+                {/* TABELA DE PACOTES / PREÇOS */}
+                <div className="mb-8 rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/5 via-card to-accent/5 p-5 shadow-lg">
+                  <div className="text-center mb-4">
+                    <h3 className="text-lg font-black text-foreground flex items-center justify-center gap-2">
+                      🔥 Quanto mais, mais barato!
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">Preço por unidade diminui conforme a quantidade</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {[...FAIXAS_PRECO].reverse().map((f) => {
+                      const isActive = faixaAtual === f && totalItens > 0;
+                      return (
+                        <div
+                          key={f.min}
+                          className={`
+                            relative rounded-xl border-2 p-3 text-center transition-all duration-300
+                            ${isActive
+                              ? "border-primary bg-primary/10 shadow-md shadow-primary/20 scale-105"
+                              : "border-border/60 bg-card/80 hover:border-primary/30"
+                            }
+                          `}
+                        >
+                          {f.destaque && (
+                            <span className={`
+                              absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-bold px-2 py-0.5 rounded-full
+                              ${isActive ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}
+                            `}>
+                              {f.destaque}
+                            </span>
+                          )}
+                          <p className="text-[11px] text-muted-foreground mt-1 font-medium">{f.label}</p>
+                          <p className={`text-2xl font-black mt-1 ${isActive ? "text-primary" : "text-foreground"}`}>
+                            R$ {f.preco.toFixed(2).replace('.', ',')}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">por unidade</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Progress hint */}
+                  {totalItens > 0 && proximaFaixa && (
+                    <div className="mt-4 text-center">
+                      <div className="inline-flex items-center gap-2 rounded-full bg-accent/15 border border-accent/30 px-4 py-2">
+                        <Sparkles className="h-4 w-4 text-accent-foreground" />
+                        <span className="text-sm font-semibold text-accent-foreground">
+                          Adicione mais <strong>{faltamParaProxima}</strong> un e pague apenas <strong>R$ {proximaFaixa.preco.toFixed(2).replace('.', ',')}</strong>/un!
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {loading ? (
                   <div className="flex flex-col items-center justify-center py-16 gap-3">
                     <Snowflake className="h-10 w-10 text-primary animate-spin" />
@@ -429,7 +499,7 @@ export default function Pedir() {
                                   {s.nome}
                                 </p>
                                 <p className="text-primary font-black text-lg mt-0.5">
-                                  R$ {PRECO_UNITARIO.toFixed(2)}
+                                  R$ {precoAtual.toFixed(2)}
                                 </p>
                                 <p className="text-[10px] text-muted-foreground">
                                   {s.estoque} un disponíveis
@@ -546,7 +616,7 @@ export default function Pedir() {
                       <span className="mr-1.5">{getSaborEmoji(i.nome)}</span>
                       {i.nome} <span className="text-muted-foreground">× {i.quantidade}</span>
                     </span>
-                    <span className="font-semibold text-foreground">R$ {(i.quantidade * PRECO_UNITARIO).toFixed(2)}</span>
+                    <span className="font-semibold text-foreground">R$ {(i.quantidade * precoAtual).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
