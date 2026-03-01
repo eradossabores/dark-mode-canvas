@@ -774,6 +774,57 @@ export type Database = {
           },
         ]
       }
+      pedidos_publicos: {
+        Row: {
+          bairro: string
+          created_at: string
+          endereco: string
+          forma_pagamento: string
+          id: string
+          itens: Json
+          nome_cliente: string
+          observacoes: string | null
+          preco_unitario: number
+          status: string
+          telefone: string
+          total_itens: number
+          updated_at: string
+          valor_total: number
+        }
+        Insert: {
+          bairro: string
+          created_at?: string
+          endereco: string
+          forma_pagamento?: string
+          id?: string
+          itens?: Json
+          nome_cliente: string
+          observacoes?: string | null
+          preco_unitario?: number
+          status?: string
+          telefone: string
+          total_itens?: number
+          updated_at?: string
+          valor_total?: number
+        }
+        Update: {
+          bairro?: string
+          created_at?: string
+          endereco?: string
+          forma_pagamento?: string
+          id?: string
+          itens?: Json
+          nome_cliente?: string
+          observacoes?: string | null
+          preco_unitario?: number
+          status?: string
+          telefone?: string
+          total_itens?: number
+          updated_at?: string
+          valor_total?: number
+        }
+        Relationships: []
+      }
       producao_funcionarios: {
         Row: {
           funcionario_id: string
