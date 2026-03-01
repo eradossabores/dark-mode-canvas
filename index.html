@@ -13,9 +13,13 @@
     <!-- Security Headers -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://*.lovable.app; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co https://*.tile.openstreetmap.org https://unpkg.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://ai.gateway.lovable.dev; frame-ancestors 'self'; base-uri 'self'; form-action 'self';" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
-    <meta http-equiv="X-Frame-Options" content="SAMEORIGIN" />
+    <meta http-equiv="X-Frame-Options" content="DENY" />
     <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin" />
+    <meta http-equiv="Cross-Origin-Embedder-Policy" content="credentialless" />
+    <meta http-equiv="Cross-Origin-Resource-Policy" content="same-origin" />
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(self), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()" />
     <title>A Era dos Sabores | Gelo Saborizado em Boa Vista, Roraima</title>
     <meta name="description" content="Fábrica de gelo saborizado artesanal em Boa Vista, Roraima. Morango, maracujá, maçã verde e mais. Peça agora!" />
     <meta name="author" content="A Era dos Sabores" />

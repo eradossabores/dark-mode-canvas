@@ -1,0 +1,5 @@
+Contact: mailto:seguranca@aeradossabores.online
+Expires: 2027-03-01T00:00:00.000Z
+Preferred-Languages: pt-BR, en
+Canonical: https://aeradossabores.online/.well-known/security.txt
+Policy: https://aeradossabores.online/politica-de-seguranca
