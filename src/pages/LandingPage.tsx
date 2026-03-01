@@ -359,6 +359,108 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ─── TABELA DE PREÇOS / PACOTES ─── */}
+      <section className="py-20 md:py-28 bg-gradient-to-b from-accent/5 via-background to-primary/5 relative overflow-hidden">
+        {/* Decorative blurs */}
+        <div className="absolute top-10 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-10 right-10 w-72 h-72 bg-accent/10 rounded-full blur-3xl" />
+
+        <div className="relative max-w-5xl mx-auto px-6">
+          <div className="text-center mb-14">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent/15 text-accent-foreground text-sm font-semibold mb-4 border border-accent/20">
+              <TrendingUp className="h-4 w-4" />
+              Quanto mais, mais barato!
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold mb-3">
+              Nossos <span className="text-primary">Pacotes</span>
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+              Preço por unidade que cabe no bolso. Compre mais e economize!
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+            {/* Pacote 1 - Unitário */}
+            <div className="relative rounded-2xl border-2 border-border bg-card p-6 text-center transition-all hover:shadow-lg hover:-translate-y-1 hover:border-primary/30">
+              <div className="text-4xl mb-3">🧊</div>
+              <p className="text-sm font-semibold text-muted-foreground mb-1">1 a 9 unidades</p>
+              <div className="my-3">
+                <span className="text-4xl font-black text-foreground">R$ 4,99</span>
+              </div>
+              <p className="text-xs text-muted-foreground">por unidade</p>
+              <Link to="/pedir" className="block mt-5">
+                <Button variant="outline" size="sm" className="w-full gap-1.5 rounded-full">
+                  Pedir <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+              </Link>
+            </div>
+
+            {/* Pacote 2 - 10+ */}
+            <div className="relative rounded-2xl border-2 border-border bg-card p-6 text-center transition-all hover:shadow-lg hover:-translate-y-1 hover:border-primary/30">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <span className="bg-secondary text-secondary-foreground text-[11px] font-bold px-3 py-1 rounded-full">Econômico</span>
+              </div>
+              <div className="text-4xl mb-3">📦</div>
+              <p className="text-sm font-semibold text-muted-foreground mb-1">A partir de 10 un</p>
+              <div className="my-3">
+                <span className="text-4xl font-black text-foreground">R$ 3,99</span>
+              </div>
+              <p className="text-xs text-muted-foreground">por unidade</p>
+              <p className="text-xs text-primary font-semibold mt-1">Economize 20%</p>
+              <Link to="/pedir" className="block mt-4">
+                <Button variant="outline" size="sm" className="w-full gap-1.5 rounded-full">
+                  Pedir <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+              </Link>
+            </div>
+
+            {/* Pacote 3 - 30+ (DESTAQUE) */}
+            <div className="relative rounded-2xl border-2 border-primary bg-gradient-to-b from-primary/10 to-card p-6 text-center shadow-xl shadow-primary/10 scale-105 transition-all hover:-translate-y-1">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <span className="bg-primary text-primary-foreground text-[11px] font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                  <Star className="h-3 w-3" /> Mais Popular
+                </span>
+              </div>
+              <div className="text-4xl mb-3">🔥</div>
+              <p className="text-sm font-semibold text-muted-foreground mb-1">A partir de 30 un</p>
+              <div className="my-3">
+                <span className="text-4xl font-black text-primary">R$ 2,50</span>
+              </div>
+              <p className="text-xs text-muted-foreground">por unidade</p>
+              <p className="text-xs text-primary font-semibold mt-1">Economize 50%</p>
+              <Link to="/pedir" className="block mt-4">
+                <Button size="sm" className="w-full gap-1.5 rounded-full shadow-md">
+                  Pedir Agora <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+              </Link>
+            </div>
+
+            {/* Pacote 4 - 100+ */}
+            <div className="relative rounded-2xl border-2 border-accent/50 bg-gradient-to-b from-accent/10 to-card p-6 text-center transition-all hover:shadow-lg hover:-translate-y-1 hover:border-accent">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <span className="bg-accent text-accent-foreground text-[11px] font-bold px-3 py-1 rounded-full">Atacado</span>
+              </div>
+              <div className="text-4xl mb-3">🚛</div>
+              <p className="text-sm font-semibold text-muted-foreground mb-1">A partir de 100 un</p>
+              <div className="my-3">
+                <span className="text-4xl font-black text-accent-foreground">R$ 1,99</span>
+              </div>
+              <p className="text-xs text-muted-foreground">por unidade</p>
+              <p className="text-xs text-accent-foreground font-semibold mt-1">Economize 60%</p>
+              <Link to="/pedir" className="block mt-4">
+                <Button variant="outline" size="sm" className="w-full gap-1.5 rounded-full border-accent/50 hover:bg-accent/10">
+                  Pedir <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          <p className="text-center text-sm text-muted-foreground mt-8">
+            💡 Misture sabores à vontade! O desconto vale para o total de unidades do pedido.
+          </p>
+        </div>
+      </section>
+
       {/* ─── BENEFÍCIOS ─── */}
       <section id="beneficios" className="py-20 md:py-28 bg-gradient-to-b from-primary/5 to-background">
         <div className="max-w-7xl mx-auto px-6">
