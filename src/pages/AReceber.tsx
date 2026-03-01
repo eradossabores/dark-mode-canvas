@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { DollarSign, CheckCircle, AlertTriangle, MinusCircle, History } from "lucide-react";
+import { DollarSign, CheckCircle, AlertTriangle, MinusCircle, History, Search } from "lucide-react";
 
 export default function AReceber() {
   const [vendas, setVendas] = useState<any[]>([]);
@@ -17,6 +17,7 @@ export default function AReceber() {
   const [valorAbater, setValorAbater] = useState("");
   const [historicoVenda, setHistoricoVenda] = useState<any>(null);
   const [historico, setHistorico] = useState<any[]>([]);
+  const [busca, setBusca] = useState("");
 
   useEffect(() => { loadData(); }, []);
 
@@ -116,13 +117,28 @@ export default function AReceber() {
   }
 
   const hoje = new Date().toISOString().split("T")[0];
-  const totalPendente = vendas.reduce((s, v) => s + (Number(v.total) - Number(v.valor_pago || 0)), 0);
-  const vencidas = vendas.filter(v => v.created_at.split("T")[0] < hoje);
+  const buscaLower = busca.toLowerCase().trim();
+  const vendasFiltradas = buscaLower
+    ? vendas.filter(v => v.clientes?.nome?.toLowerCase().includes(buscaLower))
+    : vendas;
+  const totalPendente = vendasFiltradas.reduce((s, v) => s + (Number(v.total) - Number(v.valor_pago || 0)), 0);
+  const vencidas = vendasFiltradas.filter(v => v.created_at.split("T")[0] < hoje);
   const totalVencido = vencidas.reduce((s, v) => s + (Number(v.total) - Number(v.valor_pago || 0)), 0);
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">A Receber</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <h1 className="text-2xl font-bold">A Receber</h1>
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por cliente..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+      </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -133,7 +149,7 @@ export default function AReceber() {
           </CardHeader>
           <CardContent>
             <p className="text-xl font-bold">R$ {totalPendente.toFixed(2)}</p>
-            <p className="text-xs text-muted-foreground">{vendas.length} venda(s)</p>
+            <p className="text-xs text-muted-foreground">{vendasFiltradas.length} venda(s)</p>
           </CardContent>
         </Card>
         <Card>
@@ -153,7 +169,7 @@ export default function AReceber() {
           </CardHeader>
           <CardContent>
             <p className="text-xl font-bold">R$ {(totalPendente - totalVencido).toFixed(2)}</p>
-            <p className="text-xs text-muted-foreground">{vendas.length - vencidas.length} venda(s)</p>
+            <p className="text-xs text-muted-foreground">{vendasFiltradas.length - vencidas.length} venda(s)</p>
           </CardContent>
         </Card>
       </div>
@@ -176,7 +192,7 @@ export default function AReceber() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {vendas.map((v) => {
+              {vendasFiltradas.map((v) => {
                 const isVencida = v.created_at.split("T")[0] < hoje;
                 const pago = Number(v.valor_pago || 0);
                 const total = Number(v.total);
@@ -228,7 +244,7 @@ export default function AReceber() {
                   </TableRow>
                 );
               })}
-              {vendas.length === 0 && !loading && (
+              {vendasFiltradas.length === 0 && !loading && (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center text-muted-foreground">
                     Nenhuma venda pendente. 🎉
