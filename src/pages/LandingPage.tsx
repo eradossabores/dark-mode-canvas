@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
-import { LogIn } from "lucide-react";
+import { LogIn, ShoppingCart } from "lucide-react";
 import {
   IceCream, Droplets, Sparkles, Leaf, Star, Send, MapPin, Phone, Mail,
   ArrowRight, Instagram, Facebook, ChevronRight, ThermometerSnowflake, Heart,
@@ -160,6 +160,7 @@ export default function LandingPage() {
             <a href="#beneficios" className="hover:text-foreground transition-colors">Benefícios</a>
             <a href="#compromisso" className="hover:text-foreground transition-colors">Compromisso Local</a>
             <a href="#contato" className="hover:text-foreground transition-colors">Contato</a>
+            <Link to="/pedir" className="hover:text-foreground transition-colors text-primary font-semibold">Peça Online</Link>
           </nav>
           <Link to="/login">
             <Button size="sm" className="gap-1.5">
@@ -198,11 +199,11 @@ export default function LandingPage() {
                   Veja Nossos Sabores <ArrowRight className="h-5 w-5" />
                 </Button>
               </a>
-              <a href="#contato">
+              <Link to="/pedir">
                 <Button size="lg" variant="outline" className="gap-2 text-base px-8 backdrop-blur-sm">
-                  Faça Seu Pedido
+                  Faça Seu Pedido Online <ShoppingCart className="h-5 w-5" />
                 </Button>
-              </a>
+              </Link>
             </div>
           </div>
         </div>
@@ -279,11 +280,11 @@ export default function LandingPage() {
                 <li className="flex items-center gap-3">🥭 <span>Maracujá — acidez equilibrada</span></li>
                 <li className="flex items-center gap-3">🍏 <span>Maçã Verde — toque refrescante</span></li>
               </ul>
-              <a href="#contato">
+              <Link to="/pedir">
                 <Button size="lg" variant="secondary" className="mt-8 gap-2 text-base px-10 shadow-lg">
                   Compre Agora <ArrowRight className="h-5 w-5" />
                 </Button>
-              </a>
+              </Link>
             </div>
             <div className="flex justify-center">
               <img
@@ -324,21 +325,21 @@ export default function LandingPage() {
                 <div className="p-5">
                   <h3 className="text-lg font-bold mb-2">{s.nome}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed mb-4">{s.desc}</p>
-                  <a href="#contato">
+                  <Link to="/pedir">
                     <Button size="sm" variant="outline" className="w-full gap-1.5">
-                      Faça seu Pedido <ArrowRight className="h-3.5 w-3.5" />
+                      Peça Online <ArrowRight className="h-3.5 w-3.5" />
                     </Button>
-                  </a>
+                  </Link>
                 </div>
               </div>
             ))}
           </div>
           <div className="text-center mt-12">
-            <a href="#contato">
-              <Button size="lg" className="gap-2 px-10">
-                Veja Todos os Sabores <ArrowRight className="h-5 w-5" />
-              </Button>
-            </a>
+          <Link to="/pedir">
+            <Button size="lg" className="gap-2 px-10">
+              Ver Catálogo Completo e Pedir <ArrowRight className="h-5 w-5" />
+            </Button>
+          </Link>
           </div>
         </div>
       </section>
@@ -449,7 +450,7 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <h4 className="font-semibold mb-1">Telefone / WhatsApp</h4>
-                    <p className="text-muted-foreground">(95) 99999-9999</p>
+                    <a href="https://wa.me/5595991725677" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">(95) 99172-5677</a>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
@@ -493,11 +494,11 @@ export default function LandingPage() {
           <p className="text-primary-foreground/80 text-lg mb-8 max-w-xl mx-auto">
             Compre agora nossos gelos saborizados fresquinhos, direto da fábrica em Boa Vista!
           </p>
-          <a href="#contato">
+          <Link to="/pedir">
             <Button size="lg" variant="secondary" className="gap-2 text-base px-10 shadow-lg">
               Faça Seu Pedido Agora <ArrowRight className="h-5 w-5" />
             </Button>
-          </a>
+          </Link>
         </div>
       </section>
 
@@ -526,6 +527,7 @@ export default function LandingPage() {
                 <li><a href="#beneficios" className="hover:text-foreground transition-colors">Benefícios</a></li>
                 <li><a href="#compromisso" className="hover:text-foreground transition-colors">Compromisso Local</a></li>
                 <li><a href="#contato" className="hover:text-foreground transition-colors">Contato / Pedido</a></li>
+                <li><Link to="/pedir" className="hover:text-foreground transition-colors font-semibold text-primary">Peça Online</Link></li>
               </ul>
             </div>
             <div>
@@ -540,7 +542,7 @@ export default function LandingPage() {
               </div>
               <div className="mt-4 text-sm text-muted-foreground space-y-1">
                 <p>📧 contato@aeradossabores.com.br</p>
-                <p>📞 (95) 99999-9999</p>
+                <p>📞 <a href="https://wa.me/5595991725677" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">(95) 99172-5677</a></p>
                 <p>📍 Boa Vista, Roraima - Brasil</p>
               </div>
             </div>
