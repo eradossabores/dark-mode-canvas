@@ -83,6 +83,7 @@ function getSaborGradient(nome: string): string {
 interface Sabor {
   id: string;
   nome: string;
+  estoque: number;
 }
 
 interface CartItem {
@@ -120,17 +121,36 @@ export default function Pedir() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
+      // Fetch sabores with their stock
+      const { data: saboresData } = await supabase
         .from("sabores")
         .select("id, nome")
         .eq("ativo", true)
         .order("nome");
-      setSabores(data ?? []);
+
+      const { data: estoqueData } = await supabase
+        .from("estoque_gelos")
+        .select("sabor_id, quantidade");
+
+      const estoqueMap = new Map(
+        (estoqueData ?? []).map((e: any) => [e.sabor_id, Number(e.quantidade)])
+      );
+
+      const saboresComEstoque = (saboresData ?? [])
+        .map((s: any) => ({ ...s, estoque: estoqueMap.get(s.id) ?? 0 }))
+        .filter((s: any) => s.estoque > 0);
+
+      setSabores(saboresComEstoque);
       setLoading(false);
     })();
   }, []);
 
   const addToCart = (sabor: Sabor) => {
+    const currentQty = getQty(sabor.id);
+    if (currentQty >= sabor.estoque) {
+      toast({ title: "Estoque limitado", description: `Máximo disponível: ${sabor.estoque} un`, variant: "destructive" });
+      return;
+    }
     setAddedAnimation(sabor.id);
     setTimeout(() => setAddedAnimation(null), 600);
     setCart((prev) => {
@@ -145,6 +165,14 @@ export default function Pedir() {
   };
 
   const updateQty = (sabor_id: string, delta: number) => {
+    if (delta > 0) {
+      const sabor = sabores.find(s => s.id === sabor_id);
+      const currentQty = getQty(sabor_id);
+      if (sabor && currentQty >= sabor.estoque) {
+        toast({ title: "Estoque limitado", description: `Máximo disponível: ${sabor.estoque} un`, variant: "destructive" });
+        return;
+      }
+    }
     setCart((prev) =>
       prev
         .map((i) =>
@@ -153,6 +181,7 @@ export default function Pedir() {
         .filter((i) => i.quantidade > 0)
     );
   };
+
 
   const totalItens = cart.reduce((s, i) => s + i.quantidade, 0);
   const totalValor = cart.reduce((s, i) => s + i.quantidade * PRECO_UNITARIO, 0);
@@ -393,6 +422,9 @@ export default function Pedir() {
                                 </p>
                                 <p className="text-primary font-black text-lg mt-0.5">
                                   R$ {PRECO_UNITARIO.toFixed(2)}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground">
+                                  {s.estoque} un disponíveis
                                 </p>
                               </div>
                               {qty > 0 && (
