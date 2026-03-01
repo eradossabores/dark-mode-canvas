@@ -179,6 +179,38 @@ export default function EditDayProducoesDialog({ open, onOpenChange, dayItems, s
                   <Calendar mode="single" selected={newDate} onSelect={(d) => d && setNewDate(d)} initialFocus className="p-3 pointer-events-auto" />
                 </PopoverContent>
               </Popover>
+          </div>
+
+            {/* Responsáveis do Dia (global) */}
+            <div className="rounded-lg border bg-primary/5 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-semibold">👥 Responsáveis do Dia</Label>
+                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setGlobalFuncIds([...globalFuncIds, ""])}>
+                  <Plus className="h-3 w-3 mr-1" />Add
+                </Button>
+              </div>
+              {globalFuncIds.length === 0 && (
+                <p className="text-xs text-muted-foreground">Nenhum responsável adicionado. Clique em + Add.</p>
+              )}
+              {globalFuncIds.map((f, fi) => (
+                <div key={fi} className="flex gap-2">
+                  <Select value={f} onValueChange={(v) => {
+                    const list = [...globalFuncIds];
+                    list[fi] = v;
+                    setGlobalFuncIds(list);
+                  }}>
+                    <SelectTrigger className="flex-1 h-8 text-xs"><SelectValue placeholder="Colaborador" /></SelectTrigger>
+                    <SelectContent>
+                      {allOptions.map(fn => (
+                        <SelectItem key={fn.id} value={fn.id}>{fn.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setGlobalFuncIds(globalFuncIds.filter((_, i) => i !== fi))}>
+                    <Trash2 className="h-3 w-3 text-destructive" />
+                  </Button>
+                </div>
+              ))}
             </div>
 
             {/* Items */}
@@ -235,37 +267,6 @@ export default function EditDayProducoesDialog({ open, onOpenChange, dayItems, s
               </div>
             ))}
 
-            {/* Responsáveis do Dia (global) */}
-            <div className="rounded-lg border bg-primary/5 p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-semibold">👥 Responsáveis do Dia</Label>
-                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setGlobalFuncIds([...globalFuncIds, ""])}>
-                  <Plus className="h-3 w-3 mr-1" />Add
-                </Button>
-              </div>
-              {globalFuncIds.length === 0 && (
-                <p className="text-xs text-muted-foreground">Nenhum responsável adicionado. Clique em + Add.</p>
-              )}
-              {globalFuncIds.map((f, fi) => (
-                <div key={fi} className="flex gap-2">
-                  <Select value={f} onValueChange={(v) => {
-                    const list = [...globalFuncIds];
-                    list[fi] = v;
-                    setGlobalFuncIds(list);
-                  }}>
-                    <SelectTrigger className="flex-1 h-8 text-xs"><SelectValue placeholder="Colaborador" /></SelectTrigger>
-                    <SelectContent>
-                      {allOptions.map(fn => (
-                        <SelectItem key={fn.id} value={fn.id}>{fn.nome}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setGlobalFuncIds(globalFuncIds.filter((_, i) => i !== fi))}>
-                    <Trash2 className="h-3 w-3 text-destructive" />
-                  </Button>
-                </div>
-              ))}
-            </div>
 
             <Button className="w-full" onClick={handleSaveAll} disabled={loading}>
               {loading ? (
