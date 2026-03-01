@@ -84,6 +84,7 @@ interface Sabor {
   id: string;
   nome: string;
   estoque: number;
+  imagem_url: string | null;
 }
 
 interface CartItem {
@@ -124,7 +125,7 @@ export default function Pedir() {
       // Fetch sabores with their stock
       const { data: saboresData } = await supabase
         .from("sabores")
-        .select("id, nome")
+        .select("id, nome, imagem_url")
         .eq("ativo", true)
         .order("nome");
 
@@ -384,7 +385,7 @@ export default function Pedir() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {sabores.map((s) => {
                       const qty = getQty(s.id);
-                      const img = getSaborImage(s.nome);
+                      const img = s.imagem_url || getSaborImage(s.nome);
                       const emoji = getSaborEmoji(s.nome);
                       const gradient = getSaborGradient(s.nome);
                       const isAnimating = addedAnimation === s.id;
