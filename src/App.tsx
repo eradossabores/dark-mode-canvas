@@ -33,6 +33,7 @@ import MapaEntregas from "@/pages/MapaEntregas";
 import MapaClientes from "@/pages/MapaClientes";
 import Prospeccao from "@/pages/Prospeccao";
 import Cadastro from "@/pages/Cadastro";
+import Pedir from "@/pages/Pedir";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -61,6 +62,7 @@ const App = () => (
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<Login />} />
               <Route path="/cadastro" element={<Cadastro />} />
+              <Route path="/pedir" element={<Pedir />} />
 
               {/* Admin only routes */}
               <Route path="/painel" element={<AdminRoute><Dashboard /></AdminRoute>} />
