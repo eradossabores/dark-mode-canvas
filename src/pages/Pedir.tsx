@@ -304,7 +304,7 @@ export default function Pedir() {
               </h1>
 
               <p className="text-primary-foreground/80 text-base sm:text-lg mb-8 max-w-md mx-auto leading-relaxed">
-                Gelos feitos com frutas de verdade que colorem, perfumam e dão sabor aos seus drinks favoritos.
+                Gelos saborizados que colorem, perfumam e transformam qualquer drink numa explosão de sabor. Seu copo nunca mais vai ser o mesmo! 🔥
               </p>
 
               {/* Trust badges */}
