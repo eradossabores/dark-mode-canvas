@@ -636,6 +636,7 @@ export default function Vendas() {
                   )}
                 </div>
               )}
+              <div><Label>Nº Nota Fiscal (NF)</Label><Input value={numeroNf} onChange={(e) => setNumeroNf(e.target.value)} placeholder="Ex: 001234" /></div>
               <div><Label>Observações</Label><Input value={observacoes} onChange={(e) => setObservacoes(e.target.value)} /></div>
               <div className="flex items-center space-x-2">
                 <Checkbox id="ignorar-estoque" checked={ignorarEstoque} onCheckedChange={(v) => setIgnorarEstoque(!!v)} />
