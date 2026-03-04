@@ -29,7 +29,7 @@ const FORMAS_PAGAMENTO = [
   { value: "cartao_debito", label: "Cartão de Débito" },
   { value: "boleto", label: "Boleto" },
   { value: "parcelado", label: "Parcelado" },
-  { value: "fiado", label: "Fiado" },
+  { value: "fiado", label: "A Prazo" },
 ];
 
 const TOP_SABORES = ["melancia", "morango", "maca verde", "maracuja", "agua de coco"];
