@@ -66,16 +66,26 @@ export default function Clientes() {
   }
 
   async function geocodeAddress(endereco: string, bairro: string, cidade: string, estado: string): Promise<{ lat: number; lng: number } | null> {
-    try {
-      const parts = [endereco, bairro, cidade || "Boa Vista", estado || "RR", "Brasil"].filter(Boolean);
-      const query = encodeURIComponent(parts.join(", "));
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`);
-      const data = await res.json();
-      if (data && data.length > 0) {
-        return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    const cidadeVal = cidade || "Boa Vista";
+    const estadoVal = estado || "RR";
+    
+    // Tentar múltiplas estratégias de busca para maximizar sucesso
+    const queries = [
+      [endereco, bairro, cidadeVal, estadoVal, "Brasil"].filter(Boolean).join(", "),
+      [endereco, cidadeVal, estadoVal, "Brasil"].filter(Boolean).join(", "),
+      [bairro, cidadeVal, estadoVal, "Brasil"].filter(Boolean).join(", "),
+    ];
+
+    for (const q of queries) {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1&countrycodes=br`);
+        const data = await res.json();
+        if (data && data.length > 0) {
+          return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+        }
+      } catch (e) {
+        console.warn("Geocoding falhou para query:", q, e);
       }
-    } catch (e) {
-      console.warn("Geocoding falhou:", e);
     }
     return null;
   }
@@ -90,13 +100,15 @@ export default function Clientes() {
       payload.latitude = payload.latitude ? Number(payload.latitude) : null;
       payload.longitude = payload.longitude ? Number(payload.longitude) : null;
 
-      // Auto-geocode se tem endereço mas não tem coordenadas
-      if (!payload.latitude && !payload.longitude && payload.endereco) {
+      // Sempre geocodificar quando tem endereço (novo ou editado)
+      if (payload.endereco) {
         const coords = await geocodeAddress(payload.endereco, payload.bairro, payload.cidade, payload.estado);
         if (coords) {
           payload.latitude = coords.lat;
           payload.longitude = coords.lng;
           toast({ title: "📍 Localização encontrada automaticamente!" });
+        } else if (!payload.latitude) {
+          toast({ title: "⚠️ Endereço não encontrado no mapa", description: "Você pode posicionar manualmente no Mapa de Clientes", variant: "destructive" });
         }
       }
 
