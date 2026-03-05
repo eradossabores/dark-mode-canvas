@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
-import { LogIn, ShoppingCart, Download } from "lucide-react";
+import { LogIn, ShoppingCart, Download, Share, Plus, MoreVertical, X, Smartphone, Monitor } from "lucide-react";
 import {
   IceCream, Droplets, Sparkles, Leaf, Star, Send, MapPin, Phone, Mail,
   ArrowRight, Instagram, Facebook, ChevronRight, ThermometerSnowflake, Heart,
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import logo from "@/assets/logo.png";
 import geloBobMarley from "@/assets/gelo-bob-marley.png";
 import geloMelanciaMaca from "@/assets/gelo-melancia-maca.png";
