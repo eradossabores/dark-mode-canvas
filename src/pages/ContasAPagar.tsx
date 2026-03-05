@@ -42,6 +42,7 @@ export default function ContasAPagar() {
   const [saving, setSaving] = useState(false);
   const [pagarConta, setPagarConta] = useState<ContaPagar | null>(null);
   const [pagarData, setPagarData] = useState<Date | undefined>(undefined);
+  const [pagarForma, setPagarForma] = useState<string>("pix");
 
   // Form state
   const [descricao, setDescricao] = useState("");
@@ -481,7 +482,7 @@ export default function ContasAPagar() {
       </Dialog>
 
       {/* Pagar Parcela Dialog */}
-      <Dialog open={!!pagarConta} onOpenChange={v => { if (!v) { setPagarConta(null); setPagarData(undefined); } }}>
+      <Dialog open={!!pagarConta} onOpenChange={v => { if (!v) { setPagarConta(null); setPagarData(undefined); setPagarForma("pix"); } }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Pagar Parcela</DialogTitle>
@@ -493,6 +494,18 @@ export default function ContasAPagar() {
                 <p className="text-xs text-muted-foreground">
                   Parcela {pagarConta.parcela_atual + 1}/{pagarConta.total_parcelas} · {R(pagarConta.valor_parcela)}
                 </p>
+              </div>
+              <div>
+                <Label className="text-xs mb-1.5 block">Forma de pagamento</Label>
+                <Select value={pagarForma} onValueChange={setPagarForma}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pix">PIX</SelectItem>
+                    <SelectItem value="especie">Espécie</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label className="text-xs mb-1.5 block">Data da próxima parcela (opcional)</Label>
