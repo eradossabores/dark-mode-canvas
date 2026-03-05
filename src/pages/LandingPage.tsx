@@ -717,6 +717,193 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* ─── DIALOG INSTRUÇÕES INSTALAÇÃO ─── */}
+      <Dialog open={showInstallDialog} onOpenChange={setShowInstallDialog}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <Download className="h-5 w-5 text-primary" />
+              Como Baixar o App
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6 pt-2">
+            {/* Detecta dispositivo e mostra instruções relevantes */}
+            {isIOS ? (
+              <>
+                {/* INSTRUÇÕES iOS */}
+                <div className="bg-primary/10 rounded-xl p-4 border border-primary/20">
+                  <p className="text-sm font-semibold text-primary mb-1">📱 Você está no iPhone/iPad</p>
+                  <p className="text-xs text-muted-foreground">
+                    No iPhone, o app precisa ser instalado pelo <strong>Safari</strong>. Se você está no Chrome, abra este site no Safari primeiro.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="font-bold text-base">Passo a passo pelo Safari:</h3>
+                  
+                  {/* Passo 1 */}
+                  <div className="flex gap-3 items-start">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">1</div>
+                    <div>
+                      <p className="font-semibold text-sm">Abra no Safari</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Copie o link <strong>aeradossabores.online</strong> e cole no navegador <strong>Safari</strong> (aquele azulzinho com a bússola que já vem no iPhone).
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Passo 2 */}
+                  <div className="flex gap-3 items-start">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">2</div>
+                    <div>
+                      <p className="font-semibold text-sm">Toque no botão de Compartilhar</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Lá embaixo da tela, toque no ícone de <strong>compartilhar</strong> (um quadrado com uma seta pra cima ⬆️).
+                      </p>
+                      <div className="mt-2 bg-muted rounded-lg p-3 flex items-center justify-center">
+                        <Share className="h-8 w-8 text-primary" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Passo 3 */}
+                  <div className="flex gap-3 items-start">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">3</div>
+                    <div>
+                      <p className="font-semibold text-sm">Toque em "Adicionar à Tela Início"</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Role as opções que aparecem e procure <strong>"Adicionar à Tela de Início"</strong> (tem um ícone de ➕). Toque nele!
+                      </p>
+                      <div className="mt-2 bg-muted rounded-lg p-3 flex items-center gap-3">
+                        <Plus className="h-6 w-6 text-primary" />
+                        <span className="text-sm font-medium">Adicionar à Tela de Início</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Passo 4 */}
+                  <div className="flex gap-3 items-start">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">4</div>
+                    <div>
+                      <p className="font-semibold text-sm">Toque em "Adicionar"</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Vai aparecer o nome do app. É só tocar em <strong>"Adicionar"</strong> no canto de cima. Pronto! 🎉
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-accent/50 rounded-xl p-4 border border-accent/30">
+                  <p className="text-sm">
+                    ✅ <strong>Pronto!</strong> O ícone do app vai aparecer na sua tela inicial, igualzinho um aplicativo de verdade!
+                  </p>
+                </div>
+              </>
+            ) : isAndroid ? (
+              <>
+                {/* INSTRUÇÕES ANDROID */}
+                <div className="bg-primary/10 rounded-xl p-4 border border-primary/20">
+                  <p className="text-sm font-semibold text-primary mb-1">🤖 Você está no Android</p>
+                  <p className="text-xs text-muted-foreground">Siga os passos abaixo para instalar pelo Chrome.</p>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="font-bold text-base">Passo a passo pelo Chrome:</h3>
+
+                  {/* Passo 1 */}
+                  <div className="flex gap-3 items-start">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">1</div>
+                    <div>
+                      <p className="font-semibold text-sm">Toque nos 3 pontinhos</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        No canto de cima do Chrome, toque nos <strong>três pontinhos</strong> (⋮).
+                      </p>
+                      <div className="mt-2 bg-muted rounded-lg p-3 flex items-center justify-center">
+                        <MoreVertical className="h-8 w-8 text-primary" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Passo 2 */}
+                  <div className="flex gap-3 items-start">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">2</div>
+                    <div>
+                      <p className="font-semibold text-sm">Toque em "Instalar aplicativo"</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        No menu que abriu, procure a opção <strong>"Instalar aplicativo"</strong> ou <strong>"Adicionar à tela inicial"</strong>. Toque nela!
+                      </p>
+                      <div className="mt-2 bg-muted rounded-lg p-3 flex items-center gap-3">
+                        <Download className="h-6 w-6 text-primary" />
+                        <span className="text-sm font-medium">Instalar aplicativo</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Passo 3 */}
+                  <div className="flex gap-3 items-start">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">3</div>
+                    <div>
+                      <p className="font-semibold text-sm">Confirme a instalação</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Toque em <strong>"Instalar"</strong> na janelinha que aparecer. Pronto! 🎉
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-accent/50 rounded-xl p-4 border border-accent/30">
+                  <p className="text-sm">
+                    ✅ <strong>Pronto!</strong> O app vai aparecer na sua tela inicial como se fosse um aplicativo baixado da Play Store!
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* INSTRUÇÕES COMPUTADOR */}
+                <div className="bg-primary/10 rounded-xl p-4 border border-primary/20">
+                  <p className="text-sm font-semibold text-primary mb-1">💻 Você está no computador</p>
+                  <p className="text-xs text-muted-foreground">Instale pelo Chrome para ter acesso rápido.</p>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="font-bold text-base">Passo a passo:</h3>
+
+                  <div className="flex gap-3 items-start">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">1</div>
+                    <div>
+                      <p className="font-semibold text-sm">Procure o ícone de instalar</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Na barra de endereço do Chrome, procure um ícone de <strong>computador com uma seta</strong> (⬇️) no lado direito. Clique nele!
+                      </p>
+                      <div className="mt-2 bg-muted rounded-lg p-3 flex items-center justify-center">
+                        <Monitor className="h-8 w-8 text-primary" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 items-start">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">2</div>
+                    <div>
+                      <p className="font-semibold text-sm">Clique em "Instalar"</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Confirme clicando em <strong>"Instalar"</strong>. O app vai abrir como uma janela separada! 🎉
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-accent/50 rounded-xl p-4 border border-accent/30">
+                  <p className="text-sm">
+                    ✅ <strong>Pronto!</strong> O app vai aparecer no seu computador como um aplicativo independente!
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
