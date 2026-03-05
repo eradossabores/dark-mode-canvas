@@ -689,9 +689,22 @@ export default function MonitorProducao() {
                       <Globe className="h-4 w-4 text-white" />
                       <span className="font-black text-white text-sm tracking-widest uppercase">🌐 PORTAL</span>
                     </div>
-                    <span className="text-xs text-white/80 font-medium">
-                      {formatDistanceToNow(new Date(order.created_at), { locale: ptBR, addSuffix: true })}
-                    </span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs text-white/80 font-medium mr-1">
+                        {formatDistanceToNow(new Date(order.created_at), { locale: ptBR, addSuffix: true })}
+                      </span>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-white/80 hover:text-white hover:bg-white/20" onClick={() => {
+                        const itens = (order.itens || []).map((item: any) => `<tr><td style="padding:6px 10px;border-bottom:1px solid #eee;font-size:14px">${item.nome}</td><td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:right;font-weight:bold;font-size:16px">${item.quantidade}</td></tr>`).join("");
+                        const html = `<html><head><title>Pedido Portal - ${order.nome_cliente}</title><style>body{font-family:system-ui,sans-serif;padding:20px;max-width:380px;margin:0 auto}h2{margin:0 0 4px}table{width:100%;border-collapse:collapse;margin:12px 0}.meta{color:#666;font-size:13px;margin:4px 0}.total{font-size:18px;font-weight:bold;margin-top:8px}@media print{body{padding:10px}}</style></head><body><h2>🌐 ${order.nome_cliente}</h2><p class="meta">📞 ${order.telefone}</p><p class="meta">📍 ${order.endereco}, ${order.bairro}</p><p class="meta">💰 ${order.forma_pagamento}</p>${order.observacoes ? `<p class="meta" style="color:#b45309">⚠ ${order.observacoes}</p>` : ""}<table><thead><tr><th style="padding:6px 10px;text-align:left;border-bottom:2px solid #333;font-size:12px;text-transform:uppercase;letter-spacing:1px">Sabor</th><th style="padding:6px 10px;text-align:right;border-bottom:2px solid #333;font-size:12px;text-transform:uppercase;letter-spacing:1px">Qtd</th></tr></thead><tbody>${itens}</tbody></table><p class="total">Total: ${order.total_itens} un · R$ ${Number(order.valor_total).toFixed(2)}</p><script>window.onload=()=>{window.print()}</script></body></html>`;
+                        const win = window.open("", "_blank", "width=420,height=600");
+                        if (win) { win.document.write(html); win.document.close(); }
+                      }}>
+                        <Printer className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-white/80 hover:text-white hover:bg-red-500/30" onClick={() => rejectPublicOrder.mutate(order.id)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="px-5 pt-4 pb-3">
