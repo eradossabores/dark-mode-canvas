@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
-import { LogIn, ShoppingCart } from "lucide-react";
+import { LogIn, ShoppingCart, Download } from "lucide-react";
 import {
   IceCream, Droplets, Sparkles, Leaf, Star, Send, MapPin, Phone, Mail,
   ArrowRight, Instagram, Facebook, ChevronRight, ThermometerSnowflake, Heart,
@@ -134,6 +134,41 @@ export default function LandingPage() {
   const [formEmail, setFormEmail] = useState("");
   const [formTelefone, setFormTelefone] = useState("");
   const [formMsg, setFormMsg] = useState("");
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+
+    // Check if already installed
+    if (window.matchMedia("(display-mode: standalone)").matches) {
+      setIsInstalled(true);
+    }
+
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  async function handleInstallClick() {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === "accepted") {
+        setIsInstalled(true);
+        toast({ title: "App instalado com sucesso! 🎉" });
+      }
+      setDeferredPrompt(null);
+    } else {
+      // Fallback instructions for iOS/browsers without prompt
+      toast({
+        title: "Como instalar o app",
+        description: "No Safari (iOS): toque em Compartilhar → Adicionar à Tela Inicial. No Chrome: menu ⋮ → Instalar aplicativo.",
+      });
+    }
+  }
 
   function handleSubmitContato(e: React.FormEvent) {
     e.preventDefault();
@@ -183,11 +218,18 @@ export default function LandingPage() {
             <a href="#contato" className="hover:text-foreground transition-colors">Contato</a>
             <Link to="/pedir" className="hover:text-foreground transition-colors text-primary font-semibold">Peça Online</Link>
           </nav>
-          <Link to="/login">
-            <Button size="sm" className="gap-1.5">
-              <LogIn className="h-4 w-4" /> Entrar
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            {!isInstalled && (
+              <Button size="sm" variant="outline" className="gap-1.5" onClick={handleInstallClick}>
+                <Download className="h-4 w-4" /> Baixar App
+              </Button>
+            )}
+            <Link to="/login">
+              <Button size="sm" className="gap-1.5">
+                <LogIn className="h-4 w-4" /> Entrar
+              </Button>
+            </Link>
+          </div>
         </div>
       </header>
 
