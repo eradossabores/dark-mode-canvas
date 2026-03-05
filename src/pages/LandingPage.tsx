@@ -134,6 +134,41 @@ export default function LandingPage() {
   const [formEmail, setFormEmail] = useState("");
   const [formTelefone, setFormTelefone] = useState("");
   const [formMsg, setFormMsg] = useState("");
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+
+    // Check if already installed
+    if (window.matchMedia("(display-mode: standalone)").matches) {
+      setIsInstalled(true);
+    }
+
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  async function handleInstallClick() {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === "accepted") {
+        setIsInstalled(true);
+        toast({ title: "App instalado com sucesso! 🎉" });
+      }
+      setDeferredPrompt(null);
+    } else {
+      // Fallback instructions for iOS/browsers without prompt
+      toast({
+        title: "Como instalar o app",
+        description: "No Safari (iOS): toque em Compartilhar → Adicionar à Tela Inicial. No Chrome: menu ⋮ → Instalar aplicativo.",
+      });
+    }
+  }
 
   function handleSubmitContato(e: React.FormEvent) {
     e.preventDefault();
