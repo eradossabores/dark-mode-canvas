@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, ShoppingCart, Pencil, Eye, CalendarIcon, X, Truck, Package, History } from "lucide-react";
+import { Plus, Trash2, ShoppingCart, Pencil, Eye, CalendarIcon, X, Truck, Package, History, CalendarClock } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const FORMAS_PAGAMENTO = [
@@ -833,6 +833,49 @@ export default function Vendas() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Card de Encomendas */}
+      {(() => {
+        const hoje = new Date();
+        hoje.setHours(23, 59, 59, 999);
+        const encomendas = vendas.filter(v => new Date(v.created_at) > hoje && v.status !== "cancelada");
+        if (encomendas.length === 0) return null;
+        return (
+          <Card className="mb-6 border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <CalendarClock className="h-5 w-5 text-amber-600" />
+                📦 Encomendas ({encomendas.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {encomendas.map(v => (
+                  <div key={v.id} className="rounded-lg border bg-background p-3 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-sm">{v.clientes?.nome}</span>
+                      <Badge variant="outline" className="text-xs text-amber-700 border-amber-400 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400">
+                        {new Date(v.created_at).toLocaleDateString("pt-BR")}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">{v.totalUnidades || 0} un · {getFormaPagamentoLabel(v)}</span>
+                      <span className="font-bold">R$ {Number(v.total).toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center justify-between pt-1">
+                      <Badge variant={v.status === "paga" ? "default" : "secondary"} className="text-xs">{v.status}</Badge>
+                      <div className="flex gap-1">
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openDetailDialog(v)}><Eye className="h-3.5 w-3.5" /></Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEditDialog(v)}><Pencil className="h-3.5 w-3.5" /></Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       <Card>
         <CardHeader>
