@@ -137,6 +137,10 @@ export default function LandingPage() {
   const [formMsg, setFormMsg] = useState("");
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [showInstallDialog, setShowInstallDialog] = useState(false);
+
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isAndroid = /Android/.test(navigator.userAgent);
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -145,7 +149,6 @@ export default function LandingPage() {
     };
     window.addEventListener("beforeinstallprompt", handler);
 
-    // Check if already installed
     if (window.matchMedia("(display-mode: standalone)").matches) {
       setIsInstalled(true);
     }
@@ -163,11 +166,7 @@ export default function LandingPage() {
       }
       setDeferredPrompt(null);
     } else {
-      // Fallback instructions for iOS/browsers without prompt
-      toast({
-        title: "Como instalar o app",
-        description: "No Safari (iOS): toque em Compartilhar → Adicionar à Tela Inicial. No Chrome: menu ⋮ → Instalar aplicativo.",
-      });
+      setShowInstallDialog(true);
     }
   }
 
