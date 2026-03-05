@@ -218,11 +218,18 @@ export default function LandingPage() {
             <a href="#contato" className="hover:text-foreground transition-colors">Contato</a>
             <Link to="/pedir" className="hover:text-foreground transition-colors text-primary font-semibold">Peça Online</Link>
           </nav>
-          <Link to="/login">
-            <Button size="sm" className="gap-1.5">
-              <LogIn className="h-4 w-4" /> Entrar
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            {!isInstalled && (
+              <Button size="sm" variant="outline" className="gap-1.5" onClick={handleInstallClick}>
+                <Download className="h-4 w-4" /> Baixar App
+              </Button>
+            )}
+            <Link to="/login">
+              <Button size="sm" className="gap-1.5">
+                <LogIn className="h-4 w-4" /> Entrar
+              </Button>
+            </Link>
+          </div>
         </div>
       </header>
 
