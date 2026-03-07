@@ -385,6 +385,27 @@ export default function AReceber() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* WhatsApp Prompt */}
+      <AlertDialog open={!!whatsappPrompt} onOpenChange={(v) => !v && setWhatsappPrompt(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <MessageCircle className="h-5 w-5 text-green-600" />
+              Enviar recibo por WhatsApp?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja enviar o comprovante de pagamento para <strong>{whatsappPrompt?.clienteNome}</strong> (R$ {whatsappPrompt?.total.toFixed(2)})?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Não</AlertDialogCancel>
+            <AlertDialogAction onClick={enviarReciboWhatsApp} className="bg-green-600 hover:bg-green-700">
+              Enviar WhatsApp
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
