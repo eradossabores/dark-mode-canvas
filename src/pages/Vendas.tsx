@@ -928,6 +928,7 @@ export default function Vendas() {
             );
             return null;
           })()}
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
