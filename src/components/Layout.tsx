@@ -246,7 +246,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           >
             <div className="flex justify-end p-2">
               <button onClick={() => setMobileOpen(false)}>
-                <X className="h-5 w-5 text-sidebar-foreground" />
+                <X className="h-5 w-5 text-white" />
               </button>
             </div>
             {sidebarContent}
