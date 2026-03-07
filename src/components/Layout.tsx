@@ -163,7 +163,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {!collapsed && (
           <div className="flex flex-col">
             <span className="font-bold text-sm whitespace-nowrap leading-tight">A Era dos Sabores</span>
-            <span className="text-[10px] text-sidebar-foreground/60 leading-tight">Gelo Gourmet</span>
+            <span className="text-[10px] text-sidebar-foreground/60 leading-tight">Gelos Saborizados</span>
           </div>
         )}
       </div>
