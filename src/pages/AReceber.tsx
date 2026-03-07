@@ -43,6 +43,26 @@ export default function AReceber() {
     setHistorico(data || []);
   }
 
+  async function checkWhatsappPrompt(vendaId: string, clienteId: string, clienteNome: string, total: number) {
+    const { data: cliente } = await (supabase as any).from("clientes").select("telefone").eq("id", clienteId).single();
+    if (cliente?.telefone) {
+      setWhatsappPrompt({ vendaId, clienteNome, total, telefone: cliente.telefone });
+    }
+  }
+
+  function enviarReciboWhatsApp() {
+    if (!whatsappPrompt) return;
+    const msg = `🧊 *RECIBO - GELOS SABORIZADOS*\n\n` +
+      `✅ *Pagamento Confirmado!*\n\n` +
+      `📋 *Cliente:* ${whatsappPrompt.clienteNome}\n` +
+      `📅 *Data:* ${new Date().toLocaleDateString("pt-BR")}\n` +
+      `💰 *Valor Total: R$ ${whatsappPrompt.total.toFixed(2)}*\n\n` +
+      `_Obrigado pela preferência!_`;
+    const phone = whatsappPrompt.telefone.replace(/\D/g, "");
+    window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+    setWhatsappPrompt(null);
+  }
+
   async function marcarComoPaga(id: string) {
     try {
       const venda = vendas.find(v => v.id === id);
@@ -54,7 +74,6 @@ export default function AReceber() {
         .eq("id", id);
       if (error) throw error;
 
-      // Registrar no histórico
       if (restante > 0) {
         await (supabase as any).from("abatimentos_historico").insert({
           venda_id: id,
@@ -63,6 +82,7 @@ export default function AReceber() {
       }
 
       toast({ title: "Venda marcada como paga!" });
+      await checkWhatsappPrompt(id, venda.cliente_id, venda.clientes?.nome || "?", Number(venda.total));
       loadData();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
