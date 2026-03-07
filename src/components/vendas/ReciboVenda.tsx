@@ -122,15 +122,14 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     if (!data) return;
 
     // Generate and download PDF first
-    gerarPDF();
+    try {
+      gerarPDF();
+    } catch (e) {
+      console.error("Erro ao gerar PDF:", e);
+    }
 
-    // Then open WhatsApp with message
-    const msg = `🧊 *RECIBO - ERA DOS SABORES*\n\n` +
-      `📋 *Cliente:* ${data.cliente_nome}\n` +
-      `📅 *Data:* ${data.data}\n` +
-      `💰 *TOTAL: R$ ${data.total.toFixed(2)}*\n\n` +
-      `📎 _Recibo em PDF anexado._`;
-
+    // Then open WhatsApp with simple message + instruct to attach PDF
+    const msg = `*A ERA DOS SABORES*\n\nOla ${data.cliente_nome}, segue seu recibo.\n\nTotal: R$ ${data.total.toFixed(2)}\nData: ${data.data}\nPagamento: ${data.forma_pagamento}\n\nPor favor, confira o PDF em anexo.`;
     const phone = data.telefone?.replace(/\D/g, "") || "";
     const url = phone
       ? `https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`
