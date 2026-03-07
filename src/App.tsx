@@ -34,6 +34,7 @@ import MapaClientes from "@/pages/MapaClientes";
 import Prospeccao from "@/pages/Prospeccao";
 import Cadastro from "@/pages/Cadastro";
 import Pedir from "@/pages/Pedir";
+import Backup from "@/pages/Backup";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
