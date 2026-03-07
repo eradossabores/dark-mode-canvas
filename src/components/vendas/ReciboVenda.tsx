@@ -40,8 +40,8 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     let y = 4;
 
     // Logo
-    const logoW = 30;
-    const logoH = 24;
+    const logoW = 45;
+    const logoH = 36;
     doc.addImage(logoRecibo, "PNG", (w - logoW) / 2, y, logoW, logoH);
     y += logoH + 2;
 
@@ -150,7 +150,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
 
         <div className="space-y-3 text-sm">
           <div className="text-center border-b pb-3">
-            <img src={logoRecibo} alt="A Era dos Sabores" className="h-16 mx-auto mb-1" />
+            <img src={logoRecibo} alt="A Era dos Sabores" className="h-28 mx-auto mb-1" />
             <p className="text-muted-foreground text-xs">Cor, Cheiro e Sabor da Fruta</p>
             <p className="text-muted-foreground text-xs">Tel: (95) 99172-5677</p>
           </div>
