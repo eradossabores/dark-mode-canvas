@@ -89,6 +89,8 @@ export default function Vendas() {
   const [detailItens, setDetailItens] = useState<any[]>([]);
   const [historicoVenda, setHistoricoVenda] = useState<any>(null);
   const [historico, setHistorico] = useState<any[]>([]);
+  const [reciboOpen, setReciboOpen] = useState(false);
+  const [reciboData, setReciboData] = useState<any>(null);
 
   useEffect(() => { loadData(); }, []);
 
