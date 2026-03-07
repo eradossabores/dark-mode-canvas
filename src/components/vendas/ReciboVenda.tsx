@@ -120,19 +120,16 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
 
   function enviarWhatsApp() {
     if (!data) return;
-    const itensTexto = data.itens
-      .map(i => `• ${i.sabor_nome} x${i.quantidade} = R$${i.subtotal.toFixed(2)}`)
-      .join("\n");
 
-    const msg = `🧊 *RECIBO - GELOS SABORIZADOS*\n\n` +
+    // Generate and download PDF first
+    gerarPDF();
+
+    // Then open WhatsApp with message
+    const msg = `🧊 *RECIBO - ERA DOS SABORES*\n\n` +
       `📋 *Cliente:* ${data.cliente_nome}\n` +
       `📅 *Data:* ${data.data}\n` +
-      `💳 *Pagamento:* ${data.forma_pagamento}\n` +
-      (data.numero_nf ? `📄 *NF:* ${data.numero_nf}\n` : "") +
-      `\n📦 *Itens:*\n${itensTexto}\n\n` +
       `💰 *TOTAL: R$ ${data.total.toFixed(2)}*\n\n` +
-      (data.observacoes ? `📝 ${data.observacoes}\n\n` : "") +
-      `_Obrigado pela preferência!_`;
+      `📎 _Recibo em PDF anexado._`;
 
     const phone = data.telefone?.replace(/\D/g, "") || "";
     const url = phone
