@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { DollarSign, CheckCircle, AlertTriangle, MinusCircle, History, Search } from "lucide-react";
+import { DollarSign, CheckCircle, AlertTriangle, MinusCircle, History, Search, MessageCircle } from "lucide-react";
 
 export default function AReceber() {
   const [vendas, setVendas] = useState<any[]>([]);
@@ -18,6 +19,7 @@ export default function AReceber() {
   const [historicoVenda, setHistoricoVenda] = useState<any>(null);
   const [historico, setHistorico] = useState<any[]>([]);
   const [busca, setBusca] = useState("");
+  const [whatsappPrompt, setWhatsappPrompt] = useState<{ vendaId: string; clienteNome: string; total: number; telefone: string } | null>(null);
 
   useEffect(() => { loadData(); }, []);
 
@@ -41,6 +43,26 @@ export default function AReceber() {
     setHistorico(data || []);
   }
 
+  async function checkWhatsappPrompt(vendaId: string, clienteId: string, clienteNome: string, total: number) {
+    const { data: cliente } = await (supabase as any).from("clientes").select("telefone").eq("id", clienteId).single();
+    if (cliente?.telefone) {
+      setWhatsappPrompt({ vendaId, clienteNome, total, telefone: cliente.telefone });
+    }
+  }
+
+  function enviarReciboWhatsApp() {
+    if (!whatsappPrompt) return;
+    const msg = `🧊 *RECIBO - GELOS SABORIZADOS*\n\n` +
+      `✅ *Pagamento Confirmado!*\n\n` +
+      `📋 *Cliente:* ${whatsappPrompt.clienteNome}\n` +
+      `📅 *Data:* ${new Date().toLocaleDateString("pt-BR")}\n` +
+      `💰 *Valor Total: R$ ${whatsappPrompt.total.toFixed(2)}*\n\n` +
+      `_Obrigado pela preferência!_`;
+    const phone = whatsappPrompt.telefone.replace(/\D/g, "");
+    window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+    setWhatsappPrompt(null);
+  }
+
   async function marcarComoPaga(id: string) {
     try {
       const venda = vendas.find(v => v.id === id);
@@ -52,7 +74,6 @@ export default function AReceber() {
         .eq("id", id);
       if (error) throw error;
 
-      // Registrar no histórico
       if (restante > 0) {
         await (supabase as any).from("abatimentos_historico").insert({
           venda_id: id,
@@ -61,6 +82,7 @@ export default function AReceber() {
       }
 
       toast({ title: "Venda marcada como paga!" });
+      await checkWhatsappPrompt(id, venda.cliente_id, venda.clientes?.nome || "?", Number(venda.total));
       loadData();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
@@ -107,6 +129,10 @@ export default function AReceber() {
           ? `R$ ${valor.toFixed(2)} recebido. Venda totalmente paga.`
           : `R$ ${valor.toFixed(2)} recebido. Restante: R$ ${(restante - valor).toFixed(2)}`,
       });
+
+      if (quitou) {
+        await checkWhatsappPrompt(abaterVenda.id, abaterVenda.cliente_id, abaterVenda.clientes?.nome || "?", Number(abaterVenda.total));
+      }
 
       setAbaterVenda(null);
       setValorAbater("");
@@ -359,6 +385,27 @@ export default function AReceber() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* WhatsApp Prompt */}
+      <AlertDialog open={!!whatsappPrompt} onOpenChange={(v) => !v && setWhatsappPrompt(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <MessageCircle className="h-5 w-5 text-green-600" />
+              Enviar recibo por WhatsApp?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja enviar o comprovante de pagamento para <strong>{whatsappPrompt?.clienteNome}</strong> (R$ {whatsappPrompt?.total.toFixed(2)})?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Não</AlertDialogCancel>
+            <AlertDialogAction onClick={enviarReciboWhatsApp} className="bg-green-600 hover:bg-green-700">
+              Enviar WhatsApp
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
