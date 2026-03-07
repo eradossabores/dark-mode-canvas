@@ -16,30 +16,62 @@ import scratAcornImg from "@/assets/scrat-acorn.png";
 import scratStandingImg from "@/assets/scrat-standing.png";
 import scratHangingImg from "@/assets/scrat-hanging.png";
 
-const menuItems = [
-  { path: "/painel", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/painel/plano-producao", label: "Plano Diário", icon: Factory },
-  { path: "/painel/producao", label: "Produção", icon: Factory },
-  { path: "/painel/monitor-producao", label: "Monitor Produção", icon: Monitor },
-  { path: "/painel/pedidos-producao", label: "Histórico de Pedidos", icon: ShoppingBag },
-  { path: "/painel/vendas", label: "Vendas", icon: ShoppingCart },
-  { path: "/painel/a-receber", label: "A Receber", icon: DollarSign },
-  { path: "/painel/contas-a-pagar", label: "Contas a Pagar", icon: ClipboardList },
-  { path: "/painel/estoque", label: "Estoque", icon: Warehouse },
-  { path: "/painel/clientes", label: "Clientes", icon: Users },
-  { path: "/painel/funcionarios", label: "Colaboradores", icon: UserCog },
-  { path: "/painel/sabores", label: "Sabores", icon: Package },
-  { path: "/painel/relatorios", label: "Relatórios", icon: BarChart3 },
-  { path: "/painel/importar-planilha", label: "Upload Planilha", icon: FileUp },
-  { path: "/painel/auditoria", label: "Auditoria", icon: ClipboardList },
-  { path: "/painel/diagnostico", label: "Diagnóstico", icon: Database },
-  { path: "/painel/usuarios", label: "Usuários", icon: Shield },
-  { path: "/painel/previsao-demanda", label: "Previsão Demanda", icon: Brain },
-  { path: "/painel/mapa-entregas", label: "Mapa Entregas", icon: MapPin },
-  { path: "/painel/mapa-clientes", label: "Mapa Clientes", icon: Map },
-  { path: "/painel/prospeccao", label: "Prospecção", icon: Target },
-  { path: "/painel/backup", label: "Backup", icon: HardDrive },
+const menuGroups = [
+  {
+    label: "Principal",
+    items: [
+      { path: "/painel", label: "Dashboard", icon: LayoutDashboard },
+    ],
+  },
+  {
+    label: "Produção",
+    items: [
+      { path: "/painel/plano-producao", label: "Plano Diário", icon: Factory },
+      { path: "/painel/producao", label: "Produção", icon: Factory },
+      { path: "/painel/monitor-producao", label: "Monitor Produção", icon: Monitor },
+      { path: "/painel/pedidos-producao", label: "Histórico de Pedidos", icon: ShoppingBag },
+      { path: "/painel/previsao-demanda", label: "Previsão Demanda", icon: Brain },
+    ],
+  },
+  {
+    label: "Comercial",
+    items: [
+      { path: "/painel/vendas", label: "Vendas", icon: ShoppingCart },
+      { path: "/painel/a-receber", label: "A Receber", icon: DollarSign },
+      { path: "/painel/contas-a-pagar", label: "Contas a Pagar", icon: ClipboardList },
+      { path: "/painel/prospeccao", label: "Prospecção", icon: Target },
+    ],
+  },
+  {
+    label: "Cadastros",
+    items: [
+      { path: "/painel/clientes", label: "Clientes", icon: Users },
+      { path: "/painel/funcionarios", label: "Colaboradores", icon: UserCog },
+      { path: "/painel/sabores", label: "Sabores", icon: Package },
+      { path: "/painel/estoque", label: "Estoque", icon: Warehouse },
+    ],
+  },
+  {
+    label: "Mapas",
+    items: [
+      { path: "/painel/mapa-entregas", label: "Mapa Entregas", icon: MapPin },
+      { path: "/painel/mapa-clientes", label: "Mapa Clientes", icon: Map },
+    ],
+  },
+  {
+    label: "Sistema",
+    items: [
+      { path: "/painel/relatorios", label: "Relatórios", icon: BarChart3 },
+      { path: "/painel/importar-planilha", label: "Upload Planilha", icon: FileUp },
+      { path: "/painel/auditoria", label: "Auditoria", icon: ClipboardList },
+      { path: "/painel/diagnostico", label: "Diagnóstico", icon: Database },
+      { path: "/painel/usuarios", label: "Usuários", icon: Shield },
+      { path: "/painel/backup", label: "Backup", icon: HardDrive },
+    ],
+  },
 ];
+
+const menuItems = menuGroups.flatMap((g) => g.items);
 
 const allCharacters = [
   { src: sidImg, alt: "Sid" },
