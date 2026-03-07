@@ -159,7 +159,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const sidebarContent = (
     <>
       <div className="flex items-center gap-3 px-3 py-3 border-b border-sidebar-border">
-        <img src={logo} alt="A Era dos Sabores" className="h-12 w-12 shrink-0 rounded-lg shadow-sm object-contain bg-white p-0.5" />
+        <img src={logo} alt="A Era dos Sabores" className="h-12 w-12 shrink-0 rounded-lg shadow-sm object-contain" />
         {!collapsed && (
           <div className="flex flex-col min-w-0">
             <span className="font-bold text-sm whitespace-nowrap leading-tight">A Era dos Sabores</span>
@@ -253,7 +253,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           >
             <div className="flex items-center justify-between p-3 border-b border-white/10">
               <div className="flex items-center gap-2">
-                <img src={logo} alt="A Era dos Sabores" className="h-10 w-10 rounded-lg shadow-sm object-contain bg-white p-0.5" />
+                <img src={logo} alt="A Era dos Sabores" className="h-10 w-10 rounded-lg shadow-sm object-contain" />
                 <div className="flex flex-col">
                   <span className="font-bold text-sm text-white leading-tight">A Era dos Sabores</span>
                   <span className="text-[10px] text-white/60 leading-tight">Gelos Saborizados</span>
