@@ -265,6 +265,35 @@ export default function Vendas() {
       });
 
       toast({ title: "Venda registrada com sucesso!" });
+
+      // Check if client has phone → offer WhatsApp receipt
+      const clienteObj = clientes.find(c => c.id === clienteId);
+      const vendaId = latestVenda?.[0]?.id;
+      if (vendaId) {
+        const { data: clienteFull } = await (supabase as any)
+          .from("clientes").select("telefone").eq("id", clienteId).single();
+        if (clienteFull?.telefone) {
+          const { data: itensData } = await (supabase as any)
+            .from("venda_itens").select("*, sabores(nome)").eq("venda_id", vendaId);
+          setReciboData({
+            cliente_nome: clienteObj?.nome || "?",
+            data: dataVenda.toLocaleDateString("pt-BR"),
+            forma_pagamento: FORMAS_PAGAMENTO.find(f => f.value === formaPagamento)?.label || formaPagamento,
+            numero_nf: numeroNf.trim() || undefined,
+            total: totalVenda,
+            observacoes: observacoes || undefined,
+            telefone: clienteFull.telefone,
+            itens: (itensData || []).map((it: any) => ({
+              sabor_nome: it.sabores?.nome || "?",
+              quantidade: it.quantidade,
+              preco_unitario: Number(it.preco_unitario),
+              subtotal: Number(it.subtotal),
+            })),
+          });
+          setReciboOpen(true);
+        }
+      }
+
       setOpen(false); setItens([]); setClienteId(""); setFormaPagamento("dinheiro"); setObservacoes(""); setNumeroNf(""); setDataVenda(new Date()); setValorTotal(""); setValorEntrada(""); setValorRestante(""); setDataVencimento(undefined); setIgnorarEstoque(false); setStatusVenda("pendente");
       loadData();
     } catch (e: any) {
