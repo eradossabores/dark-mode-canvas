@@ -16,30 +16,62 @@ import scratAcornImg from "@/assets/scrat-acorn.png";
 import scratStandingImg from "@/assets/scrat-standing.png";
 import scratHangingImg from "@/assets/scrat-hanging.png";
 
-const menuItems = [
-  { path: "/painel", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/painel/plano-producao", label: "Plano Diário", icon: Factory },
-  { path: "/painel/producao", label: "Produção", icon: Factory },
-  { path: "/painel/monitor-producao", label: "Monitor Produção", icon: Monitor },
-  { path: "/painel/pedidos-producao", label: "Histórico de Pedidos", icon: ShoppingBag },
-  { path: "/painel/vendas", label: "Vendas", icon: ShoppingCart },
-  { path: "/painel/a-receber", label: "A Receber", icon: DollarSign },
-  { path: "/painel/contas-a-pagar", label: "Contas a Pagar", icon: ClipboardList },
-  { path: "/painel/estoque", label: "Estoque", icon: Warehouse },
-  { path: "/painel/clientes", label: "Clientes", icon: Users },
-  { path: "/painel/funcionarios", label: "Colaboradores", icon: UserCog },
-  { path: "/painel/sabores", label: "Sabores", icon: Package },
-  { path: "/painel/relatorios", label: "Relatórios", icon: BarChart3 },
-  { path: "/painel/importar-planilha", label: "Upload Planilha", icon: FileUp },
-  { path: "/painel/auditoria", label: "Auditoria", icon: ClipboardList },
-  { path: "/painel/diagnostico", label: "Diagnóstico", icon: Database },
-  { path: "/painel/usuarios", label: "Usuários", icon: Shield },
-  { path: "/painel/previsao-demanda", label: "Previsão Demanda", icon: Brain },
-  { path: "/painel/mapa-entregas", label: "Mapa Entregas", icon: MapPin },
-  { path: "/painel/mapa-clientes", label: "Mapa Clientes", icon: Map },
-  { path: "/painel/prospeccao", label: "Prospecção", icon: Target },
-  { path: "/painel/backup", label: "Backup", icon: HardDrive },
+const menuGroups = [
+  {
+    label: "Principal",
+    items: [
+      { path: "/painel", label: "Dashboard", icon: LayoutDashboard },
+    ],
+  },
+  {
+    label: "Produção",
+    items: [
+      { path: "/painel/plano-producao", label: "Plano Diário", icon: Factory },
+      { path: "/painel/producao", label: "Produção", icon: Factory },
+      { path: "/painel/monitor-producao", label: "Monitor Produção", icon: Monitor },
+      { path: "/painel/pedidos-producao", label: "Histórico de Pedidos", icon: ShoppingBag },
+      { path: "/painel/previsao-demanda", label: "Previsão Demanda", icon: Brain },
+    ],
+  },
+  {
+    label: "Comercial",
+    items: [
+      { path: "/painel/vendas", label: "Vendas", icon: ShoppingCart },
+      { path: "/painel/a-receber", label: "A Receber", icon: DollarSign },
+      { path: "/painel/contas-a-pagar", label: "Contas a Pagar", icon: ClipboardList },
+      { path: "/painel/prospeccao", label: "Prospecção", icon: Target },
+    ],
+  },
+  {
+    label: "Cadastros",
+    items: [
+      { path: "/painel/clientes", label: "Clientes", icon: Users },
+      { path: "/painel/funcionarios", label: "Colaboradores", icon: UserCog },
+      { path: "/painel/sabores", label: "Sabores", icon: Package },
+      { path: "/painel/estoque", label: "Estoque", icon: Warehouse },
+    ],
+  },
+  {
+    label: "Mapas",
+    items: [
+      { path: "/painel/mapa-entregas", label: "Mapa Entregas", icon: MapPin },
+      { path: "/painel/mapa-clientes", label: "Mapa Clientes", icon: Map },
+    ],
+  },
+  {
+    label: "Sistema",
+    items: [
+      { path: "/painel/relatorios", label: "Relatórios", icon: BarChart3 },
+      { path: "/painel/importar-planilha", label: "Upload Planilha", icon: FileUp },
+      { path: "/painel/auditoria", label: "Auditoria", icon: ClipboardList },
+      { path: "/painel/diagnostico", label: "Diagnóstico", icon: Database },
+      { path: "/painel/usuarios", label: "Usuários", icon: Shield },
+      { path: "/painel/backup", label: "Backup", icon: HardDrive },
+    ],
+  },
 ];
+
+const menuItems = menuGroups.flatMap((g) => g.items);
 
 const allCharacters = [
   { src: sidImg, alt: "Sid" },
@@ -103,6 +135,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { role, signOut, user } = useAuth();
   useKeyboardShortcuts();
 
+  const filteredGroups = menuGroups
+    .map((g) => ({ ...g, items: g.items.filter((item) => isRouteAllowed(item.path, role)) }))
+    .filter((g) => g.items.length > 0);
   const filteredMenu = menuItems.filter((item) => isRouteAllowed(item.path, role));
 
   const [sidebarCharIdx, setSidebarCharIdx] = useState(0);
@@ -133,25 +168,35 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         )}
       </div>
       <nav className="flex-1 py-2 space-y-1 overflow-y-auto">
-        {filteredMenu.map((item) => {
-          const active = location.pathname === item.path;
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              onClick={() => setMobileOpen(false)}
-              className={cn(
-                "flex items-center gap-3 px-4 py-2.5 text-sm transition-colors rounded-md mx-2",
-                active
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold shadow-md"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-              )}
-            >
-              <item.icon className="h-4 w-4 shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
-            </Link>
-          );
-        })}
+        {filteredGroups.map((group, gi) => (
+          <div key={group.label}>
+            {gi > 0 && <div className="mx-4 my-1.5 border-t border-sidebar-border" />}
+            {!collapsed && (
+              <p className="px-4 pt-1 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
+                {group.label}
+              </p>
+            )}
+            {group.items.map((item) => {
+              const active = location.pathname === item.path;
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setMobileOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-4 py-2 text-sm transition-colors rounded-md mx-2",
+                    active
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold shadow-md"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  )}
+                >
+                  <item.icon className="h-4 w-4 shrink-0" />
+                  {!collapsed && <span>{item.label}</span>}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
       {/* Logout button */}
       <button
