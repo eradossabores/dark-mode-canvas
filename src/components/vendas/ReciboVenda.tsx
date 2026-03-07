@@ -191,6 +191,14 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
             TOTAL: R$ {data.total.toFixed(2)}
           </div>
 
+          <div className="text-right text-sm text-muted-foreground">
+            Quantidade Total: {data.itens.reduce((s, i) => s + i.quantidade, 0)} unidades
+          </div>
+
+          <div className="text-right font-bold text-lg border-t pt-2">
+            TOTAL: R$ {data.total.toFixed(2)}
+          </div>
+
           {data.observacoes && (
             <p className="text-xs text-muted-foreground">Obs: {data.observacoes}</p>
           )}
