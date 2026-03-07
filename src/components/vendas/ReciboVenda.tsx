@@ -99,6 +99,12 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     doc.line(4, y, w - 4, y);
     y += 5;
 
+    const totalQtd = data.itens.reduce((s, i) => s + i.quantidade, 0);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Quantidade Total: ${totalQtd} unidades`, w / 2, y, { align: "center" });
+    y += 5;
+
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
     doc.text(`TOTAL: R$ ${data.total.toFixed(2)}`, w / 2, y, { align: "center" });
