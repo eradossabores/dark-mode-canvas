@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { DollarSign, CheckCircle, AlertTriangle, MinusCircle, History, Search } from "lucide-react";
+import { DollarSign, CheckCircle, AlertTriangle, MinusCircle, History, Search, MessageCircle } from "lucide-react";
 
 export default function AReceber() {
   const [vendas, setVendas] = useState<any[]>([]);
@@ -18,6 +19,7 @@ export default function AReceber() {
   const [historicoVenda, setHistoricoVenda] = useState<any>(null);
   const [historico, setHistorico] = useState<any[]>([]);
   const [busca, setBusca] = useState("");
+  const [whatsappPrompt, setWhatsappPrompt] = useState<{ vendaId: string; clienteNome: string; total: number; telefone: string } | null>(null);
 
   useEffect(() => { loadData(); }, []);
 
