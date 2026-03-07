@@ -19,7 +19,7 @@ export default function AReceber() {
   const [historicoVenda, setHistoricoVenda] = useState<any>(null);
   const [historico, setHistorico] = useState<any[]>([]);
   const [busca, setBusca] = useState("");
-  const [whatsappPrompt, setWhatsappPrompt] = useState<{ vendaId: string; clienteNome: string; total: number; telefone: string } | null>(null);
+  const [whatsappPrompt, setWhatsappPrompt] = useState<{ vendaId: string; clienteNome: string; total: number; telefone: string; valorPago: number; historico: { valor: number; data: string }[]; quitou: boolean } | null>(null);
 
   useEffect(() => { loadData(); }, []);
 
@@ -43,21 +43,43 @@ export default function AReceber() {
     setHistorico(data || []);
   }
 
-  async function checkWhatsappPrompt(vendaId: string, clienteId: string, clienteNome: string, total: number) {
+  async function checkWhatsappPrompt(vendaId: string, clienteId: string, clienteNome: string, total: number, valorPago: number, quitou: boolean) {
     const { data: cliente } = await (supabase as any).from("clientes").select("telefone").eq("id", clienteId).single();
     if (cliente?.telefone) {
-      setWhatsappPrompt({ vendaId, clienteNome, total, telefone: cliente.telefone });
+      // Load full abatimento history
+      const { data: hist } = await (supabase as any)
+        .from("abatimentos_historico")
+        .select("valor, created_at")
+        .eq("venda_id", vendaId)
+        .order("created_at", { ascending: true });
+      const historicoFormatado = (hist || []).map((h: any) => ({
+        valor: Number(h.valor),
+        data: new Date(h.created_at).toLocaleDateString("pt-BR"),
+      }));
+      setWhatsappPrompt({ vendaId, clienteNome, total, telefone: cliente.telefone, valorPago, historico: historicoFormatado, quitou });
     }
   }
 
   function enviarReciboWhatsApp() {
     if (!whatsappPrompt) return;
-    const msg = `🧊 *RECIBO - GELOS SABORIZADOS*\n\n` +
-      `✅ *Pagamento Confirmado!*\n\n` +
+    const restante = whatsappPrompt.total - whatsappPrompt.valorPago;
+    let histLines = "";
+    if (whatsappPrompt.historico.length > 0) {
+      histLines = `\n📝 *Histórico de Pagamentos:*\n` +
+        whatsappPrompt.historico.map((h, i) => `  ${i + 1}. ${h.data} — R$ ${h.valor.toFixed(2)}`).join("\n") +
+        `\n  *Total pago: R$ ${whatsappPrompt.valorPago.toFixed(2)}*\n`;
+    }
+    const statusLine = whatsappPrompt.quitou
+      ? `✅ *Pagamento Completo!*`
+      : `⏳ *Pagamento Parcial* (Restante: R$ ${restante.toFixed(2)})`;
+    const msg = `🧊 *RECIBO - ERA DOS SABORES*\n\n` +
+      `${statusLine}\n\n` +
       `📋 *Cliente:* ${whatsappPrompt.clienteNome}\n` +
       `📅 *Data:* ${new Date().toLocaleDateString("pt-BR")}\n` +
-      `💰 *Valor Total: R$ ${whatsappPrompt.total.toFixed(2)}*\n\n` +
-      `_Obrigado pela preferência!_`;
+      `💰 *Valor Total da Venda: R$ ${whatsappPrompt.total.toFixed(2)}*\n` +
+      histLines +
+      (whatsappPrompt.quitou ? "" : `\n💳 *Restante: R$ ${restante.toFixed(2)}*\n`) +
+      `\n_Obrigado pela preferência!_`;
     const phone = whatsappPrompt.telefone.replace(/\D/g, "");
     window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`, "_blank");
     setWhatsappPrompt(null);
@@ -82,7 +104,7 @@ export default function AReceber() {
       }
 
       toast({ title: "Venda marcada como paga!" });
-      await checkWhatsappPrompt(id, venda.cliente_id, venda.clientes?.nome || "?", Number(venda.total));
+      await checkWhatsappPrompt(id, venda.cliente_id, venda.clientes?.nome || "?", Number(venda.total), Number(venda.total), true);
       loadData();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
@@ -130,9 +152,8 @@ export default function AReceber() {
           : `R$ ${valor.toFixed(2)} recebido. Restante: R$ ${(restante - valor).toFixed(2)}`,
       });
 
-      if (quitou) {
-        await checkWhatsappPrompt(abaterVenda.id, abaterVenda.cliente_id, abaterVenda.clientes?.nome || "?", Number(abaterVenda.total));
-      }
+      // Always prompt WhatsApp after abatimento
+      await checkWhatsappPrompt(abaterVenda.id, abaterVenda.cliente_id, abaterVenda.clientes?.nome || "?", totalVenda, novoValorPago, quitou);
 
       setAbaterVenda(null);
       setValorAbater("");
@@ -394,8 +415,27 @@ export default function AReceber() {
               <MessageCircle className="h-5 w-5 text-green-600" />
               Enviar recibo por WhatsApp?
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              Deseja enviar o comprovante de pagamento para <strong>{whatsappPrompt?.clienteNome}</strong> (R$ {whatsappPrompt?.total.toFixed(2)})?
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>Deseja enviar o comprovante para <strong>{whatsappPrompt?.clienteNome}</strong>?</p>
+                <div className="rounded-md bg-muted p-2 text-xs space-y-1">
+                  <div className="flex justify-between"><span>Total da venda:</span><span className="font-bold">R$ {whatsappPrompt?.total.toFixed(2)}</span></div>
+                  <div className="flex justify-between"><span>Total pago:</span><span className="font-bold text-green-600">R$ {whatsappPrompt?.valorPago.toFixed(2)}</span></div>
+                  {!whatsappPrompt?.quitou && (
+                    <div className="flex justify-between"><span>Restante:</span><span className="font-bold text-amber-600">R$ {((whatsappPrompt?.total || 0) - (whatsappPrompt?.valorPago || 0)).toFixed(2)}</span></div>
+                  )}
+                  {(whatsappPrompt?.historico?.length || 0) > 0 && (
+                    <div className="border-t pt-1 mt-1">
+                      <p className="font-semibold mb-0.5">Histórico ({whatsappPrompt?.historico.length} pagamento(s)):</p>
+                      {whatsappPrompt?.historico.map((h, i) => (
+                        <div key={i} className="flex justify-between text-muted-foreground">
+                          <span>{h.data}</span><span>R$ {h.valor.toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
