@@ -415,8 +415,27 @@ export default function AReceber() {
               <MessageCircle className="h-5 w-5 text-green-600" />
               Enviar recibo por WhatsApp?
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              Deseja enviar o comprovante de pagamento para <strong>{whatsappPrompt?.clienteNome}</strong> (R$ {whatsappPrompt?.total.toFixed(2)})?
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>Deseja enviar o comprovante para <strong>{whatsappPrompt?.clienteNome}</strong>?</p>
+                <div className="rounded-md bg-muted p-2 text-xs space-y-1">
+                  <div className="flex justify-between"><span>Total da venda:</span><span className="font-bold">R$ {whatsappPrompt?.total.toFixed(2)}</span></div>
+                  <div className="flex justify-between"><span>Total pago:</span><span className="font-bold text-green-600">R$ {whatsappPrompt?.valorPago.toFixed(2)}</span></div>
+                  {!whatsappPrompt?.quitou && (
+                    <div className="flex justify-between"><span>Restante:</span><span className="font-bold text-amber-600">R$ {((whatsappPrompt?.total || 0) - (whatsappPrompt?.valorPago || 0)).toFixed(2)}</span></div>
+                  )}
+                  {(whatsappPrompt?.historico?.length || 0) > 0 && (
+                    <div className="border-t pt-1 mt-1">
+                      <p className="font-semibold mb-0.5">Histórico ({whatsappPrompt?.historico.length} pagamento(s)):</p>
+                      {whatsappPrompt?.historico.map((h, i) => (
+                        <div key={i} className="flex justify-between text-muted-foreground">
+                          <span>{h.data}</span><span>R$ {h.valor.toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
