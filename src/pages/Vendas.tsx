@@ -103,6 +103,29 @@ export default function Vendas() {
     setHistorico(data || []);
   }
 
+  async function openRecibo(v: any) {
+    const { data: itensData } = await (supabase as any)
+      .from("venda_itens").select("*, sabores(nome)").eq("venda_id", v.id);
+    const { data: clienteData } = await (supabase as any)
+      .from("clientes").select("telefone").eq("id", v.cliente_id).single();
+    setReciboData({
+      cliente_nome: v.clientes?.nome || "?",
+      data: new Date(v.created_at).toLocaleDateString("pt-BR"),
+      forma_pagamento: getFormaPagamentoLabel(v),
+      numero_nf: v.numero_nf || undefined,
+      total: Number(v.total),
+      observacoes: v.observacoes || undefined,
+      telefone: clienteData?.telefone || undefined,
+      itens: (itensData || []).map((it: any) => ({
+        sabor_nome: it.sabores?.nome || "?",
+        quantidade: it.quantidade,
+        preco_unitario: Number(it.preco_unitario),
+        subtotal: Number(it.subtotal),
+      })),
+    });
+    setReciboOpen(true);
+  }
+
   async function loadData() {
     const [c, s, v, vi] = await Promise.all([
       (supabase as any).from("clientes").select("id, nome").eq("status", "ativo").order("nome"),
