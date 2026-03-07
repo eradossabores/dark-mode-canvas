@@ -240,16 +240,74 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="fixed inset-0 z-40 md:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
           <aside
-            className="absolute left-0 top-0 h-full w-60 flex flex-col border-r border-white/10 z-50
-              [--sidebar-foreground:0_0%_100%] [--sidebar-border:0_0%_100%/0.12] [--sidebar-accent:0_0%_100%/0.12] [--sidebar-accent-foreground:0_0%_100%] [--sidebar-primary-foreground:0_0%_100%]"
-            style={{ backgroundColor: 'hsl(230, 50%, 22%)' }}
+            className="absolute left-0 top-0 h-full w-64 flex flex-col border-r border-white/10 z-50"
+            style={{
+              backgroundColor: 'hsl(230, 50%, 22%)',
+              color: 'white',
+              ['--sidebar-foreground' as any]: '0 0% 100%',
+              ['--sidebar-border' as any]: '0 0% 100% / 0.12',
+              ['--sidebar-accent' as any]: '0 0% 100% / 0.12',
+              ['--sidebar-accent-foreground' as any]: '0 0% 100%',
+              ['--sidebar-primary-foreground' as any]: '0 0% 100%',
+            }}
           >
-            <div className="flex justify-end p-2">
-              <button onClick={() => setMobileOpen(false)}>
+            <div className="flex items-center justify-between p-3 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <img src={logo} alt="A Era dos Sabores" className="h-9 w-9 rounded shadow-sm" />
+                <div className="flex flex-col">
+                  <span className="font-bold text-sm text-white leading-tight">A Era dos Sabores</span>
+                  <span className="text-[10px] text-white/60 leading-tight">Gelos Saborizados</span>
+                </div>
+              </div>
+              <button onClick={() => setMobileOpen(false)} className="p-1">
                 <X className="h-5 w-5 text-white" />
               </button>
             </div>
-            {sidebarContent}
+            <nav className="flex-1 py-2 space-y-1 overflow-y-auto">
+              {filteredGroups.map((group, gi) => (
+                <div key={group.label}>
+                  {gi > 0 && <div className="mx-4 my-1.5 border-t border-white/10" />}
+                  <p className="px-4 pt-1 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-white/40">
+                    {group.label}
+                  </p>
+                  {group.items.map((item) => {
+                    const active = location.pathname === item.path;
+                    return (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        onClick={() => setMobileOpen(false)}
+                        className={cn(
+                          "flex items-center gap-3 px-4 py-2 text-sm transition-colors rounded-md mx-2",
+                          active
+                            ? "bg-white/20 text-white font-semibold shadow-md"
+                            : "text-white/80 hover:bg-white/10 hover:text-white"
+                        )}
+                      >
+                        <item.icon className="h-4 w-4 shrink-0" />
+                        <span>{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              ))}
+            </nav>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 px-4 py-2.5 text-sm text-white/80 hover:bg-white/10 mx-2 rounded-md"
+            >
+              <LogOut className="h-4 w-4 shrink-0" />
+              <span>Sair</span>
+            </button>
+            <div className="flex justify-center py-2 border-t border-white/10">
+              <img
+                key={sidebarCharIdx}
+                src={sidebarChar.src}
+                alt=""
+                aria-hidden
+                className="w-20 h-20 object-contain pointer-events-none select-none animate-fade-in"
+              />
+            </div>
           </aside>
         </div>
       )}
