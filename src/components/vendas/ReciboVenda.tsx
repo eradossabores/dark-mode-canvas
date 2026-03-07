@@ -195,7 +195,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
           <Button onClick={gerarPDF} className="flex-1">
             <Printer className="h-4 w-4 mr-1" /> Imprimir PDF
           </Button>
-          <Button onClick={enviarWhatsApp} variant="outline" className="flex-1 text-green-700 border-green-300 hover:bg-green-50 dark:hover:bg-green-950">
+          <Button onClick={enviarWhatsApp} variant="outline" className="flex-1 text-white bg-blue-600 hover:bg-blue-700 border-blue-600">
             <MessageCircle className="h-4 w-4 mr-1" /> WhatsApp
           </Button>
         </div>
