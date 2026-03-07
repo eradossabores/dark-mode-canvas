@@ -239,7 +239,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {mobileOpen && (
         <div className="fixed inset-0 z-40 md:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
-          <aside className="absolute left-0 top-0 h-full w-60 flex flex-col border-r border-sidebar-border z-50 text-white" style={{ backgroundColor: 'hsl(230, 50%, 28%)', opacity: 1 }}>
+          <aside
+            className="absolute left-0 top-0 h-full w-60 flex flex-col border-r border-white/10 z-50
+              [--sidebar-foreground:0_0%_100%] [--sidebar-border:0_0%_100%/0.12] [--sidebar-accent:0_0%_100%/0.12] [--sidebar-accent-foreground:0_0%_100%] [--sidebar-primary-foreground:0_0%_100%]"
+            style={{ backgroundColor: 'hsl(230, 50%, 22%)' }}
+          >
             <div className="flex justify-end p-2">
               <button onClick={() => setMobileOpen(false)}>
                 <X className="h-5 w-5 text-sidebar-foreground" />
