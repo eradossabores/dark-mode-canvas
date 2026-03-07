@@ -1039,6 +1039,7 @@ export default function Vendas() {
                           </TooltipTrigger>
                         </Tooltip>
                         <Button size="icon" variant="ghost" onClick={() => openDetailDialog(v)}><Eye className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" onClick={() => openRecibo(v)}><Receipt className="h-4 w-4 text-emerald-600" /></Button>
                         <Button size="icon" variant="ghost" onClick={() => openEditDialog(v)}><Pencil className="h-4 w-4" /></Button>
                         {v.status !== "cancelada" && (
                           <Button size="icon" variant="ghost" onClick={() => setCancelId(v.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
