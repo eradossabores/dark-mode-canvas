@@ -119,6 +119,12 @@ export default function EditDayProducoesDialog({ open, onOpenChange, dayItems, s
       for (const item of items) {
         const finalTotal = item.modo === "lote" ? item.quantidade_lotes * 84 : item.quantidade_total;
 
+        // Find original data to calculate stock diff
+        const original = dayItems.find((d: any) => d.id === item.id);
+        const oldSaborId = original?.sabor_id;
+        const oldTotal = original?.quantidade_total || 0;
+
+        // Update producoes record
         const { error } = await (supabase as any).from("producoes").update({
           sabor_id: item.sabor_id,
           modo: item.modo,
@@ -130,6 +136,46 @@ export default function EditDayProducoesDialog({ open, onOpenChange, dayItems, s
         }).eq("id", item.id);
         if (error) throw error;
 
+        // --- Sync stock (estoque_gelos) ---
+        const saborChanged = oldSaborId !== item.sabor_id;
+        const qtyChanged = oldTotal !== finalTotal;
+
+        if (saborChanged || qtyChanged) {
+          // Reverse old stock: subtract oldTotal from old sabor
+          if (oldSaborId) {
+            const { data: oldEstoque } = await (supabase as any)
+              .from("estoque_gelos").select("id, quantidade").eq("sabor_id", oldSaborId).single();
+            if (oldEstoque) {
+              await (supabase as any).from("estoque_gelos")
+                .update({ quantidade: oldEstoque.quantidade - oldTotal, updated_at: new Date().toISOString() })
+                .eq("id", oldEstoque.id);
+            }
+          }
+
+          // Add new stock: add finalTotal to new sabor
+          const { data: newEstoque } = await (supabase as any)
+            .from("estoque_gelos").select("id, quantidade").eq("sabor_id", item.sabor_id).single();
+          if (newEstoque) {
+            await (supabase as any).from("estoque_gelos")
+              .update({ quantidade: newEstoque.quantidade + finalTotal, updated_at: new Date().toISOString() })
+              .eq("id", newEstoque.id);
+          }
+
+          // Update movimentacoes_estoque linked to this production
+          await (supabase as any).from("movimentacoes_estoque").delete()
+            .eq("referencia_id", item.id).eq("tipo_item", "gelo_pronto");
+
+          await (supabase as any).from("movimentacoes_estoque").insert({
+            item_id: item.sabor_id,
+            tipo_item: "gelo_pronto",
+            tipo_movimentacao: "entrada",
+            quantidade: finalTotal,
+            referencia: "producao",
+            referencia_id: item.id,
+            operador: operadorStr,
+          });
+        }
+
         // Update funcionarios for all productions with the same global list
         await (supabase as any).from("producao_funcionarios").delete().eq("producao_id", item.id);
         if (validFuncs.length > 0) {
@@ -138,7 +184,7 @@ export default function EditDayProducoesDialog({ open, onOpenChange, dayItems, s
           );
         }
       }
-      toast({ title: `✅ ${items.length} produção(ões) atualizada(s)!` });
+      toast({ title: `✅ ${items.length} produção(ões) atualizada(s) com estoque sincronizado!` });
       onOpenChange(false);
       onSaved();
     } catch (e: any) {
