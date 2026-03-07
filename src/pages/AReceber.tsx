@@ -10,6 +10,9 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { DollarSign, CheckCircle, AlertTriangle, MinusCircle, History, Search, MessageCircle } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import logoRecibo from "@/assets/logo-recibo.png";
 
 export default function AReceber() {
   const [vendas, setVendas] = useState<any[]>([]);
@@ -60,27 +63,113 @@ export default function AReceber() {
     }
   }
 
+  function gerarPdfRecibo(): jsPDF | null {
+    if (!whatsappPrompt) return null;
+    const p = whatsappPrompt;
+    const restante = p.total - p.valorPago;
+    const doc = new jsPDF({ unit: "mm", format: [80, 220] });
+    const w = 80;
+    let y = 4;
+
+    // Logo
+    try {
+      doc.addImage(logoRecibo, "PNG", (w - 55) / 2, y, 55, 44);
+      y += 46;
+    } catch { y += 4; }
+
+    doc.setFontSize(7);
+    doc.text("Cor, Cheiro e Sabor da Fruta", w / 2, y, { align: "center" });
+    y += 3;
+    doc.text("Tel: (95) 99172-5677", w / 2, y, { align: "center" });
+    y += 5;
+
+    doc.setLineWidth(0.3);
+    doc.line(4, y, w - 4, y);
+    y += 4;
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.text(p.quitou ? "RECIBO - PAGAMENTO COMPLETO" : "RECIBO - PAGAMENTO PARCIAL", w / 2, y, { align: "center" });
+    y += 5;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.text(`Cliente: ${p.clienteNome}`, 4, y); y += 4;
+    doc.text(`Data: ${new Date().toLocaleDateString("pt-BR")}`, 4, y); y += 4;
+    doc.text(`Valor Total da Venda: R$ ${p.total.toFixed(2)}`, 4, y); y += 4;
+    doc.text(`Total Pago: R$ ${p.valorPago.toFixed(2)}`, 4, y); y += 4;
+    if (!p.quitou) {
+      doc.text(`Restante: R$ ${restante.toFixed(2)}`, 4, y); y += 4;
+    }
+
+    doc.line(4, y, w - 4, y);
+    y += 3;
+
+    // Histórico de abatimentos
+    if (p.historico.length > 0) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7);
+      doc.text("HISTÓRICO DE PAGAMENTOS", w / 2, y, { align: "center" });
+      y += 3;
+
+      autoTable(doc, {
+        startY: y,
+        margin: { left: 4, right: 4 },
+        head: [["#", "Data", "Valor"]],
+        body: p.historico.map((h, i) => [
+          String(i + 1),
+          h.data,
+          `R$ ${h.valor.toFixed(2)}`,
+        ]),
+        styles: { fontSize: 6.5, cellPadding: 1.5 },
+        headStyles: { fillColor: [0, 136, 204], fontSize: 6.5 },
+        columnStyles: {
+          0: { cellWidth: 8, halign: "center" },
+          1: { cellWidth: 28 },
+          2: { cellWidth: 28, halign: "right" },
+        },
+        theme: "grid",
+      });
+
+      y = (doc as any).lastAutoTable.finalY + 3;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7);
+      doc.text(`Total Pago: R$ ${p.valorPago.toFixed(2)}`, w - 4, y, { align: "right" });
+      y += 5;
+    }
+
+    doc.line(4, y, w - 4, y);
+    y += 5;
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    const statusText = p.quitou ? "QUITADO" : `RESTANTE: R$ ${restante.toFixed(2)}`;
+    doc.text(statusText, w / 2, y, { align: "center" });
+    y += 6;
+
+    doc.setFontSize(6);
+    doc.setFont("helvetica", "normal");
+    doc.text("Obrigado pela preferência!", w / 2, y, { align: "center" });
+
+    return doc;
+  }
+
   function enviarReciboWhatsApp() {
     if (!whatsappPrompt) return;
-    const restante = whatsappPrompt.total - whatsappPrompt.valorPago;
-    let histLines = "";
-    if (whatsappPrompt.historico.length > 0) {
-      histLines = `\n📝 *Histórico de Pagamentos:*\n` +
-        whatsappPrompt.historico.map((h, i) => `  ${i + 1}. ${h.data} — R$ ${h.valor.toFixed(2)}`).join("\n") +
-        `\n  *Total pago: R$ ${whatsappPrompt.valorPago.toFixed(2)}*\n`;
+    const p = whatsappPrompt;
+
+    // Generate and download PDF
+    const doc = gerarPdfRecibo();
+    if (doc) {
+      doc.save(`recibo-${p.clienteNome.replace(/\s+/g, "-")}.pdf`);
     }
-    const statusLine = whatsappPrompt.quitou
-      ? `✅ *Pagamento Completo!*`
-      : `⏳ *Pagamento Parcial* (Restante: R$ ${restante.toFixed(2)})`;
-    const msg = `🧊 *RECIBO - ERA DOS SABORES*\n\n` +
-      `${statusLine}\n\n` +
-      `📋 *Cliente:* ${whatsappPrompt.clienteNome}\n` +
-      `📅 *Data:* ${new Date().toLocaleDateString("pt-BR")}\n` +
-      `💰 *Valor Total da Venda: R$ ${whatsappPrompt.total.toFixed(2)}*\n` +
-      histLines +
-      (whatsappPrompt.quitou ? "" : `\n💳 *Restante: R$ ${restante.toFixed(2)}*\n`) +
-      `\n_Obrigado pela preferência!_`;
-    const phone = whatsappPrompt.telefone.replace(/\D/g, "");
+
+    // Open WhatsApp with short message
+    const restante = p.total - p.valorPago;
+    const statusLine = p.quitou ? "✅ Pagamento Completo!" : `⏳ Pagamento Parcial (Restante: R$ ${restante.toFixed(2)})`;
+    const msg = `🧊 *ERA DOS SABORES*\n\n${statusLine}\n\nCliente: ${p.clienteNome}\nValor: R$ ${p.total.toFixed(2)}\nPago: R$ ${p.valorPago.toFixed(2)}\n\n📎 _Recibo em PDF anexado._`;
+    const phone = p.telefone.replace(/\D/g, "");
     window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`, "_blank");
     setWhatsappPrompt(null);
   }
