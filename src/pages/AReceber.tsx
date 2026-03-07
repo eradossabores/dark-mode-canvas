@@ -152,9 +152,8 @@ export default function AReceber() {
           : `R$ ${valor.toFixed(2)} recebido. Restante: R$ ${(restante - valor).toFixed(2)}`,
       });
 
-      if (quitou) {
-        await checkWhatsappPrompt(abaterVenda.id, abaterVenda.cliente_id, abaterVenda.clientes?.nome || "?", Number(abaterVenda.total));
-      }
+      // Always prompt WhatsApp after abatimento
+      await checkWhatsappPrompt(abaterVenda.id, abaterVenda.cliente_id, abaterVenda.clientes?.nome || "?", totalVenda, novoValorPago, quitou);
 
       setAbaterVenda(null);
       setValorAbater("");
