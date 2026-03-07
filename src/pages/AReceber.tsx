@@ -104,7 +104,7 @@ export default function AReceber() {
       }
 
       toast({ title: "Venda marcada como paga!" });
-      await checkWhatsappPrompt(id, venda.cliente_id, venda.clientes?.nome || "?", Number(venda.total));
+      await checkWhatsappPrompt(id, venda.cliente_id, venda.clientes?.nome || "?", Number(venda.total), Number(venda.total), true);
       loadData();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
