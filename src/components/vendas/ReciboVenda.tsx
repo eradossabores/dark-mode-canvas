@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Printer, MessageCircle } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import logoRecibo from "@/assets/logo-recibo.png";
 
 interface ReciboItem {
   sabor_nome: string;
