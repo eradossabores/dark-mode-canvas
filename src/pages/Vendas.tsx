@@ -18,7 +18,8 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, ShoppingCart, Pencil, Eye, CalendarIcon, X, Truck, Package, History, CalendarClock } from "lucide-react";
+import { Plus, Trash2, ShoppingCart, Pencil, Eye, CalendarIcon, X, Truck, Package, History, CalendarClock, Receipt } from "lucide-react";
+import ReciboVenda from "@/components/vendas/ReciboVenda";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const FORMAS_PAGAMENTO = [
@@ -88,6 +89,8 @@ export default function Vendas() {
   const [detailItens, setDetailItens] = useState<any[]>([]);
   const [historicoVenda, setHistoricoVenda] = useState<any>(null);
   const [historico, setHistorico] = useState<any[]>([]);
+  const [reciboOpen, setReciboOpen] = useState(false);
+  const [reciboData, setReciboData] = useState<any>(null);
 
   useEffect(() => { loadData(); }, []);
 
@@ -98,6 +101,29 @@ export default function Vendas() {
       .eq("venda_id", vendaId)
       .order("created_at", { ascending: true });
     setHistorico(data || []);
+  }
+
+  async function openRecibo(v: any) {
+    const { data: itensData } = await (supabase as any)
+      .from("venda_itens").select("*, sabores(nome)").eq("venda_id", v.id);
+    const { data: clienteData } = await (supabase as any)
+      .from("clientes").select("telefone").eq("id", v.cliente_id).single();
+    setReciboData({
+      cliente_nome: v.clientes?.nome || "?",
+      data: new Date(v.created_at).toLocaleDateString("pt-BR"),
+      forma_pagamento: getFormaPagamentoLabel(v),
+      numero_nf: v.numero_nf || undefined,
+      total: Number(v.total),
+      observacoes: v.observacoes || undefined,
+      telefone: clienteData?.telefone || undefined,
+      itens: (itensData || []).map((it: any) => ({
+        sabor_nome: it.sabores?.nome || "?",
+        quantidade: it.quantidade,
+        preco_unitario: Number(it.preco_unitario),
+        subtotal: Number(it.subtotal),
+      })),
+    });
+    setReciboOpen(true);
   }
 
   async function loadData() {
@@ -1013,6 +1039,7 @@ export default function Vendas() {
                           </TooltipTrigger>
                         </Tooltip>
                         <Button size="icon" variant="ghost" onClick={() => openDetailDialog(v)}><Eye className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" onClick={() => openRecibo(v)}><Receipt className="h-4 w-4 text-emerald-600" /></Button>
                         <Button size="icon" variant="ghost" onClick={() => openEditDialog(v)}><Pencil className="h-4 w-4" /></Button>
                         {v.status !== "cancelada" && (
                           <Button size="icon" variant="ghost" onClick={() => setCancelId(v.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
@@ -1134,6 +1161,7 @@ export default function Vendas() {
           )}
         </DialogContent>
       </Dialog>
+      <ReciboVenda open={reciboOpen} onOpenChange={setReciboOpen} data={reciboData} />
     </div>
   );
 }
