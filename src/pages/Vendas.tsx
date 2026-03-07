@@ -1161,6 +1161,7 @@ export default function Vendas() {
           )}
         </DialogContent>
       </Dialog>
+      <ReciboVenda open={reciboOpen} onOpenChange={setReciboOpen} data={reciboData} />
     </div>
   );
 }
