@@ -135,6 +135,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { role, signOut, user } = useAuth();
   useKeyboardShortcuts();
 
+  const filteredGroups = menuGroups
+    .map((g) => ({ ...g, items: g.items.filter((item) => isRouteAllowed(item.path, role)) }))
+    .filter((g) => g.items.length > 0);
   const filteredMenu = menuItems.filter((item) => isRouteAllowed(item.path, role));
 
   const [sidebarCharIdx, setSidebarCharIdx] = useState(0);
