@@ -35,15 +35,16 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
 
   function gerarPDF() {
     if (!data) return;
-    const doc = new jsPDF({ unit: "mm", format: [80, 200] }); // thermal receipt width
-
+    const doc = new jsPDF({ unit: "mm", format: [80, 220] });
     const w = 80;
-    let y = 8;
+    let y = 4;
 
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.text("GELOS SABORIZADOS", w / 2, y, { align: "center" });
-    y += 5;
+    // Logo
+    const logoW = 30;
+    const logoH = 24;
+    doc.addImage(logoRecibo, "PNG", (w - logoW) / 2, y, logoW, logoH);
+    y += logoH + 2;
+
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
     doc.text("Cor, Cheiro e Sabor da Fruta", w / 2, y, { align: "center" });
