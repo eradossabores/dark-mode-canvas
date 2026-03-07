@@ -168,25 +168,35 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         )}
       </div>
       <nav className="flex-1 py-2 space-y-1 overflow-y-auto">
-        {filteredMenu.map((item) => {
-          const active = location.pathname === item.path;
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              onClick={() => setMobileOpen(false)}
-              className={cn(
-                "flex items-center gap-3 px-4 py-2.5 text-sm transition-colors rounded-md mx-2",
-                active
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold shadow-md"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-              )}
-            >
-              <item.icon className="h-4 w-4 shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
-            </Link>
-          );
-        })}
+        {filteredGroups.map((group, gi) => (
+          <div key={group.label}>
+            {gi > 0 && <div className="mx-4 my-1.5 border-t border-sidebar-border" />}
+            {!collapsed && (
+              <p className="px-4 pt-1 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
+                {group.label}
+              </p>
+            )}
+            {group.items.map((item) => {
+              const active = location.pathname === item.path;
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setMobileOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-4 py-2 text-sm transition-colors rounded-md mx-2",
+                    active
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold shadow-md"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  )}
+                >
+                  <item.icon className="h-4 w-4 shrink-0" />
+                  {!collapsed && <span>{item.label}</span>}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
       {/* Logout button */}
       <button
