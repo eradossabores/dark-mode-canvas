@@ -43,21 +43,43 @@ export default function AReceber() {
     setHistorico(data || []);
   }
 
-  async function checkWhatsappPrompt(vendaId: string, clienteId: string, clienteNome: string, total: number) {
+  async function checkWhatsappPrompt(vendaId: string, clienteId: string, clienteNome: string, total: number, valorPago: number, quitou: boolean) {
     const { data: cliente } = await (supabase as any).from("clientes").select("telefone").eq("id", clienteId).single();
     if (cliente?.telefone) {
-      setWhatsappPrompt({ vendaId, clienteNome, total, telefone: cliente.telefone });
+      // Load full abatimento history
+      const { data: hist } = await (supabase as any)
+        .from("abatimentos_historico")
+        .select("valor, created_at")
+        .eq("venda_id", vendaId)
+        .order("created_at", { ascending: true });
+      const historicoFormatado = (hist || []).map((h: any) => ({
+        valor: Number(h.valor),
+        data: new Date(h.created_at).toLocaleDateString("pt-BR"),
+      }));
+      setWhatsappPrompt({ vendaId, clienteNome, total, telefone: cliente.telefone, valorPago, historico: historicoFormatado, quitou });
     }
   }
 
   function enviarReciboWhatsApp() {
     if (!whatsappPrompt) return;
-    const msg = `🧊 *RECIBO - GELOS SABORIZADOS*\n\n` +
-      `✅ *Pagamento Confirmado!*\n\n` +
+    const restante = whatsappPrompt.total - whatsappPrompt.valorPago;
+    let histLines = "";
+    if (whatsappPrompt.historico.length > 0) {
+      histLines = `\n📝 *Histórico de Pagamentos:*\n` +
+        whatsappPrompt.historico.map((h, i) => `  ${i + 1}. ${h.data} — R$ ${h.valor.toFixed(2)}`).join("\n") +
+        `\n  *Total pago: R$ ${whatsappPrompt.valorPago.toFixed(2)}*\n`;
+    }
+    const statusLine = whatsappPrompt.quitou
+      ? `✅ *Pagamento Completo!*`
+      : `⏳ *Pagamento Parcial* (Restante: R$ ${restante.toFixed(2)})`;
+    const msg = `🧊 *RECIBO - ERA DOS SABORES*\n\n` +
+      `${statusLine}\n\n` +
       `📋 *Cliente:* ${whatsappPrompt.clienteNome}\n` +
       `📅 *Data:* ${new Date().toLocaleDateString("pt-BR")}\n` +
-      `💰 *Valor Total: R$ ${whatsappPrompt.total.toFixed(2)}*\n\n` +
-      `_Obrigado pela preferência!_`;
+      `💰 *Valor Total da Venda: R$ ${whatsappPrompt.total.toFixed(2)}*\n` +
+      histLines +
+      (whatsappPrompt.quitou ? "" : `\n💳 *Restante: R$ ${restante.toFixed(2)}*\n`) +
+      `\n_Obrigado pela preferência!_`;
     const phone = whatsappPrompt.telefone.replace(/\D/g, "");
     window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`, "_blank");
     setWhatsappPrompt(null);
