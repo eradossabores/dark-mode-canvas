@@ -130,6 +130,10 @@ export default function AReceber() {
           : `R$ ${valor.toFixed(2)} recebido. Restante: R$ ${(restante - valor).toFixed(2)}`,
       });
 
+      if (quitou) {
+        await checkWhatsappPrompt(abaterVenda.id, abaterVenda.cliente_id, abaterVenda.clientes?.nome || "?", Number(abaterVenda.total));
+      }
+
       setAbaterVenda(null);
       setValorAbater("");
       loadData();
