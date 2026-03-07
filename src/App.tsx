@@ -34,6 +34,7 @@ import MapaClientes from "@/pages/MapaClientes";
 import Prospeccao from "@/pages/Prospeccao";
 import Cadastro from "@/pages/Cadastro";
 import Pedir from "@/pages/Pedir";
+import Backup from "@/pages/Backup";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -83,6 +84,7 @@ const App = () => (
               <Route path="/painel/mapa-clientes" element={<AdminRoute><MapaClientes /></AdminRoute>} />
               <Route path="/painel/prospeccao" element={<AdminRoute><Prospeccao /></AdminRoute>} />
               <Route path="/painel/plano-producao" element={<AdminRoute><PlanoProducaoDiario /></AdminRoute>} />
+              <Route path="/painel/backup" element={<AdminRoute><Backup /></AdminRoute>} />
 
               {/* Production accessible routes */}
               <Route path="/painel/producao" element={<ProdRoute><Producao /></ProdRoute>} />
