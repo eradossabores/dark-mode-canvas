@@ -114,7 +114,7 @@ export default function Vendas() {
       forma_pagamento: getFormaPagamentoLabel(v),
       numero_nf: v.numero_nf || undefined,
       total: Number(v.total),
-      observacoes: v.observacoes || undefined,
+      observacoes: (v.observacoes || "").replace(/^\[[^\]]*\]\s*/, "").trim() || undefined,
       telefone: clienteData?.telefone || undefined,
       itens: (itensData || []).map((it: any) => ({
         sabor_nome: it.sabores?.nome || "?",
