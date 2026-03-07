@@ -20,7 +20,7 @@ const menuGroups = [
   {
     label: "Principal",
     items: [
-      { path: "/painel", label: "Dashboard", icon: LayoutDashboard },
+      { path: "/painel", label: "Página Principal", icon: LayoutDashboard },
     ],
   },
   {
