@@ -1025,6 +1025,7 @@ export default function Vendas() {
               })()}
             </TableBody>
           </Table>
+          </div>
           {(() => {
             let filtered = clienteFilter
               ? vendas.filter(v => normalizeStr(v.clientes?.nome || "").includes(normalizeStr(clienteFilter)))
