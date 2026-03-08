@@ -124,21 +124,34 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     doc.save(`recibo-${data.cliente_nome.replace(/\s+/g, "-")}.pdf`);
   }
 
-  function enviarWhatsApp() {
+  async function enviarWhatsApp() {
     if (!data) return;
 
-    // Generate and download PDF first
-    try {
-      gerarPDF();
-    } catch (e) {
-      console.error("Erro ao gerar PDF:", e);
+    const doc = gerarPDFDoc();
+    if (!doc) return;
+
+    const pdfBlob = doc.output("blob");
+    const fileName = `recibo-${data.cliente_nome.replace(/\s+/g, "-")}.pdf`;
+    const file = new File([pdfBlob], fileName, { type: "application/pdf" });
+
+    const msg = `🧊 *A ERA DOS SABORES*\n\nOlá ${data.cliente_nome}, segue seu recibo.\n\nTotal: R$ ${data.total.toFixed(2)}\nData: ${data.data}\nPagamento: ${data.forma_pagamento}`;
+
+    // Try Web Share API (attaches file on mobile/desktop)
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ text: msg, files: [file] });
+        return;
+      } catch (e) {
+        // User cancelled or share failed, fall back
+        console.log("Share cancelled, falling back to wa.me");
+      }
     }
 
-    // Then open WhatsApp with simple message + instruct to attach PDF
-    const msg = `*A ERA DOS SABORES*\n\nOla ${data.cliente_nome}, segue seu recibo.\n\nTotal: R$ ${data.total.toFixed(2)}\nData: ${data.data}\nPagamento: ${data.forma_pagamento}\n\nPor favor, confira o PDF em anexo.`;
+    // Fallback: download PDF + open WhatsApp with text only
+    doc.save(fileName);
     const phone = data.telefone?.replace(/\D/g, "") || "";
     const url = phone
-      ? `https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`
+      ? `https://wa.me/55${phone}?text=${encodeURIComponent(msg + "\n\n📎 _Recibo PDF baixado no seu dispositivo._")}`
       : `https://wa.me/?text=${encodeURIComponent(msg)}`;
     window.open(url, "_blank");
   }
