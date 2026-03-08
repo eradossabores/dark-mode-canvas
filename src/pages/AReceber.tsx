@@ -753,9 +753,19 @@ export default function AReceber() {
                       <Button
                         size="sm"
                         variant="ghost"
+                        onClick={() => gerarReciboVenda(v)}
+                        title="Gerar Recibo PDF"
+                      >
+                        <Printer className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
                         onClick={() => { setHistoricoVenda(v); loadHistorico(v.id); }}
                         title="Histórico de abatimentos"
                       >
+                        <History className="h-3.5 w-3.5" />
+                      </Button>
                         <History className="h-3.5 w-3.5" />
                       </Button>
                       <Button
