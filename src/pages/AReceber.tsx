@@ -766,8 +766,6 @@ export default function AReceber() {
                       >
                         <History className="h-3.5 w-3.5" />
                       </Button>
-                        <History className="h-3.5 w-3.5" />
-                      </Button>
                       <Button
                         size="sm"
                         variant="outline"
