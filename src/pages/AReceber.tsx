@@ -78,8 +78,8 @@ export default function AReceber() {
 
     // Logo
     try {
-      doc.addImage(logoRecibo, "PNG", (w - 55) / 2, y, 55, 44);
-      y += 46;
+      doc.addImage(logoRecibo, "PNG", (w - 40) / 2, y, 40, 32);
+      y += 34;
     } catch { y += 4; }
 
     doc.setFontSize(7);
