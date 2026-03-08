@@ -180,7 +180,7 @@ export default function AReceber() {
 
       // Small checkmark
       doc.setFontSize(10);
-      doc.text("✓", centerX + 22, centerY - 4);
+      doc.text("*", centerX + 22, centerY - 4);
 
       // Reset colors
       doc.setTextColor(0, 0, 0);
