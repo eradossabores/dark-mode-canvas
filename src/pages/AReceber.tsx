@@ -100,7 +100,9 @@ export default function AReceber() {
     doc.text(`Cliente: ${p.clienteNome}`, 4, y); y += 4;
     doc.text(`Data: ${new Date().toLocaleDateString("pt-BR")}`, 4, y); y += 4;
     doc.text(`Valor Total da Venda: R$ ${p.total.toFixed(2)}`, 4, y); y += 4;
-    doc.text(`Total Pago: R$ ${p.valorPago.toFixed(2)}`, 4, y); y += 4;
+    if (p.valorPago > 0) {
+      doc.text(`Total Pago: R$ ${p.valorPago.toFixed(2)}`, 4, y); y += 4;
+    }
     if (!p.quitou) {
       doc.text(`Restante: R$ ${restante.toFixed(2)}`, 4, y); y += 4;
     }
