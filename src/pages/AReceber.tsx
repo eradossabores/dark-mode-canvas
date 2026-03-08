@@ -560,60 +560,8 @@ export default function AReceber() {
         </CardContent>
       </Card>
 
-      {/* Dialog Abater Valor */}
-      <Dialog open={!!abaterVenda} onOpenChange={(open) => { if (!open) setAbaterVenda(null); }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Abater Valor</DialogTitle>
-          </DialogHeader>
-          {abaterVenda && (
-            <div className="space-y-4">
-              <div className="rounded-lg bg-muted p-3 space-y-1">
-                <p className="text-sm font-medium">{abaterVenda.clientes?.nome}</p>
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Total da venda:</span>
-                  <span className="font-bold text-foreground">R$ {Number(abaterVenda.total).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Já pago:</span>
-                  <span className="font-bold text-green-600">R$ {Number(abaterVenda.valor_pago || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="font-semibold">Restante:</span>
-                  <span className="font-black text-amber-600">
-                    R$ {(Number(abaterVenda.total) - Number(abaterVenda.valor_pago || 0)).toFixed(2)}
-                  </span>
-                </div>
-              </div>
-              <div>
-                <Label>Valor a abater (R$)</Label>
-                <Input
-                  type="text"
-                  inputMode="decimal"
-                  placeholder="0,00"
-                  value={valorAbater}
-                  onChange={(e) => setValorAbater(e.target.value)}
-                  autoFocus
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button className="flex-1" onClick={abaterValor}>
-                  Confirmar Abatimento
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    const restante = Number(abaterVenda.total) - Number(abaterVenda.valor_pago || 0);
-                    setValorAbater(restante.toFixed(2).replace(".", ","));
-                  }}
-                >
-                  Quitar Tudo
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+
+
 
       {/* Dialog Histórico de Abatimentos */}
       <Dialog open={!!historicoVenda} onOpenChange={(open) => { if (!open) setHistoricoVenda(null); }}>
