@@ -22,6 +22,8 @@ interface ReciboData {
   itens: ReciboItem[];
   observacoes?: string;
   telefone?: string;
+  status?: "pendente" | "paga" | "cancelada";
+  valor_pago?: number;
 }
 
 interface Props {
