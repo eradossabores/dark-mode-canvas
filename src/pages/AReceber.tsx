@@ -180,7 +180,7 @@ export default function AReceber() {
 
       // Small checkmark
       doc.setFontSize(10);
-      doc.text("*enterX + 22, centerY - 4);
+      doc.text("*terX + 22, centerY - 4);
 
       // Reset colors
       doc.setTextColor(0, 0, 0);
@@ -473,7 +473,7 @@ export default function AReceber() {
     doc.setFontSize(7);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(0, 100, 160);
-    doc.text(`ðŸQtQtd Total:tal:{totalQtd} unidades`, w / 2, y + 3, { align: "center" });
+    doc.text(`ðŸQtQtQtd Total:tal:tal:{totalQtd} unidades`, w / 2, y + 3, { align: "center" });
     y += 9;
 
     // TOTAL highlight box
