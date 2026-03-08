@@ -33,8 +33,8 @@ interface Props {
 export default function ReciboVenda({ open, onOpenChange, data }: Props) {
   if (!data) return null;
 
-  function gerarPDF() {
-    if (!data) return;
+  function gerarPDFDoc(): jsPDF | null {
+    if (!data) return null;
     const doc = new jsPDF({ unit: "mm", format: [80, 220] });
     const w = 80;
     let y = 4;
@@ -52,7 +52,6 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     doc.text("Tel: (95) 99172-5677", w / 2, y, { align: "center" });
     y += 5;
 
-    // Divider
     doc.setLineWidth(0.3);
     doc.line(4, y, w - 4, y);
     y += 4;
@@ -72,7 +71,6 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     doc.line(4, y, w - 4, y);
     y += 3;
 
-    // Items table
     autoTable(doc, {
       startY: y,
       margin: { left: 4, right: 4 },
@@ -121,24 +119,43 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     doc.setFont("helvetica", "normal");
     doc.text("Obrigado pela preferência!", w / 2, y, { align: "center" });
 
+    return doc;
+  }
+
+  function gerarPDF() {
+    const doc = gerarPDFDoc();
+    if (!doc || !data) return;
     doc.save(`recibo-${data.cliente_nome.replace(/\s+/g, "-")}.pdf`);
   }
 
-  function enviarWhatsApp() {
+  async function enviarWhatsApp() {
     if (!data) return;
 
-    // Generate and download PDF first
-    try {
-      gerarPDF();
-    } catch (e) {
-      console.error("Erro ao gerar PDF:", e);
+    const doc = gerarPDFDoc();
+    if (!doc) return;
+
+    const pdfBlob = doc.output("blob");
+    const fileName = `recibo-${data.cliente_nome.replace(/\s+/g, "-")}.pdf`;
+    const file = new File([pdfBlob], fileName, { type: "application/pdf" });
+
+    const msg = `🧊 *A ERA DOS SABORES*\n\nOlá ${data.cliente_nome}, segue seu recibo.\n\nTotal: R$ ${data.total.toFixed(2)}\nData: ${data.data}\nPagamento: ${data.forma_pagamento}`;
+
+    // Try Web Share API (attaches file on mobile/desktop)
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ text: msg, files: [file] });
+        return;
+      } catch (e) {
+        // User cancelled or share failed, fall back
+        console.log("Share cancelled, falling back to wa.me");
+      }
     }
 
-    // Then open WhatsApp with simple message + instruct to attach PDF
-    const msg = `*A ERA DOS SABORES*\n\nOla ${data.cliente_nome}, segue seu recibo.\n\nTotal: R$ ${data.total.toFixed(2)}\nData: ${data.data}\nPagamento: ${data.forma_pagamento}\n\nPor favor, confira o PDF em anexo.`;
+    // Fallback: download PDF + open WhatsApp with text only
+    doc.save(fileName);
     const phone = data.telefone?.replace(/\D/g, "") || "";
     const url = phone
-      ? `https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`
+      ? `https://wa.me/55${phone}?text=${encodeURIComponent(msg + "\n\n📎 _Recibo PDF baixado no seu dispositivo._")}`
       : `https://wa.me/?text=${encodeURIComponent(msg)}`;
     window.open(url, "_blank");
   }
