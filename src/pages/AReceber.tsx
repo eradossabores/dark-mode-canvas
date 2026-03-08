@@ -371,42 +371,74 @@ export default function AReceber() {
       .eq("venda_id", v.id)
       .order("created_at", { ascending: true });
 
-    const doc = new jsPDF({ unit: "mm", format: [80, 280] });
+    const drawDottedLine = (doc: jsPDF, x1: number, yy: number, x2: number) => {
+      for (let x = x1; x < x2; x += 1.5) doc.line(x, yy, x + 0.5, yy);
+    };
+
+    const doc = new jsPDF({ unit: "mm", format: [80, 300] });
     const w = 80;
     let y = 4;
 
+    // Top band
+    doc.setFillColor(0, 100, 160);
+    doc.rect(0, 0, w, 3, "F");
+    y = 6;
+
     // Logo
     try {
-      doc.addImage(logoRecibo, "PNG", (w - 40) / 2, y, 40, 32);
-      y += 34;
+      doc.addImage(logoRecibo, "PNG", (w - 36) / 2, y, 36, 28);
+      y += 30;
     } catch { y += 4; }
 
-    doc.setFontSize(7);
+    doc.setFontSize(6.5);
+    doc.setTextColor(80, 80, 80);
+    doc.setFont("helvetica", "italic");
     doc.text("Cor, Cheiro e Sabor da Fruta", w / 2, y, { align: "center" });
     y += 3;
+    doc.setFont("helvetica", "normal");
     doc.text("Tel: (95) 99172-5677", w / 2, y, { align: "center" });
-    y += 5;
-
-    doc.setLineWidth(0.3);
-    doc.line(4, y, w - 4, y);
     y += 4;
 
-    doc.setFontSize(9);
+    // Decorative double line
+    doc.setDrawColor(0, 100, 160);
+    doc.setLineWidth(0.6);
+    doc.line(6, y, w - 6, y);
+    doc.setLineWidth(0.2);
+    doc.line(6, y + 1.2, w - 6, y + 1.2);
+    y += 4;
+
+    // Title badge
+    doc.setFillColor(0, 100, 160);
+    doc.roundedRect(10, y - 1, w - 20, 7, 2, 2, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
-    doc.text("RECIBO DE VENDA", w / 2, y, { align: "center" });
-    y += 5;
+    doc.text("RECIBO DE VENDA", w / 2, y + 4, { align: "center" });
+    y += 10;
 
-    doc.setFont("helvetica", "normal");
+    // Client info
+    doc.setTextColor(40, 40, 40);
     doc.setFontSize(7);
-    doc.text(`Cliente: ${venda.clientes?.nome || "—"}`, 4, y); y += 4;
-    doc.text(`Data da Venda: ${new Date(venda.created_at).toLocaleDateString("pt-BR")}`, 4, y); y += 4;
-    doc.text(`Pagamento: ${venda.forma_pagamento?.replace("_", " ") || "—"}`, 4, y); y += 4;
-    if (venda.numero_nf) { doc.text(`NF: ${venda.numero_nf}`, 4, y); y += 4; }
+    const infoLabel = (label: string, value: string, yPos: number) => {
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(100, 100, 100);
+      doc.text(label, 6, yPos);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(30, 30, 30);
+      doc.text(value, 28, yPos);
+    };
 
-    doc.line(4, y, w - 4, y);
+    infoLabel("Cliente:", venda.clientes?.nome || "—", y); y += 3.5;
+    infoLabel("Data:", new Date(venda.created_at).toLocaleDateString("pt-BR"), y); y += 3.5;
+    infoLabel("Pgto:", venda.forma_pagamento?.replace("_", " ") || "—", y); y += 3.5;
+    if (venda.numero_nf) { infoLabel("NF:", venda.numero_nf, y); y += 3.5; }
+    y += 2;
+
+    doc.setDrawColor(200, 200, 200);
+    drawDottedLine(doc, 6, y, w - 6);
     y += 3;
 
-    // Itens da venda
+    // Items table
     if (itens && itens.length > 0) {
       autoTable(doc, {
         startY: y,
@@ -418,8 +450,9 @@ export default function AReceber() {
           `R$${Number(i.preco_unitario).toFixed(2)}`,
           `R$${Number(i.subtotal).toFixed(2)}`,
         ]),
-        styles: { fontSize: 6.5, cellPadding: 1.5 },
-        headStyles: { fillColor: [0, 136, 204], fontSize: 6.5 },
+        styles: { fontSize: 6.5, cellPadding: 1.8, textColor: [40, 40, 40] },
+        headStyles: { fillColor: [0, 100, 160], fontSize: 6.5, textColor: [255, 255, 255], fontStyle: "bold" },
+        alternateRowStyles: { fillColor: [240, 246, 252] },
         columnStyles: {
           0: { cellWidth: 24 },
           1: { cellWidth: 8, halign: "center" },
@@ -427,106 +460,144 @@ export default function AReceber() {
           3: { cellWidth: 18, halign: "right" },
         },
         theme: "grid",
+        tableLineColor: [200, 210, 220],
+        tableLineWidth: 0.2,
       });
       y = (doc as any).lastAutoTable.finalY + 4;
     }
 
+    // Quantity badge
     const totalQtd = (itens || []).reduce((s: number, i: any) => s + Number(i.quantidade), 0);
+    doc.setFillColor(240, 246, 252);
+    doc.roundedRect(6, y - 1, w - 12, 6, 1.5, 1.5, "F");
     doc.setFontSize(7);
     doc.setFont("helvetica", "bold");
-    doc.text(`Quantidade Total: ${totalQtd} unidades`, w / 2, y, { align: "center" });
-    y += 5;
+    doc.setTextColor(0, 100, 160);
+    doc.text(`📦 ${totalQtd} unidades`, w / 2, y + 3, { align: "center" });
+    y += 9;
 
-    doc.line(4, y, w - 4, y);
-    y += 5;
-
-    // Valores
-    doc.setFontSize(10);
+    // TOTAL highlight box
+    doc.setFillColor(0, 100, 160);
+    doc.roundedRect(6, y - 1, w - 12, 9, 2, 2, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
-    doc.text(`TOTAL: R$ ${total.toFixed(2)}`, w / 2, y, { align: "center" });
-    y += 6;
+    doc.text(`TOTAL: R$ ${total.toFixed(2)}`, w / 2, y + 5.5, { align: "center" });
+    y += 13;
 
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Valor Pago: R$ ${pago.toFixed(2)}`, 4, y); y += 4;
+    // Payment info
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(34, 139, 34);
+    doc.text(`✓ Pago: R$ ${pago.toFixed(2)}`, 6, y); y += 4;
     if (!isPago && restante > 0) {
-      doc.setFont("helvetica", "bold");
-      doc.text(`Valor Restante: R$ ${restante.toFixed(2)}`, 4, y); y += 4;
-      doc.setFont("helvetica", "normal");
+      doc.setTextColor(200, 120, 0);
+      doc.text(`⏳ Restante: R$ ${restante.toFixed(2)}`, 6, y); y += 4;
     }
     y += 2;
 
     // Histórico de abatimentos
     if (abatimentos && abatimentos.length > 0) {
-      doc.line(4, y, w - 4, y);
+      doc.setDrawColor(200, 200, 200);
+      drawDottedLine(doc, 6, y, w - 6);
       y += 3;
-      doc.setFont("helvetica", "bold");
+
+      doc.setFillColor(240, 246, 252);
+      doc.roundedRect(6, y - 1, w - 12, 6, 1.5, 1.5, "F");
       doc.setFontSize(7);
-      doc.text("HISTÓRICO DE PAGAMENTOS", w / 2, y, { align: "center" });
-      y += 3;
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 100, 160);
+      doc.text("HISTÓRICO DE PAGAMENTOS", w / 2, y + 3, { align: "center" });
+      y += 8;
 
       autoTable(doc, {
         startY: y,
         margin: { left: 4, right: 4 },
-        head: [["#", "Data", "Valor"]],
+        head: [["#", "Data / Hora", "Valor"]],
         body: abatimentos.map((h: any, i: number) => [
           String(i + 1),
           new Date(h.created_at).toLocaleDateString("pt-BR") + " " + new Date(h.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
           `R$ ${Number(h.valor).toFixed(2)}`,
         ]),
-        styles: { fontSize: 6.5, cellPadding: 1.5 },
-        headStyles: { fillColor: [0, 136, 204], fontSize: 6.5 },
+        styles: { fontSize: 6.5, cellPadding: 1.8, textColor: [40, 40, 40] },
+        headStyles: { fillColor: [0, 100, 160], fontSize: 6.5, textColor: [255, 255, 255], fontStyle: "bold" },
+        alternateRowStyles: { fillColor: [240, 246, 252] },
         columnStyles: {
           0: { cellWidth: 8, halign: "center" },
           1: { cellWidth: 30 },
           2: { cellWidth: 26, halign: "right" },
         },
         theme: "grid",
+        tableLineColor: [200, 210, 220],
+        tableLineWidth: 0.2,
       });
       y = (doc as any).lastAutoTable.finalY + 4;
     }
 
-    // Status
-    doc.line(4, y, w - 4, y);
-    y += 5;
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "bold");
-    doc.text(`Status: ${isPago ? "PAGO" : "PENDENTE"}`, w / 2, y, { align: "center" });
-    y += 6;
-
+    // Observations
     if (venda.observacoes) {
-      doc.setFontSize(6);
-      doc.setFont("helvetica", "normal");
       const obs = venda.observacoes.replace(/\s*\[fiado\]\s*/gi, "").trim();
       if (obs) {
-        doc.text(`Obs: ${obs}`, 4, y, { maxWidth: w - 8 });
+        doc.setDrawColor(200, 200, 200);
+        drawDottedLine(doc, 6, y, w - 6);
+        y += 3;
+        doc.setFontSize(6);
+        doc.setFont("helvetica", "italic");
+        doc.setTextColor(120, 120, 120);
+        doc.text(`Obs: ${obs}`, 6, y, { maxWidth: w - 12 });
         y += 6;
       }
     }
 
-    doc.setFontSize(6);
-    doc.setFont("helvetica", "normal");
-    doc.text("Obrigado pela preferência!", w / 2, y, { align: "center" });
-    y += 6;
+    // Footer
+    doc.setDrawColor(0, 100, 160);
+    doc.setLineWidth(0.6);
+    doc.line(6, y, w - 6, y);
+    doc.setLineWidth(0.2);
+    doc.line(6, y + 1.2, w - 6, y + 1.2);
+    y += 5;
 
-    // Carimbo PAGO
+    doc.setFontSize(6.5);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(100, 100, 100);
+    doc.text("Obrigado pela preferência! 💙", w / 2, y, { align: "center" });
+    y += 8;
+
+    // Carimbo PAGO / PENDENTE
     if (isPago) {
-      const centerX = w / 2;
-      const centerY = y + 8;
-      doc.setDrawColor(34, 139, 34);
-      doc.setLineWidth(1.8);
-      doc.roundedRect(centerX - 28, centerY - 10, 56, 20, 4, 4, "S");
+      const cx = w / 2;
+      const cy = y + 6;
+      doc.setDrawColor(34, 160, 34);
+      doc.setLineWidth(2.5);
+      doc.roundedRect(cx - 26, cy - 9, 52, 18, 5, 5, "S");
       doc.setLineWidth(0.8);
-      doc.roundedRect(centerX - 26, centerY - 8, 52, 16, 3, 3, "S");
-      doc.setTextColor(34, 139, 34);
-      doc.setFontSize(28);
+      doc.roundedRect(cx - 24, cy - 7, 48, 14, 4, 4, "S");
+      doc.setTextColor(34, 160, 34);
+      doc.setFontSize(26);
       doc.setFont("helvetica", "bold");
-      doc.text("PAGO", centerX, centerY + 4, { align: "center" });
-      doc.setFontSize(10);
-      doc.text("✓", centerX + 22, centerY - 4);
+      doc.text("✓ PAGO", cx, cy + 3, { align: "center" });
+      doc.setTextColor(0, 0, 0);
+      doc.setDrawColor(0, 0, 0);
+    } else {
+      const cx = w / 2;
+      const cy = y + 6;
+      doc.setDrawColor(200, 120, 0);
+      doc.setLineWidth(2);
+      doc.roundedRect(cx - 28, cy - 9, 56, 18, 5, 5, "S");
+      doc.setLineWidth(0.6);
+      doc.roundedRect(cx - 26, cy - 7, 52, 14, 4, 4, "S");
+      doc.setTextColor(200, 120, 0);
+      doc.setFontSize(20);
+      doc.setFont("helvetica", "bold");
+      doc.text("PENDENTE", cx, cy + 3, { align: "center" });
       doc.setTextColor(0, 0, 0);
       doc.setDrawColor(0, 0, 0);
     }
+
+    // Bottom band
+    const pageH = doc.internal.pageSize.getHeight();
+    doc.setFillColor(0, 100, 160);
+    doc.rect(0, pageH - 3, w, 3, "F");
 
     doc.save(`recibo-${(venda.clientes?.nome || "venda").replace(/\s+/g, "-")}.pdf`);
     toast({ title: "📄 Recibo gerado!", description: "PDF salvo no dispositivo." });
