@@ -319,11 +319,15 @@ export default function Vendas() {
   async function handleEditSave() {
     if (!editVenda) return;
     try {
-      // Update venda header
-      const { error } = await (supabase as any).from("vendas").update({
+      // Se mudou de paga/cancelada para pendente, resetar valor_pago
+      const updateData: any = {
         status: editStatus, forma_pagamento: editForma, observacoes: editObs, numero_nf: editNf.trim() || null,
         created_at: `${editData.getFullYear()}-${String(editData.getMonth() + 1).padStart(2, "0")}-${String(editData.getDate()).padStart(2, "0")}T12:00:00`,
-      }).eq("id", editVenda.id);
+      };
+      if (editStatus === "pendente" && editVenda.status !== "pendente") {
+        updateData.valor_pago = 0;
+      }
+      const { error } = await (supabase as any).from("vendas").update(updateData).eq("id", editVenda.id);
       if (error) throw error;
 
       // Update existing items and insert new ones
