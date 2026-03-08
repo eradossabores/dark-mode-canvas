@@ -577,8 +577,46 @@ export default function AReceber() {
     doc.setFillColor(0, 100, 160);
     doc.rect(0, pageH - 3, w, 3, "F");
 
-    doc.save(`recibo-${(venda.clientes?.nome || "venda").replace(/\s+/g, "-")}.pdf`);
+    return { doc, venda };
+  }
+
+  async function salvarReciboPDF(v: any) {
+    const result = await gerarReciboVenda(v);
+    if (!result) return;
+    result.doc.save(`recibo-${(result.venda.clientes?.nome || "venda").replace(/\s+/g, "-")}.pdf`);
     toast({ title: "Recibo gerado!", description: "PDF salvo no dispositivo." });
+  }
+
+  async function enviarReciboWhatsApp(v: any) {
+    const result = await gerarReciboVenda(v);
+    if (!result) return;
+    const { doc, venda } = result;
+    const clienteNome = venda.clientes?.nome || "-";
+    const total = Number(venda.total);
+    const pago = Number(venda.valor_pago || 0);
+    const restante = total - pago;
+    const fileName = `recibo-${clienteNome.replace(/\s+/g, "-")}.pdf`;
+
+    const msg = `*A ERA DOS SABORES*\n\nOla ${clienteNome}, segue seu recibo.\n\nTotal: R$ ${total.toFixed(2)}\nPago: R$ ${pago.toFixed(2)}\nRestante: R$ ${restante.toFixed(2)}\nData: ${new Date(venda.created_at).toLocaleDateString("pt-BR")}\nPagamento: ${venda.forma_pagamento?.replace("_", " ") || "-"}`;
+
+    const pdfBlob = doc.output("blob");
+    const file = new File([pdfBlob], fileName, { type: "application/pdf" });
+
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ text: msg, files: [file] });
+        return;
+      } catch (e) {
+        console.log("Share cancelled, falling back to wa.me");
+      }
+    }
+
+    doc.save(fileName);
+    const phone = v.clientes?.telefone?.replace(/\D/g, "") || "";
+    const url = phone
+      ? `https://wa.me/55${phone}?text=${encodeURIComponent(msg + "\n\n_Recibo PDF baixado no seu dispositivo._")}`
+      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    window.open(url, "_blank");
   }
 
   const hoje = new Date().toISOString().split("T")[0];
