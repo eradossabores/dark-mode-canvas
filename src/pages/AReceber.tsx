@@ -180,8 +180,9 @@ export default function AReceber() {
 
     const doc = gerarPdfRecibo();
     const restante = p.total - p.valorPago;
-    const statusLine = p.quitou ? "Pagamento Completo!" : `Pagamento Parcial (Restante: R$ ${restante.toFixed(2)})`;
-    const msg = `*ERA DOS SABORES*\n\n${statusLine}\n\nCliente: ${p.clienteNome}\nValor: R$ ${p.total.toFixed(2)}\nPago: R$ ${p.valorPago.toFixed(2)}`;
+    const statusLine = p.quitou ? "Pagamento Completo!" : (p.valorPago > 0 ? `Pagamento Parcial (Restante: R$ ${restante.toFixed(2)})` : `Valor Pendente: R$ ${restante.toFixed(2)}`);
+    const pagoLine = p.valorPago > 0 ? `\nPago: R$ ${p.valorPago.toFixed(2)}` : "";
+    const msg = `*ERA DOS SABORES*\n\n${statusLine}\n\nCliente: ${p.clienteNome}\nValor: R$ ${p.total.toFixed(2)}${pagoLine}`;
 
     if (doc) {
       const pdfBlob = doc.output("blob");
@@ -597,7 +598,8 @@ export default function AReceber() {
     const restante = total - pago;
     const fileName = `recibo-${clienteNome.replace(/\s+/g, "-")}.pdf`;
 
-    const msg = `*A ERA DOS SABORES*\n\nOla ${clienteNome}, segue seu recibo.\n\nTotal: R$ ${total.toFixed(2)}\nPago: R$ ${pago.toFixed(2)}\nRestante: R$ ${restante.toFixed(2)}\nData: ${new Date(venda.created_at).toLocaleDateString("pt-BR")}\nPagamento: ${venda.forma_pagamento?.replace("_", " ") || "-"}`;
+    const pagoLine = pago > 0 ? `\nPago: R$ ${pago.toFixed(2)}` : "";
+    const msg = `*A ERA DOS SABORES*\n\nOla ${clienteNome}, segue seu recibo.\n\nTotal: R$ ${total.toFixed(2)}${pagoLine}\nRestante: R$ ${restante.toFixed(2)}\nData: ${new Date(venda.created_at).toLocaleDateString("pt-BR")}\nPagamento: ${venda.forma_pagamento?.replace("_", " ") || "-"}`;
 
     const pdfBlob = doc.output("blob");
     const file = new File([pdfBlob], fileName, { type: "application/pdf" });
@@ -978,7 +980,9 @@ export default function AReceber() {
                 <p>Deseja enviar o comprovante para <strong>{whatsappPrompt?.clienteNome}</strong>?</p>
                 <div className="rounded-md bg-muted p-2 text-xs space-y-1">
                   <div className="flex justify-between"><span>Total da venda:</span><span className="font-bold">R$ {whatsappPrompt?.total.toFixed(2)}</span></div>
-                  <div className="flex justify-between"><span>Total pago:</span><span className="font-bold text-green-600">R$ {whatsappPrompt?.valorPago.toFixed(2)}</span></div>
+                  {(whatsappPrompt?.valorPago || 0) > 0 && (
+                    <div className="flex justify-between"><span>Total pago:</span><span className="font-bold text-green-600">R$ {whatsappPrompt?.valorPago.toFixed(2)}</span></div>
+                  )}
                   {!whatsappPrompt?.quitou && (
                     <div className="flex justify-between"><span>Restante:</span><span className="font-bold text-amber-600">R$ {((whatsappPrompt?.total || 0) - (whatsappPrompt?.valorPago || 0)).toFixed(2)}</span></div>
                   )}
