@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -23,6 +24,9 @@ export default function AReceber() {
   const [historico, setHistorico] = useState<any[]>([]);
   const [busca, setBusca] = useState("");
   const [whatsappPrompt, setWhatsappPrompt] = useState<{ vendaId: string; clienteNome: string; total: number; telefone: string; valorPago: number; historico: { valor: number; data: string }[]; quitou: boolean } | null>(null);
+  const [abatimentoLoteCliente, setAbatimentoLoteCliente] = useState("");
+  const [abatimentoLoteValor, setAbatimentoLoteValor] = useState("");
+  const [processandoLote, setProcessandoLote] = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
@@ -252,6 +256,50 @@ export default function AReceber() {
     }
   }
 
+  // Abatimento em lote
+  const clientesUnicos = [...new Map(vendas.map(v => [v.cliente_id, v.clientes?.nome || "?"])).entries()];
+  const vendasDoClienteLote = abatimentoLoteCliente
+    ? vendas.filter(v => v.cliente_id === abatimentoLoteCliente).sort((a, b) => a.created_at.localeCompare(b.created_at))
+    : [];
+  const totalDevidoClienteLote = vendasDoClienteLote.reduce((s, v) => s + (Number(v.total) - Number(v.valor_pago || 0)), 0);
+
+  async function abaterEmLote() {
+    if (!abatimentoLoteCliente) return toast({ title: "Selecione um cliente", variant: "destructive" });
+    let valor = parseFloat(abatimentoLoteValor.replace(",", "."));
+    if (isNaN(valor) || valor <= 0) return toast({ title: "Informe um valor válido", variant: "destructive" });
+    if (valor > totalDevidoClienteLote) return toast({ title: "Valor maior que o total devido", description: `Total devido: R$ ${totalDevidoClienteLote.toFixed(2)}`, variant: "destructive" });
+
+    setProcessandoLote(true);
+    try {
+      for (const v of vendasDoClienteLote) {
+        if (valor <= 0) break;
+        const restante = Number(v.total) - Number(v.valor_pago || 0);
+        if (restante <= 0) continue;
+        const abater = Math.min(valor, restante);
+        const novoValorPago = Number(v.valor_pago || 0) + abater;
+        const quitou = novoValorPago >= Number(v.total);
+
+        const { error } = await (supabase as any)
+          .from("vendas")
+          .update({ valor_pago: novoValorPago, status: quitou ? "paga" : "pendente" })
+          .eq("id", v.id);
+        if (error) throw error;
+
+        await (supabase as any).from("abatimentos_historico").insert({ venda_id: v.id, valor: abater });
+        valor -= abater;
+      }
+
+      toast({ title: "✅ Abatimento em lote realizado!", description: `Valor distribuído entre as contas do cliente.` });
+      setAbatimentoLoteCliente("");
+      setAbatimentoLoteValor("");
+      loadData();
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    } finally {
+      setProcessandoLote(false);
+    }
+  }
+
   const hoje = new Date().toISOString().split("T")[0];
   const buscaLower = busca.toLowerCase().trim();
   const vendasFiltradas = buscaLower
@@ -276,7 +324,68 @@ export default function AReceber() {
         </div>
       </div>
 
-      {/* KPIs */}
+      {/* Abatimento em Lote */}
+      <Card className="mb-6 border-primary/30">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <DollarSign className="h-4 w-4 text-primary" />
+            Abatimento em Lote por Cliente
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row gap-3 items-end">
+            <div className="flex-1 min-w-[200px]">
+              <Label className="text-xs">Cliente</Label>
+              <Select value={abatimentoLoteCliente} onValueChange={setAbatimentoLoteCliente}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o cliente..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {clientesUnicos.map(([id, nome]) => (
+                    <SelectItem key={id} value={id}>{nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-full sm:w-40">
+              <Label className="text-xs">Valor recebido (R$)</Label>
+              <Input
+                type="text"
+                inputMode="decimal"
+                placeholder="0,00"
+                value={abatimentoLoteValor}
+                onChange={(e) => setAbatimentoLoteValor(e.target.value)}
+              />
+            </div>
+            {abatimentoLoteCliente && totalDevidoClienteLote > 0 && (
+              <div className="text-xs text-muted-foreground whitespace-nowrap pb-2">
+                Total devido: <span className="font-bold text-foreground">R$ {totalDevidoClienteLote.toFixed(2)}</span>
+                <span className="ml-1">({vendasDoClienteLote.length} conta(s))</span>
+              </div>
+            )}
+            <Button onClick={abaterEmLote} disabled={processandoLote} className="whitespace-nowrap">
+              {processandoLote ? "Processando..." : "Abater em Lote"}
+            </Button>
+          </div>
+          {abatimentoLoteCliente && vendasDoClienteLote.length > 0 && (
+            <div className="mt-3 text-xs text-muted-foreground space-y-1">
+              <p className="font-medium">Ordem de abatimento (mais antiga primeiro):</p>
+              {vendasDoClienteLote.map((v, i) => {
+                const rest = Number(v.total) - Number(v.valor_pago || 0);
+                return (
+                  <div key={v.id} className="flex gap-2">
+                    <span>{i + 1}.</span>
+                    <span>{new Date(v.created_at).toLocaleDateString("pt-BR")}</span>
+                    <span>— Restante: <span className="font-bold text-foreground">R$ {rest.toFixed(2)}</span></span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
