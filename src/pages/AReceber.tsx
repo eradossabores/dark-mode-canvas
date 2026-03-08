@@ -160,22 +160,36 @@ export default function AReceber() {
     return doc;
   }
 
-  function enviarReciboWhatsApp() {
+  async function enviarReciboWhatsApp() {
     if (!whatsappPrompt) return;
     const p = whatsappPrompt;
 
-    // Generate and download PDF
     const doc = gerarPdfRecibo();
-    if (doc) {
-      doc.save(`recibo-${p.clienteNome.replace(/\s+/g, "-")}.pdf`);
-    }
-
-    // Open WhatsApp with short message
     const restante = p.total - p.valorPago;
     const statusLine = p.quitou ? "✅ Pagamento Completo!" : `⏳ Pagamento Parcial (Restante: R$ ${restante.toFixed(2)})`;
-    const msg = `🧊 *ERA DOS SABORES*\n\n${statusLine}\n\nCliente: ${p.clienteNome}\nValor: R$ ${p.total.toFixed(2)}\nPago: R$ ${p.valorPago.toFixed(2)}\n\n📎 _Recibo em PDF anexado._`;
+    const msg = `🧊 *ERA DOS SABORES*\n\n${statusLine}\n\nCliente: ${p.clienteNome}\nValor: R$ ${p.total.toFixed(2)}\nPago: R$ ${p.valorPago.toFixed(2)}`;
+
+    if (doc) {
+      const pdfBlob = doc.output("blob");
+      const fileName = `recibo-${p.clienteNome.replace(/\s+/g, "-")}.pdf`;
+      const file = new File([pdfBlob], fileName, { type: "application/pdf" });
+
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({ text: msg, files: [file] });
+          setWhatsappPrompt(null);
+          return;
+        } catch (e) {
+          console.log("Share cancelled, falling back");
+        }
+      }
+
+      // Fallback: download PDF + open wa.me
+      doc.save(fileName);
+    }
+
     const phone = p.telefone.replace(/\D/g, "");
-    window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+    window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(msg + "\n\n📎 _Recibo PDF baixado no seu dispositivo._")}`, "_blank");
     setWhatsappPrompt(null);
   }
 
