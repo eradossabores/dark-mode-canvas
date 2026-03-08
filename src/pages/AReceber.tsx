@@ -324,7 +324,68 @@ export default function AReceber() {
         </div>
       </div>
 
-      {/* KPIs */}
+      {/* Abatimento em Lote */}
+      <Card className="mb-6 border-primary/30">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <DollarSign className="h-4 w-4 text-primary" />
+            Abatimento em Lote por Cliente
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row gap-3 items-end">
+            <div className="flex-1 min-w-[200px]">
+              <Label className="text-xs">Cliente</Label>
+              <Select value={abatimentoLoteCliente} onValueChange={setAbatimentoLoteCliente}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o cliente..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {clientesUnicos.map(([id, nome]) => (
+                    <SelectItem key={id} value={id}>{nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-full sm:w-40">
+              <Label className="text-xs">Valor recebido (R$)</Label>
+              <Input
+                type="text"
+                inputMode="decimal"
+                placeholder="0,00"
+                value={abatimentoLoteValor}
+                onChange={(e) => setAbatimentoLoteValor(e.target.value)}
+              />
+            </div>
+            {abatimentoLoteCliente && totalDevidoClienteLote > 0 && (
+              <div className="text-xs text-muted-foreground whitespace-nowrap pb-2">
+                Total devido: <span className="font-bold text-foreground">R$ {totalDevidoClienteLote.toFixed(2)}</span>
+                <span className="ml-1">({vendasDoClienteLote.length} conta(s))</span>
+              </div>
+            )}
+            <Button onClick={abaterEmLote} disabled={processandoLote} className="whitespace-nowrap">
+              {processandoLote ? "Processando..." : "Abater em Lote"}
+            </Button>
+          </div>
+          {abatimentoLoteCliente && vendasDoClienteLote.length > 0 && (
+            <div className="mt-3 text-xs text-muted-foreground space-y-1">
+              <p className="font-medium">Ordem de abatimento (mais antiga primeiro):</p>
+              {vendasDoClienteLote.map((v, i) => {
+                const rest = Number(v.total) - Number(v.valor_pago || 0);
+                return (
+                  <div key={v.id} className="flex gap-2">
+                    <span>{i + 1}.</span>
+                    <span>{new Date(v.created_at).toLocaleDateString("pt-BR")}</span>
+                    <span>— Restante: <span className="font-bold text-foreground">R$ {rest.toFixed(2)}</span></span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
