@@ -35,44 +35,80 @@ interface Props {
 export default function ReciboVenda({ open, onOpenChange, data }: Props) {
   if (!data) return null;
 
+  function drawDottedLine(doc: jsPDF, x1: number, y: number, x2: number) {
+    const step = 1.5;
+    for (let x = x1; x < x2; x += step) {
+      doc.line(x, y, x + 0.5, y);
+    }
+  }
+
   function gerarPDFDoc(): jsPDF | null {
     if (!data) return null;
-    const doc = new jsPDF({ unit: "mm", format: [80, 220] });
+    const doc = new jsPDF({ unit: "mm", format: [80, 240] });
     const w = 80;
     let y = 4;
 
-    // Logo
-    const logoW = 40;
-    const logoH = 32;
+    // === HEADER with colored band ===
+    doc.setFillColor(0, 100, 160);
+    doc.rect(0, 0, w, 3, "F");
+
+    y = 6;
+    const logoW = 36;
+    const logoH = 28;
     doc.addImage(logoRecibo, "PNG", (w - logoW) / 2, y, logoW, logoH);
     y += logoH + 2;
 
-    doc.setFontSize(7);
-    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    doc.setTextColor(80, 80, 80);
+    doc.setFont("helvetica", "italic");
     doc.text("Cor, Cheiro e Sabor da Fruta", w / 2, y, { align: "center" });
     y += 3;
+    doc.setFont("helvetica", "normal");
     doc.text("Tel: (95) 99172-5677", w / 2, y, { align: "center" });
-    y += 5;
-
-    doc.setLineWidth(0.3);
-    doc.line(4, y, w - 4, y);
     y += 4;
 
+    // Decorative double line
+    doc.setDrawColor(0, 100, 160);
+    doc.setLineWidth(0.6);
+    doc.line(6, y, w - 6, y);
+    doc.setLineWidth(0.2);
+    doc.line(6, y + 1.2, w - 6, y + 1.2);
+    y += 4;
+
+    // Title badge
+    doc.setFillColor(0, 100, 160);
+    doc.roundedRect(10, y - 1, w - 20, 7, 2, 2, "F");
+    doc.setTextColor(255, 255, 255);
     doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
-    doc.text("RECIBO DE VENDA", w / 2, y, { align: "center" });
-    y += 5;
+    doc.text("RECIBO DE VENDA", w / 2, y + 4, { align: "center" });
+    y += 10;
 
+    // Client info section
+    doc.setTextColor(40, 40, 40);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7);
-    doc.text(`Cliente: ${data.cliente_nome}`, 4, y); y += 4;
-    doc.text(`Data: ${data.data}`, 4, y); y += 4;
-    doc.text(`Pagamento: ${data.forma_pagamento}`, 4, y); y += 4;
-    if (data.numero_nf) { doc.text(`NF: ${data.numero_nf}`, 4, y); y += 4; }
+    
+    const infoLabel = (label: string, value: string, yPos: number) => {
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(100, 100, 100);
+      doc.text(label, 6, yPos);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(30, 30, 30);
+      doc.text(value, 28, yPos);
+    };
 
-    doc.line(4, y, w - 4, y);
+    infoLabel("Cliente:", data.cliente_nome, y); y += 3.5;
+    infoLabel("Data:", data.data, y); y += 3.5;
+    infoLabel("Pgto:", data.forma_pagamento, y); y += 3.5;
+    if (data.numero_nf) { infoLabel("NF:", data.numero_nf, y); y += 3.5; }
+    y += 2;
+
+    doc.setDrawColor(200, 200, 200);
+    drawDottedLine(doc, 6, y, w - 6);
     y += 3;
 
+    // Items table with styled header
     autoTable(doc, {
       startY: y,
       margin: { left: 4, right: 4 },
@@ -83,8 +119,9 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
         `R$${i.preco_unitario.toFixed(2)}`,
         `R$${i.subtotal.toFixed(2)}`,
       ]),
-      styles: { fontSize: 6.5, cellPadding: 1.5 },
-      headStyles: { fillColor: [0, 136, 204], fontSize: 6.5 },
+      styles: { fontSize: 6.5, cellPadding: 1.8, textColor: [40, 40, 40] },
+      headStyles: { fillColor: [0, 100, 160], fontSize: 6.5, textColor: [255, 255, 255], fontStyle: "bold" },
+      alternateRowStyles: { fillColor: [240, 246, 252] },
       columnStyles: {
         0: { cellWidth: 24 },
         1: { cellWidth: 8, halign: "center" },
@@ -92,65 +129,120 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
         3: { cellWidth: 18, halign: "right" },
       },
       theme: "grid",
+      tableLineColor: [200, 210, 220],
+      tableLineWidth: 0.2,
     });
 
     y = (doc as any).lastAutoTable.finalY + 4;
 
-    doc.line(4, y, w - 4, y);
-    y += 5;
-
+    // Quantity badge
     const totalQtd = data.itens.reduce((s, i) => s + i.quantidade, 0);
-    doc.setFontSize(8);
+    doc.setFillColor(240, 246, 252);
+    doc.roundedRect(6, y - 1, w - 12, 6, 1.5, 1.5, "F");
+    doc.setFontSize(7);
     doc.setFont("helvetica", "bold");
-    doc.text(`Quantidade Total: ${totalQtd} unidades`, w / 2, y, { align: "center" });
-    y += 5;
+    doc.setTextColor(0, 100, 160);
+    doc.text(`📦 ${totalQtd} unidades`, w / 2, y + 3, { align: "center" });
+    y += 9;
 
-    doc.setFontSize(10);
+    // TOTAL highlight box
+    doc.setFillColor(0, 100, 160);
+    doc.roundedRect(6, y - 1, w - 12, 9, 2, 2, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
-    doc.text(`TOTAL: R$ ${data.total.toFixed(2)}`, w / 2, y, { align: "center" });
-    y += 6;
+    doc.text(`TOTAL: R$ ${data.total.toFixed(2)}`, w / 2, y + 5.5, { align: "center" });
+    y += 13;
 
-    // Status de pagamento
+    // Payment status section
     const isPago = data.status === "paga";
     const valorPago = data.valor_pago ?? (isPago ? data.total : 0);
     const restante = data.total - valorPago;
 
+    doc.setTextColor(40, 40, 40);
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
-    doc.text(`Valor Pago: R$ ${valorPago.toFixed(2)}`, 4, y); y += 4;
+
+    // Paid amount
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(34, 139, 34);
+    doc.text(`✓ Pago: R$ ${valorPago.toFixed(2)}`, 6, y);
+    y += 4;
+
     if (!isPago && restante > 0) {
-      doc.text(`Restante: R$ ${restante.toFixed(2)}`, 4, y); y += 4;
+      doc.setTextColor(200, 120, 0);
+      doc.text(`⏳ Restante: R$ ${restante.toFixed(2)}`, 6, y);
+      y += 4;
     }
-    doc.text(`Status: ${isPago ? "PAGO" : "PENDENTE"}`, 4, y); y += 5;
+    y += 2;
 
     if (data.observacoes) {
+      doc.setDrawColor(200, 200, 200);
+      drawDottedLine(doc, 6, y, w - 6);
+      y += 3;
       doc.setFontSize(6);
-      doc.setFont("helvetica", "normal");
-      doc.text(`Obs: ${data.observacoes}`, 4, y, { maxWidth: w - 8 });
+      doc.setFont("helvetica", "italic");
+      doc.setTextColor(120, 120, 120);
+      doc.text(`Obs: ${data.observacoes}`, 6, y, { maxWidth: w - 12 });
       y += 6;
     }
 
-    doc.setFontSize(6);
-    doc.setFont("helvetica", "normal");
-    doc.text("Obrigado pela preferência!", w / 2, y, { align: "center" });
-    y += 6;
+    // Footer
+    doc.setDrawColor(0, 100, 160);
+    doc.setLineWidth(0.6);
+    doc.line(6, y, w - 6, y);
+    doc.setLineWidth(0.2);
+    doc.line(6, y + 1.2, w - 6, y + 1.2);
+    y += 5;
 
-    // Carimbo PAGO
+    doc.setFontSize(6.5);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(100, 100, 100);
+    doc.text("Obrigado pela preferência! 💙", w / 2, y, { align: "center" });
+    y += 8;
+
+    // Carimbo PAGO / PENDENTE
     if (isPago) {
-      const centerX = w / 2;
-      const centerY = y + 8;
-      doc.setDrawColor(34, 139, 34);
-      doc.setLineWidth(1.8);
-      doc.roundedRect(centerX - 28, centerY - 10, 56, 20, 4, 4, "S");
+      const cx = w / 2;
+      const cy = y + 6;
+      // Outer glow effect
+      doc.setDrawColor(34, 160, 34);
+      doc.setLineWidth(2.5);
+      doc.roundedRect(cx - 26, cy - 9, 52, 18, 5, 5, "S");
+      // Inner border
       doc.setLineWidth(0.8);
-      doc.roundedRect(centerX - 26, centerY - 8, 52, 16, 3, 3, "S");
-      doc.setTextColor(34, 139, 34);
-      doc.setFontSize(28);
+      doc.roundedRect(cx - 24, cy - 7, 48, 14, 4, 4, "S");
+      // Fill subtle
+      doc.setFillColor(34, 160, 34);
+      doc.setGlobalAlpha?.(0.08);
+      doc.roundedRect(cx - 24, cy - 7, 48, 14, 4, 4, "F");
+      // Text
+      doc.setTextColor(34, 160, 34);
+      doc.setFontSize(26);
       doc.setFont("helvetica", "bold");
-      doc.text("PAGO", centerX, centerY + 4, { align: "center" });
+      doc.text("✓ PAGO", cx, cy + 3, { align: "center" });
+      doc.setTextColor(0, 0, 0);
+      doc.setDrawColor(0, 0, 0);
+    } else {
+      const cx = w / 2;
+      const cy = y + 6;
+      doc.setDrawColor(200, 120, 0);
+      doc.setLineWidth(2);
+      doc.roundedRect(cx - 28, cy - 9, 56, 18, 5, 5, "S");
+      doc.setLineWidth(0.6);
+      doc.roundedRect(cx - 26, cy - 7, 52, 14, 4, 4, "S");
+      doc.setTextColor(200, 120, 0);
+      doc.setFontSize(20);
+      doc.setFont("helvetica", "bold");
+      doc.text("PENDENTE", cx, cy + 3, { align: "center" });
       doc.setTextColor(0, 0, 0);
       doc.setDrawColor(0, 0, 0);
     }
+
+    // Bottom band
+    const pageH = doc.internal.pageSize.getHeight();
+    doc.setFillColor(0, 100, 160);
+    doc.rect(0, pageH - 3, w, 3, "F");
 
     return doc;
   }
