@@ -35,7 +35,7 @@ export default function AReceber() {
     setLoading(true);
     const { data } = await (supabase as any)
       .from("vendas")
-      .select("*, clientes(nome)")
+      .select("*, clientes(nome, telefone)")
       .eq("status", "pendente")
       .order("created_at", { ascending: true });
     setVendas(data || []);
