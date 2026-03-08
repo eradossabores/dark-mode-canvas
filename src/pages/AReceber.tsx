@@ -23,6 +23,9 @@ export default function AReceber() {
   const [historico, setHistorico] = useState<any[]>([]);
   const [busca, setBusca] = useState("");
   const [whatsappPrompt, setWhatsappPrompt] = useState<{ vendaId: string; clienteNome: string; total: number; telefone: string; valorPago: number; historico: { valor: number; data: string }[]; quitou: boolean } | null>(null);
+  const [abatimentoLoteCliente, setAbatimentoLoteCliente] = useState("");
+  const [abatimentoLoteValor, setAbatimentoLoteValor] = useState("");
+  const [processandoLote, setProcessandoLote] = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
