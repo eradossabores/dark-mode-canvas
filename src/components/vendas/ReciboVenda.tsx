@@ -33,8 +33,8 @@ interface Props {
 export default function ReciboVenda({ open, onOpenChange, data }: Props) {
   if (!data) return null;
 
-  function gerarPDF() {
-    if (!data) return;
+  function gerarPDFDoc(): jsPDF | null {
+    if (!data) return null;
     const doc = new jsPDF({ unit: "mm", format: [80, 220] });
     const w = 80;
     let y = 4;
@@ -52,7 +52,6 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     doc.text("Tel: (95) 99172-5677", w / 2, y, { align: "center" });
     y += 5;
 
-    // Divider
     doc.setLineWidth(0.3);
     doc.line(4, y, w - 4, y);
     y += 4;
@@ -72,7 +71,6 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     doc.line(4, y, w - 4, y);
     y += 3;
 
-    // Items table
     autoTable(doc, {
       startY: y,
       margin: { left: 4, right: 4 },
@@ -121,6 +119,12 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     doc.setFont("helvetica", "normal");
     doc.text("Obrigado pela preferência!", w / 2, y, { align: "center" });
 
+    return doc;
+  }
+
+  function gerarPDF() {
+    const doc = gerarPDFDoc();
+    if (!doc || !data) return;
     doc.save(`recibo-${data.cliente_nome.replace(/\s+/g, "-")}.pdf`);
   }
 
