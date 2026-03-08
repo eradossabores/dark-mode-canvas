@@ -110,6 +110,19 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     doc.text(`TOTAL: R$ ${data.total.toFixed(2)}`, w / 2, y, { align: "center" });
     y += 6;
 
+    // Status de pagamento
+    const isPago = data.status === "paga";
+    const valorPago = data.valor_pago ?? (isPago ? data.total : 0);
+    const restante = data.total - valorPago;
+
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Valor Pago: R$ ${valorPago.toFixed(2)}`, 4, y); y += 4;
+    if (!isPago && restante > 0) {
+      doc.text(`Restante: R$ ${restante.toFixed(2)}`, 4, y); y += 4;
+    }
+    doc.text(`Status: ${isPago ? "PAGO" : "PENDENTE"}`, 4, y); y += 5;
+
     if (data.observacoes) {
       doc.setFontSize(6);
       doc.setFont("helvetica", "normal");
@@ -120,6 +133,24 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     doc.setFontSize(6);
     doc.setFont("helvetica", "normal");
     doc.text("Obrigado pela preferência!", w / 2, y, { align: "center" });
+    y += 6;
+
+    // Carimbo PAGO
+    if (isPago) {
+      const centerX = w / 2;
+      const centerY = y + 8;
+      doc.setDrawColor(34, 139, 34);
+      doc.setLineWidth(1.8);
+      doc.roundedRect(centerX - 28, centerY - 10, 56, 20, 4, 4, "S");
+      doc.setLineWidth(0.8);
+      doc.roundedRect(centerX - 26, centerY - 8, 52, 16, 3, 3, "S");
+      doc.setTextColor(34, 139, 34);
+      doc.setFontSize(28);
+      doc.setFont("helvetica", "bold");
+      doc.text("PAGO", centerX, centerY + 4, { align: "center" });
+      doc.setTextColor(0, 0, 0);
+      doc.setDrawColor(0, 0, 0);
+    }
 
     return doc;
   }
