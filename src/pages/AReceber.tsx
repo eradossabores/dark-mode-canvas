@@ -494,10 +494,10 @@ export default function AReceber() {
     doc.text(`Status: ${isPago ? "PAGO" : "PENDENTE"}`, w / 2, y, { align: "center" });
     y += 6;
 
-    if (v.observacoes) {
+    if (venda.observacoes) {
       doc.setFontSize(6);
       doc.setFont("helvetica", "normal");
-      const obs = v.observacoes.replace(/\s*\[fiado\]\s*/gi, "").trim();
+      const obs = venda.observacoes.replace(/\s*\[fiado\]\s*/gi, "").trim();
       if (obs) {
         doc.text(`Obs: ${obs}`, 4, y, { maxWidth: w - 8 });
         y += 6;
