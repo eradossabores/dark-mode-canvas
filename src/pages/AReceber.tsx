@@ -27,6 +27,7 @@ export default function AReceber() {
   const [abatimentoLoteCliente, setAbatimentoLoteCliente] = useState("");
   const [abatimentoLoteValor, setAbatimentoLoteValor] = useState("");
   const [processandoLote, setProcessandoLote] = useState(false);
+  const [confirmarQuitarId, setConfirmarQuitarId] = useState<string | null>(null);
 
   useEffect(() => { loadData(); }, []);
 
