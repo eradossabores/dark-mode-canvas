@@ -22,6 +22,8 @@ interface ReciboData {
   itens: ReciboItem[];
   observacoes?: string;
   telefone?: string;
+  status?: "pendente" | "paga" | "cancelada";
+  valor_pago?: number;
 }
 
 interface Props {
@@ -108,6 +110,19 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     doc.text(`TOTAL: R$ ${data.total.toFixed(2)}`, w / 2, y, { align: "center" });
     y += 6;
 
+    // Status de pagamento
+    const isPago = data.status === "paga";
+    const valorPago = data.valor_pago ?? (isPago ? data.total : 0);
+    const restante = data.total - valorPago;
+
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Valor Pago: R$ ${valorPago.toFixed(2)}`, 4, y); y += 4;
+    if (!isPago && restante > 0) {
+      doc.text(`Restante: R$ ${restante.toFixed(2)}`, 4, y); y += 4;
+    }
+    doc.text(`Status: ${isPago ? "PAGO" : "PENDENTE"}`, 4, y); y += 5;
+
     if (data.observacoes) {
       doc.setFontSize(6);
       doc.setFont("helvetica", "normal");
@@ -118,6 +133,24 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     doc.setFontSize(6);
     doc.setFont("helvetica", "normal");
     doc.text("Obrigado pela preferência!", w / 2, y, { align: "center" });
+    y += 6;
+
+    // Carimbo PAGO
+    if (isPago) {
+      const centerX = w / 2;
+      const centerY = y + 8;
+      doc.setDrawColor(34, 139, 34);
+      doc.setLineWidth(1.8);
+      doc.roundedRect(centerX - 28, centerY - 10, 56, 20, 4, 4, "S");
+      doc.setLineWidth(0.8);
+      doc.roundedRect(centerX - 26, centerY - 8, 52, 16, 3, 3, "S");
+      doc.setTextColor(34, 139, 34);
+      doc.setFontSize(28);
+      doc.setFont("helvetica", "bold");
+      doc.text("PAGO", centerX, centerY + 4, { align: "center" });
+      doc.setTextColor(0, 0, 0);
+      doc.setDrawColor(0, 0, 0);
+    }
 
     return doc;
   }
@@ -211,6 +244,18 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
           <div className="text-right text-sm text-muted-foreground">
             Quantidade Total: {data.itens.reduce((s, i) => s + i.quantidade, 0)} unidades
           </div>
+
+          {/* Status de pagamento */}
+          <div className={`text-center py-3 rounded-lg font-bold text-lg ${data.status === "paga" ? "bg-green-100 text-green-700 border-2 border-green-400" : "bg-amber-100 text-amber-700 border-2 border-amber-400"}`}>
+            {data.status === "paga" ? "✅ PAGO" : "⏳ PENDENTE"}
+          </div>
+
+          {data.valor_pago !== undefined && data.valor_pago > 0 && data.status !== "paga" && (
+            <div className="text-xs text-muted-foreground text-center space-y-0.5">
+              <p>Pago: R$ {data.valor_pago.toFixed(2)}</p>
+              <p className="font-bold text-amber-600">Restante: R$ {(data.total - data.valor_pago).toFixed(2)}</p>
+            </div>
+          )}
 
           {data.observacoes && (
             <p className="text-xs text-muted-foreground">Obs: {data.observacoes}</p>
