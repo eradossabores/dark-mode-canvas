@@ -346,10 +346,17 @@ export default function AReceber() {
   }
 
   async function gerarReciboVenda(v: any) {
-    const total = Number(v.total);
-    const pago = Number(v.valor_pago || 0);
+    // Fetch latest venda data from DB to get current status/valor_pago
+    const { data: vendaAtual } = await (supabase as any)
+      .from("vendas")
+      .select("*, clientes(nome)")
+      .eq("id", v.id)
+      .single();
+    const venda = vendaAtual || v;
+    const total = Number(venda.total);
+    const pago = Number(venda.valor_pago || 0);
     const restante = total - pago;
-    const isPago = v.status === "paga" || restante <= 0;
+    const isPago = venda.status === "paga" || restante <= 0;
 
     // Load itens
     const { data: itens } = await (supabase as any)
@@ -391,10 +398,10 @@ export default function AReceber() {
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7);
-    doc.text(`Cliente: ${v.clientes?.nome || "—"}`, 4, y); y += 4;
-    doc.text(`Data da Venda: ${new Date(v.created_at).toLocaleDateString("pt-BR")}`, 4, y); y += 4;
-    doc.text(`Pagamento: ${v.forma_pagamento?.replace("_", " ") || "—"}`, 4, y); y += 4;
-    if (v.numero_nf) { doc.text(`NF: ${v.numero_nf}`, 4, y); y += 4; }
+    doc.text(`Cliente: ${venda.clientes?.nome || "—"}`, 4, y); y += 4;
+    doc.text(`Data da Venda: ${new Date(venda.created_at).toLocaleDateString("pt-BR")}`, 4, y); y += 4;
+    doc.text(`Pagamento: ${venda.forma_pagamento?.replace("_", " ") || "—"}`, 4, y); y += 4;
+    if (venda.numero_nf) { doc.text(`NF: ${venda.numero_nf}`, 4, y); y += 4; }
 
     doc.line(4, y, w - 4, y);
     y += 3;
@@ -487,10 +494,10 @@ export default function AReceber() {
     doc.text(`Status: ${isPago ? "PAGO" : "PENDENTE"}`, w / 2, y, { align: "center" });
     y += 6;
 
-    if (v.observacoes) {
+    if (venda.observacoes) {
       doc.setFontSize(6);
       doc.setFont("helvetica", "normal");
-      const obs = v.observacoes.replace(/\s*\[fiado\]\s*/gi, "").trim();
+      const obs = venda.observacoes.replace(/\s*\[fiado\]\s*/gi, "").trim();
       if (obs) {
         doc.text(`Obs: ${obs}`, 4, y, { maxWidth: w - 8 });
         y += 6;
@@ -521,7 +528,7 @@ export default function AReceber() {
       doc.setDrawColor(0, 0, 0);
     }
 
-    doc.save(`recibo-${(v.clientes?.nome || "venda").replace(/\s+/g, "-")}.pdf`);
+    doc.save(`recibo-${(venda.clientes?.nome || "venda").replace(/\s+/g, "-")}.pdf`);
     toast({ title: "📄 Recibo gerado!", description: "PDF salvo no dispositivo." });
   }
 
