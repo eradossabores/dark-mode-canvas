@@ -845,10 +845,19 @@ export default function AReceber() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => gerarReciboVenda(v)}
+                        onClick={() => salvarReciboPDF(v)}
                         title="Gerar Recibo PDF"
                       >
                         <Printer className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => enviarReciboWhatsAppDireto(v)}
+                        title="Enviar via WhatsApp"
+                        className="text-green-600 hover:text-green-700"
+                      >
+                        <MessageCircle className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         size="sm"
