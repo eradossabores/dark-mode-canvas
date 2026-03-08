@@ -116,6 +116,8 @@ export default function Vendas() {
       total: Number(v.total),
       observacoes: (v.observacoes || "").replace(/^\[[^\]]*\]\s*/, "").trim() || undefined,
       telefone: clienteData?.telefone || undefined,
+      status: v.status,
+      valor_pago: Number(v.valor_pago || 0),
       itens: (itensData || []).map((it: any) => ({
         sabor_nome: it.sabores?.nome || "?",
         quantidade: it.quantidade,
