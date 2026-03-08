@@ -528,7 +528,7 @@ export default function AReceber() {
       doc.setDrawColor(0, 0, 0);
     }
 
-    doc.save(`recibo-${(v.clientes?.nome || "venda").replace(/\s+/g, "-")}.pdf`);
+    doc.save(`recibo-${(venda.clientes?.nome || "venda").replace(/\s+/g, "-")}.pdf`);
     toast({ title: "📄 Recibo gerado!", description: "PDF salvo no dispositivo." });
   }
 
