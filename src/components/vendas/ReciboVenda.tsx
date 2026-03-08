@@ -35,10 +35,9 @@ interface Props {
 export default function ReciboVenda({ open, onOpenChange, data }: Props) {
   if (!data) return null;
 
-  function drawDottedLine(doc: jsPDF, x1: number, y: number, x2: number) {
-    const step = 1.5;
-    for (let x = x1; x < x2; x += step) {
-      doc.line(x, y, x + 0.5, y);
+  function drawDottedLine(doc: jsPDF, x1: number, yy: number, x2: number) {
+    for (let x = x1; x < x2; x += 1.5) {
+      doc.line(x, yy, x + 0.5, yy);
     }
   }
 
@@ -48,11 +47,12 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     const w = 80;
     let y = 4;
 
-    // === HEADER with colored band ===
+    // Top band
     doc.setFillColor(0, 100, 160);
     doc.rect(0, 0, w, 3, "F");
-
     y = 6;
+
+    // Logo
     const logoW = 36;
     const logoH = 28;
     doc.addImage(logoRecibo, "PNG", (w - logoW) / 2, y, logoW, logoH);
@@ -84,11 +84,9 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     doc.text("RECIBO DE VENDA", w / 2, y + 4, { align: "center" });
     y += 10;
 
-    // Client info section
+    // Client info
     doc.setTextColor(40, 40, 40);
-    doc.setFont("helvetica", "normal");
     doc.setFontSize(7);
-    
     const infoLabel = (label: string, value: string, yPos: number) => {
       doc.setFont("helvetica", "bold");
       doc.setTextColor(100, 100, 100);
@@ -108,7 +106,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     drawDottedLine(doc, 6, y, w - 6);
     y += 3;
 
-    // Items table with styled header
+    // Items table
     autoTable(doc, {
       startY: y,
       margin: { left: 4, right: 4 },
@@ -142,7 +140,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     doc.setFontSize(7);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(0, 100, 160);
-    doc.text(`📦 ${totalQtd} unidades`, w / 2, y + 3, { align: "center" });
+    doc.text(`Qtd Total: ${totalQtd} unidades`, w / 2, y + 3, { align: "center" });
     y += 9;
 
     // TOTAL highlight box
@@ -154,24 +152,20 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     doc.text(`TOTAL: R$ ${data.total.toFixed(2)}`, w / 2, y + 5.5, { align: "center" });
     y += 13;
 
-    // Payment status section
+    // Payment status
     const isPago = data.status === "paga";
     const valorPago = data.valor_pago ?? (isPago ? data.total : 0);
     const restante = data.total - valorPago;
 
-    doc.setTextColor(40, 40, 40);
     doc.setFontSize(7);
-    doc.setFont("helvetica", "normal");
-
-    // Paid amount
     doc.setFont("helvetica", "bold");
     doc.setTextColor(34, 139, 34);
-    doc.text(`✓ Pago: R$ ${valorPago.toFixed(2)}`, 6, y);
+    doc.text(`Pago: R$ ${valorPago.toFixed(2)}`, 6, y);
     y += 4;
 
     if (!isPago && restante > 0) {
       doc.setTextColor(200, 120, 0);
-      doc.text(`⏳ Restante: R$ ${restante.toFixed(2)}`, 6, y);
+      doc.text(`Restante: R$ ${restante.toFixed(2)}`, 6, y);
       y += 4;
     }
     y += 2;
@@ -198,26 +192,22 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     doc.setFontSize(6.5);
     doc.setFont("helvetica", "italic");
     doc.setTextColor(100, 100, 100);
-    doc.text("Obrigado pela preferência! 💙", w / 2, y, { align: "center" });
+    doc.text("Obrigado pela preferencia!", w / 2, y, { align: "center" });
     y += 8;
 
     // Carimbo PAGO / PENDENTE
     if (isPago) {
       const cx = w / 2;
       const cy = y + 6;
-      // Outer glow effect
       doc.setDrawColor(34, 160, 34);
       doc.setLineWidth(2.5);
       doc.roundedRect(cx - 26, cy - 9, 52, 18, 5, 5, "S");
-      // Inner border
       doc.setLineWidth(0.8);
       doc.roundedRect(cx - 24, cy - 7, 48, 14, 4, 4, "S");
-      // Fill subtle
-      // Text
       doc.setTextColor(34, 160, 34);
       doc.setFontSize(26);
       doc.setFont("helvetica", "bold");
-      doc.text("✓ PAGO", cx, cy + 3, { align: "center" });
+      doc.text("PAGO", cx, cy + 3, { align: "center" });
       doc.setTextColor(0, 0, 0);
       doc.setDrawColor(0, 0, 0);
     } else {
@@ -260,24 +250,21 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     const fileName = `recibo-${data.cliente_nome.replace(/\s+/g, "-")}.pdf`;
     const file = new File([pdfBlob], fileName, { type: "application/pdf" });
 
-    const msg = `🧊 *A ERA DOS SABORES*\n\nOlá ${data.cliente_nome}, segue seu recibo.\n\nTotal: R$ ${data.total.toFixed(2)}\nData: ${data.data}\nPagamento: ${data.forma_pagamento}`;
+    const msg = `*A ERA DOS SABORES*\n\nOla ${data.cliente_nome}, segue seu recibo.\n\nTotal: R$ ${data.total.toFixed(2)}\nData: ${data.data}\nPagamento: ${data.forma_pagamento}`;
 
-    // Try Web Share API (attaches file on mobile/desktop)
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
       try {
         await navigator.share({ text: msg, files: [file] });
         return;
       } catch (e) {
-        // User cancelled or share failed, fall back
         console.log("Share cancelled, falling back to wa.me");
       }
     }
 
-    // Fallback: download PDF + open WhatsApp with text only
     doc.save(fileName);
     const phone = data.telefone?.replace(/\D/g, "") || "";
     const url = phone
-      ? `https://wa.me/55${phone}?text=${encodeURIComponent(msg + "\n\n📎 _Recibo PDF baixado no seu dispositivo._")}`
+      ? `https://wa.me/55${phone}?text=${encodeURIComponent(msg + "\n\n_Recibo PDF baixado no seu dispositivo._")}`
       : `https://wa.me/?text=${encodeURIComponent(msg)}`;
     window.open(url, "_blank");
   }
@@ -286,7 +273,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>🧾 Recibo da Venda</DialogTitle>
+          <DialogTitle>Recibo da Venda</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-3 text-sm">
@@ -334,9 +321,8 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
             Quantidade Total: {data.itens.reduce((s, i) => s + i.quantidade, 0)} unidades
           </div>
 
-          {/* Status de pagamento */}
           <div className={`text-center py-3 rounded-lg font-bold text-lg ${data.status === "paga" ? "bg-green-100 text-green-700 border-2 border-green-400" : "bg-amber-100 text-amber-700 border-2 border-amber-400"}`}>
-            {data.status === "paga" ? "✅ PAGO" : "⏳ PENDENTE"}
+            {data.status === "paga" ? "PAGO" : "PENDENTE"}
           </div>
 
           {data.valor_pago !== undefined && data.valor_pago > 0 && data.status !== "paga" && (

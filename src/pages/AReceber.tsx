@@ -54,7 +54,6 @@ export default function AReceber() {
   async function checkWhatsappPrompt(vendaId: string, clienteId: string, clienteNome: string, total: number, valorPago: number, quitou: boolean) {
     const { data: cliente } = await (supabase as any).from("clientes").select("telefone").eq("id", clienteId).single();
     if (cliente?.telefone) {
-      // Load full abatimento history
       const { data: hist } = await (supabase as any)
         .from("abatimentos_historico")
         .select("valor, created_at")
@@ -76,7 +75,6 @@ export default function AReceber() {
     const w = 80;
     let y = 4;
 
-    // Logo
     try {
       doc.addImage(logoRecibo, "PNG", (w - 40) / 2, y, 40, 32);
       y += 34;
@@ -110,11 +108,10 @@ export default function AReceber() {
     doc.line(4, y, w - 4, y);
     y += 3;
 
-    // Histórico de abatimentos
     if (p.historico.length > 0) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(7);
-      doc.text("HISTÓRICO DE PAGAMENTOS", w / 2, y, { align: "center" });
+      doc.text("HISTORICO DE PAGAMENTOS", w / 2, y, { align: "center" });
       y += 3;
 
       autoTable(doc, {
@@ -155,34 +152,21 @@ export default function AReceber() {
 
     doc.setFontSize(6);
     doc.setFont("helvetica", "normal");
-    doc.text("Obrigado pela preferência!", w / 2, y, { align: "center" });
+    doc.text("Obrigado pela preferencia!", w / 2, y, { align: "center" });
 
-    // Carimbo PAGO chamativo quando quitou
     if (p.quitou) {
       const centerX = w / 2;
       const centerY = 100;
-
-      // Draw green rounded rectangle border
       doc.setDrawColor(34, 139, 34);
       doc.setFillColor(34, 139, 34);
       doc.setLineWidth(1.8);
       doc.roundedRect(centerX - 28, centerY - 10, 56, 20, 4, 4, "S");
-
-      // Inner smaller rect for double-border effect
       doc.setLineWidth(0.8);
       doc.roundedRect(centerX - 26, centerY - 8, 52, 16, 3, 3, "S");
-
-      // PAGO text
       doc.setTextColor(34, 139, 34);
       doc.setFontSize(28);
       doc.setFont("helvetica", "bold");
       doc.text("PAGO", centerX, centerY + 4, { align: "center" });
-
-      // Small checkmark
-      doc.setFontSize(10);
-      doc.text("✓", centerX + 22, centerY - 4);
-
-      // Reset colors
       doc.setTextColor(0, 0, 0);
       doc.setDrawColor(0, 0, 0);
     }
@@ -196,8 +180,8 @@ export default function AReceber() {
 
     const doc = gerarPdfRecibo();
     const restante = p.total - p.valorPago;
-    const statusLine = p.quitou ? "✅ Pagamento Completo!" : `⏳ Pagamento Parcial (Restante: R$ ${restante.toFixed(2)})`;
-    const msg = `🧊 *ERA DOS SABORES*\n\n${statusLine}\n\nCliente: ${p.clienteNome}\nValor: R$ ${p.total.toFixed(2)}\nPago: R$ ${p.valorPago.toFixed(2)}`;
+    const statusLine = p.quitou ? "Pagamento Completo!" : `Pagamento Parcial (Restante: R$ ${restante.toFixed(2)})`;
+    const msg = `*ERA DOS SABORES*\n\n${statusLine}\n\nCliente: ${p.clienteNome}\nValor: R$ ${p.total.toFixed(2)}\nPago: R$ ${p.valorPago.toFixed(2)}`;
 
     if (doc) {
       const pdfBlob = doc.output("blob");
@@ -214,12 +198,11 @@ export default function AReceber() {
         }
       }
 
-      // Fallback: download PDF + open wa.me
       doc.save(fileName);
     }
 
     const phone = p.telefone.replace(/\D/g, "");
-    window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(msg + "\n\n📎 _Recibo PDF baixado no seu dispositivo._")}`, "_blank");
+    window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(msg + "\n\n_Recibo PDF baixado no seu dispositivo._")}`, "_blank");
     setWhatsappPrompt(null);
   }
 
@@ -253,7 +236,7 @@ export default function AReceber() {
     if (!abaterVenda) return;
     const valor = parseFloat(valorAbater.replace(",", "."));
     if (isNaN(valor) || valor <= 0) {
-      return toast({ title: "Informe um valor válido", variant: "destructive" });
+      return toast({ title: "Informe um valor valido", variant: "destructive" });
     }
 
     const totalVenda = Number(abaterVenda.total);
@@ -277,20 +260,18 @@ export default function AReceber() {
         .eq("id", abaterVenda.id);
       if (error) throw error;
 
-      // Registrar no histórico
       await (supabase as any).from("abatimentos_historico").insert({
         venda_id: abaterVenda.id,
         valor,
       });
 
       toast({
-        title: quitou ? "✅ Venda quitada!" : "💰 Valor abatido!",
+        title: quitou ? "Venda quitada!" : "Valor abatido!",
         description: quitou
           ? `R$ ${valor.toFixed(2)} recebido. Venda totalmente paga.`
           : `R$ ${valor.toFixed(2)} recebido. Restante: R$ ${(restante - valor).toFixed(2)}`,
       });
 
-      // Always prompt WhatsApp after abatimento
       await checkWhatsappPrompt(abaterVenda.id, abaterVenda.cliente_id, abaterVenda.clientes?.nome || "?", totalVenda, novoValorPago, quitou);
 
       setAbaterVenda(null);
@@ -311,7 +292,7 @@ export default function AReceber() {
   async function abaterEmLote() {
     if (!abatimentoLoteCliente) return toast({ title: "Selecione um cliente", variant: "destructive" });
     let valor = parseFloat(abatimentoLoteValor.replace(",", "."));
-    if (isNaN(valor) || valor <= 0) return toast({ title: "Informe um valor válido", variant: "destructive" });
+    if (isNaN(valor) || valor <= 0) return toast({ title: "Informe um valor valido", variant: "destructive" });
     if (valor > totalDevidoClienteLote) return toast({ title: "Valor maior que o total devido", description: `Total devido: R$ ${totalDevidoClienteLote.toFixed(2)}`, variant: "destructive" });
 
     setProcessandoLote(true);
@@ -334,7 +315,7 @@ export default function AReceber() {
         valor -= abater;
       }
 
-      toast({ title: "✅ Abatimento em lote realizado!", description: `Valor distribuído entre as contas do cliente.` });
+      toast({ title: "Abatimento em lote realizado!", description: "Valor distribuido entre as contas do cliente." });
       setAbatimentoLoteCliente("");
       setAbatimentoLoteValor("");
       loadData();
@@ -346,7 +327,7 @@ export default function AReceber() {
   }
 
   async function gerarReciboVenda(v: any) {
-    // Fetch latest venda data from DB to get current status/valor_pago
+    // Fetch latest venda data from DB
     const { data: vendaAtual } = await (supabase as any)
       .from("vendas")
       .select("*, clientes(nome)")
@@ -358,13 +339,11 @@ export default function AReceber() {
     const restante = total - pago;
     const isPago = venda.status === "paga" || restante <= 0;
 
-    // Load itens
     const { data: itens } = await (supabase as any)
       .from("venda_itens")
       .select("*, sabores(nome)")
       .eq("venda_id", v.id);
 
-    // Load abatimentos
     const { data: abatimentos } = await (supabase as any)
       .from("abatimentos_historico")
       .select("*")
@@ -384,7 +363,6 @@ export default function AReceber() {
     doc.rect(0, 0, w, 3, "F");
     y = 6;
 
-    // Logo
     try {
       doc.addImage(logoRecibo, "PNG", (w - 36) / 2, y, 36, 28);
       y += 30;
@@ -428,9 +406,9 @@ export default function AReceber() {
       doc.text(value, 28, yPos);
     };
 
-    infoLabel("Cliente:", venda.clientes?.nome || "—", y); y += 3.5;
+    infoLabel("Cliente:", venda.clientes?.nome || "-", y); y += 3.5;
     infoLabel("Data:", new Date(venda.created_at).toLocaleDateString("pt-BR"), y); y += 3.5;
-    infoLabel("Pgto:", venda.forma_pagamento?.replace("_", " ") || "—", y); y += 3.5;
+    infoLabel("Pgto:", venda.forma_pagamento?.replace("_", " ") || "-", y); y += 3.5;
     if (venda.numero_nf) { infoLabel("NF:", venda.numero_nf, y); y += 3.5; }
     y += 2;
 
@@ -445,7 +423,7 @@ export default function AReceber() {
         margin: { left: 4, right: 4 },
         head: [["Sabor", "Qtd", "Unit.", "Subtotal"]],
         body: itens.map((i: any) => [
-          i.sabores?.nome || "—",
+          i.sabores?.nome || "-",
           String(i.quantidade),
           `R$${Number(i.preco_unitario).toFixed(2)}`,
           `R$${Number(i.subtotal).toFixed(2)}`,
@@ -473,7 +451,7 @@ export default function AReceber() {
     doc.setFontSize(7);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(0, 100, 160);
-    doc.text(`📦 ${totalQtd} unidades`, w / 2, y + 3, { align: "center" });
+    doc.text(`Qtd Total: ${totalQtd} unidades`, w / 2, y + 3, { align: "center" });
     y += 9;
 
     // TOTAL highlight box
@@ -489,14 +467,14 @@ export default function AReceber() {
     doc.setFontSize(7);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(34, 139, 34);
-    doc.text(`✓ Pago: R$ ${pago.toFixed(2)}`, 6, y); y += 4;
+    doc.text(`Pago: R$ ${pago.toFixed(2)}`, 6, y); y += 4;
     if (!isPago && restante > 0) {
       doc.setTextColor(200, 120, 0);
-      doc.text(`⏳ Restante: R$ ${restante.toFixed(2)}`, 6, y); y += 4;
+      doc.text(`Restante: R$ ${restante.toFixed(2)}`, 6, y); y += 4;
     }
     y += 2;
 
-    // Histórico de abatimentos
+    // Historico de abatimentos
     if (abatimentos && abatimentos.length > 0) {
       doc.setDrawColor(200, 200, 200);
       drawDottedLine(doc, 6, y, w - 6);
@@ -507,7 +485,7 @@ export default function AReceber() {
       doc.setFontSize(7);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0, 100, 160);
-      doc.text("HISTÓRICO DE PAGAMENTOS", w / 2, y + 3, { align: "center" });
+      doc.text("HISTORICO DE PAGAMENTOS", w / 2, y + 3, { align: "center" });
       y += 8;
 
       autoTable(doc, {
@@ -560,7 +538,7 @@ export default function AReceber() {
     doc.setFontSize(6.5);
     doc.setFont("helvetica", "italic");
     doc.setTextColor(100, 100, 100);
-    doc.text("Obrigado pela preferência! 💙", w / 2, y, { align: "center" });
+    doc.text("Obrigado pela preferencia!", w / 2, y, { align: "center" });
     y += 8;
 
     // Carimbo PAGO / PENDENTE
@@ -575,7 +553,7 @@ export default function AReceber() {
       doc.setTextColor(34, 160, 34);
       doc.setFontSize(26);
       doc.setFont("helvetica", "bold");
-      doc.text("✓ PAGO", cx, cy + 3, { align: "center" });
+      doc.text("PAGO", cx, cy + 3, { align: "center" });
       doc.setTextColor(0, 0, 0);
       doc.setDrawColor(0, 0, 0);
     } else {
@@ -600,7 +578,7 @@ export default function AReceber() {
     doc.rect(0, pageH - 3, w, 3, "F");
 
     doc.save(`recibo-${(venda.clientes?.nome || "venda").replace(/\s+/g, "-")}.pdf`);
-    toast({ title: "📄 Recibo gerado!", description: "PDF salvo no dispositivo." });
+    toast({ title: "Recibo gerado!", description: "PDF salvo no dispositivo." });
   }
 
   const hoje = new Date().toISOString().split("T")[0];
@@ -629,7 +607,6 @@ export default function AReceber() {
 
       {/* Cards de Abatimento */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        {/* Abatimento Individual */}
         <Card className="border-accent/30">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
@@ -650,7 +627,7 @@ export default function AReceber() {
                       const rest = Number(v.total) - Number(v.valor_pago || 0);
                       return (
                         <SelectItem key={v.id} value={v.id}>
-                          {v.clientes?.nome} — {new Date(v.created_at).toLocaleDateString("pt-BR")} — Restante: R$ {rest.toFixed(2)}
+                          {v.clientes?.nome} - {new Date(v.created_at).toLocaleDateString("pt-BR")} - Restante: R$ {rest.toFixed(2)}
                         </SelectItem>
                       );
                     })}
@@ -683,7 +660,6 @@ export default function AReceber() {
           </CardContent>
         </Card>
 
-        {/* Abatimento em Lote */}
         <Card className="border-primary/30">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
@@ -736,7 +712,7 @@ export default function AReceber() {
                       <div key={v.id} className="flex gap-2">
                         <span>{i + 1}.</span>
                         <span>{new Date(v.created_at).toLocaleDateString("pt-BR")}</span>
-                        <span>— Restante: <span className="font-bold text-foreground">R$ {rest.toFixed(2)}</span></span>
+                        <span>- Restante: <span className="font-bold text-foreground">R$ {rest.toFixed(2)}</span></span>
                       </div>
                     );
                   })}
@@ -793,8 +769,8 @@ export default function AReceber() {
                 <TableHead>Pago</TableHead>
                 <TableHead>Restante</TableHead>
                 <TableHead>Pagamento</TableHead>
-                <TableHead>Situação</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
+                <TableHead>Situacao</TableHead>
+                <TableHead className="text-right">Acoes</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -840,7 +816,7 @@ export default function AReceber() {
                         size="sm"
                         variant="ghost"
                         onClick={() => { setHistoricoVenda(v); loadHistorico(v.id); }}
-                        title="Histórico de abatimentos"
+                        title="Historico de abatimentos"
                       >
                         <History className="h-3.5 w-3.5" />
                       </Button>
@@ -861,7 +837,7 @@ export default function AReceber() {
               {vendasFiltradas.length === 0 && !loading && (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center text-muted-foreground">
-                    Nenhuma venda pendente. 🎉
+                    Nenhuma venda pendente.
                   </TableCell>
                 </TableRow>
               )}
@@ -870,14 +846,11 @@ export default function AReceber() {
         </CardContent>
       </Card>
 
-
-
-
-      {/* Dialog Histórico de Abatimentos */}
+      {/* Dialog Historico de Abatimentos */}
       <Dialog open={!!historicoVenda} onOpenChange={(open) => { if (!open) setHistoricoVenda(null); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Histórico de Abatimentos</DialogTitle>
+            <DialogTitle>Historico de Abatimentos</DialogTitle>
           </DialogHeader>
           {historicoVenda && (
             <div className="space-y-3">
@@ -888,7 +861,7 @@ export default function AReceber() {
                   <span className="font-bold text-foreground">R$ {Number(historicoVenda.total).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Já pago:</span>
+                  <span>Ja pago:</span>
                   <span className="font-bold text-green-600">R$ {Number(historicoVenda.valor_pago || 0).toFixed(2)}</span>
                 </div>
               </div>
@@ -901,7 +874,7 @@ export default function AReceber() {
                     <div key={h.id} className="flex items-center justify-between rounded-md border p-3">
                       <div>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(h.created_at).toLocaleDateString("pt-BR")} às{" "}
+                          {new Date(h.created_at).toLocaleDateString("pt-BR")} as{" "}
                           {new Date(h.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                         </p>
                         <p className="text-xs text-muted-foreground">Abatimento #{i + 1}</p>
@@ -926,20 +899,20 @@ export default function AReceber() {
       <AlertDialog open={!!confirmarQuitarId} onOpenChange={(v) => !v && setConfirmarQuitarId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Quitação</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar Quitacao</AlertDialogTitle>
             <AlertDialogDescription>
               {(() => {
                 const v = vendas.find(x => x.id === confirmarQuitarId);
                 if (!v) return "Tem certeza que deseja quitar esta venda?";
                 const restante = Number(v.total) - Number(v.valor_pago || 0);
-                return `Tem certeza que deseja quitar a venda de ${v.clientes?.nome}? Isso marcará R$ ${restante.toFixed(2)} como pago.`;
+                return `Tem certeza que deseja quitar a venda de ${v.clientes?.nome}? Isso marcara R$ ${restante.toFixed(2)} como pago.`;
               })()}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={() => { if (confirmarQuitarId) { marcarComoPaga(confirmarQuitarId); setConfirmarQuitarId(null); } }}>
-              Confirmar Quitação
+              Confirmar Quitacao
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -964,7 +937,7 @@ export default function AReceber() {
                   )}
                   {(whatsappPrompt?.historico?.length || 0) > 0 && (
                     <div className="border-t pt-1 mt-1">
-                      <p className="font-semibold mb-0.5">Histórico ({whatsappPrompt?.historico.length} pagamento(s)):</p>
+                      <p className="font-semibold mb-0.5">Historico ({whatsappPrompt?.historico.length} pagamento(s)):</p>
                       {whatsappPrompt?.historico.map((h, i) => (
                         <div key={i} className="flex justify-between text-muted-foreground">
                           <span>{h.data}</span><span>R$ {h.valor.toFixed(2)}</span>
@@ -977,7 +950,7 @@ export default function AReceber() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Não</AlertDialogCancel>
+            <AlertDialogCancel>Nao</AlertDialogCancel>
             <AlertDialogAction onClick={enviarReciboWhatsApp} className="bg-green-600 hover:bg-green-700">
               Enviar WhatsApp
             </AlertDialogAction>
