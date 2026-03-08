@@ -159,49 +159,32 @@ export default function AReceber() {
 
     // Carimbo PAGO chamativo quando quitou
     if (p.quitou) {
-      doc.saveGraphicsState();
-      // Rotate and draw large "PAGO" stamp
       const centerX = w / 2;
-      const centerY = 110;
-      const angle = -25 * (Math.PI / 180);
+      const centerY = 100;
 
-      // Green border circle/rectangle effect
+      // Draw green rounded rectangle border
       doc.setDrawColor(34, 139, 34);
-      doc.setLineWidth(2);
+      doc.setFillColor(34, 139, 34);
+      doc.setLineWidth(1.8);
+      doc.roundedRect(centerX - 28, centerY - 10, 56, 20, 4, 4, "S");
+
+      // Inner smaller rect for double-border effect
+      doc.setLineWidth(0.8);
+      doc.roundedRect(centerX - 26, centerY - 8, 52, 16, 3, 3, "S");
+
+      // PAGO text
       doc.setTextColor(34, 139, 34);
-      doc.setFontSize(36);
+      doc.setFontSize(28);
       doc.setFont("helvetica", "bold");
+      doc.text("PAGO", centerX, centerY + 4, { align: "center" });
 
-      // Draw rotated stamp
-      const cos = Math.cos(angle);
-      const sin = Math.sin(angle);
-      // Rounded rectangle border
-      const rw = 60;
-      const rh = 20;
-      const rx = centerX - rw / 2;
-      const ry = centerY - rh / 2;
-
-      // Apply rotation via transformation matrix
-      doc.internal.write(
-        `q ${cos.toFixed(4)} ${sin.toFixed(4)} ${(-sin).toFixed(4)} ${cos.toFixed(4)} ${(centerX * 2.835).toFixed(2)} ${(centerY * 2.835).toFixed(2)} cm`
-      );
-
-      // Draw border
-      doc.setDrawColor(34, 139, 34);
-      doc.setLineWidth(1.5);
-      doc.roundedRect(-rw / 2 * 2.835 / 2.835, -rh / 2, rw, rh, 3, 3, "S");
-
-      // Draw text
-      doc.setTextColor(34, 139, 34);
-      doc.setFontSize(32);
-      doc.text("PAGO", 0, 3, { align: "center" });
-
-      doc.internal.write("Q");
+      // Small checkmark
+      doc.setFontSize(10);
+      doc.text("✓", centerX + 22, centerY - 4);
 
       // Reset colors
       doc.setTextColor(0, 0, 0);
       doc.setDrawColor(0, 0, 0);
-      doc.restoreGraphicsState();
     }
 
     return doc;
