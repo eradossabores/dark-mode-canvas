@@ -213,9 +213,6 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
       doc.setLineWidth(0.8);
       doc.roundedRect(cx - 24, cy - 7, 48, 14, 4, 4, "S");
       // Fill subtle
-      doc.setFillColor(34, 160, 34);
-      doc.setGlobalAlpha?.(0.08);
-      doc.roundedRect(cx - 24, cy - 7, 48, 14, 4, 4, "F");
       // Text
       doc.setTextColor(34, 160, 34);
       doc.setFontSize(26);
