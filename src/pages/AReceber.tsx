@@ -325,67 +325,125 @@ export default function AReceber() {
         </div>
       </div>
 
-      {/* Abatimento em Lote */}
-      <Card className="mb-6 border-primary/30">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-primary" />
-            Abatimento em Lote por Cliente
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-3 items-end">
-            <div className="flex-1 min-w-[200px]">
-              <Label className="text-xs">Cliente</Label>
-              <Select value={abatimentoLoteCliente} onValueChange={setAbatimentoLoteCliente}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o cliente..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {clientesUnicos.map(([id, nome]) => (
-                    <SelectItem key={id} value={id}>{nome}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="w-full sm:w-40">
-              <Label className="text-xs">Valor recebido (R$)</Label>
-              <Input
-                type="text"
-                inputMode="decimal"
-                placeholder="0,00"
-                value={abatimentoLoteValor}
-                onChange={(e) => setAbatimentoLoteValor(e.target.value)}
-              />
-            </div>
-            {abatimentoLoteCliente && totalDevidoClienteLote > 0 && (
-              <div className="text-xs text-muted-foreground whitespace-nowrap pb-2">
-                Total devido: <span className="font-bold text-foreground">R$ {totalDevidoClienteLote.toFixed(2)}</span>
-                <span className="ml-1">({vendasDoClienteLote.length} conta(s))</span>
+      {/* Cards de Abatimento */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+        {/* Abatimento Individual */}
+        <Card className="border-accent/30">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <MinusCircle className="h-4 w-4 text-accent-foreground" />
+              Abatimento Individual
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-3">
+              <div>
+                <Label className="text-xs">Venda</Label>
+                <Select value={abaterVenda?.id || ""} onValueChange={(id) => { const v = vendas.find(x => x.id === id); setAbaterVenda(v || null); setValorAbater(""); }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a venda..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {vendas.map((v) => {
+                      const rest = Number(v.total) - Number(v.valor_pago || 0);
+                      return (
+                        <SelectItem key={v.id} value={v.id}>
+                          {v.clientes?.nome} — {new Date(v.created_at).toLocaleDateString("pt-BR")} — Restante: R$ {rest.toFixed(2)}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
               </div>
-            )}
-            <Button onClick={abaterEmLote} disabled={processandoLote} className="whitespace-nowrap">
-              {processandoLote ? "Processando..." : "Abater em Lote"}
-            </Button>
-          </div>
-          {abatimentoLoteCliente && vendasDoClienteLote.length > 0 && (
-            <div className="mt-3 text-xs text-muted-foreground space-y-1">
-              <p className="font-medium">Ordem de abatimento (mais antiga primeiro):</p>
-              {vendasDoClienteLote.map((v, i) => {
-                const rest = Number(v.total) - Number(v.valor_pago || 0);
-                return (
-                  <div key={v.id} className="flex gap-2">
-                    <span>{i + 1}.</span>
-                    <span>{new Date(v.created_at).toLocaleDateString("pt-BR")}</span>
-                    <span>— Restante: <span className="font-bold text-foreground">R$ {rest.toFixed(2)}</span></span>
-                  </div>
-                );
-              })}
+              {abaterVenda && (
+                <div className="rounded-lg bg-muted p-2 text-xs space-y-1">
+                  <div className="flex justify-between"><span>Total:</span><span className="font-bold">R$ {Number(abaterVenda.total).toFixed(2)}</span></div>
+                  <div className="flex justify-between"><span>Pago:</span><span className="font-bold text-green-600">R$ {Number(abaterVenda.valor_pago || 0).toFixed(2)}</span></div>
+                  <div className="flex justify-between"><span>Restante:</span><span className="font-black text-amber-600">R$ {(Number(abaterVenda.total) - Number(abaterVenda.valor_pago || 0)).toFixed(2)}</span></div>
+                </div>
+              )}
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <Label className="text-xs">Valor (R$)</Label>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0,00"
+                    value={valorAbater}
+                    onChange={(e) => setValorAbater(e.target.value)}
+                  />
+                </div>
+                <Button onClick={abaterValor} disabled={!abaterVenda} className="whitespace-nowrap">
+                  Abater
+                </Button>
+              </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
+        {/* Abatimento em Lote */}
+        <Card className="border-primary/30">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-primary" />
+              Abatimento em Lote por Cliente
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-3">
+              <div>
+                <Label className="text-xs">Cliente</Label>
+                <Select value={abatimentoLoteCliente} onValueChange={setAbatimentoLoteCliente}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o cliente..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clientesUnicos.map(([id, nome]) => (
+                      <SelectItem key={id} value={id}>{nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {abatimentoLoteCliente && totalDevidoClienteLote > 0 && (
+                <div className="rounded-lg bg-muted p-2 text-xs space-y-1">
+                  <div className="flex justify-between"><span>Total devido:</span><span className="font-bold">R$ {totalDevidoClienteLote.toFixed(2)}</span></div>
+                  <div className="flex justify-between"><span>Contas:</span><span className="font-bold">{vendasDoClienteLote.length}</span></div>
+                </div>
+              )}
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <Label className="text-xs">Valor recebido (R$)</Label>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0,00"
+                    value={abatimentoLoteValor}
+                    onChange={(e) => setAbatimentoLoteValor(e.target.value)}
+                  />
+                </div>
+                <Button onClick={abaterEmLote} disabled={processandoLote} className="whitespace-nowrap">
+                  {processandoLote ? "Processando..." : "Abater em Lote"}
+                </Button>
+              </div>
+              {abatimentoLoteCliente && vendasDoClienteLote.length > 0 && (
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <p className="font-medium">Ordem de abatimento (mais antiga primeiro):</p>
+                  {vendasDoClienteLote.map((v, i) => {
+                    const rest = Number(v.total) - Number(v.valor_pago || 0);
+                    return (
+                      <div key={v.id} className="flex gap-2">
+                        <span>{i + 1}.</span>
+                        <span>{new Date(v.created_at).toLocaleDateString("pt-BR")}</span>
+                        <span>— Restante: <span className="font-bold text-foreground">R$ {rest.toFixed(2)}</span></span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Card>
