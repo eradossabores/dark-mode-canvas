@@ -346,10 +346,17 @@ export default function AReceber() {
   }
 
   async function gerarReciboVenda(v: any) {
-    const total = Number(v.total);
-    const pago = Number(v.valor_pago || 0);
+    // Fetch latest venda data from DB to get current status/valor_pago
+    const { data: vendaAtual } = await (supabase as any)
+      .from("vendas")
+      .select("*, clientes(nome)")
+      .eq("id", v.id)
+      .single();
+    const venda = vendaAtual || v;
+    const total = Number(venda.total);
+    const pago = Number(venda.valor_pago || 0);
     const restante = total - pago;
-    const isPago = v.status === "paga" || restante <= 0;
+    const isPago = venda.status === "paga" || restante <= 0;
 
     // Load itens
     const { data: itens } = await (supabase as any)
