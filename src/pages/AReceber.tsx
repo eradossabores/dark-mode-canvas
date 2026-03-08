@@ -587,7 +587,7 @@ export default function AReceber() {
     toast({ title: "Recibo gerado!", description: "PDF salvo no dispositivo." });
   }
 
-  async function enviarReciboWhatsApp(v: any) {
+  async function enviarReciboWhatsAppDireto(v: any) {
     const result = await gerarReciboVenda(v);
     if (!result) return;
     const { doc, venda } = result;
