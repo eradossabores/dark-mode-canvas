@@ -180,8 +180,9 @@ export default function AReceber() {
 
     const doc = gerarPdfRecibo();
     const restante = p.total - p.valorPago;
-    const statusLine = p.quitou ? "Pagamento Completo!" : `Pagamento Parcial (Restante: R$ ${restante.toFixed(2)})`;
-    const msg = `*ERA DOS SABORES*\n\n${statusLine}\n\nCliente: ${p.clienteNome}\nValor: R$ ${p.total.toFixed(2)}\nPago: R$ ${p.valorPago.toFixed(2)}`;
+    const statusLine = p.quitou ? "Pagamento Completo!" : (p.valorPago > 0 ? `Pagamento Parcial (Restante: R$ ${restante.toFixed(2)})` : `Valor Pendente: R$ ${restante.toFixed(2)}`);
+    const pagoLine = p.valorPago > 0 ? `\nPago: R$ ${p.valorPago.toFixed(2)}` : "";
+    const msg = `*ERA DOS SABORES*\n\n${statusLine}\n\nCliente: ${p.clienteNome}\nValor: R$ ${p.total.toFixed(2)}${pagoLine}`;
 
     if (doc) {
       const pdfBlob = doc.output("blob");
