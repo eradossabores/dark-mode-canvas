@@ -157,6 +157,53 @@ export default function AReceber() {
     doc.setFont("helvetica", "normal");
     doc.text("Obrigado pela preferência!", w / 2, y, { align: "center" });
 
+    // Carimbo PAGO chamativo quando quitou
+    if (p.quitou) {
+      doc.saveGraphicsState();
+      // Rotate and draw large "PAGO" stamp
+      const centerX = w / 2;
+      const centerY = 110;
+      const angle = -25 * (Math.PI / 180);
+
+      // Green border circle/rectangle effect
+      doc.setDrawColor(34, 139, 34);
+      doc.setLineWidth(2);
+      doc.setTextColor(34, 139, 34);
+      doc.setFontSize(36);
+      doc.setFont("helvetica", "bold");
+
+      // Draw rotated stamp
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
+      // Rounded rectangle border
+      const rw = 60;
+      const rh = 20;
+      const rx = centerX - rw / 2;
+      const ry = centerY - rh / 2;
+
+      // Apply rotation via transformation matrix
+      doc.internal.write(
+        `q ${cos.toFixed(4)} ${sin.toFixed(4)} ${(-sin).toFixed(4)} ${cos.toFixed(4)} ${(centerX * 2.835).toFixed(2)} ${(centerY * 2.835).toFixed(2)} cm`
+      );
+
+      // Draw border
+      doc.setDrawColor(34, 139, 34);
+      doc.setLineWidth(1.5);
+      doc.roundedRect(-rw / 2 * 2.835 / 2.835, -rh / 2, rw, rh, 3, 3, "S");
+
+      // Draw text
+      doc.setTextColor(34, 139, 34);
+      doc.setFontSize(32);
+      doc.text("PAGO", 0, 3, { align: "center" });
+
+      doc.internal.write("Q");
+
+      // Reset colors
+      doc.setTextColor(0, 0, 0);
+      doc.setDrawColor(0, 0, 0);
+      doc.restoreGraphicsState();
+    }
+
     return doc;
   }
 
