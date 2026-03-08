@@ -255,6 +255,50 @@ export default function AReceber() {
     }
   }
 
+  // Abatimento em lote
+  const clientesUnicos = [...new Map(vendas.map(v => [v.cliente_id, v.clientes?.nome || "?"])).entries()];
+  const vendasDoClienteLote = abatimentoLoteCliente
+    ? vendas.filter(v => v.cliente_id === abatimentoLoteCliente).sort((a, b) => a.created_at.localeCompare(b.created_at))
+    : [];
+  const totalDevidoClienteLote = vendasDoClienteLote.reduce((s, v) => s + (Number(v.total) - Number(v.valor_pago || 0)), 0);
+
+  async function abaterEmLote() {
+    if (!abatimentoLoteCliente) return toast({ title: "Selecione um cliente", variant: "destructive" });
+    let valor = parseFloat(abatimentoLoteValor.replace(",", "."));
+    if (isNaN(valor) || valor <= 0) return toast({ title: "Informe um valor válido", variant: "destructive" });
+    if (valor > totalDevidoClienteLote) return toast({ title: "Valor maior que o total devido", description: `Total devido: R$ ${totalDevidoClienteLote.toFixed(2)}`, variant: "destructive" });
+
+    setProcessandoLote(true);
+    try {
+      for (const v of vendasDoClienteLote) {
+        if (valor <= 0) break;
+        const restante = Number(v.total) - Number(v.valor_pago || 0);
+        if (restante <= 0) continue;
+        const abater = Math.min(valor, restante);
+        const novoValorPago = Number(v.valor_pago || 0) + abater;
+        const quitou = novoValorPago >= Number(v.total);
+
+        const { error } = await (supabase as any)
+          .from("vendas")
+          .update({ valor_pago: novoValorPago, status: quitou ? "paga" : "pendente" })
+          .eq("id", v.id);
+        if (error) throw error;
+
+        await (supabase as any).from("abatimentos_historico").insert({ venda_id: v.id, valor: abater });
+        valor -= abater;
+      }
+
+      toast({ title: "✅ Abatimento em lote realizado!", description: `Valor distribuído entre as contas do cliente.` });
+      setAbatimentoLoteCliente("");
+      setAbatimentoLoteValor("");
+      loadData();
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    } finally {
+      setProcessandoLote(false);
+    }
+  }
+
   const hoje = new Date().toISOString().split("T")[0];
   const buscaLower = busca.toLowerCase().trim();
   const vendasFiltradas = buscaLower
