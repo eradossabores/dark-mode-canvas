@@ -978,7 +978,9 @@ export default function AReceber() {
                 <p>Deseja enviar o comprovante para <strong>{whatsappPrompt?.clienteNome}</strong>?</p>
                 <div className="rounded-md bg-muted p-2 text-xs space-y-1">
                   <div className="flex justify-between"><span>Total da venda:</span><span className="font-bold">R$ {whatsappPrompt?.total.toFixed(2)}</span></div>
-                  <div className="flex justify-between"><span>Total pago:</span><span className="font-bold text-green-600">R$ {whatsappPrompt?.valorPago.toFixed(2)}</span></div>
+                  {(whatsappPrompt?.valorPago || 0) > 0 && (
+                    <div className="flex justify-between"><span>Total pago:</span><span className="font-bold text-green-600">R$ {whatsappPrompt?.valorPago.toFixed(2)}</span></div>
+                  )}
                   {!whatsappPrompt?.quitou && (
                     <div className="flex justify-between"><span>Restante:</span><span className="font-bold text-amber-600">R$ {((whatsappPrompt?.total || 0) - (whatsappPrompt?.valorPago || 0)).toFixed(2)}</span></div>
                   )}
