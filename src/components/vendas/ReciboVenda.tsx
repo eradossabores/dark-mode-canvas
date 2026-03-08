@@ -245,6 +245,18 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
             Quantidade Total: {data.itens.reduce((s, i) => s + i.quantidade, 0)} unidades
           </div>
 
+          {/* Status de pagamento */}
+          <div className={`text-center py-3 rounded-lg font-bold text-lg ${data.status === "paga" ? "bg-green-100 text-green-700 border-2 border-green-400" : "bg-amber-100 text-amber-700 border-2 border-amber-400"}`}>
+            {data.status === "paga" ? "✅ PAGO" : "⏳ PENDENTE"}
+          </div>
+
+          {data.valor_pago !== undefined && data.valor_pago > 0 && data.status !== "paga" && (
+            <div className="text-xs text-muted-foreground text-center space-y-0.5">
+              <p>Pago: R$ {data.valor_pago.toFixed(2)}</p>
+              <p className="font-bold text-amber-600">Restante: R$ {(data.total - data.valor_pago).toFixed(2)}</p>
+            </div>
+          )}
+
           {data.observacoes && (
             <p className="text-xs text-muted-foreground">Obs: {data.observacoes}</p>
           )}

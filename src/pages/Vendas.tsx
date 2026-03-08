@@ -285,6 +285,8 @@ export default function Vendas() {
             total: totalVenda,
             observacoes: observacoes || undefined,
             telefone: clienteFull.telefone,
+            status: formaPagamento === "fiado" ? "pendente" : "paga",
+            valor_pago: formaPagamento === "fiado" ? 0 : totalVenda,
             itens: (itensData || []).map((it: any) => ({
               sabor_nome: it.sabores?.nome || "?",
               quantidade: it.quantidade,
