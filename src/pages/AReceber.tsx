@@ -606,6 +606,29 @@ export default function AReceber() {
         </DialogContent>
       </Dialog>
 
+      {/* Confirmar Quitar */}
+      <AlertDialog open={!!confirmarQuitarId} onOpenChange={(v) => !v && setConfirmarQuitarId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Quitação</AlertDialogTitle>
+            <AlertDialogDescription>
+              {(() => {
+                const v = vendas.find(x => x.id === confirmarQuitarId);
+                if (!v) return "Tem certeza que deseja quitar esta venda?";
+                const restante = Number(v.total) - Number(v.valor_pago || 0);
+                return `Tem certeza que deseja quitar a venda de ${v.clientes?.nome}? Isso marcará R$ ${restante.toFixed(2)} como pago.`;
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (confirmarQuitarId) { marcarComoPaga(confirmarQuitarId); setConfirmarQuitarId(null); } }}>
+              Confirmar Quitação
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* WhatsApp Prompt */}
       <AlertDialog open={!!whatsappPrompt} onOpenChange={(v) => !v && setWhatsappPrompt(null)}>
         <AlertDialogContent>
