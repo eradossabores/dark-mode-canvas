@@ -40,8 +40,8 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     let y = 4;
 
     // Logo
-    const logoW = 55;
-    const logoH = 44;
+    const logoW = 40;
+    const logoH = 32;
     doc.addImage(logoRecibo, "PNG", (w - logoW) / 2, y, logoW, logoH);
     y += logoH + 2;
 
