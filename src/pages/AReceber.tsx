@@ -345,6 +345,186 @@ export default function AReceber() {
     }
   }
 
+  async function gerarReciboVenda(v: any) {
+    const total = Number(v.total);
+    const pago = Number(v.valor_pago || 0);
+    const restante = total - pago;
+    const isPago = v.status === "paga" || restante <= 0;
+
+    // Load itens
+    const { data: itens } = await (supabase as any)
+      .from("venda_itens")
+      .select("*, sabores(nome)")
+      .eq("venda_id", v.id);
+
+    // Load abatimentos
+    const { data: abatimentos } = await (supabase as any)
+      .from("abatimentos_historico")
+      .select("*")
+      .eq("venda_id", v.id)
+      .order("created_at", { ascending: true });
+
+    const doc = new jsPDF({ unit: "mm", format: [80, 280] });
+    const w = 80;
+    let y = 4;
+
+    // Logo
+    try {
+      doc.addImage(logoRecibo, "PNG", (w - 40) / 2, y, 40, 32);
+      y += 34;
+    } catch { y += 4; }
+
+    doc.setFontSize(7);
+    doc.text("Cor, Cheiro e Sabor da Fruta", w / 2, y, { align: "center" });
+    y += 3;
+    doc.text("Tel: (95) 99172-5677", w / 2, y, { align: "center" });
+    y += 5;
+
+    doc.setLineWidth(0.3);
+    doc.line(4, y, w - 4, y);
+    y += 4;
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.text("RECIBO DE VENDA", w / 2, y, { align: "center" });
+    y += 5;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.text(`Cliente: ${v.clientes?.nome || "—"}`, 4, y); y += 4;
+    doc.text(`Data da Venda: ${new Date(v.created_at).toLocaleDateString("pt-BR")}`, 4, y); y += 4;
+    doc.text(`Pagamento: ${v.forma_pagamento?.replace("_", " ") || "—"}`, 4, y); y += 4;
+    if (v.numero_nf) { doc.text(`NF: ${v.numero_nf}`, 4, y); y += 4; }
+
+    doc.line(4, y, w - 4, y);
+    y += 3;
+
+    // Itens da venda
+    if (itens && itens.length > 0) {
+      autoTable(doc, {
+        startY: y,
+        margin: { left: 4, right: 4 },
+        head: [["Sabor", "Qtd", "Unit.", "Subtotal"]],
+        body: itens.map((i: any) => [
+          i.sabores?.nome || "—",
+          String(i.quantidade),
+          `R$${Number(i.preco_unitario).toFixed(2)}`,
+          `R$${Number(i.subtotal).toFixed(2)}`,
+        ]),
+        styles: { fontSize: 6.5, cellPadding: 1.5 },
+        headStyles: { fillColor: [0, 136, 204], fontSize: 6.5 },
+        columnStyles: {
+          0: { cellWidth: 24 },
+          1: { cellWidth: 8, halign: "center" },
+          2: { cellWidth: 16, halign: "right" },
+          3: { cellWidth: 18, halign: "right" },
+        },
+        theme: "grid",
+      });
+      y = (doc as any).lastAutoTable.finalY + 4;
+    }
+
+    const totalQtd = (itens || []).reduce((s: number, i: any) => s + Number(i.quantidade), 0);
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Quantidade Total: ${totalQtd} unidades`, w / 2, y, { align: "center" });
+    y += 5;
+
+    doc.line(4, y, w - 4, y);
+    y += 5;
+
+    // Valores
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text(`TOTAL: R$ ${total.toFixed(2)}`, w / 2, y, { align: "center" });
+    y += 6;
+
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Valor Pago: R$ ${pago.toFixed(2)}`, 4, y); y += 4;
+    if (!isPago && restante > 0) {
+      doc.setFont("helvetica", "bold");
+      doc.text(`Valor Restante: R$ ${restante.toFixed(2)}`, 4, y); y += 4;
+      doc.setFont("helvetica", "normal");
+    }
+    y += 2;
+
+    // Histórico de abatimentos
+    if (abatimentos && abatimentos.length > 0) {
+      doc.line(4, y, w - 4, y);
+      y += 3;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7);
+      doc.text("HISTÓRICO DE PAGAMENTOS", w / 2, y, { align: "center" });
+      y += 3;
+
+      autoTable(doc, {
+        startY: y,
+        margin: { left: 4, right: 4 },
+        head: [["#", "Data", "Valor"]],
+        body: abatimentos.map((h: any, i: number) => [
+          String(i + 1),
+          new Date(h.created_at).toLocaleDateString("pt-BR") + " " + new Date(h.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+          `R$ ${Number(h.valor).toFixed(2)}`,
+        ]),
+        styles: { fontSize: 6.5, cellPadding: 1.5 },
+        headStyles: { fillColor: [0, 136, 204], fontSize: 6.5 },
+        columnStyles: {
+          0: { cellWidth: 8, halign: "center" },
+          1: { cellWidth: 30 },
+          2: { cellWidth: 26, halign: "right" },
+        },
+        theme: "grid",
+      });
+      y = (doc as any).lastAutoTable.finalY + 4;
+    }
+
+    // Status
+    doc.line(4, y, w - 4, y);
+    y += 5;
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Status: ${isPago ? "PAGO" : "PENDENTE"}`, w / 2, y, { align: "center" });
+    y += 6;
+
+    if (v.observacoes) {
+      doc.setFontSize(6);
+      doc.setFont("helvetica", "normal");
+      const obs = v.observacoes.replace(/\s*\[fiado\]\s*/gi, "").trim();
+      if (obs) {
+        doc.text(`Obs: ${obs}`, 4, y, { maxWidth: w - 8 });
+        y += 6;
+      }
+    }
+
+    doc.setFontSize(6);
+    doc.setFont("helvetica", "normal");
+    doc.text("Obrigado pela preferência!", w / 2, y, { align: "center" });
+    y += 6;
+
+    // Carimbo PAGO
+    if (isPago) {
+      const centerX = w / 2;
+      const centerY = y + 8;
+      doc.setDrawColor(34, 139, 34);
+      doc.setLineWidth(1.8);
+      doc.roundedRect(centerX - 28, centerY - 10, 56, 20, 4, 4, "S");
+      doc.setLineWidth(0.8);
+      doc.roundedRect(centerX - 26, centerY - 8, 52, 16, 3, 3, "S");
+      doc.setTextColor(34, 139, 34);
+      doc.setFontSize(28);
+      doc.setFont("helvetica", "bold");
+      doc.text("PAGO", centerX, centerY + 4, { align: "center" });
+      doc.setFontSize(10);
+      doc.text("✓", centerX + 22, centerY - 4);
+      doc.setTextColor(0, 0, 0);
+      doc.setDrawColor(0, 0, 0);
+    }
+
+    doc.save(`recibo-${(v.clientes?.nome || "venda").replace(/\s+/g, "-")}.pdf`);
+    toast({ title: "📄 Recibo gerado!", description: "PDF salvo no dispositivo." });
+  }
+
   const hoje = new Date().toISOString().split("T")[0];
   const buscaLower = busca.toLowerCase().trim();
   const vendasFiltradas = buscaLower
