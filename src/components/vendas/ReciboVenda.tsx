@@ -142,7 +142,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     doc.setFontSize(7);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(0, 100, 160);
-    doc.text(`📦 ${totalQtd} unidades`, w / 2, y + 3, { align: "center" });
+    doc.text(`Qtd Total: ${totalQtd} unidades`, w / 2, y + 3, { align: "center" });
     y += 9;
 
     // TOTAL highlight box
