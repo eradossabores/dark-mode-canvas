@@ -142,7 +142,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     doc.setFontSize(7);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(0, 100, 160);
-    doc.text(`Qtd Total:Total: ${totalQtd} unidades`, w / 2, y + 3, { align: "center" });
+    doc.text(`Qtd Total:Total:Total: ${totalQtd} unidades`, w / 2, y + 3, { align: "center" });
     y += 9;
 
     // TOTAL highlight box
@@ -166,12 +166,12 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     // Paid amount
     doc.setFont("helvetica", "bold");
     doc.setTextColor(34, 139, 34);
-    doc.(`✓ Pago: R$ ${valorPago.toFixed(2)}`, 6, y);
+  c.(`✓ Pago: R$ ${valorPago.toFixed(2)}`, 6, y);
     y += 4;
 
     if (!isPago && restante > 0) {
       doc.setTextColor(200, 120, 0);
-      doc.text(`⏳ Restante: R$ ${restante.toFixed(2)}`, 6, y);
+      doc.text� Restante: R$ ${restante.toFixed(2)}`, 6, y);
       y += 4;
     }
     y += 2;
