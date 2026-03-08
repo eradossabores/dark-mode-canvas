@@ -157,6 +157,36 @@ export default function AReceber() {
     doc.setFont("helvetica", "normal");
     doc.text("Obrigado pela preferência!", w / 2, y, { align: "center" });
 
+    // Carimbo PAGO chamativo quando quitou
+    if (p.quitou) {
+      const centerX = w / 2;
+      const centerY = 100;
+
+      // Draw green rounded rectangle border
+      doc.setDrawColor(34, 139, 34);
+      doc.setFillColor(34, 139, 34);
+      doc.setLineWidth(1.8);
+      doc.roundedRect(centerX - 28, centerY - 10, 56, 20, 4, 4, "S");
+
+      // Inner smaller rect for double-border effect
+      doc.setLineWidth(0.8);
+      doc.roundedRect(centerX - 26, centerY - 8, 52, 16, 3, 3, "S");
+
+      // PAGO text
+      doc.setTextColor(34, 139, 34);
+      doc.setFontSize(28);
+      doc.setFont("helvetica", "bold");
+      doc.text("PAGO", centerX, centerY + 4, { align: "center" });
+
+      // Small checkmark
+      doc.setFontSize(10);
+      doc.text("✓", centerX + 22, centerY - 4);
+
+      // Reset colors
+      doc.setTextColor(0, 0, 0);
+      doc.setDrawColor(0, 0, 0);
+    }
+
     return doc;
   }
 
