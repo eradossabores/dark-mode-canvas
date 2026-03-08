@@ -398,10 +398,10 @@ export default function AReceber() {
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7);
-    doc.text(`Cliente: ${v.clientes?.nome || "—"}`, 4, y); y += 4;
-    doc.text(`Data da Venda: ${new Date(v.created_at).toLocaleDateString("pt-BR")}`, 4, y); y += 4;
-    doc.text(`Pagamento: ${v.forma_pagamento?.replace("_", " ") || "—"}`, 4, y); y += 4;
-    if (v.numero_nf) { doc.text(`NF: ${v.numero_nf}`, 4, y); y += 4; }
+    doc.text(`Cliente: ${venda.clientes?.nome || "—"}`, 4, y); y += 4;
+    doc.text(`Data da Venda: ${new Date(venda.created_at).toLocaleDateString("pt-BR")}`, 4, y); y += 4;
+    doc.text(`Pagamento: ${venda.forma_pagamento?.replace("_", " ") || "—"}`, 4, y); y += 4;
+    if (venda.numero_nf) { doc.text(`NF: ${venda.numero_nf}`, 4, y); y += 4; }
 
     doc.line(4, y, w - 4, y);
     y += 3;
