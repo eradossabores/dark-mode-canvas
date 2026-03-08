@@ -157,11 +157,13 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     const valorPago = data.valor_pago ?? (isPago ? data.total : 0);
     const restante = data.total - valorPago;
 
-    doc.setFontSize(7);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(34, 139, 34);
-    doc.text(`Pago: R$ ${valorPago.toFixed(2)}`, 6, y);
-    y += 4;
+    if (valorPago > 0) {
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(34, 139, 34);
+      doc.text(`Pago: R$ ${valorPago.toFixed(2)}`, 6, y);
+      y += 4;
+    }
 
     if (!isPago && restante > 0) {
       doc.setTextColor(200, 120, 0);
