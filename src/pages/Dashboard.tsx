@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { Package, ShoppingCart, Factory, Users, AlertTriangle, TrendingUp, DollarSign, Bell } from "lucide-react";
+import { Package, ShoppingCart, Factory, Users, AlertTriangle, TrendingUp, DollarSign, Bell, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
+import { useAuth } from "@/contexts/AuthContext";
 import sidImg from "@/assets/sid.png";
 import buckImg from "@/assets/buck.png";
 import scrat3dImg from "@/assets/scrat-3d.png";
@@ -56,8 +57,45 @@ function buildChartData(data: any[], days: number, dateKey: string, valueKey: st
 
 type FaturamentoPeriodo = "total" | "semanal" | "mensal" | "anual";
 
+// Motivational greetings per collaborator
+const motivationalMessages = [
+  { emoji: "🔥", text: "Hoje é dia de fazer acontecer! Cada gelo produzido é um cliente feliz." },
+  { emoji: "💪", text: "Sua dedicação faz a diferença! Vamos bater mais um recorde?" },
+  { emoji: "🚀", text: "O sucesso é construído um dia de cada vez. E hoje é mais um grande dia!" },
+  { emoji: "⭐", text: "Você é peça fundamental nessa equipe! Continue brilhando!" },
+  { emoji: "🎯", text: "Foco, força e gelo! Vamos conquistar mais um dia incrível!" },
+  { emoji: "❄️", text: "Cada sabor que produzimos leva alegria pra alguém. Que orgulho!" },
+  { emoji: "🏆", text: "Campeões se fazem no dia a dia. E você é um deles!" },
+  { emoji: "✨", text: "A excelência mora nos detalhes. Continue caprichando!" },
+  { emoji: "🌟", text: "Sua energia transforma o ambiente! Obrigado por estar aqui!" },
+  { emoji: "💎", text: "Trabalho duro + paixão = resultados extraordinários!" },
+  { emoji: "🎉", text: "Mais um dia pra mostrar do que somos capazes. Bora!" },
+  { emoji: "🧊", text: "Refrescando o mundo, um gelo de cada vez. Orgulho da equipe!" },
+];
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Bom dia";
+  if (h < 18) return "Boa tarde";
+  return "Boa noite";
+}
+
+function getDailyMessage(userId: string) {
+  // Use date + userId to get a consistent but different message per user per day
+  const today = new Date().toISOString().split("T")[0];
+  let hash = 0;
+  const seed = today + userId;
+  for (let i = 0; i < seed.length; i++) {
+    hash = ((hash << 5) - hash) + seed.charCodeAt(i);
+    hash |= 0;
+  }
+  return motivationalMessages[Math.abs(hash) % motivationalMessages.length];
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [userName, setUserName] = useState("");
   const [stats, setStats] = useState({
     totalGelos: 0, totalClientes: 0, totalVendas: 0,
     totalProducoes: 0, faturamento: 0, clientesInativos: 0,
@@ -75,7 +113,21 @@ export default function Dashboard() {
   const [allProducoes, setAllProducoes] = useState<any[]>([]);
   const [fatPeriodo, setFatPeriodo] = useState<FaturamentoPeriodo>("total");
 
-  useEffect(() => { loadStats(); }, []);
+  useEffect(() => { loadStats(); loadUserName(); }, []);
+
+  async function loadUserName() {
+    if (!user) return;
+    const { data } = await (supabase as any)
+      .from("profiles")
+      .select("nome")
+      .eq("id", user.id)
+      .maybeSingle();
+    setUserName(data?.nome || user.email?.split("@")[0] || "Colaborador");
+  }
+
+  const dailyMessage = useMemo(() => {
+    return getDailyMessage(user?.id || "default");
+  }, [user?.id]);
 
   // Auto-rotate alerts every 5 seconds
   useEffect(() => {
@@ -201,6 +253,37 @@ export default function Dashboard() {
 
   return (
     <div>
+      {/* Animated Welcome Banner */}
+      <div className="mb-6 relative overflow-hidden rounded-xl bg-gradient-to-r from-primary/10 via-accent/10 to-primary/5 border border-primary/20 p-5">
+        <div className="absolute top-0 right-0 w-32 h-32 opacity-10">
+          <Sparkles className="w-full h-full text-primary" />
+        </div>
+        <div className="absolute -bottom-4 -right-4 w-24 h-24 opacity-[0.15] pointer-events-none select-none">
+          <img
+            src={postItCharacters[Math.abs((user?.id || "").charCodeAt(0) || 0) % postItCharacters.length]}
+            alt=""
+            aria-hidden
+            className="w-full h-full object-contain"
+          />
+        </div>
+        <div className="relative animate-fade-in">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-2xl">{dailyMessage.emoji}</span>
+            <h2 className="text-lg font-bold text-foreground">
+              {getGreeting()}, <span className="text-primary">{userName || "Colaborador"}</span>!
+            </h2>
+          </div>
+          <p className="text-sm text-muted-foreground max-w-lg leading-relaxed">
+            {dailyMessage.text}
+          </p>
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-[10px] text-muted-foreground/60">
+              {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+            </span>
+          </div>
+        </div>
+      </div>
+
       <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
 
       {/* 4 Post-its por categoria */}
