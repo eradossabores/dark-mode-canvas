@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { Package, ShoppingCart, Factory, Users, AlertTriangle, TrendingUp, DollarSign, Bell } from "lucide-react";
+import { Package, ShoppingCart, Factory, Users, AlertTriangle, TrendingUp, DollarSign, Bell, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
+import { useAuth } from "@/contexts/AuthContext";
 import sidImg from "@/assets/sid.png";
 import buckImg from "@/assets/buck.png";
 import scrat3dImg from "@/assets/scrat-3d.png";
