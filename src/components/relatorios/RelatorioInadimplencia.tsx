@@ -79,7 +79,12 @@ export default function RelatorioInadimplencia() {
         <ExportButtons
           onPreview={() => setPreviewLoaded(true)}
           previewLoaded={previewLoaded}
-          onPDF={() => exportToPDF("Relatório de Inadimplência", headers, rows, "relatorio-inadimplencia")}
+          onPDF={() => exportToPDF("Relatório de Inadimplência", headers, rows, "relatorio-inadimplencia", [
+            { label: "Total Vencido", value: `R$ ${totalVencido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
+            { label: "A Vencer", value: `R$ ${totalAVencer.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
+            { label: "Parcelas Vencidas", value: parcelasVencidas.length.toString() },
+            { label: "Clientes Devedores", value: clienteDebitos.length.toString() },
+          ])}
           onExcel={() => exportToExcel(headers, rows, "Inadimplência", "relatorio-inadimplencia")}
         />
       </div>

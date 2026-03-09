@@ -92,7 +92,13 @@ export default function RelatorioVendas() {
         <ExportButtons
           onPreview={() => setPreviewLoaded(true)}
           previewLoaded={previewLoaded}
-          onPDF={() => exportToPDF("Relatório de Vendas", headers, rows, "relatorio-vendas")}
+          onPDF={() => exportToPDF("Relatório de Vendas", headers, rows, "relatorio-vendas", [
+            { label: "Faturamento Total", value: `R$ ${faturamento.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
+            { label: "Total de Vendas", value: totalVendas.toString() },
+            { label: "Ticket Médio", value: `R$ ${ticketMedio.toFixed(2)}` },
+            { label: "Unidades Vendidas", value: totalUnidades.toLocaleString("pt-BR") },
+            { label: "Período", value: periodoLabel },
+          ])}
           onExcel={() => exportToExcel(headers, rows, "Vendas", "relatorio-vendas")}
         />
       </DateRangeFilter>
