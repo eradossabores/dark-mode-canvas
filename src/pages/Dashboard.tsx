@@ -253,6 +253,37 @@ export default function Dashboard() {
 
   return (
     <div>
+      {/* Animated Welcome Banner */}
+      <div className="mb-6 relative overflow-hidden rounded-xl bg-gradient-to-r from-primary/10 via-accent/10 to-primary/5 border border-primary/20 p-5">
+        <div className="absolute top-0 right-0 w-32 h-32 opacity-10">
+          <Sparkles className="w-full h-full text-primary" />
+        </div>
+        <div className="absolute -bottom-4 -right-4 w-24 h-24 opacity-[0.15] pointer-events-none select-none">
+          <img
+            src={postItCharacters[Math.abs((user?.id || "").charCodeAt(0) || 0) % postItCharacters.length]}
+            alt=""
+            aria-hidden
+            className="w-full h-full object-contain"
+          />
+        </div>
+        <div className="relative animate-fade-in">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-2xl">{dailyMessage.emoji}</span>
+            <h2 className="text-lg font-bold text-foreground">
+              {getGreeting()}, <span className="text-primary">{userName || "Colaborador"}</span>!
+            </h2>
+          </div>
+          <p className="text-sm text-muted-foreground max-w-lg leading-relaxed">
+            {dailyMessage.text}
+          </p>
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-[10px] text-muted-foreground/60">
+              {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+            </span>
+          </div>
+        </div>
+      </div>
+
       <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
 
       {/* 4 Post-its por categoria */}
