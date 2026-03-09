@@ -113,7 +113,21 @@ export default function Dashboard() {
   const [allProducoes, setAllProducoes] = useState<any[]>([]);
   const [fatPeriodo, setFatPeriodo] = useState<FaturamentoPeriodo>("total");
 
-  useEffect(() => { loadStats(); }, []);
+  useEffect(() => { loadStats(); loadUserName(); }, []);
+
+  async function loadUserName() {
+    if (!user) return;
+    const { data } = await (supabase as any)
+      .from("profiles")
+      .select("nome")
+      .eq("id", user.id)
+      .maybeSingle();
+    setUserName(data?.nome || user.email?.split("@")[0] || "Colaborador");
+  }
+
+  const dailyMessage = useMemo(() => {
+    return getDailyMessage(user?.id || "default");
+  }, [user?.id]);
 
   // Auto-rotate alerts every 5 seconds
   useEffect(() => {
