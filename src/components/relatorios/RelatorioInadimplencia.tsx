@@ -2,6 +2,9 @@ import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { AlertTriangle, DollarSign, Clock, Users } from "lucide-react";
@@ -11,12 +14,23 @@ import { exportToPDF, exportToExcel } from "@/lib/export-utils";
 
 const COLORS = ["hsl(0,72%,50%)", "hsl(38,92%,50%)", "hsl(200,98%,39%)", "hsl(142,71%,45%)"];
 
+const FAIXAS_ATRASO = [
+  { value: "todos", label: "Todos" },
+  { value: "1-7", label: "1-7 dias" },
+  { value: "8-15", label: "8-15 dias" },
+  { value: "16-30", label: "16-30 dias" },
+  { value: "31+", label: "31+ dias" },
+];
+
 export default function RelatorioInadimplencia() {
   const [parcelas, setParcelas] = useState<any[]>([]);
   const [vendas, setVendas] = useState<any[]>([]);
   const [previewLoaded, setPreviewLoaded] = useState(false);
+  const [filtroFaixa, setFiltroFaixa] = useState("todos");
+  const [filtroCliente, setFiltroCliente] = useState("");
 
   useEffect(() => { loadData(); }, []);
+  useEffect(() => { setPreviewLoaded(false); }, [filtroFaixa, filtroCliente]);
 
   async function loadData() {
     const [p, v] = await Promise.all([
@@ -30,14 +44,29 @@ export default function RelatorioInadimplencia() {
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
 
-  const parcelasVencidas = parcelas.filter(p => new Date(p.vencimento) < hoje);
+  const parcelasVencidas = useMemo(() => {
+    return parcelas.filter(p => {
+      const venc = new Date(p.vencimento);
+      if (venc >= hoje) return false;
+      const dias = Math.floor((hoje.getTime() - venc.getTime()) / 86400000);
+      const nome = (p.vendas?.clientes?.nome || "").toLowerCase();
+
+      if (filtroCliente.trim() && !nome.includes(filtroCliente.toLowerCase())) return false;
+
+      if (filtroFaixa === "1-7" && (dias < 1 || dias > 7)) return false;
+      if (filtroFaixa === "8-15" && (dias < 8 || dias > 15)) return false;
+      if (filtroFaixa === "16-30" && (dias < 16 || dias > 30)) return false;
+      if (filtroFaixa === "31+" && dias < 31) return false;
+
+      return true;
+    });
+  }, [parcelas, filtroFaixa, filtroCliente]);
+
   const parcelasAVencer = parcelas.filter(p => new Date(p.vencimento) >= hoje);
 
   const totalVencido = parcelasVencidas.reduce((s, p) => s + Number(p.valor), 0);
   const totalAVencer = parcelasAVencer.reduce((s, p) => s + Number(p.valor), 0);
-  const totalPendente = vendas.reduce((s, v) => s + Number(v.total), 0);
 
-  // Clientes com mais débitos
   const clienteDebitos = useMemo(() => {
     const map: Record<string, { nome: string; total: number; parcelas: number }> = {};
     parcelasVencidas.forEach(p => {
@@ -49,7 +78,6 @@ export default function RelatorioInadimplencia() {
     return Object.values(map).sort((a, b) => b.total - a.total).slice(0, 10);
   }, [parcelasVencidas]);
 
-  // Aging buckets
   const aging = useMemo(() => {
     const buckets = [
       { name: "1-7 dias", min: 1, max: 7, valor: 0 },
@@ -75,7 +103,20 @@ export default function RelatorioInadimplencia() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-end gap-3 p-4 bg-card rounded-lg border">
+        <div>
+          <Label className="text-xs mb-1 block">Faixa de Atraso</Label>
+          <Select value={filtroFaixa} onValueChange={setFiltroFaixa}>
+            <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {FAIXAS_ATRASO.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label className="text-xs mb-1 block">Cliente</Label>
+          <Input placeholder="Buscar cliente..." value={filtroCliente} onChange={e => setFiltroCliente(e.target.value)} className="w-[160px]" />
+        </div>
         <ExportButtons
           onPreview={() => setPreviewLoaded(true)}
           previewLoaded={previewLoaded}
@@ -84,6 +125,7 @@ export default function RelatorioInadimplencia() {
             { label: "A Vencer", value: `R$ ${totalAVencer.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
             { label: "Parcelas Vencidas", value: parcelasVencidas.length.toString() },
             { label: "Clientes Devedores", value: clienteDebitos.length.toString() },
+            ...(filtroFaixa !== "todos" ? [{ label: "Filtro Faixa", value: filtroFaixa }] : []),
           ])}
           onExcel={() => exportToExcel(headers, rows, "Inadimplência", "relatorio-inadimplencia")}
         />
@@ -97,6 +139,11 @@ export default function RelatorioInadimplencia() {
         </Card>
       ) : (
         <>
+          <div className="text-sm text-muted-foreground font-medium">
+            {filtroFaixa !== "todos" && <Badge variant="outline" className="mr-2">Atraso: {filtroFaixa}</Badge>}
+            {filtroCliente.trim() && <Badge variant="outline" className="mr-2">Cliente: {filtroCliente}</Badge>}
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <KpiCard title="Total Vencido" value={`R$ ${totalVencido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={AlertTriangle} />
             <KpiCard title="A Vencer" value={`R$ ${totalAVencer.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={Clock} />
