@@ -66,7 +66,7 @@ export async function exportToPDF(
 
   // Totais no final
   if (totals && totals.length > 0) {
-    const finalY = (doc as any).lastAutoTable?.finalY || 60;
+    const finalY = (doc as any).previousAutoTable?.finalY || (doc as any).lastAutoTable?.finalY || 60;
     let y = finalY + 10;
 
     // Verificar se precisa de nova página
