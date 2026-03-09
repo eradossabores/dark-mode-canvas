@@ -2,8 +2,11 @@ import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 import { DollarSign, ShoppingCart, TrendingUp, Target } from "lucide-react";
 import DateRangeFilter from "./DateRangeFilter";
 import KpiCard from "./KpiCard";
@@ -12,6 +15,22 @@ import { exportToPDF, exportToExcel } from "@/lib/export-utils";
 
 const COLORS = ["hsl(200,98%,39%)", "hsl(213,93%,67%)", "hsl(38,92%,50%)", "hsl(142,71%,45%)", "hsl(215,20%,65%)", "hsl(0,72%,50%)"];
 
+const FORMAS_PAGAMENTO = [
+  { value: "todos", label: "Todos" },
+  { value: "pix", label: "PIX" },
+  { value: "dinheiro", label: "Dinheiro" },
+  { value: "cartao", label: "Cartão" },
+  { value: "fiado", label: "Fiado" },
+  { value: "boleto", label: "Boleto" },
+];
+
+const STATUS_VENDA = [
+  { value: "todos", label: "Todos" },
+  { value: "paga", label: "Paga" },
+  { value: "pendente", label: "Pendente" },
+  { value: "cancelada", label: "Cancelada" },
+];
+
 export default function RelatorioVendas() {
   const [vendas, setVendas] = useState<any[]>([]);
   const [itens, setItens] = useState<any[]>([]);
@@ -19,12 +38,15 @@ export default function RelatorioVendas() {
     new Date(new Date().getFullYear(), new Date().getMonth(), 1)
   );
   const [endDate, setEndDate] = useState<Date | undefined>(new Date());
+  const [filtroPagamento, setFiltroPagamento] = useState("todos");
+  const [filtroStatus, setFiltroStatus] = useState("todos");
+  const [filtroCliente, setFiltroCliente] = useState("");
+  const [filtroOperador, setFiltroOperador] = useState("todos");
   const [previewLoaded, setPreviewLoaded] = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
-  // Reset preview when filters change
-  useEffect(() => { setPreviewLoaded(false); }, [startDate, endDate]);
+  useEffect(() => { setPreviewLoaded(false); }, [startDate, endDate, filtroPagamento, filtroStatus, filtroCliente, filtroOperador]);
 
   async function loadData() {
     const [v, it] = await Promise.all([
@@ -35,14 +57,23 @@ export default function RelatorioVendas() {
     setItens(it.data || []);
   }
 
+  const operadores = useMemo(() => {
+    const set = new Set(vendas.map(v => v.operador).filter(Boolean));
+    return Array.from(set).sort();
+  }, [vendas]);
+
   const filtered = useMemo(() => {
     return vendas.filter((v) => {
       const d = new Date(v.created_at);
       if (startDate && d < startDate) return false;
       if (endDate && d > new Date(endDate.getTime() + 86400000)) return false;
+      if (filtroPagamento !== "todos" && v.forma_pagamento !== filtroPagamento) return false;
+      if (filtroStatus !== "todos" && v.status !== filtroStatus) return false;
+      if (filtroCliente.trim() && !(v.clientes?.nome || "").toLowerCase().includes(filtroCliente.toLowerCase())) return false;
+      if (filtroOperador !== "todos" && v.operador !== filtroOperador) return false;
       return true;
     });
-  }, [vendas, startDate, endDate]);
+  }, [vendas, startDate, endDate, filtroPagamento, filtroStatus, filtroCliente, filtroOperador]);
 
   const filteredIds = new Set(filtered.map((v) => v.id));
   const filteredItens = itens.filter((i) => filteredIds.has(i.venda_id));
@@ -64,6 +95,20 @@ export default function RelatorioVendas() {
       .map(([name, v]) => ({ name, qtd: v.qtd, valor: v.valor }))
       .sort((a, b) => b.qtd - a.qtd);
   }, [filteredItens]);
+
+  // Faturamento por forma de pagamento
+  const porFormaPagamento = useMemo(() => {
+    const map: Record<string, { qtd: number; valor: number }> = {};
+    filtered.forEach((v) => {
+      const forma = v.forma_pagamento || "outro";
+      if (!map[forma]) map[forma] = { qtd: 0, valor: 0 };
+      map[forma].qtd += 1;
+      map[forma].valor += Number(v.total);
+    });
+    return Object.entries(map)
+      .map(([name, v]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), qtd: v.qtd, valor: v.valor }))
+      .sort((a, b) => b.valor - a.valor);
+  }, [filtered]);
 
   const faturamentoPorDia = useMemo(() => {
     const map: Record<string, number> = {};
@@ -89,6 +134,38 @@ export default function RelatorioVendas() {
   return (
     <div className="space-y-6">
       <DateRangeFilter startDate={startDate} endDate={endDate} onStartChange={setStartDate} onEndChange={setEndDate}>
+        <div>
+          <Label className="text-xs mb-1 block">Pagamento</Label>
+          <Select value={filtroPagamento} onValueChange={setFiltroPagamento}>
+            <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {FORMAS_PAGAMENTO.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label className="text-xs mb-1 block">Status</Label>
+          <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+            <SelectTrigger className="w-[130px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {STATUS_VENDA.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label className="text-xs mb-1 block">Operador</Label>
+          <Select value={filtroOperador} onValueChange={setFiltroOperador}>
+            <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos</SelectItem>
+              {operadores.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label className="text-xs mb-1 block">Cliente</Label>
+          <Input placeholder="Buscar cliente..." value={filtroCliente} onChange={e => setFiltroCliente(e.target.value)} className="w-[160px]" />
+        </div>
         <ExportButtons
           onPreview={() => setPreviewLoaded(true)}
           previewLoaded={previewLoaded}
@@ -98,6 +175,8 @@ export default function RelatorioVendas() {
             { label: "Ticket Médio", value: `R$ ${ticketMedio.toFixed(2)}` },
             { label: "Unidades Vendidas", value: totalUnidades.toLocaleString("pt-BR") },
             { label: "Período", value: periodoLabel },
+            ...(filtroPagamento !== "todos" ? [{ label: "Filtro Pagamento", value: filtroPagamento.toUpperCase() }] : []),
+            ...(filtroStatus !== "todos" ? [{ label: "Filtro Status", value: filtroStatus }] : []),
           ])}
           onExcel={() => exportToExcel(headers, rows, "Vendas", "relatorio-vendas")}
         />
@@ -114,12 +193,18 @@ export default function RelatorioVendas() {
         <Card>
           <CardContent className="py-16 text-center text-muted-foreground">
             <p className="text-lg font-medium">Nenhum registro encontrado</p>
-            <p className="text-sm mt-1">Não há vendas no período de {periodoLabel}.</p>
+            <p className="text-sm mt-1">Não há vendas no período de {periodoLabel} com os filtros selecionados.</p>
           </CardContent>
         </Card>
       ) : (
         <>
-          <div className="text-sm text-muted-foreground font-medium">Período: {periodoLabel}</div>
+          <div className="text-sm text-muted-foreground font-medium">
+            Período: {periodoLabel}
+            {filtroPagamento !== "todos" && <Badge variant="outline" className="ml-2">{filtroPagamento.toUpperCase()}</Badge>}
+            {filtroStatus !== "todos" && <Badge variant="outline" className="ml-2">{filtroStatus}</Badge>}
+            {filtroCliente.trim() && <Badge variant="outline" className="ml-2">Cliente: {filtroCliente}</Badge>}
+            {filtroOperador !== "todos" && <Badge variant="outline" className="ml-2">Op: {filtroOperador}</Badge>}
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <KpiCard title="Faturamento" value={`R$ ${faturamento.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={DollarSign} />
@@ -128,7 +213,7 @@ export default function RelatorioVendas() {
             <KpiCard title="Unidades Vendidas" value={totalUnidades.toLocaleString("pt-BR")} icon={TrendingUp} />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card>
               <CardHeader><CardTitle className="text-sm">Ranking - Mais Vendidos</CardTitle></CardHeader>
               <CardContent>
@@ -150,6 +235,19 @@ export default function RelatorioVendas() {
                   <PieChart>
                     <Pie data={porSabor.slice(0, 6)} dataKey="valor" nameKey="name" cx="50%" cy="50%" outerRadius={90} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
                       {porSabor.slice(0, 6).map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                    </Pie>
+                    <Tooltip formatter={(v: number) => `R$ ${v.toFixed(2)}`} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle className="text-sm">Por Forma de Pagamento</CardTitle></CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={280}>
+                  <PieChart>
+                    <Pie data={porFormaPagamento} dataKey="valor" nameKey="name" cx="50%" cy="50%" outerRadius={90} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                      {porFormaPagamento.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                     </Pie>
                     <Tooltip formatter={(v: number) => `R$ ${v.toFixed(2)}`} />
                   </PieChart>
@@ -186,7 +284,9 @@ export default function RelatorioVendas() {
                       <TableCell>{new Date(v.created_at).toLocaleDateString("pt-BR")}</TableCell>
                       <TableCell>{v.clientes?.nome}</TableCell>
                       <TableCell>R$ {Number(v.total).toFixed(2)}</TableCell>
-                      <TableCell>{v.forma_pagamento || "-"}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="capitalize">{v.forma_pagamento || "-"}</Badge>
+                      </TableCell>
                       <TableCell>
                         <Badge variant={v.status === "paga" ? "default" : v.status === "cancelada" ? "destructive" : "secondary"}>{v.status}</Badge>
                       </TableCell>
