@@ -100,7 +100,13 @@ export default function RelatorioEstoque() {
         <ExportButtons
           onPreview={() => setPreviewLoaded(true)}
           previewLoaded={previewLoaded}
-          onPDF={() => exportToPDF("Relatório de Estoque", movHeaders, movRows, "relatorio-estoque")}
+          onPDF={() => exportToPDF("Relatório de Estoque", movHeaders, movRows, "relatorio-estoque", [
+            { label: "Gelos em Estoque", value: `${totalGelos.toLocaleString("pt-BR")} unidades` },
+            { label: "Entradas (período)", value: entradas.toLocaleString("pt-BR") },
+            { label: "Saídas (período)", value: saidas.toLocaleString("pt-BR") },
+            { label: "Itens Estoque Baixo", value: totalBaixo.toString() },
+            { label: "Período", value: periodoLabel },
+          ])}
           onExcel={() => exportToExcel(movHeaders, movRows, "Estoque", "relatorio-estoque")}
         />
       </DateRangeFilter>

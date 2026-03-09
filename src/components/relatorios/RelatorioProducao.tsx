@@ -120,7 +120,12 @@ export default function RelatorioProducao() {
         <ExportButtons
           onPreview={() => setPreviewLoaded(true)}
           previewLoaded={previewLoaded}
-          onPDF={() => exportToPDF("Relatório de Produção", headers, rows, "relatorio-producao")}
+          onPDF={() => exportToPDF("Relatório de Produção", headers, rows, "relatorio-producao", [
+            { label: "Total Produzido", value: `${totalProduzido.toLocaleString("pt-BR")} unidades` },
+            { label: "Total de Lotes", value: totalLotes.toLocaleString("pt-BR") },
+            { label: "Produções Registradas", value: filtered.length.toString() },
+            { label: "Período", value: periodoLabel },
+          ])}
           onExcel={() => exportToExcel(headers, rows, "Produção", "relatorio-producao")}
         />
       </DateRangeFilter>
