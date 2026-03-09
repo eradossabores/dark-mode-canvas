@@ -57,8 +57,45 @@ function buildChartData(data: any[], days: number, dateKey: string, valueKey: st
 
 type FaturamentoPeriodo = "total" | "semanal" | "mensal" | "anual";
 
+// Motivational greetings per collaborator
+const motivationalMessages = [
+  { emoji: "🔥", text: "Hoje é dia de fazer acontecer! Cada gelo produzido é um cliente feliz." },
+  { emoji: "💪", text: "Sua dedicação faz a diferença! Vamos bater mais um recorde?" },
+  { emoji: "🚀", text: "O sucesso é construído um dia de cada vez. E hoje é mais um grande dia!" },
+  { emoji: "⭐", text: "Você é peça fundamental nessa equipe! Continue brilhando!" },
+  { emoji: "🎯", text: "Foco, força e gelo! Vamos conquistar mais um dia incrível!" },
+  { emoji: "❄️", text: "Cada sabor que produzimos leva alegria pra alguém. Que orgulho!" },
+  { emoji: "🏆", text: "Campeões se fazem no dia a dia. E você é um deles!" },
+  { emoji: "✨", text: "A excelência mora nos detalhes. Continue caprichando!" },
+  { emoji: "🌟", text: "Sua energia transforma o ambiente! Obrigado por estar aqui!" },
+  { emoji: "💎", text: "Trabalho duro + paixão = resultados extraordinários!" },
+  { emoji: "🎉", text: "Mais um dia pra mostrar do que somos capazes. Bora!" },
+  { emoji: "🧊", text: "Refrescando o mundo, um gelo de cada vez. Orgulho da equipe!" },
+];
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Bom dia";
+  if (h < 18) return "Boa tarde";
+  return "Boa noite";
+}
+
+function getDailyMessage(userId: string) {
+  // Use date + userId to get a consistent but different message per user per day
+  const today = new Date().toISOString().split("T")[0];
+  let hash = 0;
+  const seed = today + userId;
+  for (let i = 0; i < seed.length; i++) {
+    hash = ((hash << 5) - hash) + seed.charCodeAt(i);
+    hash |= 0;
+  }
+  return motivationalMessages[Math.abs(hash) % motivationalMessages.length];
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [userName, setUserName] = useState("");
   const [stats, setStats] = useState({
     totalGelos: 0, totalClientes: 0, totalVendas: 0,
     totalProducoes: 0, faturamento: 0, clientesInativos: 0,
