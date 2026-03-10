@@ -48,8 +48,8 @@ export default function Producao() {
   const [prodItens, setProdItens] = useState<ProdItem[]>([]);
   const [saborId, setSaborId] = useState("");
   const [modo, setModo] = useState<"lote" | "unidade">("lote");
-  const [qtdLotes, setQtdLotes] = useState(1);
-  const [qtdTotal, setQtdTotal] = useState(84);
+  const [qtdLotes, setQtdLotes] = useState(6);
+  const [qtdTotal, setQtdTotal] = useState(504);
   const [observacoes, setObservacoes] = useState("");
   const [ignorarEstoque, setIgnorarEstoque] = useState(false);
   const [dataProducao, setDataProducao] = useState<Date>(new Date());
