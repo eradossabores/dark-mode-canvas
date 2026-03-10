@@ -73,7 +73,9 @@ export default function Vendas() {
   const [sendingToProduction, setSendingToProduction] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [searchCliente, setSearchCliente] = useState("");
-  const PAGE_SIZE = 20;
+  const [filtroData, setFiltroData] = useState("ultimo_mes");
+  const [filtroStatus, setFiltroStatus] = useState("todos");
+  const [filtroPagamento, setFiltroPagamento] = useState("todos");
 
   // Edit state
   const [editVenda, setEditVenda] = useState<any>(null);
