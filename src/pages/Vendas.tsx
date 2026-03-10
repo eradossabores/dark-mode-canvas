@@ -1072,16 +1072,10 @@ export default function Vendas() {
             </TableHeader>
             <TableBody>
               {(() => {
-                let filtered = clienteFilter
-                  ? vendas.filter(v => normalizeStr(v.clientes?.nome || "").includes(normalizeStr(clienteFilter)))
-                  : vendas;
-                if (searchCliente.trim()) {
-                  filtered = filtered.filter(v => normalizeStr(v.clientes?.nome || "").includes(normalizeStr(searchCliente.trim())));
-                }
-                if (filtered.length === 0) return (
+                if (filteredVendas.length === 0) return (
                   <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Nenhuma venda{clienteFilter ? ` para "${clienteFilter}"` : ""}.</TableCell></TableRow>
                 );
-                return filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((v) => (
+                return filteredVendas.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((v) => (
                   <TableRow key={v.id}>
                     <TableCell>{new Date(v.created_at).toLocaleDateString("pt-BR")}</TableCell>
                     <TableCell>{v.clientes?.nome}</TableCell>
