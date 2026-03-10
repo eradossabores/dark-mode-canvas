@@ -48,8 +48,8 @@ export default function Producao() {
   const [prodItens, setProdItens] = useState<ProdItem[]>([]);
   const [saborId, setSaborId] = useState("");
   const [modo, setModo] = useState<"lote" | "unidade">("lote");
-  const [qtdLotes, setQtdLotes] = useState(1);
-  const [qtdTotal, setQtdTotal] = useState(84);
+  const [qtdLotes, setQtdLotes] = useState(6);
+  const [qtdTotal, setQtdTotal] = useState(504);
   const [observacoes, setObservacoes] = useState("");
   const [ignorarEstoque, setIgnorarEstoque] = useState(false);
   const [dataProducao, setDataProducao] = useState<Date>(new Date());
@@ -173,7 +173,7 @@ export default function Producao() {
   function updateFunc(i: number, val: string) { const list = [...funcList]; list[i] = val; setFuncList(list); }
 
   function resetForm() {
-    setSaborId(""); setModo("lote"); setQtdLotes(1); setQtdTotal(84); setObservacoes(""); setFuncList([""]); setDataProducao(new Date()); setProdItens([]); setIgnorarEstoque(false);
+    setSaborId(""); setModo("lote"); setQtdLotes(6); setQtdTotal(504); setObservacoes(""); setFuncList([""]); setDataProducao(new Date()); setProdItens([]); setIgnorarEstoque(false);
   }
 
   function addProdItem() {
