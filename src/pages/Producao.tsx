@@ -259,6 +259,11 @@ export default function Producao() {
 
     setEditLoading(true);
     try {
+      const oldSaborId = editProd.sabor_id;
+      const oldTotal = editProd.quantidade_total || 0;
+      const saborChanged = oldSaborId !== editSaborId;
+      const qtyChanged = oldTotal !== finalQtdTotal;
+
       const { error } = await (supabase as any).from("producoes").update({
         sabor_id: editSaborId,
         modo: editModo,
@@ -270,7 +275,41 @@ export default function Producao() {
       }).eq("id", editProd.id);
       if (error) throw error;
 
-      // Update funcionarios: delete old, insert new
+      // --- Sync stock if sabor or quantity changed ---
+      if (saborChanged || qtyChanged) {
+        // Reverse old stock
+        if (oldSaborId) {
+          const { data: oldEstoque } = await (supabase as any)
+            .from("estoque_gelos").select("id, quantidade").eq("sabor_id", oldSaborId).single();
+          if (oldEstoque) {
+            await (supabase as any).from("estoque_gelos")
+              .update({ quantidade: oldEstoque.quantidade - oldTotal, updated_at: new Date().toISOString() })
+              .eq("id", oldEstoque.id);
+          }
+        }
+        // Add new stock
+        const { data: newEstoque } = await (supabase as any)
+          .from("estoque_gelos").select("id, quantidade").eq("sabor_id", editSaborId).single();
+        if (newEstoque) {
+          await (supabase as any).from("estoque_gelos")
+            .update({ quantidade: newEstoque.quantidade + finalQtdTotal, updated_at: new Date().toISOString() })
+            .eq("id", newEstoque.id);
+        }
+        // Update movimentacoes
+        await (supabase as any).from("movimentacoes_estoque").delete()
+          .eq("referencia_id", editProd.id).eq("tipo_item", "gelo_pronto");
+        await (supabase as any).from("movimentacoes_estoque").insert({
+          item_id: editSaborId,
+          tipo_item: "gelo_pronto",
+          tipo_movimentacao: "entrada",
+          quantidade: finalQtdTotal,
+          referencia: "producao",
+          referencia_id: editProd.id,
+          operador: nomesFuncionarios || "sistema",
+        });
+      }
+
+      // Update funcionarios
       await (supabase as any).from("producao_funcionarios").delete().eq("producao_id", editProd.id);
       if (validFuncs.length > 0) {
         await (supabase as any).from("producao_funcionarios").insert(
@@ -278,7 +317,7 @@ export default function Producao() {
         );
       }
 
-      toast({ title: "Produção atualizada!" });
+      toast({ title: "Produção atualizada com estoque sincronizado!" });
       setEditOpen(false);
       loadData();
     } catch (e: any) {
