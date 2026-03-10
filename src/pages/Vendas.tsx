@@ -1043,20 +1043,14 @@ export default function Vendas() {
         </CardHeader>
         <CardContent>
           {(() => {
-            let filtered = clienteFilter
-              ? vendas.filter(v => normalizeStr(v.clientes?.nome || "").includes(normalizeStr(clienteFilter)))
-              : vendas;
-            if (searchCliente.trim()) {
-              filtered = filtered.filter(v => normalizeStr(v.clientes?.nome || "").includes(normalizeStr(searchCliente.trim())));
-            }
-            if (filtered.length > PAGE_SIZE) return (
+            if (filteredVendas.length > PAGE_SIZE) return (
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm text-muted-foreground">
-                  {page * PAGE_SIZE + 1}-{Math.min((page + 1) * PAGE_SIZE, filtered.length)} de {filtered.length}
+                  {page * PAGE_SIZE + 1}-{Math.min((page + 1) * PAGE_SIZE, filteredVendas.length)} de {filteredVendas.length}
                 </span>
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage(p => p - 1)}>Anterior</Button>
-                  <Button size="sm" variant="outline" disabled={(page + 1) * PAGE_SIZE >= filtered.length} onClick={() => setPage(p => p + 1)}>Próxima</Button>
+                  <Button size="sm" variant="outline" disabled={(page + 1) * PAGE_SIZE >= filteredVendas.length} onClick={() => setPage(p => p + 1)}>Próxima</Button>
                 </div>
               </div>
             );
