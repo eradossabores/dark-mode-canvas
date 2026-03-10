@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
+import { startOfMonth, endOfMonth, subMonths, startOfWeek, endOfWeek, startOfDay, endOfDay, isAfter, isBefore } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,6 +73,9 @@ export default function Vendas() {
   const [sendingToProduction, setSendingToProduction] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [searchCliente, setSearchCliente] = useState("");
+  const [filtroData, setFiltroData] = useState("ultimo_mes");
+  const [filtroStatus, setFiltroStatus] = useState("todos");
+  const [filtroPagamento, setFiltroPagamento] = useState("todos");
   const PAGE_SIZE = 20;
 
   // Edit state
@@ -91,6 +95,44 @@ export default function Vendas() {
   const [historico, setHistorico] = useState<any[]>([]);
   const [reciboOpen, setReciboOpen] = useState(false);
   const [reciboData, setReciboData] = useState<any>(null);
+
+  const filteredVendas = useMemo(() => {
+    let filtered = vendas;
+    if (clienteFilter) {
+      filtered = filtered.filter(v => normalizeStr(v.clientes?.nome || "").includes(normalizeStr(clienteFilter)));
+    }
+    if (searchCliente.trim()) {
+      filtered = filtered.filter(v => normalizeStr(v.clientes?.nome || "").includes(normalizeStr(searchCliente.trim())));
+    }
+    if (filtroStatus !== "todos") {
+      filtered = filtered.filter(v => v.status === filtroStatus);
+    }
+    if (filtroPagamento !== "todos") {
+      filtered = filtered.filter(v => v.forma_pagamento === filtroPagamento);
+    }
+    if (filtroData !== "todos") {
+      const now = new Date();
+      let start: Date;
+      let end: Date = endOfDay(now);
+      switch (filtroData) {
+        case "hoje": start = startOfDay(now); break;
+        case "semana": start = startOfWeek(now, { weekStartsOn: 1 }); break;
+        case "este_mes": start = startOfMonth(now); break;
+        case "ultimo_mes": start = startOfMonth(subMonths(now, 1)); break;
+        case "ultimos_3m": start = startOfMonth(subMonths(now, 3)); break;
+        default: start = new Date(0);
+      }
+      if (filtroData === "ultimo_mes") {
+        // Include current month too
+        end = endOfDay(now);
+      }
+      filtered = filtered.filter(v => {
+        const d = new Date(v.created_at);
+        return !isBefore(d, start) && !isAfter(d, end);
+      });
+    }
+    return filtered;
+  }, [vendas, clienteFilter, searchCliente, filtroStatus, filtroPagamento, filtroData]);
 
   useEffect(() => { loadData(); }, []);
 
@@ -132,7 +174,7 @@ export default function Vendas() {
     const [c, s, v, vi] = await Promise.all([
       (supabase as any).from("clientes").select("id, nome").eq("status", "ativo").order("nome"),
       (supabase as any).from("sabores").select("*").eq("ativo", true).order("nome"),
-      (supabase as any).from("vendas").select("*, clientes(nome)").order("created_at", { ascending: false }).limit(100),
+      (supabase as any).from("vendas").select("*, clientes(nome)").order("created_at", { ascending: false }).limit(500),
       (supabase as any).from("venda_itens").select("venda_id, quantidade"),
     ]);
     setClientes(c.data || []);
@@ -963,29 +1005,52 @@ export default function Vendas() {
               </div>
             )}
           </div>
-          <Input
-            placeholder="Pesquisar por cliente..."
-            value={searchCliente}
-            onChange={(e) => { setSearchCliente(e.target.value); setPage(0); }}
-            className="max-w-sm mt-2"
-          />
+          <div className="flex flex-wrap gap-2 mt-3">
+            <Input
+              placeholder="Pesquisar por cliente..."
+              value={searchCliente}
+              onChange={(e) => { setSearchCliente(e.target.value); setPage(0); }}
+              className="max-w-[200px] h-9 text-sm"
+            />
+            <Select value={filtroData} onValueChange={(v) => { setFiltroData(v); setPage(0); }}>
+              <SelectTrigger className="w-[150px] h-9 text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todas as datas</SelectItem>
+                <SelectItem value="hoje">Hoje</SelectItem>
+                <SelectItem value="semana">Esta semana</SelectItem>
+                <SelectItem value="este_mes">Este mês</SelectItem>
+                <SelectItem value="ultimo_mes">Último mês</SelectItem>
+                <SelectItem value="ultimos_3m">Últimos 3 meses</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filtroStatus} onValueChange={(v) => { setFiltroStatus(v); setPage(0); }}>
+              <SelectTrigger className="w-[130px] h-9 text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos status</SelectItem>
+                <SelectItem value="pendente">Pendente</SelectItem>
+                <SelectItem value="paga">Paga</SelectItem>
+                <SelectItem value="cancelada">Cancelada</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filtroPagamento} onValueChange={(v) => { setFiltroPagamento(v); setPage(0); }}>
+              <SelectTrigger className="w-[140px] h-9 text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos pagamentos</SelectItem>
+                {FORMAS_PAGAMENTO.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent>
           {(() => {
-            let filtered = clienteFilter
-              ? vendas.filter(v => normalizeStr(v.clientes?.nome || "").includes(normalizeStr(clienteFilter)))
-              : vendas;
-            if (searchCliente.trim()) {
-              filtered = filtered.filter(v => normalizeStr(v.clientes?.nome || "").includes(normalizeStr(searchCliente.trim())));
-            }
-            if (filtered.length > PAGE_SIZE) return (
+            if (filteredVendas.length > PAGE_SIZE) return (
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm text-muted-foreground">
-                  {page * PAGE_SIZE + 1}-{Math.min((page + 1) * PAGE_SIZE, filtered.length)} de {filtered.length}
+                  {page * PAGE_SIZE + 1}-{Math.min((page + 1) * PAGE_SIZE, filteredVendas.length)} de {filteredVendas.length}
                 </span>
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage(p => p - 1)}>Anterior</Button>
-                  <Button size="sm" variant="outline" disabled={(page + 1) * PAGE_SIZE >= filtered.length} onClick={() => setPage(p => p + 1)}>Próxima</Button>
+                  <Button size="sm" variant="outline" disabled={(page + 1) * PAGE_SIZE >= filteredVendas.length} onClick={() => setPage(p => p + 1)}>Próxima</Button>
                 </div>
               </div>
             );
@@ -1007,16 +1072,10 @@ export default function Vendas() {
             </TableHeader>
             <TableBody>
               {(() => {
-                let filtered = clienteFilter
-                  ? vendas.filter(v => normalizeStr(v.clientes?.nome || "").includes(normalizeStr(clienteFilter)))
-                  : vendas;
-                if (searchCliente.trim()) {
-                  filtered = filtered.filter(v => normalizeStr(v.clientes?.nome || "").includes(normalizeStr(searchCliente.trim())));
-                }
-                if (filtered.length === 0) return (
+                if (filteredVendas.length === 0) return (
                   <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Nenhuma venda{clienteFilter ? ` para "${clienteFilter}"` : ""}.</TableCell></TableRow>
                 );
-                return filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((v) => (
+                return filteredVendas.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((v) => (
                   <TableRow key={v.id}>
                     <TableCell>{new Date(v.created_at).toLocaleDateString("pt-BR")}</TableCell>
                     <TableCell>{v.clientes?.nome}</TableCell>
@@ -1090,26 +1149,17 @@ export default function Vendas() {
             </TableBody>
           </Table>
           </div>
-          {(() => {
-            let filtered = clienteFilter
-              ? vendas.filter(v => normalizeStr(v.clientes?.nome || "").includes(normalizeStr(clienteFilter)))
-              : vendas;
-            if (searchCliente.trim()) {
-              filtered = filtered.filter(v => normalizeStr(v.clientes?.nome || "").includes(normalizeStr(searchCliente.trim())));
-            }
-            if (filtered.length > PAGE_SIZE) return (
+          {filteredVendas.length > PAGE_SIZE && (
               <div className="flex items-center justify-between mt-4">
                 <span className="text-sm text-muted-foreground">
-                  {page * PAGE_SIZE + 1}-{Math.min((page + 1) * PAGE_SIZE, filtered.length)} de {filtered.length}
+                  {page * PAGE_SIZE + 1}-{Math.min((page + 1) * PAGE_SIZE, filteredVendas.length)} de {filteredVendas.length}
                 </span>
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage(p => p - 1)}>Anterior</Button>
-                  <Button size="sm" variant="outline" disabled={(page + 1) * PAGE_SIZE >= filtered.length} onClick={() => setPage(p => p + 1)}>Próxima</Button>
+                  <Button size="sm" variant="outline" disabled={(page + 1) * PAGE_SIZE >= filteredVendas.length} onClick={() => setPage(p => p + 1)}>Próxima</Button>
                 </div>
               </div>
-            );
-            return null;
-          })()}
+          )}
         </CardContent>
       </Card>
 
