@@ -966,12 +966,41 @@ export default function Vendas() {
               </div>
             )}
           </div>
-          <Input
-            placeholder="Pesquisar por cliente..."
-            value={searchCliente}
-            onChange={(e) => { setSearchCliente(e.target.value); setPage(0); }}
-            className="max-w-sm mt-2"
-          />
+          <div className="flex flex-wrap gap-2 mt-3">
+            <Input
+              placeholder="Pesquisar por cliente..."
+              value={searchCliente}
+              onChange={(e) => { setSearchCliente(e.target.value); setPage(0); }}
+              className="max-w-[200px] h-9 text-sm"
+            />
+            <Select value={filtroData} onValueChange={(v) => { setFiltroData(v); setPage(0); }}>
+              <SelectTrigger className="w-[150px] h-9 text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todas as datas</SelectItem>
+                <SelectItem value="hoje">Hoje</SelectItem>
+                <SelectItem value="semana">Esta semana</SelectItem>
+                <SelectItem value="este_mes">Este mês</SelectItem>
+                <SelectItem value="ultimo_mes">Último mês</SelectItem>
+                <SelectItem value="ultimos_3m">Últimos 3 meses</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filtroStatus} onValueChange={(v) => { setFiltroStatus(v); setPage(0); }}>
+              <SelectTrigger className="w-[130px] h-9 text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos status</SelectItem>
+                <SelectItem value="pendente">Pendente</SelectItem>
+                <SelectItem value="paga">Paga</SelectItem>
+                <SelectItem value="cancelada">Cancelada</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filtroPagamento} onValueChange={(v) => { setFiltroPagamento(v); setPage(0); }}>
+              <SelectTrigger className="w-[140px] h-9 text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos pagamentos</SelectItem>
+                {FORMAS_PAGAMENTO.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent>
           {(() => {
