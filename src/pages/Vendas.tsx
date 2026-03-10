@@ -96,6 +96,44 @@ export default function Vendas() {
   const [reciboOpen, setReciboOpen] = useState(false);
   const [reciboData, setReciboData] = useState<any>(null);
 
+  const filteredVendas = useMemo(() => {
+    let filtered = vendas;
+    if (clienteFilter) {
+      filtered = filtered.filter(v => normalizeStr(v.clientes?.nome || "").includes(normalizeStr(clienteFilter)));
+    }
+    if (searchCliente.trim()) {
+      filtered = filtered.filter(v => normalizeStr(v.clientes?.nome || "").includes(normalizeStr(searchCliente.trim())));
+    }
+    if (filtroStatus !== "todos") {
+      filtered = filtered.filter(v => v.status === filtroStatus);
+    }
+    if (filtroPagamento !== "todos") {
+      filtered = filtered.filter(v => v.forma_pagamento === filtroPagamento);
+    }
+    if (filtroData !== "todos") {
+      const now = new Date();
+      let start: Date;
+      let end: Date = endOfDay(now);
+      switch (filtroData) {
+        case "hoje": start = startOfDay(now); break;
+        case "semana": start = startOfWeek(now, { weekStartsOn: 1 }); break;
+        case "este_mes": start = startOfMonth(now); break;
+        case "ultimo_mes": start = startOfMonth(subMonths(now, 1)); break;
+        case "ultimos_3m": start = startOfMonth(subMonths(now, 3)); break;
+        default: start = new Date(0);
+      }
+      if (filtroData === "ultimo_mes") {
+        // Include current month too
+        end = endOfDay(now);
+      }
+      filtered = filtered.filter(v => {
+        const d = new Date(v.created_at);
+        return !isBefore(d, start) && !isAfter(d, end);
+      });
+    }
+    return filtered;
+  }, [vendas, clienteFilter, searchCliente, filtroStatus, filtroPagamento, filtroData]);
+
   useEffect(() => { loadData(); }, []);
 
   async function loadHistorico(vendaId: string) {
