@@ -330,7 +330,7 @@ export default function Producao() {
         <h1 className="text-2xl font-bold">Produção</h1>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-2" />Nova Produção</Button></DialogTrigger>
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto pb-6">
             <DialogHeader><DialogTitle>Nova Produção</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <div>
