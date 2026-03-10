@@ -703,12 +703,16 @@ export default function Producao() {
                         size="icon"
                         variant="outline"
                         className="h-7 w-7"
+                        title="Adicionar sabores neste dia"
                         onClick={() => {
                           const [d, m, y] = day.split("/").map(Number);
-                          setDataProducao(new Date(y, m - 1, d));
+                          const targetDate = new Date(y, m - 1, d);
                           resetForm();
-                          setDataProducao(new Date(y, m - 1, d));
-                          setOpen(true);
+                          // Set date after reset (use setTimeout to ensure state is updated)
+                          setTimeout(() => {
+                            setDataProducao(targetDate);
+                            setOpen(true);
+                          }, 0);
                         }}
                       >
                         <Plus className="h-4 w-4" />
