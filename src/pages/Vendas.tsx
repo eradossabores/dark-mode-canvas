@@ -76,6 +76,7 @@ export default function Vendas() {
   const [filtroData, setFiltroData] = useState("ultimo_mes");
   const [filtroStatus, setFiltroStatus] = useState("todos");
   const [filtroPagamento, setFiltroPagamento] = useState("todos");
+  const PAGE_SIZE = 20;
 
   // Edit state
   const [editVenda, setEditVenda] = useState<any>(null);
