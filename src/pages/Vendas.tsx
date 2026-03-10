@@ -174,7 +174,7 @@ export default function Vendas() {
     const [c, s, v, vi] = await Promise.all([
       (supabase as any).from("clientes").select("id, nome").eq("status", "ativo").order("nome"),
       (supabase as any).from("sabores").select("*").eq("ativo", true).order("nome"),
-      (supabase as any).from("vendas").select("*, clientes(nome)").order("created_at", { ascending: false }).limit(100),
+      (supabase as any).from("vendas").select("*, clientes(nome)").order("created_at", { ascending: false }).limit(500),
       (supabase as any).from("venda_itens").select("venda_id, quantidade"),
     ]);
     setClientes(c.data || []);
