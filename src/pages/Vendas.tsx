@@ -178,11 +178,12 @@ export default function Vendas() {
   }
 
   async function loadData() {
-    const [c, s, v, vi] = await Promise.all([
+    const [c, s, v, vi, pp] = await Promise.all([
       (supabase as any).from("clientes").select("id, nome").eq("status", "ativo").order("nome"),
       (supabase as any).from("sabores").select("*").eq("ativo", true).order("nome"),
       (supabase as any).from("vendas").select("*, clientes(nome)").order("created_at", { ascending: false }).limit(500),
       (supabase as any).from("venda_itens").select("venda_id, quantidade"),
+      (supabase as any).from("pedidos_producao").select("venda_id, status").not("venda_id", "is", null),
     ]);
     setClientes(c.data || []);
     setSabores(s.data || []);
@@ -191,7 +192,12 @@ export default function Vendas() {
     (vi.data || []).forEach((it: any) => {
       unitsMap[it.venda_id] = (unitsMap[it.venda_id] || 0) + it.quantidade;
     });
-    setVendas((v.data || []).map((vd: any) => ({ ...vd, totalUnidades: unitsMap[vd.id] || 0 })));
+    // Build pedido status map per venda
+    const pedidoStatusMap: Record<string, string> = {};
+    (pp.data || []).forEach((p: any) => {
+      if (p.venda_id) pedidoStatusMap[p.venda_id] = p.status;
+    });
+    setVendas((v.data || []).map((vd: any) => ({ ...vd, totalUnidades: unitsMap[vd.id] || 0, pedido_status: pedidoStatusMap[vd.id] || null })));
   }
 
   function addItem() { setItens([...itens, { sabor_id: "", quantidade: 1, preco_unitario: "", preco_auto: false }]); }
@@ -1192,8 +1198,12 @@ export default function Vendas() {
                             </>
                           )}
                           {v.enviado_producao && (
-                            <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-700 border-green-300 mr-1">
-                              No Monitor
+                            <Badge variant="outline" className={`text-[10px] mr-1 ${
+                              v.pedido_status === "retirado" || v.pedido_status === "enviado"
+                                ? "bg-muted text-muted-foreground border-border"
+                                : "bg-green-500/10 text-green-700 border-green-300"
+                            }`}>
+                              {v.pedido_status === "retirado" || v.pedido_status === "enviado" ? "Finalizado" : "No Monitor"}
                             </Badge>
                           )}
                         </TooltipProvider>
