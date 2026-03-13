@@ -725,6 +725,28 @@ export default function Vendas() {
                   </SelectContent>
                 </Select>
               </div>
+              {(formaPagamento === "dinheiro" || formaPagamento === "pix") && (
+                <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
+                  <Label className="text-xs font-medium">Detalhe do pagamento</Label>
+                  <RadioGroup value={detalhePgto} onValueChange={(v: any) => setDetalhePgto(v)} className="flex gap-3">
+                    <div className="flex items-center gap-1.5"><RadioGroupItem value="pix" id="nv-pix" /><Label htmlFor="nv-pix" className="text-xs cursor-pointer">PIX</Label></div>
+                    <div className="flex items-center gap-1.5"><RadioGroupItem value="especie" id="nv-esp" /><Label htmlFor="nv-esp" className="text-xs cursor-pointer">Espécie</Label></div>
+                    <div className="flex items-center gap-1.5"><RadioGroupItem value="misto" id="nv-mix" /><Label htmlFor="nv-mix" className="text-xs cursor-pointer">Misto</Label></div>
+                  </RadioGroup>
+                  {detalhePgto === "misto" && (
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <Label className="text-xs">PIX (R$)</Label>
+                        <Input type="text" inputMode="decimal" placeholder="0,00" value={detalhePix} onChange={(e) => setDetalhePix(e.target.value)} />
+                      </div>
+                      <div className="flex-1">
+                        <Label className="text-xs">Espécie (R$)</Label>
+                        <Input type="text" inputMode="decimal" placeholder="0,00" value={detalheEspecie} onChange={(e) => setDetalheEspecie(e.target.value)} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
               {(formaPagamento === "boleto" || formaPagamento === "parcelado") && (
                 <div className="space-y-3 p-3 border rounded-lg bg-muted/30">
                   <div>
