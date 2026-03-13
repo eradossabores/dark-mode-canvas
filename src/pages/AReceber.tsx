@@ -302,6 +302,9 @@ export default function AReceber() {
       await (supabase as any).from("abatimentos_historico").insert({
         venda_id: abaterVenda.id,
         valor,
+        forma_pagamento: formaPgtoAbater,
+        valor_pix: vPix,
+        valor_especie: vEsp,
       });
 
       toast({
@@ -315,6 +318,9 @@ export default function AReceber() {
 
       setAbaterVenda(null);
       setValorAbater("");
+      setFormaPgtoAbater("especie");
+      setValorPixAbater("");
+      setValorEspecieAbater("");
       loadData();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
