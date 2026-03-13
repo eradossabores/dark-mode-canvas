@@ -809,25 +809,31 @@ export default function PlanoProducaoDiario() {
                     )}
                   </div>
 
-                  {/* Lote counter */}
-                  {isSelected && (
-                    <div className="shrink-0 flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                      <Button
-                        variant="outline" size="sm" className="h-8 w-8 p-0 rounded-full text-lg font-bold"
-                        onClick={() => setLotes(a.id, a.lotesCustom - 1)}
-                      >−</Button>
-                      <div className="text-center w-14">
-                        <span className="text-2xl font-black" style={{ color }}>{a.lotesCustom}</span>
-                        <p className="text-[9px] text-muted-foreground leading-none -mt-0.5">
-                          {a.lotesCustom * 84} un
-                        </p>
-                      </div>
-                      <Button
-                        variant="outline" size="sm" className="h-8 w-8 p-0 rounded-full text-lg font-bold"
-                        onClick={() => setLotes(a.id, a.lotesCustom + 1)}
-                      >+</Button>
+                  {/* Lote counter - always visible */}
+                  <div className="shrink-0 flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                    <Button
+                      variant="outline" size="sm" className="h-8 w-8 p-0 rounded-full text-lg font-bold"
+                      onClick={() => {
+                        const newVal = Math.max(0, a.lotesCustom - 1);
+                        setLotes(a.id, newVal);
+                        if (newVal === 0 && a.selecionado) toggleSabor(a.id);
+                      }}
+                    >−</Button>
+                    <div className="text-center w-14">
+                      <span className="text-2xl font-black" style={{ color: isSelected ? color : "hsl(var(--muted-foreground))" }}>{a.lotesCustom}</span>
+                      <p className="text-[9px] text-muted-foreground leading-none -mt-0.5">
+                        {a.lotesCustom * 84} un
+                      </p>
                     </div>
-                  )}
+                    <Button
+                      variant="outline" size="sm" className="h-8 w-8 p-0 rounded-full text-lg font-bold"
+                      onClick={() => {
+                        const newVal = a.lotesCustom + 1;
+                        setLotes(a.id, newVal);
+                        if (!a.selecionado) toggleSabor(a.id);
+                      }}
+                    >+</Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
