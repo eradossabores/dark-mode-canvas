@@ -287,7 +287,10 @@ export default function Vendas() {
         .from("vendas").select("id").eq("cliente_id", clienteId)
         .order("created_at", { ascending: false }).limit(1);
       if (latestVenda?.[0]) {
-        const updateData: any = { forma_pagamento: formaPagamento, status: statusVenda };
+        const totalVendaCalc = itensValidos.reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0);
+        const vPix = detalhePgto === "pix" ? totalVendaCalc : detalhePgto === "misto" ? (parseFloat(detalhePix.replace(",", ".")) || 0) : 0;
+        const vEsp = detalhePgto === "especie" ? totalVendaCalc : detalhePgto === "misto" ? (parseFloat(detalheEspecie.replace(",", ".")) || 0) : 0;
+        const updateData: any = { forma_pagamento: formaPagamento, status: statusVenda, valor_pix: vPix, valor_especie: vEsp };
         if (numeroNf.trim()) updateData.numero_nf = numeroNf.trim();
         await (supabase as any).from("vendas").update(updateData).eq("id", latestVenda[0].id);
       }
