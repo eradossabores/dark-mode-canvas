@@ -235,14 +235,23 @@ export default function AReceber() {
       if (error) throw error;
 
       if (restante > 0) {
+        const quitarVPix = formaPgtoQuitar === "pix" ? restante : formaPgtoQuitar === "misto" ? parseFloat(valorPixQuitar.replace(",", ".")) || 0 : 0;
+        const quitarVEsp = formaPgtoQuitar === "especie" ? restante : formaPgtoQuitar === "misto" ? parseFloat(valorEspecieQuitar.replace(",", ".")) || 0 : 0;
         await (supabase as any).from("abatimentos_historico").insert({
           venda_id: id,
           valor: restante,
+          forma_pagamento: formaPgtoQuitar,
+          valor_pix: quitarVPix,
+          valor_especie: quitarVEsp,
         });
       }
 
       toast({ title: "Venda marcada como paga!" });
       await checkWhatsappPrompt(id, venda.cliente_id, venda.clientes?.nome || "?", Number(venda.total), Number(venda.total), true);
+      setConfirmarQuitarId(null);
+      setFormaPgtoQuitar("especie");
+      setValorPixQuitar("");
+      setValorEspecieQuitar("");
       loadData();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
@@ -251,7 +260,20 @@ export default function AReceber() {
 
   async function abaterValor() {
     if (!abaterVenda) return;
-    const valor = parseFloat(valorAbater.replace(",", "."));
+    let valor = 0;
+    let vPix = 0;
+    let vEsp = 0;
+
+    if (formaPgtoAbater === "misto") {
+      vPix = parseFloat(valorPixAbater.replace(",", ".")) || 0;
+      vEsp = parseFloat(valorEspecieAbater.replace(",", ".")) || 0;
+      valor = vPix + vEsp;
+    } else {
+      valor = parseFloat(valorAbater.replace(",", "."));
+      vPix = formaPgtoAbater === "pix" ? valor : 0;
+      vEsp = formaPgtoAbater === "especie" ? valor : 0;
+    }
+
     if (isNaN(valor) || valor <= 0) {
       return toast({ title: "Informe um valor valido", variant: "destructive" });
     }
