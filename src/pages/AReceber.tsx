@@ -30,6 +30,19 @@ export default function AReceber() {
   const [processandoLote, setProcessandoLote] = useState(false);
   const [confirmarQuitarId, setConfirmarQuitarId] = useState<string | null>(null);
 
+  // Payment method states
+  const [formaPgtoAbater, setFormaPgtoAbater] = useState<"pix" | "especie" | "misto">("especie");
+  const [valorPixAbater, setValorPixAbater] = useState("");
+  const [valorEspecieAbater, setValorEspecieAbater] = useState("");
+
+  const [formaPgtoQuitar, setFormaPgtoQuitar] = useState<"pix" | "especie" | "misto">("especie");
+  const [valorPixQuitar, setValorPixQuitar] = useState("");
+  const [valorEspecieQuitar, setValorEspecieQuitar] = useState("");
+
+  const [formaPgtoLote, setFormaPgtoLote] = useState<"pix" | "especie" | "misto">("especie");
+  const [valorPixLote, setValorPixLote] = useState("");
+  const [valorEspecieLote, setValorEspecieLote] = useState("");
+
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
