@@ -726,91 +726,46 @@ export default function PlanoProducaoDiario() {
               onClick={() => toggleSabor(a.id)}
             >
               <CardContent className="py-3 px-3">
-                <div className="flex items-start gap-2">
+                <div className="flex items-center gap-2">
                   {/* Check circle */}
                   <div
-                    className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 mt-0.5 ${
+                    className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300 ${
                       isSelected ? "scale-110" : "bg-muted"
                     }`}
                     style={isSelected ? { backgroundColor: color, boxShadow: `0 0 12px ${color}40` } : {}}
                   >
                     {isSelected ? (
-                      <Check className="h-4 w-4 text-white" />
+                      <Check className="h-3.5 w-3.5 text-white" />
                     ) : (
                       <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
                     )}
                   </div>
 
-                  {/* Info principal */}
-                  <div className="flex-1 min-w-0 overflow-hidden">
-                    <div className="flex items-center gap-2">
-                      <span className={`font-bold text-sm ${isSelected ? "" : "text-muted-foreground"}`}>
+                  {/* Nome + tendência */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1">
+                      <span className={`font-bold text-sm truncate ${isSelected ? "" : "text-muted-foreground"}`}>
                         {a.prioritario && (
                           <span className="text-xs font-black mr-1" style={{ color }}>#{a.ordemPrioridade + 1}</span>
                         )}
                         {a.nome}
                       </span>
                       {a.prioritario && (
-                        <Badge variant="outline" className="text-[9px] h-4 px-1 border-primary/30 text-primary">
+                        <Badge variant="outline" className="text-[9px] h-4 px-1 border-primary/30 text-primary shrink-0">
                           PRIORIDADE
                         </Badge>
                       )}
                       {hasLearning && modoIA && (
-                        <Badge variant="outline" className="text-[9px] h-4 px-1 gap-0.5 border-violet-400/50 text-violet-600">
+                        <Badge variant="outline" className="text-[9px] h-4 px-1 gap-0.5 border-violet-400/50 text-violet-600 shrink-0">
                           <Brain className="h-2.5 w-2.5" />
                           {a.confianca}%
                         </Badge>
                       )}
-                      <div className="flex items-center gap-0.5 ml-auto">
-                        {tendenciaIcon(a.tendencia)}
-                      </div>
                     </div>
-
-                    {/* Barra de cobertura + métricas */}
-                    <div className="flex items-center gap-3 mt-1.5">
-                      <div className="flex-1 max-w-[120px]">
-                        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                          <div
-                            className="h-full rounded-full transition-all duration-500"
-                            style={{
-                              width: `${coberturaPercent}%`,
-                              backgroundColor: a.diasCobertura <= 3 ? "hsl(var(--destructive))" : a.diasCobertura <= 7 ? "#f59e0b" : color,
-                            }}
-                          />
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground flex-wrap">
-                        <span>
-                          <strong className={a.diasCobertura <= 3 ? "text-destructive" : a.diasCobertura <= 7 ? "text-amber-500" : "text-foreground"}>
-                            {a.diasCobertura === 99 ? "∞" : `${a.diasCobertura}d`}
-                          </strong> cobertura
-                        </span>
-                        <span>{a.estoqueAtual} un</span>
-                        <span className="flex items-center gap-0.5">
-                          <BarChart3 className="h-2.5 w-2.5" /> {a.mediaDiaria}/dia
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Learning insight */}
-                    {hasLearning && modoIA && a.loteAprendido !== a.loteSugerido && (
-                      <div className="flex items-center gap-1 text-[10px] text-violet-600 mt-1">
-                        <Sparkles className="h-3 w-3" />
-                        Você costuma produzir {a.loteAprendido} lote(s) deste sabor
-                        {a.historicoAjustes > 0 && ` (ajustou ${a.historicoAjustes}x)`}
-                      </div>
-                    )}
-
-                    {/* Alerta */}
-                    {a.diasCobertura <= 3 && a.diasCobertura !== 999 && (
-                      <div className="flex items-center gap-1 text-[10px] text-destructive mt-1">
-                        <AlertTriangle className="h-3 w-3" /> Estoque crítico — risco de ruptura
-                      </div>
-                    )}
                   </div>
 
                   {/* Lote counter - always visible */}
-                  <div className="shrink-0 flex items-center gap-1 ml-1" onClick={e => e.stopPropagation()}>
+                  <div className="shrink-0 flex items-center gap-1" onClick={e => e.stopPropagation()}>
                     <Button
                       variant="outline" size="sm" className="h-7 w-7 p-0 rounded-full text-base font-bold"
                       onClick={() => {
@@ -846,7 +801,54 @@ export default function PlanoProducaoDiario() {
                       }}
                     >+</Button>
                   </div>
+
+                  {/* Tendência */}
+                  <div className="shrink-0">
+                    {tendenciaIcon(a.tendencia)}
+                  </div>
                 </div>
+
+                {/* Métricas - segunda linha */}
+                <div className="flex items-center gap-2 mt-1.5 ml-9">
+                  <div className="flex-1 max-w-[100px]">
+                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${coberturaPercent}%`,
+                          backgroundColor: a.diasCobertura <= 3 ? "hsl(var(--destructive))" : a.diasCobertura <= 7 ? "#f59e0b" : color,
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground flex-wrap">
+                    <span>
+                      <strong className={a.diasCobertura <= 3 ? "text-destructive" : a.diasCobertura <= 7 ? "text-amber-500" : "text-foreground"}>
+                        {a.diasCobertura === 99 ? "∞" : `${a.diasCobertura}d`}
+                      </strong> cobertura
+                    </span>
+                    <span>{a.estoqueAtual} un</span>
+                    <span className="flex items-center gap-0.5">
+                      <BarChart3 className="h-2.5 w-2.5" /> {a.mediaDiaria}/dia
+                    </span>
+                  </div>
+                </div>
+
+                {/* Learning insight */}
+                {hasLearning && modoIA && a.loteAprendido !== a.loteSugerido && (
+                  <div className="flex items-center gap-1 text-[10px] text-violet-600 mt-1 ml-9">
+                    <Sparkles className="h-3 w-3" />
+                    Você costuma produzir {a.loteAprendido} lote(s) deste sabor
+                    {a.historicoAjustes > 0 && ` (ajustou ${a.historicoAjustes}x)`}
+                  </div>
+                )}
+
+                {/* Alerta */}
+                {a.diasCobertura <= 3 && a.diasCobertura !== 999 && (
+                  <div className="flex items-center gap-1 text-[10px] text-destructive mt-1 ml-9">
+                    <AlertTriangle className="h-3 w-3" /> Estoque crítico — risco de ruptura
+                  </div>
+                )}
               </CardContent>
             </Card>
           );
