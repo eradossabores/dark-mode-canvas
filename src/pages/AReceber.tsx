@@ -750,21 +750,34 @@ export default function AReceber() {
                   <div className="flex justify-between"><span>Restante:</span><span className="font-black text-amber-600">R$ {(Number(abaterVenda.total) - Number(abaterVenda.valor_pago || 0)).toFixed(2)}</span></div>
                 </div>
               )}
-              <div className="flex gap-2 items-end">
-                <div className="flex-1">
-                  <Label className="text-xs">Valor (R$)</Label>
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    placeholder="0,00"
-                    value={valorAbater}
-                    onChange={(e) => setValorAbater(e.target.value)}
-                  />
-                </div>
-                <Button onClick={abaterValor} disabled={!abaterVenda} className="whitespace-nowrap">
-                  Abater
-                </Button>
+              <div>
+                <Label className="text-xs font-medium">Forma de pagamento</Label>
+                <RadioGroup value={formaPgtoAbater} onValueChange={(v: any) => setFormaPgtoAbater(v)} className="flex gap-3 mt-1">
+                  <div className="flex items-center gap-1.5"><RadioGroupItem value="pix" id="ab-pix" /><Label htmlFor="ab-pix" className="text-xs cursor-pointer">PIX</Label></div>
+                  <div className="flex items-center gap-1.5"><RadioGroupItem value="especie" id="ab-esp" /><Label htmlFor="ab-esp" className="text-xs cursor-pointer">Espécie</Label></div>
+                  <div className="flex items-center gap-1.5"><RadioGroupItem value="misto" id="ab-mix" /><Label htmlFor="ab-mix" className="text-xs cursor-pointer">Misto</Label></div>
+                </RadioGroup>
               </div>
+              {formaPgtoAbater === "misto" ? (
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Label className="text-xs">PIX (R$)</Label>
+                    <Input type="text" inputMode="decimal" placeholder="0,00" value={valorPixAbater} onChange={(e) => setValorPixAbater(e.target.value)} />
+                  </div>
+                  <div className="flex-1">
+                    <Label className="text-xs">Espécie (R$)</Label>
+                    <Input type="text" inputMode="decimal" placeholder="0,00" value={valorEspecieAbater} onChange={(e) => setValorEspecieAbater(e.target.value)} />
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <Label className="text-xs">Valor (R$)</Label>
+                  <Input type="text" inputMode="decimal" placeholder="0,00" value={valorAbater} onChange={(e) => setValorAbater(e.target.value)} />
+                </div>
+              )}
+              <Button onClick={abaterValor} disabled={!abaterVenda} className="w-full">
+                Abater
+              </Button>
             </div>
           </CardContent>
         </Card>
