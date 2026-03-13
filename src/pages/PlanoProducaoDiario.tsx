@@ -725,8 +725,8 @@ export default function PlanoProducaoDiario() {
               }}
               onClick={() => toggleSabor(a.id)}
             >
-              <CardContent className="py-3 px-4">
-                <div className="flex items-start gap-3">
+              <CardContent className="py-3 px-3">
+                <div className="flex items-start gap-2">
                   {/* Check circle */}
                   <div
                     className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 mt-0.5 ${
