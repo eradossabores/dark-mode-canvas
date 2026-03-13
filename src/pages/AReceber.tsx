@@ -336,10 +336,24 @@ export default function AReceber() {
 
   async function abaterEmLote() {
     if (!abatimentoLoteCliente) return toast({ title: "Selecione um cliente", variant: "destructive" });
-    let valor = parseFloat(abatimentoLoteValor.replace(",", "."));
-    if (isNaN(valor) || valor <= 0) return toast({ title: "Informe um valor valido", variant: "destructive" });
-    if (valor > totalDevidoClienteLote) return toast({ title: "Valor maior que o total devido", description: `Total devido: R$ ${totalDevidoClienteLote.toFixed(2)}`, variant: "destructive" });
+    let valorTotal = 0;
+    let loteVPix = 0;
+    let loteVEsp = 0;
 
+    if (formaPgtoLote === "misto") {
+      loteVPix = parseFloat(valorPixLote.replace(",", ".")) || 0;
+      loteVEsp = parseFloat(valorEspecieLote.replace(",", ".")) || 0;
+      valorTotal = loteVPix + loteVEsp;
+    } else {
+      valorTotal = parseFloat(abatimentoLoteValor.replace(",", "."));
+      loteVPix = formaPgtoLote === "pix" ? valorTotal : 0;
+      loteVEsp = formaPgtoLote === "especie" ? valorTotal : 0;
+    }
+
+    if (isNaN(valorTotal) || valorTotal <= 0) return toast({ title: "Informe um valor valido", variant: "destructive" });
+    if (valorTotal > totalDevidoClienteLote) return toast({ title: "Valor maior que o total devido", description: `Total devido: R$ ${totalDevidoClienteLote.toFixed(2)}`, variant: "destructive" });
+
+    let valor = valorTotal;
     setProcessandoLote(true);
     try {
       for (const v of vendasDoClienteLote) {
@@ -356,13 +370,24 @@ export default function AReceber() {
           .eq("id", v.id);
         if (error) throw error;
 
-        await (supabase as any).from("abatimentos_historico").insert({ venda_id: v.id, valor: abater });
+        // Proportional split for mixed payments
+        const ratio = abater / valorTotal;
+        await (supabase as any).from("abatimentos_historico").insert({
+          venda_id: v.id,
+          valor: abater,
+          forma_pagamento: formaPgtoLote,
+          valor_pix: Math.round(loteVPix * ratio * 100) / 100,
+          valor_especie: Math.round(loteVEsp * ratio * 100) / 100,
+        });
         valor -= abater;
       }
 
       toast({ title: "Abatimento em lote realizado!", description: "Valor distribuido entre as contas do cliente." });
       setAbatimentoLoteCliente("");
       setAbatimentoLoteValor("");
+      setFormaPgtoLote("especie");
+      setValorPixLote("");
+      setValorEspecieLote("");
       loadData();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
