@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { DollarSign, CheckCircle, AlertTriangle, MinusCircle, History, Search, MessageCircle, Printer } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import logoRecibo from "@/assets/logo-recibo.png";
@@ -28,6 +29,19 @@ export default function AReceber() {
   const [abatimentoLoteValor, setAbatimentoLoteValor] = useState("");
   const [processandoLote, setProcessandoLote] = useState(false);
   const [confirmarQuitarId, setConfirmarQuitarId] = useState<string | null>(null);
+
+  // Payment method states
+  const [formaPgtoAbater, setFormaPgtoAbater] = useState<"pix" | "especie" | "misto">("especie");
+  const [valorPixAbater, setValorPixAbater] = useState("");
+  const [valorEspecieAbater, setValorEspecieAbater] = useState("");
+
+  const [formaPgtoQuitar, setFormaPgtoQuitar] = useState<"pix" | "especie" | "misto">("especie");
+  const [valorPixQuitar, setValorPixQuitar] = useState("");
+  const [valorEspecieQuitar, setValorEspecieQuitar] = useState("");
+
+  const [formaPgtoLote, setFormaPgtoLote] = useState<"pix" | "especie" | "misto">("especie");
+  const [valorPixLote, setValorPixLote] = useState("");
+  const [valorEspecieLote, setValorEspecieLote] = useState("");
 
   useEffect(() => { loadData(); }, []);
 
@@ -221,14 +235,23 @@ export default function AReceber() {
       if (error) throw error;
 
       if (restante > 0) {
+        const quitarVPix = formaPgtoQuitar === "pix" ? restante : formaPgtoQuitar === "misto" ? parseFloat(valorPixQuitar.replace(",", ".")) || 0 : 0;
+        const quitarVEsp = formaPgtoQuitar === "especie" ? restante : formaPgtoQuitar === "misto" ? parseFloat(valorEspecieQuitar.replace(",", ".")) || 0 : 0;
         await (supabase as any).from("abatimentos_historico").insert({
           venda_id: id,
           valor: restante,
+          forma_pagamento: formaPgtoQuitar,
+          valor_pix: quitarVPix,
+          valor_especie: quitarVEsp,
         });
       }
 
       toast({ title: "Venda marcada como paga!" });
       await checkWhatsappPrompt(id, venda.cliente_id, venda.clientes?.nome || "?", Number(venda.total), Number(venda.total), true);
+      setConfirmarQuitarId(null);
+      setFormaPgtoQuitar("especie");
+      setValorPixQuitar("");
+      setValorEspecieQuitar("");
       loadData();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
@@ -237,7 +260,20 @@ export default function AReceber() {
 
   async function abaterValor() {
     if (!abaterVenda) return;
-    const valor = parseFloat(valorAbater.replace(",", "."));
+    let valor = 0;
+    let vPix = 0;
+    let vEsp = 0;
+
+    if (formaPgtoAbater === "misto") {
+      vPix = parseFloat(valorPixAbater.replace(",", ".")) || 0;
+      vEsp = parseFloat(valorEspecieAbater.replace(",", ".")) || 0;
+      valor = vPix + vEsp;
+    } else {
+      valor = parseFloat(valorAbater.replace(",", "."));
+      vPix = formaPgtoAbater === "pix" ? valor : 0;
+      vEsp = formaPgtoAbater === "especie" ? valor : 0;
+    }
+
     if (isNaN(valor) || valor <= 0) {
       return toast({ title: "Informe um valor valido", variant: "destructive" });
     }
@@ -266,6 +302,9 @@ export default function AReceber() {
       await (supabase as any).from("abatimentos_historico").insert({
         venda_id: abaterVenda.id,
         valor,
+        forma_pagamento: formaPgtoAbater,
+        valor_pix: vPix,
+        valor_especie: vEsp,
       });
 
       toast({
@@ -279,6 +318,9 @@ export default function AReceber() {
 
       setAbaterVenda(null);
       setValorAbater("");
+      setFormaPgtoAbater("especie");
+      setValorPixAbater("");
+      setValorEspecieAbater("");
       loadData();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
@@ -294,10 +336,24 @@ export default function AReceber() {
 
   async function abaterEmLote() {
     if (!abatimentoLoteCliente) return toast({ title: "Selecione um cliente", variant: "destructive" });
-    let valor = parseFloat(abatimentoLoteValor.replace(",", "."));
-    if (isNaN(valor) || valor <= 0) return toast({ title: "Informe um valor valido", variant: "destructive" });
-    if (valor > totalDevidoClienteLote) return toast({ title: "Valor maior que o total devido", description: `Total devido: R$ ${totalDevidoClienteLote.toFixed(2)}`, variant: "destructive" });
+    let valorTotal = 0;
+    let loteVPix = 0;
+    let loteVEsp = 0;
 
+    if (formaPgtoLote === "misto") {
+      loteVPix = parseFloat(valorPixLote.replace(",", ".")) || 0;
+      loteVEsp = parseFloat(valorEspecieLote.replace(",", ".")) || 0;
+      valorTotal = loteVPix + loteVEsp;
+    } else {
+      valorTotal = parseFloat(abatimentoLoteValor.replace(",", "."));
+      loteVPix = formaPgtoLote === "pix" ? valorTotal : 0;
+      loteVEsp = formaPgtoLote === "especie" ? valorTotal : 0;
+    }
+
+    if (isNaN(valorTotal) || valorTotal <= 0) return toast({ title: "Informe um valor valido", variant: "destructive" });
+    if (valorTotal > totalDevidoClienteLote) return toast({ title: "Valor maior que o total devido", description: `Total devido: R$ ${totalDevidoClienteLote.toFixed(2)}`, variant: "destructive" });
+
+    let valor = valorTotal;
     setProcessandoLote(true);
     try {
       for (const v of vendasDoClienteLote) {
@@ -314,13 +370,24 @@ export default function AReceber() {
           .eq("id", v.id);
         if (error) throw error;
 
-        await (supabase as any).from("abatimentos_historico").insert({ venda_id: v.id, valor: abater });
+        // Proportional split for mixed payments
+        const ratio = abater / valorTotal;
+        await (supabase as any).from("abatimentos_historico").insert({
+          venda_id: v.id,
+          valor: abater,
+          forma_pagamento: formaPgtoLote,
+          valor_pix: Math.round(loteVPix * ratio * 100) / 100,
+          valor_especie: Math.round(loteVEsp * ratio * 100) / 100,
+        });
         valor -= abater;
       }
 
       toast({ title: "Abatimento em lote realizado!", description: "Valor distribuido entre as contas do cliente." });
       setAbatimentoLoteCliente("");
       setAbatimentoLoteValor("");
+      setFormaPgtoLote("especie");
+      setValorPixLote("");
+      setValorEspecieLote("");
       loadData();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
@@ -683,21 +750,34 @@ export default function AReceber() {
                   <div className="flex justify-between"><span>Restante:</span><span className="font-black text-amber-600">R$ {(Number(abaterVenda.total) - Number(abaterVenda.valor_pago || 0)).toFixed(2)}</span></div>
                 </div>
               )}
-              <div className="flex gap-2 items-end">
-                <div className="flex-1">
-                  <Label className="text-xs">Valor (R$)</Label>
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    placeholder="0,00"
-                    value={valorAbater}
-                    onChange={(e) => setValorAbater(e.target.value)}
-                  />
-                </div>
-                <Button onClick={abaterValor} disabled={!abaterVenda} className="whitespace-nowrap">
-                  Abater
-                </Button>
+              <div>
+                <Label className="text-xs font-medium">Forma de pagamento</Label>
+                <RadioGroup value={formaPgtoAbater} onValueChange={(v: any) => setFormaPgtoAbater(v)} className="flex gap-3 mt-1">
+                  <div className="flex items-center gap-1.5"><RadioGroupItem value="pix" id="ab-pix" /><Label htmlFor="ab-pix" className="text-xs cursor-pointer">PIX</Label></div>
+                  <div className="flex items-center gap-1.5"><RadioGroupItem value="especie" id="ab-esp" /><Label htmlFor="ab-esp" className="text-xs cursor-pointer">Espécie</Label></div>
+                  <div className="flex items-center gap-1.5"><RadioGroupItem value="misto" id="ab-mix" /><Label htmlFor="ab-mix" className="text-xs cursor-pointer">Misto</Label></div>
+                </RadioGroup>
               </div>
+              {formaPgtoAbater === "misto" ? (
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Label className="text-xs">PIX (R$)</Label>
+                    <Input type="text" inputMode="decimal" placeholder="0,00" value={valorPixAbater} onChange={(e) => setValorPixAbater(e.target.value)} />
+                  </div>
+                  <div className="flex-1">
+                    <Label className="text-xs">Espécie (R$)</Label>
+                    <Input type="text" inputMode="decimal" placeholder="0,00" value={valorEspecieAbater} onChange={(e) => setValorEspecieAbater(e.target.value)} />
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <Label className="text-xs">Valor (R$)</Label>
+                  <Input type="text" inputMode="decimal" placeholder="0,00" value={valorAbater} onChange={(e) => setValorAbater(e.target.value)} />
+                </div>
+              )}
+              <Button onClick={abaterValor} disabled={!abaterVenda} className="w-full">
+                Abater
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -730,21 +810,34 @@ export default function AReceber() {
                   <div className="flex justify-between"><span>Contas:</span><span className="font-bold">{vendasDoClienteLote.length}</span></div>
                 </div>
               )}
-              <div className="flex gap-2 items-end">
-                <div className="flex-1">
-                  <Label className="text-xs">Valor recebido (R$)</Label>
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    placeholder="0,00"
-                    value={abatimentoLoteValor}
-                    onChange={(e) => setAbatimentoLoteValor(e.target.value)}
-                  />
-                </div>
-                <Button onClick={abaterEmLote} disabled={processandoLote} className="whitespace-nowrap">
-                  {processandoLote ? "Processando..." : "Abater em Lote"}
-                </Button>
+              <div>
+                <Label className="text-xs font-medium">Forma de pagamento</Label>
+                <RadioGroup value={formaPgtoLote} onValueChange={(v: any) => setFormaPgtoLote(v)} className="flex gap-3 mt-1">
+                  <div className="flex items-center gap-1.5"><RadioGroupItem value="pix" id="lt-pix" /><Label htmlFor="lt-pix" className="text-xs cursor-pointer">PIX</Label></div>
+                  <div className="flex items-center gap-1.5"><RadioGroupItem value="especie" id="lt-esp" /><Label htmlFor="lt-esp" className="text-xs cursor-pointer">Espécie</Label></div>
+                  <div className="flex items-center gap-1.5"><RadioGroupItem value="misto" id="lt-mix" /><Label htmlFor="lt-mix" className="text-xs cursor-pointer">Misto</Label></div>
+                </RadioGroup>
               </div>
+              {formaPgtoLote === "misto" ? (
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Label className="text-xs">PIX (R$)</Label>
+                    <Input type="text" inputMode="decimal" placeholder="0,00" value={valorPixLote} onChange={(e) => setValorPixLote(e.target.value)} />
+                  </div>
+                  <div className="flex-1">
+                    <Label className="text-xs">Espécie (R$)</Label>
+                    <Input type="text" inputMode="decimal" placeholder="0,00" value={valorEspecieLote} onChange={(e) => setValorEspecieLote(e.target.value)} />
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <Label className="text-xs">Valor recebido (R$)</Label>
+                  <Input type="text" inputMode="decimal" placeholder="0,00" value={abatimentoLoteValor} onChange={(e) => setAbatimentoLoteValor(e.target.value)} />
+                </div>
+              )}
+              <Button onClick={abaterEmLote} disabled={processandoLote} className="w-full">
+                {processandoLote ? "Processando..." : "Abater em Lote"}
+              </Button>
               {abatimentoLoteCliente && vendasDoClienteLote.length > 0 && (
                 <div className="text-xs text-muted-foreground space-y-1">
                   <p className="font-medium">Ordem de abatimento (mais antiga primeiro):</p>
@@ -925,10 +1018,19 @@ export default function AReceber() {
                     <div key={h.id} className="flex items-center justify-between rounded-md border p-3">
                       <div>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(h.created_at).toLocaleDateString("pt-BR")} as{" "}
+                          {new Date(h.created_at).toLocaleDateString("pt-BR")} às{" "}
                           {new Date(h.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                         </p>
                         <p className="text-xs text-muted-foreground">Abatimento #{i + 1}</p>
+                        {h.forma_pagamento && (
+                          <p className="text-xs mt-0.5">
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                              {h.forma_pagamento === "misto"
+                                ? `PIX R$${Number(h.valor_pix || 0).toFixed(2)} + Espécie R$${Number(h.valor_especie || 0).toFixed(2)}`
+                                : h.forma_pagamento === "pix" ? "PIX" : "Espécie"}
+                            </Badge>
+                          </p>
+                        )}
                       </div>
                       <span className="font-bold text-green-600">R$ {Number(h.valor).toFixed(2)}</span>
                     </div>
@@ -947,23 +1049,47 @@ export default function AReceber() {
       </Dialog>
 
       {/* Confirmar Quitar */}
-      <AlertDialog open={!!confirmarQuitarId} onOpenChange={(v) => !v && setConfirmarQuitarId(null)}>
+      <AlertDialog open={!!confirmarQuitarId} onOpenChange={(v) => { if (!v) { setConfirmarQuitarId(null); setFormaPgtoQuitar("especie"); setValorPixQuitar(""); setValorEspecieQuitar(""); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Quitacao</AlertDialogTitle>
-            <AlertDialogDescription>
-              {(() => {
-                const v = vendas.find(x => x.id === confirmarQuitarId);
-                if (!v) return "Tem certeza que deseja quitar esta venda?";
-                const restante = Number(v.total) - Number(v.valor_pago || 0);
-                return `Tem certeza que deseja quitar a venda de ${v.clientes?.nome}? Isso marcara R$ ${restante.toFixed(2)} como pago.`;
-              })()}
+            <AlertDialogTitle>Confirmar Quitação</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  {(() => {
+                    const v = vendas.find(x => x.id === confirmarQuitarId);
+                    if (!v) return "Tem certeza que deseja quitar esta venda?";
+                    const restante = Number(v.total) - Number(v.valor_pago || 0);
+                    return `Quitar a venda de ${v.clientes?.nome}? Valor restante: R$ ${restante.toFixed(2)}`;
+                  })()}
+                </p>
+                <div>
+                  <Label className="text-xs font-medium">Como foi o pagamento?</Label>
+                  <RadioGroup value={formaPgtoQuitar} onValueChange={(v: any) => setFormaPgtoQuitar(v)} className="flex gap-3 mt-1">
+                    <div className="flex items-center gap-1.5"><RadioGroupItem value="pix" id="qt-pix" /><Label htmlFor="qt-pix" className="text-xs cursor-pointer">PIX</Label></div>
+                    <div className="flex items-center gap-1.5"><RadioGroupItem value="especie" id="qt-esp" /><Label htmlFor="qt-esp" className="text-xs cursor-pointer">Espécie</Label></div>
+                    <div className="flex items-center gap-1.5"><RadioGroupItem value="misto" id="qt-mix" /><Label htmlFor="qt-mix" className="text-xs cursor-pointer">Misto</Label></div>
+                  </RadioGroup>
+                </div>
+                {formaPgtoQuitar === "misto" && (
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <Label className="text-xs">PIX (R$)</Label>
+                      <Input type="text" inputMode="decimal" placeholder="0,00" value={valorPixQuitar} onChange={(e) => setValorPixQuitar(e.target.value)} />
+                    </div>
+                    <div className="flex-1">
+                      <Label className="text-xs">Espécie (R$)</Label>
+                      <Input type="text" inputMode="decimal" placeholder="0,00" value={valorEspecieQuitar} onChange={(e) => setValorEspecieQuitar(e.target.value)} />
+                    </div>
+                  </div>
+                )}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (confirmarQuitarId) { marcarComoPaga(confirmarQuitarId); setConfirmarQuitarId(null); } }}>
-              Confirmar Quitacao
+            <AlertDialogAction onClick={() => { if (confirmarQuitarId) { marcarComoPaga(confirmarQuitarId); } }}>
+              Confirmar Quitação
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
