@@ -819,8 +819,20 @@ export default function PlanoProducaoDiario() {
                         if (newVal === 0 && a.selecionado) toggleSabor(a.id);
                       }}
                     >−</Button>
-                    <div className="text-center w-10">
-                      <span className="text-xl font-black" style={{ color: isSelected ? color : "hsl(var(--muted-foreground))" }}>{a.lotesCustom}</span>
+                    <div className="text-center w-12">
+                      <Input
+                        type="number"
+                        min={0}
+                        value={a.lotesCustom}
+                        onChange={(e) => {
+                          const newVal = Math.max(0, Number(e.target.value) || 0);
+                          setLotes(a.id, newVal);
+                          if (newVal > 0 && !a.selecionado) toggleSabor(a.id);
+                          if (newVal === 0 && a.selecionado) toggleSabor(a.id);
+                        }}
+                        className="h-7 w-12 text-center text-lg font-black p-0 border-0 bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        style={{ color: isSelected ? color : "hsl(var(--muted-foreground))" }}
+                      />
                       <p className="text-[8px] text-muted-foreground leading-none -mt-0.5">
                         {a.lotesCustom * 84}un
                       </p>
