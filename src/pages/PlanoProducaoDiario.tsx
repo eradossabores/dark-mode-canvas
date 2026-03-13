@@ -741,7 +741,7 @@ export default function PlanoProducaoDiario() {
                     )}
                   </div>
 
-                  {/* Nome + tendência */}
+                  {/* Nome + badges */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1">
                       <span className={`font-bold text-sm truncate ${isSelected ? "" : "text-muted-foreground"}`}>
@@ -764,17 +764,29 @@ export default function PlanoProducaoDiario() {
                     </div>
                   </div>
 
-                  {/* Lote counter - always visible */}
-                  <div className="shrink-0 flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                  {/* Tendência */}
+                  <div className="shrink-0">
+                    {tendenciaIcon(a.tendencia)}
+                  </div>
+                </div>
+
+                {/* Controles de lote - linha dedicada para garantir visibilidade no mobile */}
+                <div className="mt-2 ml-9 flex items-center justify-between gap-2" onClick={e => e.stopPropagation()}>
+                  <div className="flex items-center gap-1.5 rounded-full border border-border bg-background/95 px-1.5 py-1">
                     <Button
-                      variant="outline" size="sm" className="h-7 w-7 p-0 rounded-full text-base font-bold"
+                      variant="outline"
+                      size="sm"
+                      className="h-8 w-8 p-0 rounded-full text-lg font-black"
                       onClick={() => {
                         const newVal = Math.max(0, a.lotesCustom - 1);
                         setLotes(a.id, newVal);
                         if (newVal === 0 && a.selecionado) toggleSabor(a.id);
                       }}
-                    >−</Button>
-                    <div className="text-center w-12">
+                    >
+                      −
+                    </Button>
+
+                    <div className="text-center w-14">
                       <Input
                         type="number"
                         min={0}
@@ -785,30 +797,31 @@ export default function PlanoProducaoDiario() {
                           if (newVal > 0 && !a.selecionado) toggleSabor(a.id);
                           if (newVal === 0 && a.selecionado) toggleSabor(a.id);
                         }}
-                        className="h-7 w-12 text-center text-lg font-black p-0 border-0 bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        style={{ color: isSelected ? color : "hsl(var(--muted-foreground))" }}
+                        className="h-8 w-14 text-center text-lg font-black p-0 border-0 bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        style={{ color: isSelected ? color : "hsl(var(--foreground))" }}
                       />
-                      <p className="text-[8px] text-muted-foreground leading-none -mt-0.5">
-                        {a.lotesCustom * 84}un
-                      </p>
                     </div>
+
                     <Button
-                      variant="outline" size="sm" className="h-7 w-7 p-0 rounded-full text-base font-bold"
+                      variant="outline"
+                      size="sm"
+                      className="h-8 w-8 p-0 rounded-full text-lg font-black"
                       onClick={() => {
                         const newVal = a.lotesCustom + 1;
                         setLotes(a.id, newVal);
                         if (!a.selecionado) toggleSabor(a.id);
                       }}
-                    >+</Button>
+                    >
+                      +
+                    </Button>
                   </div>
 
-                  {/* Tendência */}
-                  <div className="shrink-0">
-                    {tendenciaIcon(a.tendencia)}
-                  </div>
+                  <p className="text-[10px] text-muted-foreground whitespace-nowrap">
+                    {a.lotesCustom * 84} un
+                  </p>
                 </div>
 
-                {/* Métricas - segunda linha */}
+                {/* Métricas - terceira linha */}
                 <div className="flex items-center gap-2 mt-1.5 ml-9">
                   <div className="flex-1 max-w-[100px]">
                     <div className="h-1.5 rounded-full bg-muted overflow-hidden">
