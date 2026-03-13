@@ -237,10 +237,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Mobile overlay */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-40 md:hidden">
+        <div className="fixed inset-0 z-[60] md:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
           <aside
-            className="absolute left-0 top-0 h-full w-64 flex flex-col border-r border-white/10 z-50"
+            className="absolute left-0 top-0 h-full w-64 flex flex-col border-r border-white/10 z-[61] opacity-100"
             style={{
               backgroundColor: 'hsl(230, 50%, 22%)',
               color: 'white',
