@@ -810,23 +810,23 @@ export default function PlanoProducaoDiario() {
                   </div>
 
                   {/* Lote counter - always visible */}
-                  <div className="shrink-0 flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                  <div className="shrink-0 flex items-center gap-1 ml-1" onClick={e => e.stopPropagation()}>
                     <Button
-                      variant="outline" size="sm" className="h-8 w-8 p-0 rounded-full text-lg font-bold"
+                      variant="outline" size="sm" className="h-7 w-7 p-0 rounded-full text-base font-bold"
                       onClick={() => {
                         const newVal = Math.max(0, a.lotesCustom - 1);
                         setLotes(a.id, newVal);
                         if (newVal === 0 && a.selecionado) toggleSabor(a.id);
                       }}
                     >−</Button>
-                    <div className="text-center w-14">
-                      <span className="text-2xl font-black" style={{ color: isSelected ? color : "hsl(var(--muted-foreground))" }}>{a.lotesCustom}</span>
-                      <p className="text-[9px] text-muted-foreground leading-none -mt-0.5">
-                        {a.lotesCustom * 84} un
+                    <div className="text-center w-10">
+                      <span className="text-xl font-black" style={{ color: isSelected ? color : "hsl(var(--muted-foreground))" }}>{a.lotesCustom}</span>
+                      <p className="text-[8px] text-muted-foreground leading-none -mt-0.5">
+                        {a.lotesCustom * 84}un
                       </p>
                     </div>
                     <Button
-                      variant="outline" size="sm" className="h-8 w-8 p-0 rounded-full text-lg font-bold"
+                      variant="outline" size="sm" className="h-7 w-7 p-0 rounded-full text-base font-bold"
                       onClick={() => {
                         const newVal = a.lotesCustom + 1;
                         setLotes(a.id, newVal);
