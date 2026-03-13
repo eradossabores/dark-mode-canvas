@@ -810,21 +810,34 @@ export default function AReceber() {
                   <div className="flex justify-between"><span>Contas:</span><span className="font-bold">{vendasDoClienteLote.length}</span></div>
                 </div>
               )}
-              <div className="flex gap-2 items-end">
-                <div className="flex-1">
-                  <Label className="text-xs">Valor recebido (R$)</Label>
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    placeholder="0,00"
-                    value={abatimentoLoteValor}
-                    onChange={(e) => setAbatimentoLoteValor(e.target.value)}
-                  />
-                </div>
-                <Button onClick={abaterEmLote} disabled={processandoLote} className="whitespace-nowrap">
-                  {processandoLote ? "Processando..." : "Abater em Lote"}
-                </Button>
+              <div>
+                <Label className="text-xs font-medium">Forma de pagamento</Label>
+                <RadioGroup value={formaPgtoLote} onValueChange={(v: any) => setFormaPgtoLote(v)} className="flex gap-3 mt-1">
+                  <div className="flex items-center gap-1.5"><RadioGroupItem value="pix" id="lt-pix" /><Label htmlFor="lt-pix" className="text-xs cursor-pointer">PIX</Label></div>
+                  <div className="flex items-center gap-1.5"><RadioGroupItem value="especie" id="lt-esp" /><Label htmlFor="lt-esp" className="text-xs cursor-pointer">Espécie</Label></div>
+                  <div className="flex items-center gap-1.5"><RadioGroupItem value="misto" id="lt-mix" /><Label htmlFor="lt-mix" className="text-xs cursor-pointer">Misto</Label></div>
+                </RadioGroup>
               </div>
+              {formaPgtoLote === "misto" ? (
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Label className="text-xs">PIX (R$)</Label>
+                    <Input type="text" inputMode="decimal" placeholder="0,00" value={valorPixLote} onChange={(e) => setValorPixLote(e.target.value)} />
+                  </div>
+                  <div className="flex-1">
+                    <Label className="text-xs">Espécie (R$)</Label>
+                    <Input type="text" inputMode="decimal" placeholder="0,00" value={valorEspecieLote} onChange={(e) => setValorEspecieLote(e.target.value)} />
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <Label className="text-xs">Valor recebido (R$)</Label>
+                  <Input type="text" inputMode="decimal" placeholder="0,00" value={abatimentoLoteValor} onChange={(e) => setAbatimentoLoteValor(e.target.value)} />
+                </div>
+              )}
+              <Button onClick={abaterEmLote} disabled={processandoLote} className="w-full">
+                {processandoLote ? "Processando..." : "Abater em Lote"}
+              </Button>
               {abatimentoLoteCliente && vendasDoClienteLote.length > 0 && (
                 <div className="text-xs text-muted-foreground space-y-1">
                   <p className="font-medium">Ordem de abatimento (mais antiga primeiro):</p>
