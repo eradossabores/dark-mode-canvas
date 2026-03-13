@@ -1040,23 +1040,47 @@ export default function AReceber() {
       </Dialog>
 
       {/* Confirmar Quitar */}
-      <AlertDialog open={!!confirmarQuitarId} onOpenChange={(v) => !v && setConfirmarQuitarId(null)}>
+      <AlertDialog open={!!confirmarQuitarId} onOpenChange={(v) => { if (!v) { setConfirmarQuitarId(null); setFormaPgtoQuitar("especie"); setValorPixQuitar(""); setValorEspecieQuitar(""); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Quitacao</AlertDialogTitle>
-            <AlertDialogDescription>
-              {(() => {
-                const v = vendas.find(x => x.id === confirmarQuitarId);
-                if (!v) return "Tem certeza que deseja quitar esta venda?";
-                const restante = Number(v.total) - Number(v.valor_pago || 0);
-                return `Tem certeza que deseja quitar a venda de ${v.clientes?.nome}? Isso marcara R$ ${restante.toFixed(2)} como pago.`;
-              })()}
+            <AlertDialogTitle>Confirmar Quitação</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  {(() => {
+                    const v = vendas.find(x => x.id === confirmarQuitarId);
+                    if (!v) return "Tem certeza que deseja quitar esta venda?";
+                    const restante = Number(v.total) - Number(v.valor_pago || 0);
+                    return `Quitar a venda de ${v.clientes?.nome}? Valor restante: R$ ${restante.toFixed(2)}`;
+                  })()}
+                </p>
+                <div>
+                  <Label className="text-xs font-medium">Como foi o pagamento?</Label>
+                  <RadioGroup value={formaPgtoQuitar} onValueChange={(v: any) => setFormaPgtoQuitar(v)} className="flex gap-3 mt-1">
+                    <div className="flex items-center gap-1.5"><RadioGroupItem value="pix" id="qt-pix" /><Label htmlFor="qt-pix" className="text-xs cursor-pointer">PIX</Label></div>
+                    <div className="flex items-center gap-1.5"><RadioGroupItem value="especie" id="qt-esp" /><Label htmlFor="qt-esp" className="text-xs cursor-pointer">Espécie</Label></div>
+                    <div className="flex items-center gap-1.5"><RadioGroupItem value="misto" id="qt-mix" /><Label htmlFor="qt-mix" className="text-xs cursor-pointer">Misto</Label></div>
+                  </RadioGroup>
+                </div>
+                {formaPgtoQuitar === "misto" && (
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <Label className="text-xs">PIX (R$)</Label>
+                      <Input type="text" inputMode="decimal" placeholder="0,00" value={valorPixQuitar} onChange={(e) => setValorPixQuitar(e.target.value)} />
+                    </div>
+                    <div className="flex-1">
+                      <Label className="text-xs">Espécie (R$)</Label>
+                      <Input type="text" inputMode="decimal" placeholder="0,00" value={valorEspecieQuitar} onChange={(e) => setValorEspecieQuitar(e.target.value)} />
+                    </div>
+                  </div>
+                )}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (confirmarQuitarId) { marcarComoPaga(confirmarQuitarId); setConfirmarQuitarId(null); } }}>
-              Confirmar Quitacao
+            <AlertDialogAction onClick={() => { if (confirmarQuitarId) { marcarComoPaga(confirmarQuitarId); } }}>
+              Confirmar Quitação
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
