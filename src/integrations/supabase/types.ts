@@ -1265,7 +1265,9 @@ export type Database = {
           status: Database["public"]["Enums"]["status_venda"]
           total: number
           updated_at: string
+          valor_especie: number
           valor_pago: number
+          valor_pix: number
         }
         Insert: {
           cliente_id: string
@@ -1279,7 +1281,9 @@ export type Database = {
           status?: Database["public"]["Enums"]["status_venda"]
           total?: number
           updated_at?: string
+          valor_especie?: number
           valor_pago?: number
+          valor_pix?: number
         }
         Update: {
           cliente_id?: string
@@ -1293,7 +1297,9 @@ export type Database = {
           status?: Database["public"]["Enums"]["status_venda"]
           total?: number
           updated_at?: string
+          valor_especie?: number
           valor_pago?: number
+          valor_pix?: number
         }
         Relationships: [
           {

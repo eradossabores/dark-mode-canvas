@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Plus, Trash2, ShoppingCart, Pencil, Eye, CalendarIcon, X, Truck, Package, History, CalendarClock, Receipt } from "lucide-react";
 import ReciboVenda from "@/components/vendas/ReciboVenda";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -69,6 +70,9 @@ export default function Vendas() {
   const [ignorarEstoque, setIgnorarEstoque] = useState(false);
   const [statusVenda, setStatusVenda] = useState("pendente");
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [detalhePgto, setDetalhePgto] = useState<"pix" | "especie" | "misto">("especie");
+  const [detalhePix, setDetalhePix] = useState("");
+  const [detalheEspecie, setDetalheEspecie] = useState("");
   const [loading, setLoading] = useState(false);
   const [sendingToProduction, setSendingToProduction] = useState<string | null>(null);
   const [page, setPage] = useState(0);
@@ -87,6 +91,9 @@ export default function Vendas() {
   const [editData, setEditData] = useState<Date>(new Date());
   const [editItens, setEditItens] = useState<any[]>([]);
   const [editIgnorarEstoque, setEditIgnorarEstoque] = useState(false);
+  const [editDetalhePgto, setEditDetalhePgto] = useState<"pix" | "especie" | "misto">("especie");
+  const [editDetalhePix, setEditDetalhePix] = useState("");
+  const [editDetalheEspecie, setEditDetalheEspecie] = useState("");
 
   // Detail state
   const [detailVenda, setDetailVenda] = useState<any>(null);
@@ -280,7 +287,10 @@ export default function Vendas() {
         .from("vendas").select("id").eq("cliente_id", clienteId)
         .order("created_at", { ascending: false }).limit(1);
       if (latestVenda?.[0]) {
-        const updateData: any = { forma_pagamento: formaPagamento, status: statusVenda };
+        const totalVendaCalc = itensValidos.reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0);
+        const vPix = detalhePgto === "pix" ? totalVendaCalc : detalhePgto === "misto" ? (parseFloat(detalhePix.replace(",", ".")) || 0) : 0;
+        const vEsp = detalhePgto === "especie" ? totalVendaCalc : detalhePgto === "misto" ? (parseFloat(detalheEspecie.replace(",", ".")) || 0) : 0;
+        const updateData: any = { forma_pagamento: formaPagamento, status: statusVenda, valor_pix: vPix, valor_especie: vEsp };
         if (numeroNf.trim()) updateData.numero_nf = numeroNf.trim();
         await (supabase as any).from("vendas").update(updateData).eq("id", latestVenda[0].id);
       }
@@ -340,7 +350,7 @@ export default function Vendas() {
         }
       }
 
-      setOpen(false); setItens([]); setClienteId(""); setFormaPagamento("dinheiro"); setObservacoes(""); setNumeroNf(""); setDataVenda(new Date()); setValorTotal(""); setValorEntrada(""); setValorRestante(""); setDataVencimento(undefined); setIgnorarEstoque(false); setStatusVenda("pendente");
+      setOpen(false); setItens([]); setClienteId(""); setFormaPagamento("dinheiro"); setObservacoes(""); setNumeroNf(""); setDataVenda(new Date()); setValorTotal(""); setValorEntrada(""); setValorRestante(""); setDataVencimento(undefined); setIgnorarEstoque(false); setStatusVenda("pendente"); setDetalhePgto("especie"); setDetalhePix(""); setDetalheEspecie("");
       loadData();
     } catch (e: any) {
       toast({ title: "Erro na venda", description: e.message, variant: "destructive" });
@@ -356,6 +366,20 @@ export default function Vendas() {
     setEditObs(v.observacoes || "");
     setEditNf(v.numero_nf || "");
     setEditData(new Date(v.created_at));
+    // Payment detail
+    const vPix = Number(v.valor_pix || 0);
+    const vEsp = Number(v.valor_especie || 0);
+    if (vPix > 0 && vEsp > 0) {
+      setEditDetalhePgto("misto");
+      setEditDetalhePix(vPix.toString());
+      setEditDetalheEspecie(vEsp.toString());
+    } else if (vPix > 0) {
+      setEditDetalhePgto("pix");
+      setEditDetalhePix(""); setEditDetalheEspecie("");
+    } else {
+      setEditDetalhePgto("especie");
+      setEditDetalhePix(""); setEditDetalheEspecie("");
+    }
     // Load items
     const { data } = await (supabase as any).from("venda_itens").select("*, sabores(nome)").eq("venda_id", v.id);
     setEditItens((data || []).map((it: any) => ({ ...it, quantidade: it.quantidade })));
@@ -366,9 +390,13 @@ export default function Vendas() {
     if (!editVenda) return;
     try {
       // Se mudou de paga/cancelada para pendente, resetar valor_pago
+      const editTotal = editItens.reduce((sum: number, it: any) => sum + Number(it.preco_unitario) * (it.quantidade || 0), 0);
+      const eVPix = editDetalhePgto === "pix" ? editTotal : editDetalhePgto === "misto" ? (parseFloat(editDetalhePix.replace(",", ".")) || 0) : 0;
+      const eVEsp = editDetalhePgto === "especie" ? editTotal : editDetalhePgto === "misto" ? (parseFloat(editDetalheEspecie.replace(",", ".")) || 0) : 0;
       const updateData: any = {
         status: editStatus, forma_pagamento: editForma, observacoes: editObs, numero_nf: editNf.trim() || null,
         created_at: `${editData.getFullYear()}-${String(editData.getMonth() + 1).padStart(2, "0")}-${String(editData.getDate()).padStart(2, "0")}T12:00:00`,
+        valor_pix: eVPix, valor_especie: eVEsp,
       };
       if (editStatus === "pendente" && editVenda.status !== "pendente") {
         updateData.valor_pago = 0;
@@ -697,6 +725,28 @@ export default function Vendas() {
                   </SelectContent>
                 </Select>
               </div>
+              {(formaPagamento === "dinheiro" || formaPagamento === "pix") && (
+                <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
+                  <Label className="text-xs font-medium">Detalhe do pagamento</Label>
+                  <RadioGroup value={detalhePgto} onValueChange={(v: any) => setDetalhePgto(v)} className="flex gap-3">
+                    <div className="flex items-center gap-1.5"><RadioGroupItem value="pix" id="nv-pix" /><Label htmlFor="nv-pix" className="text-xs cursor-pointer">PIX</Label></div>
+                    <div className="flex items-center gap-1.5"><RadioGroupItem value="especie" id="nv-esp" /><Label htmlFor="nv-esp" className="text-xs cursor-pointer">Espécie</Label></div>
+                    <div className="flex items-center gap-1.5"><RadioGroupItem value="misto" id="nv-mix" /><Label htmlFor="nv-mix" className="text-xs cursor-pointer">Misto</Label></div>
+                  </RadioGroup>
+                  {detalhePgto === "misto" && (
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <Label className="text-xs">PIX (R$)</Label>
+                        <Input type="text" inputMode="decimal" placeholder="0,00" value={detalhePix} onChange={(e) => setDetalhePix(e.target.value)} />
+                      </div>
+                      <div className="flex-1">
+                        <Label className="text-xs">Espécie (R$)</Label>
+                        <Input type="text" inputMode="decimal" placeholder="0,00" value={detalheEspecie} onChange={(e) => setDetalheEspecie(e.target.value)} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
               {(formaPagamento === "boleto" || formaPagamento === "parcelado") && (
                 <div className="space-y-3 p-3 border rounded-lg bg-muted/30">
                   <div>
@@ -799,6 +849,26 @@ export default function Vendas() {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{FORMAS_PAGAMENTO.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}</SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
+              <Label className="text-xs font-medium">Detalhe do pagamento</Label>
+              <RadioGroup value={editDetalhePgto} onValueChange={(v: any) => setEditDetalhePgto(v)} className="flex gap-3">
+                <div className="flex items-center gap-1.5"><RadioGroupItem value="pix" id="ed-pix" /><Label htmlFor="ed-pix" className="text-xs cursor-pointer">PIX</Label></div>
+                <div className="flex items-center gap-1.5"><RadioGroupItem value="especie" id="ed-esp" /><Label htmlFor="ed-esp" className="text-xs cursor-pointer">Espécie</Label></div>
+                <div className="flex items-center gap-1.5"><RadioGroupItem value="misto" id="ed-mix" /><Label htmlFor="ed-mix" className="text-xs cursor-pointer">Misto</Label></div>
+              </RadioGroup>
+              {editDetalhePgto === "misto" && (
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Label className="text-xs">PIX (R$)</Label>
+                    <Input type="text" inputMode="decimal" placeholder="0,00" value={editDetalhePix} onChange={(e) => setEditDetalhePix(e.target.value)} />
+                  </div>
+                  <div className="flex-1">
+                    <Label className="text-xs">Espécie (R$)</Label>
+                    <Input type="text" inputMode="decimal" placeholder="0,00" value={editDetalheEspecie} onChange={(e) => setEditDetalheEspecie(e.target.value)} />
+                  </div>
+                </div>
+              )}
             </div>
             <div>
                 <div className="flex items-center justify-between mb-2">
