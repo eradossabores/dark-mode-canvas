@@ -850,6 +850,26 @@ export default function Vendas() {
                 <SelectContent>{FORMAS_PAGAMENTO.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}</SelectContent>
               </Select>
             </div>
+            <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
+              <Label className="text-xs font-medium">Detalhe do pagamento</Label>
+              <RadioGroup value={editDetalhePgto} onValueChange={(v: any) => setEditDetalhePgto(v)} className="flex gap-3">
+                <div className="flex items-center gap-1.5"><RadioGroupItem value="pix" id="ed-pix" /><Label htmlFor="ed-pix" className="text-xs cursor-pointer">PIX</Label></div>
+                <div className="flex items-center gap-1.5"><RadioGroupItem value="especie" id="ed-esp" /><Label htmlFor="ed-esp" className="text-xs cursor-pointer">Espécie</Label></div>
+                <div className="flex items-center gap-1.5"><RadioGroupItem value="misto" id="ed-mix" /><Label htmlFor="ed-mix" className="text-xs cursor-pointer">Misto</Label></div>
+              </RadioGroup>
+              {editDetalhePgto === "misto" && (
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Label className="text-xs">PIX (R$)</Label>
+                    <Input type="text" inputMode="decimal" placeholder="0,00" value={editDetalhePix} onChange={(e) => setEditDetalhePix(e.target.value)} />
+                  </div>
+                  <div className="flex-1">
+                    <Label className="text-xs">Espécie (R$)</Label>
+                    <Input type="text" inputMode="decimal" placeholder="0,00" value={editDetalheEspecie} onChange={(e) => setEditDetalheEspecie(e.target.value)} />
+                  </div>
+                </div>
+              )}
+            </div>
             <div>
                 <div className="flex items-center justify-between mb-2">
                   <Label className="text-base font-semibold">Itens da Venda</Label>
