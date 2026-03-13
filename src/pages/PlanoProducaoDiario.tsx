@@ -779,7 +779,7 @@ export default function PlanoProducaoDiario() {
                           />
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 text-[11px] text-muted-foreground shrink-0">
+                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground flex-wrap">
                         <span>
                           <strong className={a.diasCobertura <= 3 ? "text-destructive" : a.diasCobertura <= 7 ? "text-amber-500" : "text-foreground"}>
                             {a.diasCobertura === 99 ? "∞" : `${a.diasCobertura}d`}
