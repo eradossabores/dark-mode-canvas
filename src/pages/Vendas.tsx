@@ -493,9 +493,10 @@ export default function Vendas() {
     if (!deleteId) return;
     try {
       const vendaDeletada = vendas.find(v => v.id === deleteId);
+      // Delete child records first (trigger on vendas handles stock reversal + movimentacoes)
       await (supabase as any).from("venda_itens").delete().eq("venda_id", deleteId);
       await (supabase as any).from("venda_parcelas").delete().eq("venda_id", deleteId);
-      await (supabase as any).from("movimentacoes_estoque").delete().eq("referencia_id", deleteId).eq("referencia", "venda");
+      await (supabase as any).from("abatimentos_historico").delete().eq("venda_id", deleteId);
       const { error } = await (supabase as any).from("vendas").delete().eq("id", deleteId);
       if (error) throw error;
 
