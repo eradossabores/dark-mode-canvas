@@ -91,6 +91,9 @@ export default function Vendas() {
   const [editData, setEditData] = useState<Date>(new Date());
   const [editItens, setEditItens] = useState<any[]>([]);
   const [editIgnorarEstoque, setEditIgnorarEstoque] = useState(false);
+  const [editDetalhePgto, setEditDetalhePgto] = useState<"pix" | "especie" | "misto">("especie");
+  const [editDetalhePix, setEditDetalhePix] = useState("");
+  const [editDetalheEspecie, setEditDetalheEspecie] = useState("");
 
   // Detail state
   const [detailVenda, setDetailVenda] = useState<any>(null);
