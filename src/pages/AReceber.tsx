@@ -1018,10 +1018,19 @@ export default function AReceber() {
                     <div key={h.id} className="flex items-center justify-between rounded-md border p-3">
                       <div>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(h.created_at).toLocaleDateString("pt-BR")} as{" "}
+                          {new Date(h.created_at).toLocaleDateString("pt-BR")} às{" "}
                           {new Date(h.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                         </p>
                         <p className="text-xs text-muted-foreground">Abatimento #{i + 1}</p>
+                        {h.forma_pagamento && (
+                          <p className="text-xs mt-0.5">
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                              {h.forma_pagamento === "misto"
+                                ? `PIX R$${Number(h.valor_pix || 0).toFixed(2)} + Espécie R$${Number(h.valor_especie || 0).toFixed(2)}`
+                                : h.forma_pagamento === "pix" ? "PIX" : "Espécie"}
+                            </Badge>
+                          </p>
+                        )}
                       </div>
                       <span className="font-bold text-green-600">R$ {Number(h.valor).toFixed(2)}</span>
                     </div>
