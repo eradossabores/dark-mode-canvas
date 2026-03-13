@@ -366,6 +366,20 @@ export default function Vendas() {
     setEditObs(v.observacoes || "");
     setEditNf(v.numero_nf || "");
     setEditData(new Date(v.created_at));
+    // Payment detail
+    const vPix = Number(v.valor_pix || 0);
+    const vEsp = Number(v.valor_especie || 0);
+    if (vPix > 0 && vEsp > 0) {
+      setEditDetalhePgto("misto");
+      setEditDetalhePix(vPix.toString());
+      setEditDetalheEspecie(vEsp.toString());
+    } else if (vPix > 0) {
+      setEditDetalhePgto("pix");
+      setEditDetalhePix(""); setEditDetalheEspecie("");
+    } else {
+      setEditDetalhePgto("especie");
+      setEditDetalhePix(""); setEditDetalheEspecie("");
+    }
     // Load items
     const { data } = await (supabase as any).from("venda_itens").select("*, sabores(nome)").eq("venda_id", v.id);
     setEditItens((data || []).map((it: any) => ({ ...it, quantidade: it.quantidade })));
