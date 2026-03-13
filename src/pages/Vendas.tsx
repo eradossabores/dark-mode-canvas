@@ -1198,8 +1198,12 @@ export default function Vendas() {
                             </>
                           )}
                           {v.enviado_producao && (
-                            <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-700 border-green-300 mr-1">
-                              No Monitor
+                            <Badge variant="outline" className={`text-[10px] mr-1 ${
+                              v.pedido_status === "retirado" || v.pedido_status === "enviado"
+                                ? "bg-muted text-muted-foreground border-border"
+                                : "bg-green-500/10 text-green-700 border-green-300"
+                            }`}>
+                              {v.pedido_status === "retirado" || v.pedido_status === "enviado" ? "Finalizado" : "No Monitor"}
                             </Badge>
                           )}
                         </TooltipProvider>
