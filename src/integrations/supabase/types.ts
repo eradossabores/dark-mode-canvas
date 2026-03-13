@@ -17,20 +17,29 @@ export type Database = {
       abatimentos_historico: {
         Row: {
           created_at: string
+          forma_pagamento: string
           id: string
           valor: number
+          valor_especie: number | null
+          valor_pix: number | null
           venda_id: string
         }
         Insert: {
           created_at?: string
+          forma_pagamento?: string
           id?: string
           valor: number
+          valor_especie?: number | null
+          valor_pix?: number | null
           venda_id: string
         }
         Update: {
           created_at?: string
+          forma_pagamento?: string
           id?: string
           valor?: number
+          valor_especie?: number | null
+          valor_pix?: number | null
           venda_id?: string
         }
         Relationships: [
