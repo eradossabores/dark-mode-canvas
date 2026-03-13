@@ -1,0 +1,3 @@
+ALTER TABLE public.vendas 
+ADD COLUMN IF NOT EXISTS valor_pix numeric NOT NULL DEFAULT 0,
+ADD COLUMN IF NOT EXISTS valor_especie numeric NOT NULL DEFAULT 0;
