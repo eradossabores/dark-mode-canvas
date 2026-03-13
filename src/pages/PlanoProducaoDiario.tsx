@@ -726,23 +726,23 @@ export default function PlanoProducaoDiario() {
               onClick={() => toggleSabor(a.id)}
             >
               <CardContent className="py-3 px-4">
-                <div className="flex items-center gap-3">
+                <div className="flex items-start gap-3">
                   {/* Check circle */}
                   <div
-                    className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 ${
+                    className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 mt-0.5 ${
                       isSelected ? "scale-110" : "bg-muted"
                     }`}
                     style={isSelected ? { backgroundColor: color, boxShadow: `0 0 12px ${color}40` } : {}}
                   >
                     {isSelected ? (
-                      <Check className="h-5 w-5 text-white" />
+                      <Check className="h-4 w-4 text-white" />
                     ) : (
                       <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
                     )}
                   </div>
 
                   {/* Info principal */}
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 overflow-hidden">
                     <div className="flex items-center gap-2">
                       <span className={`font-bold text-sm ${isSelected ? "" : "text-muted-foreground"}`}>
                         {a.prioritario && (
@@ -810,23 +810,23 @@ export default function PlanoProducaoDiario() {
                   </div>
 
                   {/* Lote counter - always visible */}
-                  <div className="shrink-0 flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                  <div className="shrink-0 flex items-center gap-1 ml-1" onClick={e => e.stopPropagation()}>
                     <Button
-                      variant="outline" size="sm" className="h-8 w-8 p-0 rounded-full text-lg font-bold"
+                      variant="outline" size="sm" className="h-7 w-7 p-0 rounded-full text-base font-bold"
                       onClick={() => {
                         const newVal = Math.max(0, a.lotesCustom - 1);
                         setLotes(a.id, newVal);
                         if (newVal === 0 && a.selecionado) toggleSabor(a.id);
                       }}
                     >−</Button>
-                    <div className="text-center w-14">
-                      <span className="text-2xl font-black" style={{ color: isSelected ? color : "hsl(var(--muted-foreground))" }}>{a.lotesCustom}</span>
-                      <p className="text-[9px] text-muted-foreground leading-none -mt-0.5">
-                        {a.lotesCustom * 84} un
+                    <div className="text-center w-10">
+                      <span className="text-xl font-black" style={{ color: isSelected ? color : "hsl(var(--muted-foreground))" }}>{a.lotesCustom}</span>
+                      <p className="text-[8px] text-muted-foreground leading-none -mt-0.5">
+                        {a.lotesCustom * 84}un
                       </p>
                     </div>
                     <Button
-                      variant="outline" size="sm" className="h-8 w-8 p-0 rounded-full text-lg font-bold"
+                      variant="outline" size="sm" className="h-7 w-7 p-0 rounded-full text-base font-bold"
                       onClick={() => {
                         const newVal = a.lotesCustom + 1;
                         setLotes(a.id, newVal);
