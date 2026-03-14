@@ -265,7 +265,6 @@ export function AdvancedMap({
           <LayerControls
             onLocate={handleLocate}
             onToggleLayer={handleToggleLayer}
-            layers={currentLayers}
             currentLayers={currentLayers}
           />
         )}
