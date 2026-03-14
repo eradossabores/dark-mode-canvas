@@ -193,7 +193,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   )}
                 >
                   <item.icon className="h-4 w-4 shrink-0" />
-                  {!collapsed && <span>{item.label}</span>}
+                  {isExpanded && <span>{item.label}</span>}
                 </Link>
               );
             })}
