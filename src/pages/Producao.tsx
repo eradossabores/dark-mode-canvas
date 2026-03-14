@@ -752,7 +752,7 @@ export default function Producao() {
                 saborMap[nome] = (saborMap[nome] || 0) + p.quantidade_total;
               });
               return (
-                <div key={day} className="rounded-lg border bg-card p-4 space-y-3">
+                <div key={day} id={`producao-dia-${day}`} className="rounded-lg border bg-card p-4 space-y-3 transition-all duration-300">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-sm text-foreground">📅 {day}</span>
