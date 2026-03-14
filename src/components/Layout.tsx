@@ -128,7 +128,9 @@ function getPageCharacters(pathname: string) {
 }
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
+  const [hovered, setHovered] = useState(false);
+  const isExpanded = !collapsed || hovered;
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
