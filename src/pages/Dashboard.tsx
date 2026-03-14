@@ -397,8 +397,8 @@ export default function Dashboard() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-        {cards.map((c: any) => (
-          <div key={c.title} className="relative rounded-xl border-[0.75px] border-border p-0.5">
+        {cards.map((c: any, idx: number) => (
+          <div key={c.title} className="relative rounded-xl border-[0.75px] border-border p-0.5 opacity-0 animate-fade-in" style={{ animationDelay: `${idx * 80}ms`, animationFillMode: "forwards" }}>
             <GlowingEffect
               spread={40}
               glow={true}
@@ -441,7 +441,7 @@ export default function Dashboard() {
       </div>
 
       {/* Gráficos */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 opacity-0 animate-fade-in" style={{ animationDelay: "500ms", animationFillMode: "forwards" }}>
         {/* Faturamento */}
         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
           <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
@@ -520,7 +520,7 @@ export default function Dashboard() {
       </div>
 
       {/* Widgets: Estoque Inteligente + Ranking + Clientes Inativos */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 opacity-0 animate-fade-in" style={{ animationDelay: "700ms", animationFillMode: "forwards" }}>
         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
           <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
           <div className="relative"><EstoqueInteligente /></div>
@@ -535,7 +535,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 opacity-0 animate-fade-in" style={{ animationDelay: "900ms", animationFillMode: "forwards" }}>
         {/* Top 5 Sabores - Pie Chart */}
         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
           <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
