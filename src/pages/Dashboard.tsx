@@ -558,7 +558,7 @@ export default function Dashboard() {
                             className={`px-1 py-0.5 text-[8px] rounded-full transition-colors ${
                               mesFatCard === idx
                                 ? "bg-primary text-primary-foreground"
-                                : "bg-muted text-muted-foreground hover:bg-muted/80"
+                                : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
                             }`}
                           >
                             {nome.slice(0, 3)}
