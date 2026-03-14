@@ -45,6 +45,32 @@ export default function GerenciarUsuarios() {
   const [deleting, setDeleting] = useState(false);
   const [clearAllDialog, setClearAllDialog] = useState(false);
   const [clearingAll, setClearingAll] = useState(false);
+  const [editDialog, setEditDialog] = useState<{ open: boolean; user: UserWithRole | null }>({ open: false, user: null });
+  const [editForm, setEditForm] = useState({ nome: "", role: "" });
+  const [saving, setSaving] = useState(false);
+
+  async function handleEditUser() {
+    if (!editDialog.user) return;
+    setSaving(true);
+    try {
+      // Update name in profiles
+      const { error: profileErr } = await (supabase as any).from("profiles").update({ nome: editForm.nome }).eq("id", editDialog.user.id);
+      if (profileErr) throw profileErr;
+
+      // Update role in user_roles
+      if (editForm.role !== editDialog.user.role) {
+        const { error: roleErr } = await (supabase as any).from("user_roles").update({ role: editForm.role }).eq("user_id", editDialog.user.id);
+        if (roleErr) throw roleErr;
+      }
+
+      toast({ title: "Usuário atualizado!" });
+      setEditDialog({ open: false, user: null });
+      loadUsers();
+    } catch (e: any) {
+      toast({ title: "Erro ao atualizar", description: e.message, variant: "destructive" });
+    }
+    setSaving(false);
+  }
 
   async function handleDeleteUser() {
     if (!deleteDialog.user) return;
