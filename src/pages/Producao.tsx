@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isAfter, isBefore, addDays } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,9 @@ import ChecklistProducaoDia from "@/components/producao/ChecklistProducaoDia";
 import EditDayProducoesDialog from "@/components/producao/EditDayProducoesDialog";
 
 export default function Producao() {
+  const [searchParams] = useSearchParams();
+  const dataParam = searchParams.get("data");
+  const historicoRef = useRef<HTMLDivElement>(null);
   const [sabores, setSabores] = useState<any[]>([]);
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
   const [producoes, setProducoes] = useState<any[]>([]);
@@ -73,6 +77,20 @@ export default function Producao() {
   const [detailFuncs, setDetailFuncs] = useState<any[]>([]);
 
   useEffect(() => { loadData(); }, []);
+
+  // Scroll to specific date from query param
+  useEffect(() => {
+    if (dataParam && producoes.length > 0) {
+      setTimeout(() => {
+        const el = document.getElementById(`producao-dia-${dataParam}`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.classList.add("ring-2", "ring-primary", "ring-offset-2");
+          setTimeout(() => el.classList.remove("ring-2", "ring-primary", "ring-offset-2"), 3000);
+        }
+      }, 300);
+    }
+  }, [dataParam, producoes]);
 
   useEffect(() => {
     if (modo === "lote") setQtdTotal(qtdLotes * 84);
@@ -734,7 +752,7 @@ export default function Producao() {
                 saborMap[nome] = (saborMap[nome] || 0) + p.quantidade_total;
               });
               return (
-                <div key={day} className="rounded-lg border bg-card p-4 space-y-3">
+                <div key={day} id={`producao-dia-${day}`} className="rounded-lg border bg-card p-4 space-y-3 transition-all duration-300">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-sm text-foreground">📅 {day}</span>

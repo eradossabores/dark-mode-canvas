@@ -656,7 +656,15 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={producaoPorDia}>
+                <BarChart data={producaoPorDia} style={{ cursor: "pointer" }} onClick={(e: any) => {
+                  if (e?.activeLabel) {
+                    // activeLabel is "DD/MM", resolve full date
+                    const [d, m] = e.activeLabel.split("/").map(Number);
+                    const year = periodoProducao === "mensal" ? new Date().getFullYear() : new Date().getFullYear();
+                    const dateStr = `${String(d).padStart(2,"0")}/${String(m).padStart(2,"0")}/${year}`;
+                    navigate(`/painel/producao?data=${dateStr}`);
+                  }
+                }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="dia" fontSize={11} stroke="hsl(var(--muted-foreground))" />
                   <YAxis fontSize={11} stroke="hsl(var(--muted-foreground))" />
