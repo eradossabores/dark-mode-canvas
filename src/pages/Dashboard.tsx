@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { Package, ShoppingCart, Factory, Users, AlertTriangle, TrendingUp, DollarSign, Bell, Sparkles } from "lucide-react";
+import { GlowingEffect } from "@/components/ui/glowing-effect";
 import { useNavigate } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
 import { useAuth } from "@/contexts/AuthContext";
@@ -397,36 +398,45 @@ export default function Dashboard() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
         {cards.map((c: any) => (
-          <Card
-            key={c.title}
-            className="cursor-pointer transition-all hover:scale-[1.03] hover:shadow-md"
-            onClick={() => !c.isFaturamento && navigate(c.href)}
-          >
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">{c.title}</CardTitle>
-              <c.icon className={`h-4 w-4 ${c.color}`} />
-            </CardHeader>
-            <CardContent>
-              <p className="text-lg font-bold">{c.value}</p>
-              {c.isFaturamento && (
-                <div className="flex gap-1 mt-2">
-                  {(["total", "semanal", "mensal", "anual"] as FaturamentoPeriodo[]).map((p) => (
-                    <button
-                      key={p}
-                      onClick={(e) => { e.stopPropagation(); setFatPeriodo(p); }}
-                      className={`px-1.5 py-0.5 text-[9px] rounded-full transition-colors ${
-                        fatPeriodo === p
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground hover:bg-muted/80"
-                      }`}
-                    >
-                      {p === "total" ? "Total" : p === "semanal" ? "Semana" : p === "mensal" ? "Mês" : "Ano"}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <div key={c.title} className="relative rounded-xl border-[0.75px] border-border p-0.5">
+            <GlowingEffect
+              spread={40}
+              glow={true}
+              disabled={false}
+              proximity={64}
+              inactiveZone={0.01}
+              borderWidth={2}
+            />
+            <Card
+              className="relative cursor-pointer transition-all hover:scale-[1.03] hover:shadow-md border-0 bg-background"
+              onClick={() => !c.isFaturamento && navigate(c.href)}
+            >
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-xs font-medium text-muted-foreground">{c.title}</CardTitle>
+                <c.icon className={`h-4 w-4 ${c.color}`} />
+              </CardHeader>
+              <CardContent>
+                <p className="text-lg font-bold">{c.value}</p>
+                {c.isFaturamento && (
+                  <div className="flex gap-1 mt-2">
+                    {(["total", "semanal", "mensal", "anual"] as FaturamentoPeriodo[]).map((p) => (
+                      <button
+                        key={p}
+                        onClick={(e) => { e.stopPropagation(); setFatPeriodo(p); }}
+                        className={`px-1.5 py-0.5 text-[9px] rounded-full transition-colors ${
+                          fatPeriodo === p
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        }`}
+                      >
+                        {p === "total" ? "Total" : p === "semanal" ? "Semana" : p === "mensal" ? "Mês" : "Ano"}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         ))}
       </div>
 
