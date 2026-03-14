@@ -2,3 +2,6 @@ project_id = "crugiszdfjruvdsqdnha"
 
 [functions.delete-user]
 verify_jwt = false
+
+[functions.suggest-producao]
+verify_jwt = false
