@@ -264,9 +264,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <span className="text-[10px] text-white/60 leading-tight">Gelos Saborizados</span>
                 </div>
               </div>
-              <button onClick={() => setMobileOpen(false)} className="p-1">
-                <X className="h-5 w-5 text-white" />
-              </button>
+              <AnimatedMenuToggle
+                isOpen={true}
+                toggle={() => setMobileOpen(false)}
+                size={20}
+                strokeColor="white"
+              />
             </div>
             <nav className="flex-1 py-2 space-y-1 overflow-y-auto">
               {filteredGroups.map((group, gi) => (
