@@ -262,7 +262,8 @@ export default function LandingPage() {
           <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/20" />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/30" />
         </div>
-        <div className="relative max-w-7xl mx-auto px-6 py-24 md:py-36 w-full">
+        <LampContainer className="absolute inset-0 min-h-0 pointer-events-none opacity-60" />
+        <div className="relative max-w-7xl mx-auto px-6 py-24 md:py-36 w-full z-10">
           <FadeInSection className="max-w-2xl">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/15 text-primary text-sm font-semibold mb-6 backdrop-blur-sm border border-primary/20">
               <MapPin className="h-4 w-4" />
