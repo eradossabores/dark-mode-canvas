@@ -135,7 +135,7 @@ export default function Dashboard() {
   const [allVendas, setAllVendas] = useState<any[]>([]);
   const [allProducoes, setAllProducoes] = useState<any[]>([]);
   const [fatPeriodo, setFatPeriodo] = useState<FaturamentoPeriodo>("total");
-
+  const [mesFatCard, setMesFatCard] = useState(new Date().getMonth());
   useEffect(() => { loadStats(); loadUserName(); }, []);
 
   async function loadUserName() {
@@ -270,8 +270,15 @@ export default function Dashboard() {
     }
   }
 
-  const faturamentoValor = fatPeriodo === "semanal" ? stats.faturamentoSemanal : fatPeriodo === "mensal" ? stats.faturamentoMensal : fatPeriodo === "anual" ? stats.faturamentoAnual : stats.faturamento;
-  const faturamentoLabel = fatPeriodo === "semanal" ? "Fat. Semanal" : fatPeriodo === "mensal" ? "Fat. Mensal" : fatPeriodo === "anual" ? "Fat. Anual" : "Faturamento Total";
+  const faturamentoMesEspecifico = useMemo(() => {
+    const ano = new Date().getFullYear();
+    return allVendas
+      .filter((v: any) => { const d = new Date(v.created_at); return d.getMonth() === mesFatCard && d.getFullYear() === ano; })
+      .reduce((s: number, v: any) => s + Number(v.total), 0);
+  }, [allVendas, mesFatCard]);
+
+  const faturamentoValor = fatPeriodo === "semanal" ? stats.faturamentoSemanal : fatPeriodo === "mensal" ? faturamentoMesEspecifico : fatPeriodo === "anual" ? stats.faturamentoAnual : stats.faturamento;
+  const faturamentoLabel = fatPeriodo === "semanal" ? "Fat. Semanal" : fatPeriodo === "mensal" ? `Fat. ${MESES_NOME[mesFatCard]}` : fatPeriodo === "anual" ? "Fat. Anual" : "Faturamento Total";
 
   const cards = [
     { title: "Gelos em Estoque", value: stats.totalGelos.toLocaleString(), icon: Package, color: "text-primary", href: "/painel/estoque" },
@@ -502,20 +509,39 @@ export default function Dashboard() {
               <CardContent>
                 <p className="text-lg font-bold">{c.value}</p>
                 {c.isFaturamento && (
-                  <div className="flex gap-1 mt-2">
-                    {(["total", "semanal", "mensal", "anual"] as FaturamentoPeriodo[]).map((p) => (
-                      <button
-                        key={p}
-                        onClick={(e) => { e.stopPropagation(); setFatPeriodo(p); }}
-                        className={`px-1.5 py-0.5 text-[9px] rounded-full transition-colors ${
-                          fatPeriodo === p
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted text-muted-foreground hover:bg-muted/80"
-                        }`}
-                      >
-                        {p === "total" ? "Total" : p === "semanal" ? "Semana" : p === "mensal" ? "Mês" : "Ano"}
-                      </button>
-                    ))}
+                  <div className="space-y-1.5 mt-2">
+                    <div className="flex gap-1">
+                      {(["total", "semanal", "mensal", "anual"] as FaturamentoPeriodo[]).map((p) => (
+                        <button
+                          key={p}
+                          onClick={(e) => { e.stopPropagation(); setFatPeriodo(p); }}
+                          className={`px-1.5 py-0.5 text-[9px] rounded-full transition-colors ${
+                            fatPeriodo === p
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-muted-foreground hover:bg-muted/80"
+                          }`}
+                        >
+                          {p === "total" ? "Total" : p === "semanal" ? "Semana" : p === "mensal" ? "Mês" : "Ano"}
+                        </button>
+                      ))}
+                    </div>
+                    {fatPeriodo === "mensal" && (
+                      <div className="flex gap-0.5 flex-wrap">
+                        {MESES_NOME.map((nome, idx) => (
+                          <button
+                            key={idx}
+                            onClick={(e) => { e.stopPropagation(); setMesFatCard(idx); }}
+                            className={`px-1 py-0.5 text-[8px] rounded-full transition-colors ${
+                              mesFatCard === idx
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted text-muted-foreground hover:bg-muted/80"
+                            }`}
+                          >
+                            {nome.slice(0, 3)}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
