@@ -482,7 +482,7 @@ export default function Dashboard() {
 
         {/* Produção */}
         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
-          <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
+          <GlowingEffect spread={20} glow disabled={false} proximity={40} inactiveZone={0.2} borderWidth={1} />
           <Card className="relative border-0 bg-background">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
