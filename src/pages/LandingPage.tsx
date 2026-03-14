@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { GradientDots } from "@/components/ui/gradient-dots";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import { LogIn, ShoppingCart, Download, Share, Plus, MoreVertical, X, Smartphone, Monitor, Menu } from "lucide-react";
