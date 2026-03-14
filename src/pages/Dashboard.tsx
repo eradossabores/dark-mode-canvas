@@ -30,15 +30,17 @@ const CHART_COLORS = [
 
 type PeriodoFiltro = "7dias" | "15dias" | "mensal";
 
+const MESES_NOME = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
 function getDaysForPeriod(periodo: PeriodoFiltro): number {
   if (periodo === "15dias") return 15;
   if (periodo === "mensal") return 30;
   return 7;
 }
 
-function getPeriodLabel(periodo: PeriodoFiltro): string {
+function getPeriodLabel(periodo: PeriodoFiltro, mesSelecionado?: number): string {
   if (periodo === "15dias") return "Últimos 15 dias";
-  if (periodo === "mensal") return "Últimos 30 dias";
+  if (periodo === "mensal" && mesSelecionado !== undefined) return MESES_NOME[mesSelecionado];
   return "Últimos 7 dias";
 }
 
@@ -53,6 +55,23 @@ function buildChartData(data: any[], days: number, dateKey: string, valueKey: st
   filtered.forEach((item: any) => {
     const key = new Date(item[dateKey]).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
     if (map[key] !== undefined) map[key] += isSum ? Number(item[valueKey]) : item[valueKey];
+  });
+  return Object.entries(map).map(([dia, val]) => ({ dia, [isSum ? "valor" : "total"]: val }));
+}
+
+function buildMonthChartData(data: any[], month: number, year: number, dateKey: string, valueKey: string, isSum: boolean) {
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const map: Record<string, number> = {};
+  for (let i = 1; i <= daysInMonth; i++) {
+    const key = `${String(i).padStart(2, "0")}/${String(month + 1).padStart(2, "0")}`;
+    map[key] = 0;
+  }
+  data.forEach((item: any) => {
+    const d = new Date(item[dateKey]);
+    if (d.getMonth() === month && d.getFullYear() === year) {
+      const key = `${String(d.getDate()).padStart(2, "0")}/${String(month + 1).padStart(2, "0")}`;
+      if (map[key] !== undefined) map[key] += isSum ? Number(item[valueKey]) : item[valueKey];
+    }
   });
   return Object.entries(map).map(([dia, val]) => ({ dia, [isSum ? "valor" : "total"]: val }));
 }
