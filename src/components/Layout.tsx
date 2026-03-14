@@ -316,26 +316,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Desktop sidebar */}
       <aside
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
         className={cn(
           "hidden md:flex flex-col bg-sidebar-background text-sidebar-foreground transition-all duration-300 border-r border-sidebar-border",
-          collapsed ? "w-16" : "w-60"
+          isExpanded ? "w-60" : "w-16"
         )}
       >
         {sidebarContent}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className={cn(
-            "flex items-center gap-2 py-3 border-t border-sidebar-border hover:bg-sidebar-accent transition-colors",
-            collapsed ? "justify-center px-2" : "px-4"
-          )}
-        >
-          {collapsed ? <ChevronRight className="h-5 w-5" /> : (
-            <>
-              <ChevronLeft className="h-5 w-5" />
-              <span className="text-xs text-sidebar-foreground/70">Recolher menu</span>
-            </>
-          )}
-        </button>
       </aside>
 
       <main className="flex-1 overflow-auto relative bg-background">
