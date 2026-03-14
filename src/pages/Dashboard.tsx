@@ -509,20 +509,39 @@ export default function Dashboard() {
               <CardContent>
                 <p className="text-lg font-bold">{c.value}</p>
                 {c.isFaturamento && (
-                  <div className="flex gap-1 mt-2">
-                    {(["total", "semanal", "mensal", "anual"] as FaturamentoPeriodo[]).map((p) => (
-                      <button
-                        key={p}
-                        onClick={(e) => { e.stopPropagation(); setFatPeriodo(p); }}
-                        className={`px-1.5 py-0.5 text-[9px] rounded-full transition-colors ${
-                          fatPeriodo === p
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted text-muted-foreground hover:bg-muted/80"
-                        }`}
-                      >
-                        {p === "total" ? "Total" : p === "semanal" ? "Semana" : p === "mensal" ? "Mês" : "Ano"}
-                      </button>
-                    ))}
+                  <div className="space-y-1.5 mt-2">
+                    <div className="flex gap-1">
+                      {(["total", "semanal", "mensal", "anual"] as FaturamentoPeriodo[]).map((p) => (
+                        <button
+                          key={p}
+                          onClick={(e) => { e.stopPropagation(); setFatPeriodo(p); }}
+                          className={`px-1.5 py-0.5 text-[9px] rounded-full transition-colors ${
+                            fatPeriodo === p
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-muted-foreground hover:bg-muted/80"
+                          }`}
+                        >
+                          {p === "total" ? "Total" : p === "semanal" ? "Semana" : p === "mensal" ? "Mês" : "Ano"}
+                        </button>
+                      ))}
+                    </div>
+                    {fatPeriodo === "mensal" && (
+                      <div className="flex gap-0.5 flex-wrap">
+                        {MESES_NOME.map((nome, idx) => (
+                          <button
+                            key={idx}
+                            onClick={(e) => { e.stopPropagation(); setMesFatCard(idx); }}
+                            className={`px-1 py-0.5 text-[8px] rounded-full transition-colors ${
+                              mesFatCard === idx
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted text-muted-foreground hover:bg-muted/80"
+                            }`}
+                          >
+                            {nome.slice(0, 3)}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
