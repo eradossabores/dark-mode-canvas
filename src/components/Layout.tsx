@@ -173,7 +173,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {filteredGroups.map((group, gi) => (
           <div key={group.label}>
             {gi > 0 && <div className="mx-4 my-1.5 border-t border-sidebar-border" />}
-            {!collapsed && (
+            {isExpanded && (
               <p className="px-4 pt-1 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
                 {group.label}
               </p>
