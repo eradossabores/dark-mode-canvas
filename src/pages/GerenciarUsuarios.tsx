@@ -344,11 +344,14 @@ export default function GerenciarUsuarios() {
                        <TableCell>{new Date(u.created_at).toLocaleDateString("pt-BR")}</TableCell>
                        <TableCell>
                          <div className="flex gap-2">
+                           <Button size="sm" variant="outline" className="gap-1" onClick={() => { setEditDialog({ open: true, user: u }); setEditForm({ nome: u.nome, role: u.role }); }}>
+                             <Pencil className="h-3 w-3" /> Editar
+                           </Button>
                            <Button size="sm" variant="outline" className="gap-1" onClick={() => { setPasswordDialog({ open: true, user: u }); setNewPassword(""); }}>
-                             <KeyRound className="h-3 w-3" /> Alterar Senha
+                             <KeyRound className="h-3 w-3" /> Senha
                            </Button>
                            <Button size="sm" variant="destructive" className="gap-1" onClick={() => setDeleteDialog({ open: true, user: u })}>
-                             <Trash2 className="h-3 w-3" /> Excluir
+                             <Trash2 className="h-3 w-3" />
                            </Button>
                          </div>
                        </TableCell>
