@@ -127,6 +127,7 @@ export default function Dashboard() {
   const [producaoPorDia, setProducaoPorDia] = useState<any[]>([]);
   const [alertasEstoque, setAlertasEstoque] = useState<any[]>([]);
   const [alertaIndex, setAlertaIndex] = useState(0);
+  const [showAllAlertas, setShowAllAlertas] = useState(false);
   const [contasReceber, setContasReceber] = useState({ total: 0, vencidas: 0, quantidade: 0 });
   const [periodoFaturamento, setPeriodoFaturamento] = useState<PeriodoFiltro>("7dias");
   const [periodoProducao, setPeriodoProducao] = useState<PeriodoFiltro>("7dias");
