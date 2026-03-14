@@ -523,7 +523,7 @@ export default function Dashboard() {
               borderWidth={2}
             />
             <Card
-              className="relative cursor-pointer transition-all hover:scale-[1.03] hover:shadow-md border-0 bg-background"
+              className="relative cursor-pointer transition-all hover:scale-[1.03] hover:shadow-md border-0 bg-zinc-950 dark:bg-zinc-950 text-zinc-50"
               onClick={() => !c.isFaturamento && navigate(c.href)}
             >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
