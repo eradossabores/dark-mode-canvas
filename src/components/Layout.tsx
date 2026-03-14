@@ -230,13 +230,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Mobile hamburger */}
-      <button
-        onClick={() => setMobileOpen(true)}
-        className="md:hidden fixed top-3 left-3 z-50 p-1.5 rounded-md bg-card shadow-md border border-border flex items-center gap-1.5"
-      >
+      <div className="md:hidden fixed top-3 left-3 z-50 p-1 rounded-md bg-card shadow-md border border-border flex items-center gap-1">
         <img src={logo} alt="" className="h-7 w-7 rounded" />
-        <Menu className="h-5 w-5" />
-      </button>
+        <AnimatedMenuToggle
+          isOpen={mobileOpen}
+          toggle={() => setMobileOpen(!mobileOpen)}
+          size={20}
+          strokeColor="hsl(var(--foreground))"
+        />
+      </div>
 
       {/* Mobile overlay */}
       {mobileOpen && (
