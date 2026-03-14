@@ -179,7 +179,7 @@ export default function Dashboard() {
     } else {
       setProducaoPorDia(buildChartData(allProducoes, getDaysForPeriod(periodoProducao), "created_at", "quantidade_total", false));
     }
-  }, [periodoProducao, allProducoes]);
+  }, [periodoProducao, mesProducao, allProducoes]);
 
   async function loadStats() {
     try {
