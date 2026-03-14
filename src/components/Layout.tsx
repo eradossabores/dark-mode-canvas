@@ -219,7 +219,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           aria-hidden
           className={cn(
             "object-contain pointer-events-none select-none animate-fade-in transition-opacity duration-500",
-            collapsed ? "w-10 h-10" : "w-24 h-24"
+            !isExpanded ? "w-10 h-10" : "w-24 h-24"
           )}
         />
       </div>
