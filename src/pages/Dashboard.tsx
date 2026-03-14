@@ -523,11 +523,11 @@ export default function Dashboard() {
               borderWidth={2}
             />
             <Card
-              className="relative cursor-pointer transition-all hover:scale-[1.03] hover:shadow-md border-0 bg-background"
+              className="relative cursor-pointer transition-all hover:scale-[1.03] hover:shadow-md border-0 bg-zinc-950 dark:bg-zinc-950 text-zinc-50"
               onClick={() => !c.isFaturamento && navigate(c.href)}
             >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-medium text-muted-foreground">{c.title}</CardTitle>
+                <CardTitle className="text-xs font-medium text-zinc-400">{c.title}</CardTitle>
                 <c.icon className={`h-4 w-4 ${c.color}`} />
               </CardHeader>
               <CardContent>
@@ -542,7 +542,7 @@ export default function Dashboard() {
                           className={`px-1.5 py-0.5 text-[9px] rounded-full transition-colors ${
                             fatPeriodo === p
                               ? "bg-primary text-primary-foreground"
-                              : "bg-muted text-muted-foreground hover:bg-muted/80"
+                              : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
                           }`}
                         >
                           {p === "total" ? "Total" : p === "semanal" ? "Semana" : p === "mensal" ? "Mês" : "Ano"}
@@ -558,7 +558,7 @@ export default function Dashboard() {
                             className={`px-1 py-0.5 text-[8px] rounded-full transition-colors ${
                               mesFatCard === idx
                                 ? "bg-primary text-primary-foreground"
-                                : "bg-muted text-muted-foreground hover:bg-muted/80"
+                                : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
                             }`}
                           >
                             {nome.slice(0, 3)}
