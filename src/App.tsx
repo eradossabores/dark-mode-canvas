@@ -8,6 +8,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import GlobalSearch from "@/components/GlobalSearch";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Layout from "@/components/Layout";
+import SnowEffect from "@/components/SnowEffect";
 import LandingPage from "@/pages/LandingPage";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
