@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Package, ShoppingCart, Factory, Users, AlertTriangle, TrendingUp, DollarSign, Bell, Sparkles } from "lucide-react";
 import { GlowingEffect } from "@/components/ui/glowing-effect";
 import { motion } from "framer-motion";
+import { GradientDots } from "@/components/ui/gradient-dots";
 import { useNavigate } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
 import { useAuth } from "@/contexts/AuthContext";
