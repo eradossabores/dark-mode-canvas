@@ -194,10 +194,14 @@ export default function Vendas() {
     });
     // Build pedido status map per venda
     const pedidoStatusMap: Record<string, string> = {};
+    const pedidoTipoMap: Record<string, string> = {};
     (pp.data || []).forEach((p: any) => {
-      if (p.venda_id) pedidoStatusMap[p.venda_id] = p.status;
+      if (p.venda_id) {
+        pedidoStatusMap[p.venda_id] = p.status;
+        pedidoTipoMap[p.venda_id] = p.tipo_pedido;
+      }
     });
-    setVendas((v.data || []).map((vd: any) => ({ ...vd, totalUnidades: unitsMap[vd.id] || 0, pedido_status: pedidoStatusMap[vd.id] || null })));
+    setVendas((v.data || []).map((vd: any) => ({ ...vd, totalUnidades: unitsMap[vd.id] || 0, pedido_status: pedidoStatusMap[vd.id] || null, pedido_tipo: pedidoTipoMap[vd.id] || null })));
   }
 
   function addItem() { setItens([...itens, { sabor_id: "", quantidade: 1, preco_unitario: "", preco_auto: false }]); }
