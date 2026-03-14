@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Package, Users, ShoppingCart, Factory,
-  Warehouse, ClipboardList, UserCog, BarChart3, FileUp, Menu, X, DollarSign, Monitor, ShoppingBag, Database, LogOut, Shield, Brain, MapPin, Map, Target, HardDrive
+  Warehouse, ClipboardList, UserCog, BarChart3, FileUp, DollarSign, Monitor, ShoppingBag, Database, LogOut, Shield, Brain, MapPin, Map, Target, HardDrive
 } from "lucide-react";
+import { AnimatedMenuToggle } from "@/components/ui/animated-menu-toggle";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { isRouteAllowed } from "@/components/ProtectedRoute";
@@ -229,13 +230,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Mobile hamburger */}
-      <button
-        onClick={() => setMobileOpen(true)}
-        className="md:hidden fixed top-3 left-3 z-50 p-1.5 rounded-md bg-card shadow-md border border-border flex items-center gap-1.5"
-      >
+      <div className="md:hidden fixed top-3 left-3 z-50 p-1 rounded-md bg-card shadow-md border border-border flex items-center gap-1">
         <img src={logo} alt="" className="h-7 w-7 rounded" />
-        <Menu className="h-5 w-5" />
-      </button>
+        <AnimatedMenuToggle
+          isOpen={mobileOpen}
+          toggle={() => setMobileOpen(!mobileOpen)}
+          size={20}
+          strokeColor="hsl(var(--foreground))"
+        />
+      </div>
 
       {/* Mobile overlay */}
       {mobileOpen && (
@@ -261,9 +264,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <span className="text-[10px] text-white/60 leading-tight">Gelos Saborizados</span>
                 </div>
               </div>
-              <button onClick={() => setMobileOpen(false)} className="p-1">
-                <X className="h-5 w-5 text-white" />
-              </button>
+              <AnimatedMenuToggle
+                isOpen={true}
+                toggle={() => setMobileOpen(false)}
+                size={20}
+                strokeColor="white"
+              />
             </div>
             <nav className="flex-1 py-2 space-y-1 overflow-y-auto">
               {filteredGroups.map((group, gi) => (
