@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Shield, Factory, Clock, CheckCircle, XCircle, Bell, LinkIcon, KeyRound, Eye, EyeOff, Trash2 } from "lucide-react";
+import { Plus, Shield, Factory, Clock, CheckCircle, XCircle, Bell, LinkIcon, KeyRound, Eye, EyeOff, Trash2, Pencil } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface UserWithRole {
@@ -45,6 +45,32 @@ export default function GerenciarUsuarios() {
   const [deleting, setDeleting] = useState(false);
   const [clearAllDialog, setClearAllDialog] = useState(false);
   const [clearingAll, setClearingAll] = useState(false);
+  const [editDialog, setEditDialog] = useState<{ open: boolean; user: UserWithRole | null }>({ open: false, user: null });
+  const [editForm, setEditForm] = useState({ nome: "", role: "" });
+  const [saving, setSaving] = useState(false);
+
+  async function handleEditUser() {
+    if (!editDialog.user) return;
+    setSaving(true);
+    try {
+      // Update name in profiles
+      const { error: profileErr } = await (supabase as any).from("profiles").update({ nome: editForm.nome }).eq("id", editDialog.user.id);
+      if (profileErr) throw profileErr;
+
+      // Update role in user_roles
+      if (editForm.role !== editDialog.user.role) {
+        const { error: roleErr } = await (supabase as any).from("user_roles").update({ role: editForm.role }).eq("user_id", editDialog.user.id);
+        if (roleErr) throw roleErr;
+      }
+
+      toast({ title: "Usuário atualizado!" });
+      setEditDialog({ open: false, user: null });
+      loadUsers();
+    } catch (e: any) {
+      toast({ title: "Erro ao atualizar", description: e.message, variant: "destructive" });
+    }
+    setSaving(false);
+  }
 
   async function handleDeleteUser() {
     if (!deleteDialog.user) return;
@@ -318,11 +344,14 @@ export default function GerenciarUsuarios() {
                        <TableCell>{new Date(u.created_at).toLocaleDateString("pt-BR")}</TableCell>
                        <TableCell>
                          <div className="flex gap-2">
+                           <Button size="sm" variant="outline" className="gap-1" onClick={() => { setEditDialog({ open: true, user: u }); setEditForm({ nome: u.nome, role: u.role }); }}>
+                             <Pencil className="h-3 w-3" /> Editar
+                           </Button>
                            <Button size="sm" variant="outline" className="gap-1" onClick={() => { setPasswordDialog({ open: true, user: u }); setNewPassword(""); }}>
-                             <KeyRound className="h-3 w-3" /> Alterar Senha
+                             <KeyRound className="h-3 w-3" /> Senha
                            </Button>
                            <Button size="sm" variant="destructive" className="gap-1" onClick={() => setDeleteDialog({ open: true, user: u })}>
-                             <Trash2 className="h-3 w-3" /> Excluir
+                             <Trash2 className="h-3 w-3" />
                            </Button>
                          </div>
                        </TableCell>
@@ -481,6 +510,33 @@ export default function GerenciarUsuarios() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={editDialog.open} onOpenChange={(o) => setEditDialog({ ...editDialog, open: o })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Usuário</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Nome</Label>
+              <Input value={editForm.nome} onChange={(e) => setEditForm({ ...editForm, nome: e.target.value })} />
+            </div>
+            <div>
+              <Label>Perfil</Label>
+              <Select value={editForm.role} onValueChange={(v) => setEditForm({ ...editForm, role: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Administrador</SelectItem>
+                  <SelectItem value="producao">Produção</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button className="w-full" onClick={handleEditUser} disabled={saving || !editForm.nome.trim()}>
+              {saving ? "Salvando..." : "Salvar Alterações"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
