@@ -380,110 +380,176 @@ export default function Dashboard() {
 
       <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
 
-      {/* 4 Post-its por categoria */}
+      {/* Alertas de Estoque - Glassmorphism Cards */}
       {alertasEstoque.length > 0 && (() => {
-        const categorias = [
-          { tipo: "Matéria-prima", cor: "linear-gradient(135deg, hsl(45, 100%, 80%), hsl(45, 100%, 72%))", fita: "hsl(45, 30%, 85%)", rotate: "-rotate-1" },
-          { tipo: "Embalagem", cor: "linear-gradient(135deg, hsl(340, 80%, 85%), hsl(340, 80%, 78%))", fita: "hsl(340, 30%, 88%)", rotate: "rotate-1" },
-          { tipo: "Gelo", cor: "linear-gradient(135deg, hsl(200, 80%, 82%), hsl(200, 80%, 74%))", fita: "hsl(200, 30%, 85%)", rotate: "-rotate-2" },
-        ];
-        const grouped = categorias.map(cat => ({
-          ...cat,
-          items: alertasEstoque.filter(a => a.tipo === cat.tipo),
-        })).filter(cat => cat.items.length > 0);
+        // Sort by criticality: zero first, then lowest % remaining
+        const sorted = [...alertasEstoque].sort((a, b) => {
+          const pctA = a.minimo > 0 ? a.atual / a.minimo : a.atual === 0 ? 0 : 1;
+          const pctB = b.minimo > 0 ? b.atual / b.minimo : b.atual === 0 ? 0 : 1;
+          return pctA - pctB;
+        });
 
-        // 4th post-it = resumo geral
-        const totalCard = {
-          cor: "linear-gradient(135deg, hsl(120, 55%, 82%), hsl(120, 55%, 74%))",
-          fita: "hsl(120, 20%, 85%)",
-          rotate: "rotate-1",
+        const getSeverity = (item: any) => {
+          if (item.atual === 0) return "critical";
+          const pct = item.minimo > 0 ? item.atual / item.minimo : 1;
+          if (pct <= 0.3) return "critical";
+          if (pct <= 0.7) return "warning";
+          return "low";
         };
 
+        const severityConfig = {
+          critical: {
+            border: "border-destructive/40",
+            glow: "shadow-[0_0_20px_hsl(0,70%,50%,0.25)]",
+            barColor: "bg-destructive",
+            pulse: true,
+            icon: "text-destructive",
+            badge: "bg-destructive/15 text-destructive border-destructive/30",
+          },
+          warning: {
+            border: "border-amber-400/40",
+            glow: "shadow-[0_0_16px_hsl(38,90%,50%,0.2)]",
+            barColor: "bg-amber-500",
+            pulse: false,
+            icon: "text-amber-500",
+            badge: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-400/30",
+          },
+          low: {
+            border: "border-primary/30",
+            glow: "shadow-[0_0_12px_hsl(var(--primary),0.15)]",
+            barColor: "bg-primary",
+            pulse: false,
+            icon: "text-primary",
+            badge: "bg-primary/10 text-primary border-primary/20",
+          },
+        };
+
+        const tipoIcon: Record<string, string> = { "Matéria-prima": "🧪", "Embalagem": "📦", "Gelo": "🧊" };
+
+        const criticalCount = sorted.filter(i => getSeverity(i) === "critical").length;
+        const warningCount = sorted.filter(i => getSeverity(i) === "warning").length;
+
         return (
-          <div className="mb-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {grouped.map((cat) => {
-              const visibleIndex = alertaIndex % cat.items.length;
-              return (
-                <div
-                  key={cat.tipo}
-                  className={`relative min-h-[140px] rounded-sm p-4 shadow-lg transform ${cat.rotate} overflow-hidden`}
-                  style={{ background: cat.cor, boxShadow: "2px 4px 12px hsl(0 0% 0% / 0.15)" }}
-                >
-                  {/* Snow on post-it */}
-                  <svg className="absolute top-0 left-0 w-full h-5 opacity-60" viewBox="0 0 200 20" preserveAspectRatio="none" fill="white">
-                    <path d="M0,8 Q10,2 20,7 Q30,12 40,6 Q50,0 60,5 Q70,10 80,4 Q90,0 100,6 Q110,12 120,5 Q130,0 140,7 Q150,12 160,4 Q170,0 180,8 Q190,14 200,6 L200,0 L0,0 Z" />
-                  </svg>
-                  <svg className="absolute -top-1 left-0 w-full h-4 opacity-40" viewBox="0 0 200 16" preserveAspectRatio="none" fill="white">
-                    <path d="M0,10 Q15,4 30,9 Q45,14 60,7 Q75,2 90,8 Q105,14 120,6 Q135,0 150,8 Q165,14 180,5 Q195,0 200,8 L200,0 L0,0 Z" />
-                  </svg>
-                  {/* Character on post-it */}
-                  <img
-                    src={postItCharacters[grouped.indexOf(cat) % postItCharacters.length]}
-                    alt=""
-                    aria-hidden
-                    className="absolute bottom-2 right-1 w-12 h-12 object-contain opacity-[0.35] pointer-events-none select-none"
-                  />
-                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-14 h-4 rounded-sm opacity-60" style={{ background: cat.fita }} />
-                  <div className="mt-2 relative">
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
-                      <span className="text-[10px] font-bold text-destructive uppercase tracking-wide">{cat.tipo}</span>
-                      <span className="text-[10px] text-foreground/60 ml-auto">{cat.items.length}</span>
-                    </div>
-                    <div key={visibleIndex} className="animate-fade-in">
-                      <p className="text-sm font-extrabold text-foreground truncate">{cat.items[visibleIndex]?.nome}</p>
-                      <p className="text-xs text-foreground/70 mt-1">
-                        Atual: <span className="font-bold text-destructive">{cat.items[visibleIndex]?.atual}</span> / Mín: {cat.items[visibleIndex]?.minimo}
-                      </p>
-                    </div>
-                    {cat.items.length > 1 && (
-                      <div className="flex gap-1 mt-3">
-                        {cat.items.map((_, i) => (
-                          <div key={i} className={`w-1.5 h-1.5 rounded-full transition-all ${i === visibleIndex ? "bg-destructive scale-125" : "bg-foreground/25"}`} />
-                        ))}
-                      </div>
-                    )}
-                  </div>
+          <div className="mb-6 space-y-3">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <AlertTriangle className="h-4.5 w-4.5 text-destructive" />
+                  {criticalCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-destructive text-destructive-foreground text-[8px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                      {criticalCount}
+                    </span>
+                  )}
                 </div>
-              );
-            })}
-            {/* 4º Post-it: Resumo */}
-            <div
-              className={`relative min-h-[140px] rounded-sm p-4 shadow-lg transform ${totalCard.rotate} overflow-hidden`}
-              style={{ background: totalCard.cor, boxShadow: "2px 4px 12px hsl(0 0% 0% / 0.15)" }}
-            >
-              {/* Snow on post-it */}
-              <svg className="absolute top-0 left-0 w-full h-5 opacity-60" viewBox="0 0 200 20" preserveAspectRatio="none" fill="white">
-                <path d="M0,8 Q10,2 20,7 Q30,12 40,6 Q50,0 60,5 Q70,10 80,4 Q90,0 100,6 Q110,12 120,5 Q130,0 140,7 Q150,12 160,4 Q170,0 180,8 Q190,14 200,6 L200,0 L0,0 Z" />
-              </svg>
-              <svg className="absolute -top-1 left-0 w-full h-4 opacity-40" viewBox="0 0 200 16" preserveAspectRatio="none" fill="white">
-                <path d="M0,10 Q15,4 30,9 Q45,14 60,7 Q75,2 90,8 Q105,14 120,6 Q135,0 150,8 Q165,14 180,5 Q195,0 200,8 L200,0 L0,0 Z" />
-              </svg>
-              {/* Character on summary post-it */}
-              <img
-                src={postItCharacters[3]}
-                alt=""
-                aria-hidden
-                className="absolute top-2 right-1 w-12 h-12 object-contain opacity-[0.35] pointer-events-none select-none"
-              />
-              <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-14 h-4 rounded-sm opacity-60" style={{ background: totalCard.fita }} />
-              <div className="mt-2 relative">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <Bell className="h-3.5 w-3.5 text-foreground/80" />
-                  <span className="text-[10px] font-bold uppercase tracking-wide text-foreground/80">Resumo</span>
-                </div>
-                <p className="text-2xl font-extrabold text-foreground">{alertasEstoque.length}</p>
-                <p className="text-xs text-foreground/70 mt-0.5">alertas ativos</p>
-                <div className="mt-2 space-y-1">
-                  {grouped.map(cat => (
-                    <div key={cat.tipo} className="flex justify-between text-[11px] text-foreground/80">
-                      <span>{cat.tipo}</span>
-                      <span className="font-bold">{cat.items.length}</span>
-                    </div>
-                  ))}
-                </div>
+                <h3 className="text-sm font-bold text-foreground">Alertas de Estoque</h3>
+                <Badge variant="outline" className="text-[10px] h-5">
+                  {sorted.length} {sorted.length === 1 ? "item" : "itens"}
+                </Badge>
               </div>
+              <button
+                onClick={() => navigate("/painel/estoque")}
+                className="text-[11px] text-primary hover:underline font-medium"
+              >
+                Ver estoque →
+              </button>
             </div>
+
+            {/* Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {sorted.slice(0, 8).map((item, idx) => {
+                const severity = getSeverity(item);
+                const config = severityConfig[severity];
+                const pct = item.minimo > 0 ? Math.min(100, Math.round((item.atual / item.minimo) * 100)) : item.atual > 0 ? 100 : 0;
+
+                return (
+                  <motion.div
+                    key={item.nome + item.tipo}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.05, duration: 0.35 }}
+                    onClick={() => navigate("/painel/estoque")}
+                    className={`
+                      relative rounded-xl border ${config.border} ${config.glow}
+                      backdrop-blur-md bg-card/70 dark:bg-card/50
+                      p-3.5 cursor-pointer transition-all duration-300
+                      hover:scale-[1.02] hover:shadow-lg
+                      ${config.pulse ? "animate-[pulse_3s_ease-in-out_infinite]" : ""}
+                    `}
+                  >
+                    {/* Subtle gradient overlay */}
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-transparent via-transparent to-foreground/[0.02] pointer-events-none" />
+
+                    {/* Character watermark */}
+                    <img
+                      src={postItCharacters[idx % postItCharacters.length]}
+                      alt=""
+                      aria-hidden
+                      className="absolute bottom-1 right-1 w-10 h-10 object-contain opacity-[0.08] pointer-events-none select-none"
+                    />
+
+                    <div className="relative">
+                      {/* Top row: type badge + severity indicator */}
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${config.badge}`}>
+                          <span>{tipoIcon[item.tipo] || "📋"}</span>
+                          {item.tipo}
+                        </span>
+                        {severity === "critical" && (
+                          <span className="relative flex h-2.5 w-2.5">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
+                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-destructive" />
+                          </span>
+                        )}
+                        {severity === "warning" && (
+                          <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+                        )}
+                      </div>
+
+                      {/* Item name */}
+                      <p className="text-sm font-bold text-foreground truncate mb-1">{item.nome}</p>
+
+                      {/* Values */}
+                      <div className="flex items-baseline gap-1.5 mb-2.5">
+                        <span className={`text-lg font-extrabold ${config.icon}`}>{item.atual}</span>
+                        <span className="text-[11px] text-muted-foreground">/ {item.minimo} mín.</span>
+                      </div>
+
+                      {/* Progress bar */}
+                      <div className="w-full h-1.5 rounded-full bg-muted/60 overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${pct}%` }}
+                          transition={{ delay: idx * 0.05 + 0.2, duration: 0.6, ease: "easeOut" }}
+                          className={`h-full rounded-full ${config.barColor}`}
+                        />
+                      </div>
+                      <div className="flex justify-between mt-1">
+                        <span className="text-[9px] text-muted-foreground">{pct}% do mínimo</span>
+                        {item.atual === 0 && (
+                          <span className="text-[9px] font-bold text-destructive uppercase">Zerado!</span>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {/* Summary bar */}
+            {(criticalCount > 0 || warningCount > 0) && (
+              <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-muted/40 backdrop-blur-sm border border-border/50 text-xs">
+                <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
+                {criticalCount > 0 && (
+                  <span className="text-destructive font-semibold">{criticalCount} crítico{criticalCount > 1 ? "s" : ""}</span>
+                )}
+                {criticalCount > 0 && warningCount > 0 && <span className="text-muted-foreground">·</span>}
+                {warningCount > 0 && (
+                  <span className="text-amber-500 font-semibold">{warningCount} em alerta</span>
+                )}
+                <span className="text-muted-foreground ml-auto">Ordenado por prioridade</span>
+              </div>
+            )}
           </div>
         );
       })()}
