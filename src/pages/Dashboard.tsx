@@ -443,145 +443,166 @@ export default function Dashboard() {
       {/* Gráficos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Faturamento */}
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm">Faturamento - {getPeriodLabel(periodoFaturamento)}</CardTitle>
-              <div className="flex gap-1">
-                {(["7dias", "15dias", "mensal"] as PeriodoFiltro[]).map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => setPeriodoFaturamento(p)}
-                    className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
-                      periodoFaturamento === p
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground hover:bg-muted/80"
-                    }`}
-                  >
-                    {p === "7dias" ? "7D" : p === "15dias" ? "15D" : "Mês"}
-                  </button>
-                ))}
+        <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
+          <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
+          <Card className="relative border-0 bg-background">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm">Faturamento - {getPeriodLabel(periodoFaturamento)}</CardTitle>
+                <div className="flex gap-1">
+                  {(["7dias", "15dias", "mensal"] as PeriodoFiltro[]).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setPeriodoFaturamento(p)}
+                      className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
+                        periodoFaturamento === p
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      }`}
+                    >
+                      {p === "7dias" ? "7D" : p === "15dias" ? "15D" : "Mês"}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={vendasPorDia}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="dia" fontSize={11} stroke="hsl(var(--muted-foreground))" />
-                <YAxis fontSize={11} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `R$${v}`} />
-                <Tooltip formatter={(v: number) => [`R$ ${v.toFixed(2)}`, "Faturamento"]} />
-                <Line type="monotone" dataKey="valor" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ fill: "hsl(var(--primary))" }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={vendasPorDia}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="dia" fontSize={11} stroke="hsl(var(--muted-foreground))" />
+                  <YAxis fontSize={11} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `R$${v}`} />
+                  <Tooltip formatter={(v: number) => [`R$ ${v.toFixed(2)}`, "Faturamento"]} />
+                  <Line type="monotone" dataKey="valor" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ fill: "hsl(var(--primary))" }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Produção */}
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm">Produção - {getPeriodLabel(periodoProducao)}</CardTitle>
-              <div className="flex gap-1">
-                {(["7dias", "15dias", "mensal"] as PeriodoFiltro[]).map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => setPeriodoProducao(p)}
-                    className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
-                      periodoProducao === p
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground hover:bg-muted/80"
-                    }`}
-                  >
-                    {p === "7dias" ? "7D" : p === "15dias" ? "15D" : "Mês"}
-                  </button>
-                ))}
+        <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
+          <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
+          <Card className="relative border-0 bg-background">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm">Produção - {getPeriodLabel(periodoProducao)}</CardTitle>
+                <div className="flex gap-1">
+                  {(["7dias", "15dias", "mensal"] as PeriodoFiltro[]).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setPeriodoProducao(p)}
+                      className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
+                        periodoProducao === p
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      }`}
+                    >
+                      {p === "7dias" ? "7D" : p === "15dias" ? "15D" : "Mês"}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={producaoPorDia}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="dia" fontSize={11} stroke="hsl(var(--muted-foreground))" />
-                <YAxis fontSize={11} stroke="hsl(var(--muted-foreground))" />
-                <Tooltip formatter={(v: number) => [`${v} un.`, "Produção"]} />
-                <Bar dataKey="total" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={producaoPorDia}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="dia" fontSize={11} stroke="hsl(var(--muted-foreground))" />
+                  <YAxis fontSize={11} stroke="hsl(var(--muted-foreground))" />
+                  <Tooltip formatter={(v: number) => [`${v} un.`, "Produção"]} />
+                  <Bar dataKey="total" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Widgets: Estoque Inteligente + Ranking + Clientes Inativos */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <EstoqueInteligente />
-        <RankingClientes />
-        <ClientesInativos />
+        <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
+          <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
+          <div className="relative"><EstoqueInteligente /></div>
+        </div>
+        <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
+          <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
+          <div className="relative"><RankingClientes /></div>
+        </div>
+        <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
+          <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
+          <div className="relative"><ClientesInativos /></div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top 5 Sabores - Pie Chart */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Top 5 Sabores Vendidos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {topSabores.length === 0 ? (
-              <p className="text-muted-foreground text-sm">Nenhuma venda registrada ainda.</p>
-            ) : (
-              <div className="flex items-center gap-4">
-                <ResponsiveContainer width="50%" height={200}>
-                  <PieChart>
-                    <Pie data={topSabores} dataKey="total" nameKey="nome" cx="50%" cy="50%" outerRadius={80} label={false}>
-                      {topSabores.map((_, i) => (
-                        <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(v: number, name: string) => [`${v} un.`, name]} />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="space-y-2 flex-1">
-                  {topSabores.map((s, i) => (
-                    <div key={i} className="flex items-center gap-2 text-sm">
-                      <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: CHART_COLORS[i] }} />
-                      <span className="font-medium truncate">{s.nome}</span>
-                      <span className="text-muted-foreground ml-auto">{s.total}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Contas a Receber */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-primary" />
-              Contas a Receber
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground text-sm">Total pendente</span>
-                <span className="text-xl font-bold">R$ {contasReceber.total.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground text-sm">Vendas pendentes</span>
-                <Badge variant="secondary">{contasReceber.quantidade}</Badge>
-              </div>
-              {contasReceber.vencidas > 0 && (
-                <div className="flex justify-between items-center">
-                  <span className="text-destructive text-sm font-medium">Vencidas</span>
-                  <Badge variant="destructive">{contasReceber.vencidas}</Badge>
+        <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
+          <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
+          <Card className="relative border-0 bg-background">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Top 5 Sabores Vendidos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {topSabores.length === 0 ? (
+                <p className="text-muted-foreground text-sm">Nenhuma venda registrada ainda.</p>
+              ) : (
+                <div className="flex items-center gap-4">
+                  <ResponsiveContainer width="50%" height={200}>
+                    <PieChart>
+                      <Pie data={topSabores} dataKey="total" nameKey="nome" cx="50%" cy="50%" outerRadius={80} label={false}>
+                        {topSabores.map((_, i) => (
+                          <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(v: number, name: string) => [`${v} un.`, name]} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="space-y-2 flex-1">
+                    {topSabores.map((s, i) => (
+                      <div key={i} className="flex items-center gap-2 text-sm">
+                        <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: CHART_COLORS[i] }} />
+                        <span className="font-medium truncate">{s.nome}</span>
+                        <span className="text-muted-foreground ml-auto">{s.total}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Contas a Receber */}
+        <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
+          <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
+          <Card className="relative border-0 bg-background">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-primary" />
+                Contas a Receber
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground text-sm">Total pendente</span>
+                  <span className="text-xl font-bold">R$ {contasReceber.total.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground text-sm">Vendas pendentes</span>
+                  <Badge variant="secondary">{contasReceber.quantidade}</Badge>
+                </div>
+                {contasReceber.vencidas > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-destructive text-sm font-medium">Vencidas</span>
+                    <Badge variant="destructive">{contasReceber.vencidas}</Badge>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
