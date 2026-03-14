@@ -10,7 +10,7 @@ import {
   Factory, TrendingUp, TrendingDown, Minus, RefreshCw,
   AlertTriangle, CheckCircle2, Snowflake, BarChart3, Check, X,
   Brain, Sparkles, History, ChevronDown, ChevronUp, CalendarDays,
-  Trash2, Pencil
+  Trash2, Pencil, Zap, Target, Activity
 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -33,9 +33,18 @@ interface SaborAnalise {
   prioritario: boolean;
   ordemPrioridade: number;
   // Learning fields
-  loteAprendido: number | null; // suggestion based on past behavior
-  confianca: number; // 0-100, confidence in the learned value
-  historicoAjustes: number; // how many times user adjusted this flavor
+  loteAprendido: number | null;
+  confianca: number; // 0-100
+  historicoAjustes: number;
+  nivelConfianca: "alta" | "media" | "baixa" | "insuficiente";
+  // Feedback fields
+  feedbackScore: number | null; // -100 to 100, negative = overproduction, positive = underproduction
+  feedbackLabel: string;
+  // AI suggestion fields
+  aiLotes: number | null;
+  aiConfianca: string | null;
+  aiJustificativa: string | null;
+  aiFeedbackNota: string | null;
 }
 
 const SABOR_COLORS: Record<string, string> = {
@@ -79,42 +88,39 @@ function ProgressRing({ progress, color, size = 52 }: { progress: number; color:
 
 // Escala fixa (todos os dias da semana)
 const ESCALA_PRODUCAO: Record<number, string[]> = {
-  0: [], // Domingo
-  1: [], // Segunda
-  2: ["aghata", "maria"],
-  3: ["aghata", "maria"],
-  4: ["jhulia", "aghata"],
-  5: ["jhulia", "aghata"],
-  6: [], // Sábado
+  0: [], 1: [], 2: ["aghata", "maria"],
+  3: ["aghata", "maria"], 4: ["jhulia", "aghata"],
+  5: ["jhulia", "aghata"], 6: [],
 };
 const NOMES_DIA: Record<number, string> = {
   0: "Domingo", 1: "Segunda-feira", 2: "Terça-feira",
   3: "Quarta-feira", 4: "Quinta-feira", 5: "Sexta-feira", 6: "Sábado",
 };
 
-// Learning engine: analyze past decisions to predict preferred lots
+const ACTIVATION_THRESHOLD = 25; // Increased from 10 to 25 for better accuracy
+const HIGH_CONFIDENCE_THRESHOLD = 85; // Only auto-fill at 85%+
+
+// Learning engine with graduated confidence
 function calcularAprendizado(
   decisoes: any[],
   saborId: string,
   diaSemana: number,
   loteSugeridoAtual: number
-): { loteAprendido: number | null; confianca: number; historicoAjustes: number } {
-  // Filter decisions for this flavor, weighted towards same day of week
+): { loteAprendido: number | null; confianca: number; historicoAjustes: number; nivelConfianca: "alta" | "media" | "baixa" | "insuficiente" } {
   const todasDoSabor = decisoes.filter((d: any) => d.sabor_id === saborId);
   const doMesmoDia = todasDoSabor.filter((d: any) => d.dia_semana === diaSemana);
 
-  if (todasDoSabor.length < 2) {
-    return { loteAprendido: null, confianca: 0, historicoAjustes: 0 };
+  if (todasDoSabor.length < 3) {
+    return { loteAprendido: null, confianca: 0, historicoAjustes: 0, nivelConfianca: "insuficiente" };
   }
 
-  // Weighted average: same-day decisions weight 3x, others 1x
   let somaLotes = 0;
   let somaPeso = 0;
   const agora = Date.now();
 
   todasDoSabor.forEach((d: any) => {
     const idade = (agora - new Date(d.created_at).getTime()) / (1000 * 60 * 60 * 24);
-    const pesoRecencia = Math.max(0.2, 1 - idade / 60); // decay over 60 days
+    const pesoRecencia = Math.max(0.1, 1 - idade / 90); // decay over 90 days (increased from 60)
     const pesoDia = d.dia_semana === diaSemana ? 3 : 1;
     const peso = pesoRecencia * pesoDia;
     somaLotes += d.lotes_autorizados * peso;
@@ -123,22 +129,80 @@ function calcularAprendizado(
 
   const mediaAprendida = Math.round(somaLotes / somaPeso);
   
-  // Confidence: based on quantity of data + consistency
   const lotesAutorizados = todasDoSabor.map((d: any) => d.lotes_autorizados);
   const desvio = Math.sqrt(
     lotesAutorizados.reduce((s: number, l: number) => s + Math.pow(l - mediaAprendida, 2), 0) / lotesAutorizados.length
   );
-  const consistencia = Math.max(0, 100 - desvio * 30);
-  const volumeData = Math.min(100, todasDoSabor.length * 10);
-  const confianca = Math.round((consistencia * 0.6 + volumeData * 0.4));
+  const consistencia = Math.max(0, 100 - desvio * 25);
+  const volumeData = Math.min(100, todasDoSabor.length * 4); // Need more data (was *10, now *4)
+  const bonusMesmoDia = Math.min(20, doMesmoDia.length * 5); // Bonus for same-day data
+  const confianca = Math.round(Math.min(100, consistencia * 0.5 + volumeData * 0.3 + bonusMesmoDia));
 
   const ajustes = todasDoSabor.filter((d: any) => d.ajuste !== 0).length;
 
+  // Graduated confidence levels
+  let nivelConfianca: "alta" | "media" | "baixa" | "insuficiente";
+  if (confianca >= HIGH_CONFIDENCE_THRESHOLD) nivelConfianca = "alta";
+  else if (confianca >= 50) nivelConfianca = "media";
+  else if (confianca >= 20) nivelConfianca = "baixa";
+  else nivelConfianca = "insuficiente";
+
   return {
     loteAprendido: mediaAprendida,
-    confianca: Math.min(100, confianca),
+    confianca,
     historicoAjustes: ajustes,
+    nivelConfianca,
   };
+}
+
+// Feedback loop: compare planned vs actual production and sales
+function calcularFeedback(
+  decisoes: any[],
+  producoes: any[],
+  vendaItens: any[],
+  saborId: string
+): { feedbackScore: number; feedbackLabel: string } {
+  // Last 30 days
+  const trintaDias = new Date();
+  trintaDias.setDate(trintaDias.getDate() - 30);
+
+  const decisoesRecentes = decisoes.filter((d: any) => 
+    d.sabor_id === saborId && new Date(d.created_at) >= trintaDias
+  );
+  const planejado = decisoesRecentes.reduce((s: number, d: any) => s + d.lotes_autorizados * 84, 0);
+  
+  const produzido = producoes
+    .filter((p: any) => p.sabor_id === saborId && new Date(p.created_at) >= trintaDias)
+    .reduce((s: number, p: any) => s + p.quantidade_total, 0);
+  
+  const vendido = vendaItens
+    .filter((v: any) => v.sabor_id === saborId)
+    .reduce((s: number, v: any) => s + v.quantidade, 0);
+
+  if (produzido === 0 && vendido === 0) {
+    return { feedbackScore: 0, feedbackLabel: "Sem dados" };
+  }
+
+  // Score: positive = selling well relative to production, negative = overproducing
+  const ratio = produzido > 0 ? vendido / produzido : 0;
+  let score: number;
+  let label: string;
+
+  if (ratio >= 0.8 && ratio <= 1.1) {
+    score = 90;
+    label = "✅ Equilibrado";
+  } else if (ratio > 1.1) {
+    score = Math.min(100, Math.round(ratio * 50));
+    label = "📈 Demanda alta — aumentar";
+  } else if (ratio >= 0.5) {
+    score = Math.round(ratio * 80);
+    label = "⚠️ Leve excesso";
+  } else {
+    score = Math.round(ratio * 50);
+    label = "🔴 Excesso de produção";
+  }
+
+  return { feedbackScore: score, feedbackLabel: label };
 }
 
 
@@ -160,9 +224,11 @@ export default function PlanoProducaoDiario() {
   const [editFuncSelecionados, setEditFuncSelecionados] = useState<string[]>([]);
   const [diaOffset, setDiaOffset] = useState(0);
   const [decisoesAlvoIds, setDecisoesAlvoIds] = useState<string[]>([]);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResumo, setAiResumo] = useState<string | null>(null);
+  const [aiAtivo, setAiAtivo] = useState(false);
 
   const hoje = new Date();
-  // Generate 5 days: today + next 4 days
   const diasDisponiveis = Array.from({ length: 5 }, (_, i) => {
     const d = new Date(hoje);
     d.setDate(d.getDate() + i);
@@ -189,7 +255,6 @@ export default function PlanoProducaoDiario() {
         .limit(500);
       if (error) throw error;
 
-      // Agrupar por dia
       const porDia: Record<string, any[]> = {};
       (data || []).forEach((d: any) => {
         const dia = new Date(d.created_at).toLocaleDateString("pt-BR");
@@ -235,7 +300,6 @@ export default function PlanoProducaoDiario() {
       sabor_nome: i.sabor_nome,
       lotes_autorizados: i.lotes_autorizados,
     })));
-    // Parse existing operador names back to IDs
     const operadorStr: string = registro.operador || "";
     const nomes = operadorStr.split(",").map((n: string) => n.trim()).filter(Boolean);
     const ids = nomes.map((nome: string) => {
@@ -264,7 +328,6 @@ export default function PlanoProducaoDiario() {
           .eq("id", item.id);
       }
 
-      // Also update localStorage for ChecklistProducaoDia
       if (nomesFuncionarios) {
         const alvoDate = editRegistro.itens[0]?.created_at ? new Date(editRegistro.itens[0].created_at) : null;
         if (alvoDate) {
@@ -284,14 +347,18 @@ export default function PlanoProducaoDiario() {
 
   async function calcular() {
     setLoading(true);
-    // Don't reset executado if we're reloading after authorization
     try {
-      const [vendasRes, gelosRes, saboresRes, funcsRes, decisoesRes] = await Promise.all([
+      const trintaDias = new Date();
+      trintaDias.setDate(trintaDias.getDate() - 30);
+
+      const [vendasRes, gelosRes, saboresRes, funcsRes, decisoesRes, producoesRes, vendaItensRecentesRes] = await Promise.all([
         (supabase as any).from("venda_itens").select("sabor_id, quantidade, vendas!inner(created_at, status)"),
         (supabase as any).from("estoque_gelos").select("quantidade, sabor_id, sabores(nome, id)"),
         (supabase as any).from("sabores").select("id, nome").eq("ativo", true).order("nome"),
         (supabase as any).from("funcionarios").select("id, nome").eq("ativo", true).order("nome"),
-        (supabase as any).from("decisoes_producao").select("*").order("created_at", { ascending: false }).limit(200),
+        (supabase as any).from("decisoes_producao").select("*").order("created_at", { ascending: false }).limit(500),
+        (supabase as any).from("producoes").select("sabor_id, quantidade_total, created_at").gte("created_at", trintaDias.toISOString()),
+        (supabase as any).from("venda_itens").select("sabor_id, quantidade, vendas!inner(created_at, status)").gte("vendas.created_at", trintaDias.toISOString()).neq("vendas.status", "cancelada"),
       ]);
 
       const funcs = funcsRes.data || [];
@@ -306,16 +373,17 @@ export default function PlanoProducaoDiario() {
       }
 
       const decisoes = decisoesRes.data || [];
-      // Count unique daily sessions (not individual sabor rows)
+      const producoes = producoesRes.data || [];
+      const vendaItensRecentes = (vendaItensRecentesRes.data || []).filter((v: any) => v.vendas?.status !== "cancelada");
+      
       const diasUnicos = new Set(
         decisoes.map((d: any) => new Date(d.created_at).toISOString().slice(0, 10))
       );
       setTotalDecisoes(diasUnicos.size);
       
-      // Auto-enable AI mode when enough data (10 daily sessions)
-      if (diasUnicos.size >= 10) setModoIA(true);
+      if (diasUnicos.size >= ACTIVATION_THRESHOLD) setModoIA(true);
 
-      // Check if target date's plan was already authorized (from DB)
+      // Check if target date's plan was already authorized
       const alvoIso = `${dataAlvo.getFullYear()}-${String(dataAlvo.getMonth() + 1).padStart(2, "0")}-${String(dataAlvo.getDate()).padStart(2, "0")}`;
       const decisoesAlvo = decisoes.filter((d: any) => {
         const dDate = new Date(d.created_at);
@@ -339,7 +407,7 @@ export default function PlanoProducaoDiario() {
 
       const agora = new Date();
       const seteDias = new Date(agora); seteDias.setDate(seteDias.getDate() - 7);
-      const trintaDias = new Date(agora); trintaDias.setDate(trintaDias.getDate() - 30);
+      const trintaDiasAgo = new Date(agora); trintaDiasAgo.setDate(trintaDiasAgo.getDate() - 30);
 
       const vendaMap: Record<string, { v7d: number; v30d: number }> = {};
       vendaItens.forEach((item: any) => {
@@ -347,7 +415,7 @@ export default function PlanoProducaoDiario() {
         if (!vendaMap[id]) vendaMap[id] = { v7d: 0, v30d: 0 };
         const dt = new Date(item.vendas?.created_at);
         if (dt >= seteDias) vendaMap[id].v7d += item.quantidade;
-        if (dt >= trintaDias) vendaMap[id].v30d += item.quantidade;
+        if (dt >= trintaDiasAgo) vendaMap[id].v30d += item.quantidade;
       });
 
       const prioridadeDiaria = ["melancia", "maçã verde", "morango", "maracujá", "água de coco"];
@@ -371,11 +439,14 @@ export default function PlanoProducaoDiario() {
         const idx = prioridadeDiaria.findIndex(p => sabor.nome.toLowerCase().includes(p));
         const prioritario = idx !== -1;
 
-        // Learning engine
+        // Learning engine with graduated confidence
         const aprendizado = calcularAprendizado(decisoes, sabor.id, diaSemana, loteSugerido);
 
-        // If AI mode is on and we have enough confidence, use learned value
-        const usarAprendido = modoIA && aprendizado.loteAprendido !== null && aprendizado.confianca >= 50;
+        // Feedback loop
+        const feedback = calcularFeedback(decisoes, producoes, vendaItensRecentes, sabor.id);
+
+        // Only auto-fill when confidence is HIGH (85%+)
+        const usarAprendido = modoIA && aprendizado.loteAprendido !== null && aprendizado.nivelConfianca === "alta";
         const loteFinal = usarAprendido
           ? aprendizado.loteAprendido!
           : prioritario
@@ -399,6 +470,14 @@ export default function PlanoProducaoDiario() {
           loteAprendido: aprendizado.loteAprendido,
           confianca: aprendizado.confianca,
           historicoAjustes: aprendizado.historicoAjustes,
+          nivelConfianca: aprendizado.nivelConfianca,
+          feedbackScore: feedback.feedbackScore,
+          feedbackLabel: feedback.feedbackLabel,
+          // AI fields will be populated separately
+          aiLotes: null,
+          aiConfianca: null,
+          aiJustificativa: null,
+          aiFeedbackNota: null,
         };
       });
 
@@ -420,6 +499,66 @@ export default function PlanoProducaoDiario() {
     }
   }
 
+  // Call AI for smart suggestions
+  async function consultarIA() {
+    setAiLoading(true);
+    setAiResumo(null);
+    try {
+      const saboresPayload = analises.map(a => ({
+        id: a.id,
+        nome: a.nome,
+        estoqueAtual: a.estoqueAtual,
+        vendas7d: a.vendas7d,
+        mediaDiaria: a.mediaDiaria,
+        diasCobertura: a.diasCobertura,
+        tendencia: a.tendencia,
+      }));
+
+      const { data, error } = await supabase.functions.invoke("suggest-producao", {
+        body: { dia_semana: diaSemana, sabores_analise: saboresPayload },
+      });
+
+      if (error) throw error;
+
+      if (data?.error) {
+        toast({ title: "Erro da IA", description: data.error, variant: "destructive" });
+        return;
+      }
+
+      const sugestoes: any[] = data?.sugestoes || [];
+      setAiResumo(data?.resumo || null);
+      setAiAtivo(true);
+
+      // Merge AI suggestions into analises
+      setAnalises(prev => prev.map(a => {
+        const sug = sugestoes.find((s: any) => 
+          s.sabor_nome?.toLowerCase() === a.nome.toLowerCase() ||
+          a.nome.toLowerCase().includes(s.sabor_nome?.toLowerCase() || "___")
+        );
+        if (sug) {
+          return {
+            ...a,
+            aiLotes: sug.lotes,
+            aiConfianca: sug.confianca,
+            aiJustificativa: sug.justificativa,
+            aiFeedbackNota: sug.feedback_nota || null,
+            // Auto-apply AI suggestion
+            lotesCustom: sug.lotes,
+            selecionado: sug.lotes > 0,
+          };
+        }
+        return a;
+      }));
+
+      toast({ title: "🤖 Sugestões da IA aplicadas!", description: data?.resumo });
+    } catch (e: any) {
+      console.error("Erro ao consultar IA:", e);
+      toast({ title: "Erro ao consultar IA", description: e.message, variant: "destructive" });
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
   function toggleSabor(id: string) {
     setAnalises(prev => prev.map(a => a.id === id ? { ...a, selecionado: !a.selecionado } : a));
   }
@@ -434,7 +573,6 @@ export default function PlanoProducaoDiario() {
     setFuncSelecionados(prev => { const list = [...prev]; list[i] = val; return list; });
   }
 
-  // Log decisions for learning
   async function registrarDecisoes(itens: SaborAnalise[]) {
     const validFuncs = funcSelecionados.filter(f => f !== "");
     const operador = validFuncs
@@ -442,7 +580,6 @@ export default function PlanoProducaoDiario() {
       .filter(Boolean)
       .join(", ") || "sistema";
 
-    // Use target date for created_at so next-day plans are saved on correct date
     const alvoIso = `${dataAlvo.getFullYear()}-${String(dataAlvo.getMonth() + 1).padStart(2, "0")}-${String(dataAlvo.getDate()).padStart(2, "0")}T08:00:00`;
 
     const rows = itens.map(item => ({
@@ -455,12 +592,14 @@ export default function PlanoProducaoDiario() {
       dias_cobertura: item.diasCobertura,
       lotes_sugeridos: item.loteSugerido,
       lotes_autorizados: item.lotesCustom,
+      ajuste: item.lotesCustom - item.loteSugerido,
       operador,
       created_at: alvoIso,
     }));
 
     await (supabase as any).from("decisoes_producao").insert(rows);
   }
+
   async function editarPlanoExistente() {
     if (decisoesAlvoIds.length === 0) return;
     try {
@@ -493,18 +632,17 @@ export default function PlanoProducaoDiario() {
     try {
       await registrarDecisoes(itens);
 
-      // Save func info for ChecklistProducaoDia component (use target date)
       const alvoStr = `${dataAlvo.getFullYear()}-${String(dataAlvo.getMonth() + 1).padStart(2, "0")}-${String(dataAlvo.getDate()).padStart(2, "0")}`;
       const CHECKLIST_KEY = `checklist-producao-${alvoStr}`;
       localStorage.setItem(`${CHECKLIST_KEY}-funcs`, JSON.stringify(validFuncs));
       localStorage.setItem(`${CHECKLIST_KEY}-operador`, nomesFuncionarios || "sistema");
 
-      const totalLotes = itens.reduce((s, i) => s + i.lotesCustom, 0);
-      const totalUnidades = totalLotes * 84;
+      const totalLotesCalc = itens.reduce((s, i) => s + i.lotesCustom, 0);
+      const totalUnidadesCalc = totalLotesCalc * 84;
       const labelDia = diaOffset > 0 ? `para ${dataAlvo.toLocaleDateString("pt-BR")}` : "de hoje";
       toast({
         title: "✅ Plano autorizado!",
-        description: `${itens.length} sabor(es) · ${totalLotes} lote(s) · ${totalUnidades.toLocaleString()} un ${labelDia} — vá para Produção para acompanhar o checklist.`,
+        description: `${itens.length} sabor(es) · ${totalLotesCalc} lote(s) · ${totalUnidadesCalc.toLocaleString()} un ${labelDia} — vá para Produção para acompanhar o checklist.`,
       });
 
       setExecutado(true);
@@ -529,6 +667,21 @@ export default function PlanoProducaoDiario() {
     if (t === "alta") return <TrendingUp className="h-3.5 w-3.5 text-green-500" />;
     if (t === "baixa") return <TrendingDown className="h-3.5 w-3.5 text-destructive" />;
     return <Minus className="h-3.5 w-3.5 text-muted-foreground" />;
+  };
+
+  const confiancaBadge = (nivel: string, valor: number) => {
+    const configs = {
+      alta: { color: "border-green-400/50 text-green-600 bg-green-50", icon: "🎯", label: "Alta" },
+      media: { color: "border-amber-400/50 text-amber-600 bg-amber-50", icon: "📊", label: "Média" },
+      baixa: { color: "border-orange-400/50 text-orange-600 bg-orange-50", icon: "📉", label: "Baixa" },
+      insuficiente: { color: "border-muted text-muted-foreground", icon: "❓", label: "Aprendendo" },
+    };
+    const cfg = configs[nivel as keyof typeof configs] || configs.insuficiente;
+    return (
+      <Badge variant="outline" className={`text-[9px] h-4 px-1 gap-0.5 ${cfg.color}`}>
+        {cfg.icon} {valor}%
+      </Badge>
+    );
   };
 
 
@@ -572,7 +725,7 @@ export default function PlanoProducaoDiario() {
         ))}
       </div>
 
-      {/* Painel de Estoque Atual - visão rápida antes de decidir */}
+      {/* Painel de Estoque Atual */}
       {analises.length > 0 && (
         <Card>
           <CardContent className="pt-3 pb-2 px-4">
@@ -614,28 +767,29 @@ export default function PlanoProducaoDiario() {
         </Card>
       )}
 
-      {/* Learning status card */}
-      <Card className={`border-dashed ${totalDecisoes >= 10 ? "border-primary/40 bg-primary/5" : "border-muted"}`}>
-        <CardContent className="py-3 px-4">
+      {/* Learning + AI status card */}
+      <Card className={`border-dashed ${totalDecisoes >= ACTIVATION_THRESHOLD ? "border-primary/40 bg-primary/5" : "border-muted"}`}>
+        <CardContent className="py-3 px-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Brain className={`h-4 w-4 ${totalDecisoes >= 10 ? "text-primary" : "text-muted-foreground"}`} />
+              <Brain className={`h-4 w-4 ${totalDecisoes >= ACTIVATION_THRESHOLD ? "text-primary" : "text-muted-foreground"}`} />
               <div>
                 <p className="text-xs font-semibold">
-                  {totalDecisoes < 5
+                  {totalDecisoes < 10
                     ? "🧠 Aprendendo... (fase inicial)"
-                    : totalDecisoes < 10
-                      ? "🧠 Coletando padrões..."
-                      : totalDecisoes < 20
-                        ? "🧠 Sugestões baseadas no seu comportamento"
-                        : "🤖 Modo inteligente ativo — sugestões automatizadas"}
+                    : totalDecisoes < ACTIVATION_THRESHOLD
+                      ? `🧠 Coletando padrões... (${totalDecisoes}/${ACTIVATION_THRESHOLD})`
+                      : totalDecisoes < 40
+                        ? "🧠 Sugestões com confiança graduada"
+                        : "🤖 Modo inteligente avançado"}
                 </p>
                 <p className="text-[10px] text-muted-foreground">
-                  {totalDecisoes} decisões registradas · Confiança média: {confiancaMedia}%
+                  {totalDecisoes} sessões · Confiança média: {confiancaMedia}%
+                  {totalDecisoes >= ACTIVATION_THRESHOLD && " · Auto-preenche ≥85%"}
                 </p>
               </div>
             </div>
-            {totalDecisoes >= 10 && (
+            {totalDecisoes >= ACTIVATION_THRESHOLD && (
               <Button
                 variant={modoIA ? "default" : "outline"}
                 size="sm"
@@ -647,17 +801,54 @@ export default function PlanoProducaoDiario() {
               </Button>
             )}
           </div>
-          {totalDecisoes < 10 && (
-            <div className="mt-2">
+
+          {/* Progress bar for pre-activation */}
+          {totalDecisoes < ACTIVATION_THRESHOLD && (
+            <div>
               <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                 <div
                   className="h-full rounded-full bg-primary transition-all duration-500"
-                  style={{ width: `${Math.min(100, totalDecisoes * 10)}%` }}
+                  style={{ width: `${Math.min(100, (totalDecisoes / ACTIVATION_THRESHOLD) * 100)}%` }}
                 />
               </div>
               <p className="text-[10px] text-muted-foreground mt-1">
-                {10 - totalDecisoes} decisões restantes para ativar sugestões inteligentes
+                {ACTIVATION_THRESHOLD - totalDecisoes} sessões restantes para ativar sugestões inteligentes
               </p>
+            </div>
+          )}
+
+          {/* Confidence legend */}
+          {totalDecisoes >= ACTIVATION_THRESHOLD && (
+            <div className="flex flex-wrap gap-2 pt-1 border-t border-dashed">
+              <span className="text-[10px] text-muted-foreground">Níveis:</span>
+              <Badge variant="outline" className="text-[9px] h-4 border-green-400/50 text-green-600 bg-green-50">🎯 Alta (≥85%) → Auto</Badge>
+              <Badge variant="outline" className="text-[9px] h-4 border-amber-400/50 text-amber-600 bg-amber-50">📊 Média (50-84%) → Sugestão</Badge>
+              <Badge variant="outline" className="text-[9px] h-4 border-orange-400/50 text-orange-600 bg-orange-50">📉 Baixa (&lt;50%)</Badge>
+            </div>
+          )}
+
+          {/* AI Generative button */}
+          <div className="flex items-center gap-2 pt-1 border-t border-dashed">
+            <Button
+              variant={aiAtivo ? "default" : "outline"}
+              size="sm"
+              className="h-8 text-xs gap-1.5 flex-1"
+              onClick={consultarIA}
+              disabled={aiLoading || analises.length === 0}
+            >
+              {aiLoading ? (
+                <><RefreshCw className="h-3.5 w-3.5 animate-spin" /> Analisando padrões...</>
+              ) : (
+                <><Zap className="h-3.5 w-3.5" /> {aiAtivo ? "Reconsultar IA Generativa" : "🚀 Consultar IA Generativa"}</>
+              )}
+            </Button>
+          </div>
+
+          {/* AI resume */}
+          {aiResumo && (
+            <div className="flex items-start gap-2 p-2 rounded-lg bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-800">
+              <Zap className="h-3.5 w-3.5 text-violet-600 mt-0.5 shrink-0" />
+              <p className="text-[11px] text-violet-700 dark:text-violet-300">{aiResumo}</p>
             </div>
           )}
         </CardContent>
@@ -709,7 +900,7 @@ export default function PlanoProducaoDiario() {
           const color = getSaborColor(a.nome);
           const isSelected = a.selecionado && a.lotesCustom > 0;
           const coberturaPercent = Math.min(100, (a.diasCobertura / 14) * 100);
-          const hasLearning = a.loteAprendido !== null && a.confianca >= 30;
+          const hasLearning = a.loteAprendido !== null && a.confianca >= 20;
 
           return (
             <Card
@@ -743,7 +934,7 @@ export default function PlanoProducaoDiario() {
 
                   {/* Nome + badges */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 flex-wrap">
                       <span className={`font-bold text-sm truncate ${isSelected ? "" : "text-muted-foreground"}`}>
                         {a.prioritario && (
                           <span className="text-xs font-black mr-1" style={{ color }}>#{a.ordemPrioridade + 1}</span>
@@ -755,10 +946,10 @@ export default function PlanoProducaoDiario() {
                           PRIORIDADE
                         </Badge>
                       )}
-                      {hasLearning && modoIA && (
-                        <Badge variant="outline" className="text-[9px] h-4 px-1 gap-0.5 border-violet-400/50 text-violet-600 shrink-0">
-                          <Brain className="h-2.5 w-2.5" />
-                          {a.confianca}%
+                      {hasLearning && modoIA && confiancaBadge(a.nivelConfianca, a.confianca)}
+                      {a.aiConfianca && (
+                        <Badge variant="outline" className="text-[9px] h-4 px-1 gap-0.5 border-violet-400/50 text-violet-600 bg-violet-50 shrink-0">
+                          <Zap className="h-2.5 w-2.5" /> IA
                         </Badge>
                       )}
                     </div>
@@ -770,7 +961,7 @@ export default function PlanoProducaoDiario() {
                   </div>
                 </div>
 
-                {/* Controles de lote - linha dedicada para garantir visibilidade no mobile */}
+                {/* Controles de lote */}
                 <div className="mt-2 ml-9 flex items-center justify-between gap-2" onClick={e => e.stopPropagation()}>
                   <div className="flex items-center gap-1.5 rounded-full border border-border bg-background/95 px-1.5 py-1">
                     <Button
@@ -821,7 +1012,7 @@ export default function PlanoProducaoDiario() {
                   </p>
                 </div>
 
-                {/* Métricas - terceira linha */}
+                {/* Métricas */}
                 <div className="flex items-center gap-2 mt-1.5 ml-9">
                   <div className="flex-1 max-w-[100px]">
                     <div className="h-1.5 rounded-full bg-muted overflow-hidden">
@@ -847,12 +1038,43 @@ export default function PlanoProducaoDiario() {
                   </div>
                 </div>
 
+                {/* Feedback loop indicator */}
+                {a.feedbackScore !== null && a.feedbackScore > 0 && (
+                  <div className="flex items-center gap-1 text-[10px] mt-1 ml-9">
+                    <Activity className="h-3 w-3 text-muted-foreground" />
+                    <span className={
+                      a.feedbackLabel.includes("✅") ? "text-green-600" :
+                      a.feedbackLabel.includes("📈") ? "text-blue-600" :
+                      a.feedbackLabel.includes("⚠️") ? "text-amber-600" :
+                      "text-destructive"
+                    }>
+                      {a.feedbackLabel}
+                    </span>
+                  </div>
+                )}
+
                 {/* Learning insight */}
-                {hasLearning && modoIA && a.loteAprendido !== a.loteSugerido && (
+                {hasLearning && modoIA && (
                   <div className="flex items-center gap-1 text-[10px] text-violet-600 mt-1 ml-9">
-                    <Sparkles className="h-3 w-3" />
-                    Você costuma produzir {a.loteAprendido} lote(s) deste sabor
-                    {a.historicoAjustes > 0 && ` (ajustou ${a.historicoAjustes}x)`}
+                    <Brain className="h-3 w-3" />
+                    {a.nivelConfianca === "alta" ? (
+                      <span>Auto-preenchido: {a.loteAprendido} lote(s) — padrão consistente</span>
+                    ) : a.nivelConfianca === "media" ? (
+                      <span>Sugestão: {a.loteAprendido} lote(s) — confirme ou ajuste</span>
+                    ) : (
+                      <span>Aprendendo padrão... ({a.historicoAjustes} ajuste(s) registrado(s))</span>
+                    )}
+                  </div>
+                )}
+
+                {/* AI insight */}
+                {a.aiJustificativa && (
+                  <div className="flex items-center gap-1 text-[10px] text-violet-700 mt-1 ml-9">
+                    <Zap className="h-3 w-3" />
+                    <span>{a.aiJustificativa}</span>
+                    {a.aiFeedbackNota && (
+                      <span className="text-muted-foreground ml-1">· {a.aiFeedbackNota}</span>
+                    )}
                   </div>
                 )}
 
@@ -955,7 +1177,7 @@ export default function PlanoProducaoDiario() {
               <div className="relative">
                 <ProgressRing progress={progressTotal} color="hsl(var(--primary))" size={44} />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  {modoIA ? <Brain className="h-4 w-4 text-primary" /> : <Snowflake className="h-4 w-4 text-primary" />}
+                  {aiAtivo ? <Zap className="h-4 w-4 text-primary" /> : modoIA ? <Brain className="h-4 w-4 text-primary" /> : <Snowflake className="h-4 w-4 text-primary" />}
                 </div>
               </div>
               <div>
@@ -964,7 +1186,7 @@ export default function PlanoProducaoDiario() {
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {totalLotes} lotes · {totalUnidades.toLocaleString()} un
-                  {modoIA && " · 🧠 IA"}
+                  {aiAtivo ? " · 🚀 IA Gen" : modoIA ? " · 🧠 IA" : ""}
                 </p>
               </div>
             </div>
