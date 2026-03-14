@@ -135,7 +135,7 @@ export default function Dashboard() {
   const [allVendas, setAllVendas] = useState<any[]>([]);
   const [allProducoes, setAllProducoes] = useState<any[]>([]);
   const [fatPeriodo, setFatPeriodo] = useState<FaturamentoPeriodo>("total");
-
+  const [mesFatCard, setMesFatCard] = useState(new Date().getMonth());
   useEffect(() => { loadStats(); loadUserName(); }, []);
 
   async function loadUserName() {
