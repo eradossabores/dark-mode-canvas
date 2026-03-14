@@ -25,6 +25,9 @@ import ChecklistProducaoDia from "@/components/producao/ChecklistProducaoDia";
 import EditDayProducoesDialog from "@/components/producao/EditDayProducoesDialog";
 
 export default function Producao() {
+  const [searchParams] = useSearchParams();
+  const dataParam = searchParams.get("data");
+  const historicoRef = useRef<HTMLDivElement>(null);
   const [sabores, setSabores] = useState<any[]>([]);
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
   const [producoes, setProducoes] = useState<any[]>([]);
