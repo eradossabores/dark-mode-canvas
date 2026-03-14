@@ -496,10 +496,10 @@ export default function Dashboard() {
                 {/* Show more/less */}
                 {sorted.length > 5 && (
                   <button
-                    onClick={() => setShowAll(!showAll)}
+                    onClick={() => setShowAllAlertas(!showAllAlertas)}
                     className="mt-2 text-[11px] text-primary hover:underline font-medium w-full text-center"
                   >
-                    {showAll ? "Mostrar menos ↑" : `Ver todos (${sorted.length}) ↓`}
+                    {showAllAlertas ? "Mostrar menos ↑" : `Ver todos (${sorted.length}) ↓`}
                   </button>
                 )}
               </CardContent>
