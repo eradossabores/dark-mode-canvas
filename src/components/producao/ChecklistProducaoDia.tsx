@@ -175,6 +175,11 @@ export default function ChecklistProducaoDia() {
   // Track which items have already been registered in the DB to prevent duplicates
   const [registrados, setRegistrados] = useState<Set<string>>(new Set());
 
+  function saveRegistrados(newSet: Set<string>) {
+    setRegistrados(newSet);
+    localStorage.setItem(REGISTRADOS_KEY, JSON.stringify([...newSet]));
+  }
+
   useEffect(() => { fetchDecisoes(); }, []);
 
   // Load registered items from localStorage as initial fallback
