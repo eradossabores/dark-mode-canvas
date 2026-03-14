@@ -50,7 +50,7 @@ export default function Backup() {
       }
 
       const now = new Date();
-      const filename = `backup-gelomania-${now.toISOString().slice(0, 10)}.xlsx`;
+      const filename = `backup-a-era-dos-sabores-${now.toISOString().slice(0, 10)}.xlsx`;
       XLSX.writeFile(wb, filename);
       setLastBackup(now.toLocaleString("pt-BR"));
       toast.success(`Backup exportado com sucesso! ${totalRows} registros em ${TABLES_TO_BACKUP.length} tabelas.`);
