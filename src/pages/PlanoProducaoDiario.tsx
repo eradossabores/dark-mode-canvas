@@ -561,26 +561,52 @@ export default function PlanoProducaoDiario() {
       setAiResumo(data?.resumo || null);
       setAiAtivo(true);
 
-      // Merge AI suggestions into analises
-      setAnalises(prev => prev.map(a => {
-        const sug = sugestoes.find((s: any) => 
-          s.sabor_nome?.toLowerCase() === a.nome.toLowerCase() ||
-          a.nome.toLowerCase().includes(s.sabor_nome?.toLowerCase() || "___")
-        );
-        if (sug) {
-          return {
-            ...a,
-            aiLotes: sug.lotes,
-            aiConfianca: sug.confianca,
-            aiJustificativa: sug.justificativa,
-            aiFeedbackNota: sug.feedback_nota || null,
-            // Auto-apply AI suggestion
-            lotesCustom: sug.lotes,
-            selecionado: sug.lotes > 0,
-          };
+      // Merge AI suggestions into analises, then normalize to 6 total
+      const META_LOTES_TOTAL = 6;
+      setAnalises(prev => {
+        let updated = prev.map(a => {
+          const sug = sugestoes.find((s: any) => 
+            s.sabor_nome?.toLowerCase() === a.nome.toLowerCase() ||
+            a.nome.toLowerCase().includes(s.sabor_nome?.toLowerCase() || "___")
+          );
+          if (sug) {
+            return {
+              ...a,
+              aiLotes: sug.lotes,
+              aiConfianca: sug.confianca,
+              aiJustificativa: sug.justificativa,
+              aiFeedbackNota: sug.feedback_nota || null,
+              lotesCustom: sug.lotes,
+              selecionado: sug.lotes > 0,
+            };
+          }
+          return a;
+        });
+
+        // Normalize to META_LOTES_TOTAL
+        const totalSugerido = updated.reduce((s, r) => s + (r.selecionado ? r.lotesCustom : 0), 0);
+        if (totalSugerido > 0 && totalSugerido !== META_LOTES_TOTAL) {
+          const comLotes = updated.filter(r => r.lotesCustom > 0 && r.selecionado);
+          if (comLotes.length > 0) {
+            const totalOrig = comLotes.reduce((s, r) => s + r.lotesCustom, 0);
+            let restante = META_LOTES_TOTAL;
+            updated = updated.map(r => ({ ...r, lotesCustom: r.selecionado ? 0 : r.lotesCustom, selecionado: false }));
+            for (let i = 0; i < comLotes.length && restante > 0; i++) {
+              const prop = Math.round((comLotes[i].lotesCustom / totalOrig) * META_LOTES_TOTAL);
+              const lotes = i < comLotes.length - 1 ? Math.min(Math.max(prop, 1), restante) : restante;
+              const item = updated.find(r => r.id === comLotes[i].id)!;
+              item.lotesCustom = lotes;
+              item.selecionado = true;
+              restante -= lotes;
+            }
+            if (restante > 0) {
+              const first = updated.find(r => r.selecionado)!;
+              first.lotesCustom += restante;
+            }
+          }
         }
-        return a;
-      }));
+        return updated;
+      });
 
       toast({ title: "🤖 Sugestões da IA aplicadas!", description: data?.resumo });
     } catch (e: any) {
