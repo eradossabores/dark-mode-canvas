@@ -30,15 +30,17 @@ const CHART_COLORS = [
 
 type PeriodoFiltro = "7dias" | "15dias" | "mensal";
 
+const MESES_NOME = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
 function getDaysForPeriod(periodo: PeriodoFiltro): number {
   if (periodo === "15dias") return 15;
   if (periodo === "mensal") return 30;
   return 7;
 }
 
-function getPeriodLabel(periodo: PeriodoFiltro): string {
+function getPeriodLabel(periodo: PeriodoFiltro, mesSelecionado?: number): string {
   if (periodo === "15dias") return "Últimos 15 dias";
-  if (periodo === "mensal") return "Últimos 30 dias";
+  if (periodo === "mensal" && mesSelecionado !== undefined) return MESES_NOME[mesSelecionado];
   return "Últimos 7 dias";
 }
 
@@ -53,6 +55,23 @@ function buildChartData(data: any[], days: number, dateKey: string, valueKey: st
   filtered.forEach((item: any) => {
     const key = new Date(item[dateKey]).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
     if (map[key] !== undefined) map[key] += isSum ? Number(item[valueKey]) : item[valueKey];
+  });
+  return Object.entries(map).map(([dia, val]) => ({ dia, [isSum ? "valor" : "total"]: val }));
+}
+
+function buildMonthChartData(data: any[], month: number, year: number, dateKey: string, valueKey: string, isSum: boolean) {
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const map: Record<string, number> = {};
+  for (let i = 1; i <= daysInMonth; i++) {
+    const key = `${String(i).padStart(2, "0")}/${String(month + 1).padStart(2, "0")}`;
+    map[key] = 0;
+  }
+  data.forEach((item: any) => {
+    const d = new Date(item[dateKey]);
+    if (d.getMonth() === month && d.getFullYear() === year) {
+      const key = `${String(d.getDate()).padStart(2, "0")}/${String(month + 1).padStart(2, "0")}`;
+      if (map[key] !== undefined) map[key] += isSum ? Number(item[valueKey]) : item[valueKey];
+    }
   });
   return Object.entries(map).map(([dia, val]) => ({ dia, [isSum ? "valor" : "total"]: val }));
 }
@@ -111,6 +130,8 @@ export default function Dashboard() {
   const [contasReceber, setContasReceber] = useState({ total: 0, vencidas: 0, quantidade: 0 });
   const [periodoFaturamento, setPeriodoFaturamento] = useState<PeriodoFiltro>("7dias");
   const [periodoProducao, setPeriodoProducao] = useState<PeriodoFiltro>("7dias");
+  const [mesFaturamento, setMesFaturamento] = useState(new Date().getMonth());
+  const [mesProducao, setMesProducao] = useState(new Date().getMonth());
   const [allVendas, setAllVendas] = useState<any[]>([]);
   const [allProducoes, setAllProducoes] = useState<any[]>([]);
   const [fatPeriodo, setFatPeriodo] = useState<FaturamentoPeriodo>("total");
@@ -143,12 +164,20 @@ export default function Dashboard() {
   // Recalculate charts when period changes
   useEffect(() => {
     if (allVendas.length === 0) return;
-    setVendasPorDia(buildChartData(allVendas, getDaysForPeriod(periodoFaturamento), "created_at", "total", true));
-  }, [periodoFaturamento, allVendas]);
+    if (periodoFaturamento === "mensal") {
+      setVendasPorDia(buildMonthChartData(allVendas, mesFaturamento, new Date().getFullYear(), "created_at", "total", true));
+    } else {
+      setVendasPorDia(buildChartData(allVendas, getDaysForPeriod(periodoFaturamento), "created_at", "total", true));
+    }
+  }, [periodoFaturamento, mesFaturamento, allVendas]);
 
   useEffect(() => {
     if (allProducoes.length === 0) return;
-    setProducaoPorDia(buildChartData(allProducoes, getDaysForPeriod(periodoProducao), "created_at", "quantidade_total", false));
+    if (periodoProducao === "mensal") {
+      setProducaoPorDia(buildMonthChartData(allProducoes, mesProducao, new Date().getFullYear(), "created_at", "quantidade_total", false));
+    } else {
+      setProducaoPorDia(buildChartData(allProducoes, getDaysForPeriod(periodoProducao), "created_at", "quantidade_total", false));
+    }
   }, [periodoProducao, allProducoes]);
 
   async function loadStats() {
@@ -502,23 +531,42 @@ export default function Dashboard() {
           <GlowingEffect spread={20} glow disabled={false} proximity={40} inactiveZone={0.2} borderWidth={1} />
           <Card className="relative border-0 bg-background">
             <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm">Faturamento - {getPeriodLabel(periodoFaturamento)}</CardTitle>
-                <div className="flex gap-1">
-                  {(["7dias", "15dias", "mensal"] as PeriodoFiltro[]).map((p) => (
-                    <button
-                      key={p}
-                      onClick={() => setPeriodoFaturamento(p)}
-                      className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
-                        periodoFaturamento === p
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground hover:bg-muted/80"
-                      }`}
-                    >
-                      {p === "7dias" ? "7D" : p === "15dias" ? "15D" : "Mês"}
-                    </button>
-                  ))}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm">Faturamento - {getPeriodLabel(periodoFaturamento, mesFaturamento)}</CardTitle>
+                  <div className="flex gap-1">
+                    {(["7dias", "15dias", "mensal"] as PeriodoFiltro[]).map((p) => (
+                      <button
+                        key={p}
+                        onClick={() => setPeriodoFaturamento(p)}
+                        className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
+                          periodoFaturamento === p
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        }`}
+                      >
+                        {p === "7dias" ? "7D" : p === "15dias" ? "15D" : "Mês"}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+                {periodoFaturamento === "mensal" && (
+                  <div className="flex gap-1 flex-wrap">
+                    {MESES_NOME.map((nome, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setMesFaturamento(idx)}
+                        className={`px-1.5 py-0.5 text-[9px] rounded-full transition-colors ${
+                          mesFaturamento === idx
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        }`}
+                      >
+                        {nome.slice(0, 3)}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -540,23 +588,42 @@ export default function Dashboard() {
           <GlowingEffect spread={20} glow disabled={false} proximity={40} inactiveZone={0.2} borderWidth={1} />
           <Card className="relative border-0 bg-background">
             <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm">Produção - {getPeriodLabel(periodoProducao)}</CardTitle>
-                <div className="flex gap-1">
-                  {(["7dias", "15dias", "mensal"] as PeriodoFiltro[]).map((p) => (
-                    <button
-                      key={p}
-                      onClick={() => setPeriodoProducao(p)}
-                      className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
-                        periodoProducao === p
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground hover:bg-muted/80"
-                      }`}
-                    >
-                      {p === "7dias" ? "7D" : p === "15dias" ? "15D" : "Mês"}
-                    </button>
-                  ))}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm">Produção - {getPeriodLabel(periodoProducao, mesProducao)}</CardTitle>
+                  <div className="flex gap-1">
+                    {(["7dias", "15dias", "mensal"] as PeriodoFiltro[]).map((p) => (
+                      <button
+                        key={p}
+                        onClick={() => setPeriodoProducao(p)}
+                        className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
+                          periodoProducao === p
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        }`}
+                      >
+                        {p === "7dias" ? "7D" : p === "15dias" ? "15D" : "Mês"}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+                {periodoProducao === "mensal" && (
+                  <div className="flex gap-1 flex-wrap">
+                    {MESES_NOME.map((nome, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setMesProducao(idx)}
+                        className={`px-1.5 py-0.5 text-[9px] rounded-full transition-colors ${
+                          mesProducao === idx
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        }`}
+                      >
+                        {nome.slice(0, 3)}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </CardHeader>
             <CardContent>
