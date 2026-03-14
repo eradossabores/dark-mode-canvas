@@ -380,9 +380,8 @@ export default function Dashboard() {
 
       <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
 
-      {/* Alertas de Estoque - Glassmorphism Cards */}
+      {/* Alertas de Estoque - Compact List */}
       {alertasEstoque.length > 0 && (() => {
-        // Sort by criticality: zero first, then lowest % remaining
         const sorted = [...alertasEstoque].sort((a, b) => {
           const pctA = a.minimo > 0 ? a.atual / a.minimo : a.atual === 0 ? 0 : 1;
           const pctB = b.minimo > 0 ? b.atual / b.minimo : b.atual === 0 ? 0 : 1;
@@ -397,160 +396,115 @@ export default function Dashboard() {
           return "low";
         };
 
-        const severityConfig = {
-          critical: {
-            border: "border-destructive/40",
-            glow: "shadow-[0_0_20px_hsl(0,70%,50%,0.25)]",
-            barColor: "bg-destructive",
-            pulse: true,
-            icon: "text-destructive",
-            badge: "bg-destructive/15 text-destructive border-destructive/30",
-          },
-          warning: {
-            border: "border-amber-400/40",
-            glow: "shadow-[0_0_16px_hsl(38,90%,50%,0.2)]",
-            barColor: "bg-amber-500",
-            pulse: false,
-            icon: "text-amber-500",
-            badge: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-400/30",
-          },
-          low: {
-            border: "border-primary/30",
-            glow: "shadow-[0_0_12px_hsl(var(--primary),0.15)]",
-            barColor: "bg-primary",
-            pulse: false,
-            icon: "text-primary",
-            badge: "bg-primary/10 text-primary border-primary/20",
-          },
-        };
-
-        const tipoIcon: Record<string, string> = { "Matéria-prima": "🧪", "Embalagem": "📦", "Gelo": "🧊" };
-
         const criticalCount = sorted.filter(i => getSeverity(i) === "critical").length;
         const warningCount = sorted.filter(i => getSeverity(i) === "warning").length;
+        const tipoIcon: Record<string, string> = { "Matéria-prima": "🧪", "Embalagem": "📦", "Gelo": "🧊" };
+
+        const [showAll, setShowAll] = useState(false);
+        const visibleItems = showAll ? sorted : sorted.slice(0, 5);
 
         return (
-          <div className="mb-6 space-y-3">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="relative">
-                  <AlertTriangle className="h-4.5 w-4.5 text-destructive" />
-                  {criticalCount > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-destructive text-destructive-foreground text-[8px] font-bold rounded-full flex items-center justify-center animate-pulse">
-                      {criticalCount}
-                    </span>
-                  )}
-                </div>
-                <h3 className="text-sm font-bold text-foreground">Alertas de Estoque</h3>
-                <Badge variant="outline" className="text-[10px] h-5">
-                  {sorted.length} {sorted.length === 1 ? "item" : "itens"}
-                </Badge>
-              </div>
-              <button
-                onClick={() => navigate("/painel/estoque")}
-                className="text-[11px] text-primary hover:underline font-medium"
-              >
-                Ver estoque →
-              </button>
-            </div>
-
-            {/* Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-              {sorted.slice(0, 8).map((item, idx) => {
-                const severity = getSeverity(item);
-                const config = severityConfig[severity];
-                const pct = item.minimo > 0 ? Math.min(100, Math.round((item.atual / item.minimo) * 100)) : item.atual > 0 ? 100 : 0;
-
-                return (
-                  <motion.div
-                    key={item.nome + item.tipo}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.05, duration: 0.35 }}
-                    onClick={() => navigate("/painel/estoque")}
-                    className={`
-                      relative rounded-xl border ${config.border} ${config.glow}
-                      backdrop-blur-md bg-card/70 dark:bg-card/50
-                      p-3.5 cursor-pointer transition-all duration-300
-                      hover:scale-[1.02] hover:shadow-lg
-                      ${config.pulse ? "animate-[pulse_3s_ease-in-out_infinite]" : ""}
-                    `}
-                  >
-                    {/* Subtle gradient overlay */}
-                    <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-transparent via-transparent to-foreground/[0.02] pointer-events-none" />
-
-                    {/* Character watermark */}
-                    <img
-                      src={postItCharacters[idx % postItCharacters.length]}
-                      alt=""
-                      aria-hidden
-                      className="absolute bottom-1 right-1 w-10 h-10 object-contain opacity-[0.08] pointer-events-none select-none"
-                    />
-
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="mb-6"
+          >
+            <Card className="border-destructive/20 bg-card/80 backdrop-blur-sm overflow-hidden">
+              <CardHeader className="pb-2 pt-4 px-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
                     <div className="relative">
-                      {/* Top row: type badge + severity indicator */}
-                      <div className="flex items-center justify-between mb-2">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${config.badge}`}>
-                          <span>{tipoIcon[item.tipo] || "📋"}</span>
-                          {item.tipo}
+                      <AlertTriangle className="h-4 w-4 text-destructive" />
+                      {criticalCount > 0 && (
+                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-destructive text-destructive-foreground text-[7px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                          {criticalCount}
                         </span>
-                        {severity === "critical" && (
-                          <span className="relative flex h-2.5 w-2.5">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
-                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-destructive" />
-                          </span>
-                        )}
-                        {severity === "warning" && (
-                          <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
-                        )}
-                      </div>
-
-                      {/* Item name */}
-                      <p className="text-sm font-bold text-foreground truncate mb-1">{item.nome}</p>
-
-                      {/* Values */}
-                      <div className="flex items-baseline gap-1.5 mb-2.5">
-                        <span className={`text-lg font-extrabold ${config.icon}`}>{item.atual}</span>
-                        <span className="text-[11px] text-muted-foreground">/ {item.minimo} mín.</span>
-                      </div>
-
-                      {/* Progress bar */}
-                      <div className="w-full h-1.5 rounded-full bg-muted/60 overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${pct}%` }}
-                          transition={{ delay: idx * 0.05 + 0.2, duration: 0.6, ease: "easeOut" }}
-                          className={`h-full rounded-full ${config.barColor}`}
-                        />
-                      </div>
-                      <div className="flex justify-between mt-1">
-                        <span className="text-[9px] text-muted-foreground">{pct}% do mínimo</span>
-                        {item.atual === 0 && (
-                          <span className="text-[9px] font-bold text-destructive uppercase">Zerado!</span>
-                        )}
-                      </div>
+                      )}
                     </div>
-                  </motion.div>
-                );
-              })}
-            </div>
+                    <CardTitle className="text-sm font-bold">Alertas de Estoque</CardTitle>
+                    <div className="flex gap-1.5 ml-1">
+                      {criticalCount > 0 && (
+                        <Badge variant="destructive" className="text-[9px] h-4 px-1.5">{criticalCount} crítico{criticalCount > 1 ? "s" : ""}</Badge>
+                      )}
+                      {warningCount > 0 && (
+                        <Badge variant="secondary" className="text-[9px] h-4 px-1.5 bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-400/30">{warningCount} alerta{warningCount > 1 ? "s" : ""}</Badge>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => navigate("/painel/estoque")}
+                    className="text-[11px] text-primary hover:underline font-medium"
+                  >
+                    Ver estoque →
+                  </button>
+                </div>
+              </CardHeader>
+              <CardContent className="px-4 pb-3 pt-1">
+                <div className="divide-y divide-border/50">
+                  {visibleItems.map((item, idx) => {
+                    const severity = getSeverity(item);
+                    const pct = item.minimo > 0 ? Math.min(100, Math.round((item.atual / item.minimo) * 100)) : item.atual > 0 ? 100 : 0;
+                    const barColor = severity === "critical" ? "bg-destructive" : severity === "warning" ? "bg-amber-500" : "bg-primary";
+                    const textColor = severity === "critical" ? "text-destructive" : severity === "warning" ? "text-amber-500" : "text-muted-foreground";
 
-            {/* Summary bar */}
-            {(criticalCount > 0 || warningCount > 0) && (
-              <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-muted/40 backdrop-blur-sm border border-border/50 text-xs">
-                <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
-                {criticalCount > 0 && (
-                  <span className="text-destructive font-semibold">{criticalCount} crítico{criticalCount > 1 ? "s" : ""}</span>
+                    return (
+                      <motion.div
+                        key={item.nome + item.tipo}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.03, duration: 0.25 }}
+                        className="flex items-center gap-3 py-2 first:pt-0 last:pb-0 cursor-pointer hover:bg-muted/30 -mx-1 px-1 rounded transition-colors"
+                        onClick={() => navigate("/painel/estoque")}
+                      >
+                        {/* Severity dot */}
+                        <div className="shrink-0">
+                          {severity === "critical" ? (
+                            <span className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
+                            </span>
+                          ) : (
+                            <span className={`block h-2 w-2 rounded-full ${severity === "warning" ? "bg-amber-500" : "bg-primary/50"}`} />
+                          )}
+                        </div>
+
+                        {/* Icon + Name */}
+                        <span className="text-xs shrink-0">{tipoIcon[item.tipo] || "📋"}</span>
+                        <span className="text-sm font-medium text-foreground truncate min-w-0 flex-1">{item.nome}</span>
+
+                        {/* Progress bar (inline) */}
+                        <div className="w-16 h-1.5 rounded-full bg-muted/60 overflow-hidden shrink-0">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${pct}%` }}
+                            transition={{ delay: idx * 0.03 + 0.15, duration: 0.5, ease: "easeOut" }}
+                            className={`h-full rounded-full ${barColor}`}
+                          />
+                        </div>
+
+                        {/* Values */}
+                        <span className={`text-xs font-bold tabular-nums shrink-0 ${textColor}`}>
+                          {item.atual}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground shrink-0">/ {item.minimo}</span>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+
+                {/* Show more/less */}
+                {sorted.length > 5 && (
+                  <button
+                    onClick={() => setShowAll(!showAll)}
+                    className="mt-2 text-[11px] text-primary hover:underline font-medium w-full text-center"
+                  >
+                    {showAll ? "Mostrar menos ↑" : `Ver todos (${sorted.length}) ↓`}
+                  </button>
                 )}
-                {criticalCount > 0 && warningCount > 0 && <span className="text-muted-foreground">·</span>}
-                {warningCount > 0 && (
-                  <span className="text-amber-500 font-semibold">{warningCount} em alerta</span>
-                )}
-                <span className="text-muted-foreground ml-auto">Ordenado por prioridade</span>
-              </div>
-            )}
-          </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         );
       })()}
 
