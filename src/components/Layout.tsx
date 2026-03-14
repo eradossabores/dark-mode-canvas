@@ -205,11 +205,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         onClick={handleLogout}
         className={cn(
           "flex items-center gap-3 px-4 py-2.5 text-sm transition-colors mx-2 rounded-md text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-          collapsed ? "justify-center" : ""
+          !isExpanded ? "justify-center" : ""
         )}
       >
         <LogOut className="h-4 w-4 shrink-0" />
-        {!collapsed && <span>Sair</span>}
+        {isExpanded && <span>Sair</span>}
       </button>
       <div className="flex justify-center py-2 border-t border-sidebar-border">
         <img
