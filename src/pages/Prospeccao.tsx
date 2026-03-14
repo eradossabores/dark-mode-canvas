@@ -616,11 +616,14 @@ export default function Prospeccao() {
 
           <div className={explorePin ? "grid grid-cols-1 lg:grid-cols-3 gap-4" : ""}>
             <Card className={`overflow-hidden ${explorePin ? "lg:col-span-2" : ""}`}>
-              <div style={{ height: "550px" }}>
-                <MapContainer center={BOA_VISTA_CENTER} zoom={13} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
-                  <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                  <ClickHandler onMapClick={handleMapClick} />
-
+              <AdvancedMap
+                  center={BOA_VISTA_CENTER}
+                  zoom={13}
+                  enableClustering={false}
+                  enableControls={true}
+                  onMapClick={(latlng) => handleMapClick(latlng.lat, latlng.lng)}
+                  style={{ height: "550px", width: "100%" }}
+                >
                   {comCoordenadas.map(p => (
                     <Marker key={p.id} position={[p.latitude, p.longitude]} icon={ICONS[p.status] || ICONS.novo}>
                       <Popup>
@@ -705,8 +708,7 @@ export default function Prospeccao() {
                   {showRoute && routePoints.length > 1 && !explorePin && (
                     <Polyline positions={routePoints.map(p => [p.lat, p.lng] as [number, number])} color="hsl(200,98%,39%)" weight={3} dashArray="8 4" />
                   )}
-                </MapContainer>
-              </div>
+                </AdvancedMap>
             </Card>
 
             {/* Explore results panel */}
