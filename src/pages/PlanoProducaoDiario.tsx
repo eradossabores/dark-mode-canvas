@@ -490,6 +490,38 @@ export default function PlanoProducaoDiario() {
         return a.diasCobertura - b.diasCobertura;
       });
 
+      // Normalizar para que o total sugerido seja sempre 6 lotes
+      const META_LOTES_TOTAL = 6;
+      const totalSugerido = result.reduce((s, r) => s + r.lotesCustom, 0);
+      if (totalSugerido > 0 && totalSugerido !== META_LOTES_TOTAL) {
+        // Distribuir proporcionalmente, priorizando quem tem mais deficit
+        const comLotes = result.filter(r => r.lotesCustom > 0);
+        if (comLotes.length > 0) {
+          // Reset all to 0 first
+          result.forEach(r => { r.lotesCustom = 0; r.selecionado = false; });
+          
+          let restante = META_LOTES_TOTAL;
+          // Distribute proportionally
+          const totalOriginal = comLotes.reduce((s, r) => s + r.loteSugerido, 0) || comLotes.length;
+          for (let i = 0; i < comLotes.length && restante > 0; i++) {
+            const prop = totalOriginal > 0 
+              ? Math.round((comLotes[i].loteSugerido / totalOriginal) * META_LOTES_TOTAL)
+              : Math.round(META_LOTES_TOTAL / comLotes.length);
+            const lotes = Math.max(i < comLotes.length - 1 ? Math.min(prop, restante) : restante, 0);
+            const item = result.find(r => r.id === comLotes[i].id)!;
+            item.lotesCustom = Math.min(lotes, restante);
+            item.selecionado = item.lotesCustom > 0;
+            restante -= item.lotesCustom;
+          }
+          // If there's remainder, give to the first item
+          if (restante > 0) {
+            const first = result.find(r => r.lotesCustom > 0) || result[0];
+            first.lotesCustom += restante;
+            first.selecionado = true;
+          }
+        }
+      }
+
       setAnalises(result);
     } catch (e) {
       console.error("Erro ao calcular plano:", e);
