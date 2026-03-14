@@ -164,12 +164,20 @@ export default function Dashboard() {
   // Recalculate charts when period changes
   useEffect(() => {
     if (allVendas.length === 0) return;
-    setVendasPorDia(buildChartData(allVendas, getDaysForPeriod(periodoFaturamento), "created_at", "total", true));
-  }, [periodoFaturamento, allVendas]);
+    if (periodoFaturamento === "mensal") {
+      setVendasPorDia(buildMonthChartData(allVendas, mesFaturamento, new Date().getFullYear(), "created_at", "total", true));
+    } else {
+      setVendasPorDia(buildChartData(allVendas, getDaysForPeriod(periodoFaturamento), "created_at", "total", true));
+    }
+  }, [periodoFaturamento, mesFaturamento, allVendas]);
 
   useEffect(() => {
     if (allProducoes.length === 0) return;
-    setProducaoPorDia(buildChartData(allProducoes, getDaysForPeriod(periodoProducao), "created_at", "quantidade_total", false));
+    if (periodoProducao === "mensal") {
+      setProducaoPorDia(buildMonthChartData(allProducoes, mesProducao, new Date().getFullYear(), "created_at", "quantidade_total", false));
+    } else {
+      setProducaoPorDia(buildChartData(allProducoes, getDaysForPeriod(periodoProducao), "created_at", "quantidade_total", false));
+    }
   }, [periodoProducao, allProducoes]);
 
   async function loadStats() {
