@@ -381,130 +381,132 @@ export default function Dashboard() {
 
       <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
 
-      {/* Alertas de Estoque - Compact List */}
+      {/* Alertas de Estoque - Post-it Cards com Carrossel */}
       {alertasEstoque.length > 0 && (() => {
-        const sorted = [...alertasEstoque].sort((a, b) => {
-          const pctA = a.minimo > 0 ? a.atual / a.minimo : a.atual === 0 ? 0 : 1;
-          const pctB = b.minimo > 0 ? b.atual / b.minimo : b.atual === 0 ? 0 : 1;
-          return pctA - pctB;
+        // Group by tipo
+        const grouped: Record<string, any[]> = {};
+        alertasEstoque.forEach((a) => {
+          if (!grouped[a.tipo]) grouped[a.tipo] = [];
+          grouped[a.tipo].push(a);
         });
+        const categories = Object.keys(grouped);
 
-        const getSeverity = (item: any) => {
-          if (item.atual === 0) return "critical";
-          const pct = item.minimo > 0 ? item.atual / item.minimo : 1;
-          if (pct <= 0.3) return "critical";
-          if (pct <= 0.7) return "warning";
-          return "low";
+        const postItColors: Record<string, string> = {
+          "Matéria-prima": "bg-amber-100 dark:bg-amber-900/40 border-amber-200 dark:border-amber-700",
+          "Embalagem": "bg-pink-100 dark:bg-pink-900/40 border-pink-200 dark:border-pink-700",
+          "Gelo": "bg-sky-100 dark:bg-sky-900/40 border-sky-200 dark:border-sky-700",
+        };
+        const postItLabelColors: Record<string, string> = {
+          "Matéria-prima": "text-red-600 dark:text-red-400",
+          "Embalagem": "text-pink-600 dark:text-pink-400",
+          "Gelo": "text-sky-600 dark:text-sky-400",
         };
 
-        const criticalCount = sorted.filter(i => getSeverity(i) === "critical").length;
-        const warningCount = sorted.filter(i => getSeverity(i) === "warning").length;
-        const tipoIcon: Record<string, string> = { "Matéria-prima": "🧪", "Embalagem": "📦", "Gelo": "🧊" };
-
-        const visibleItems = showAllAlertas ? sorted : sorted.slice(0, 5);
+        // Current category based on alertaIndex rotation
+        const currentCatIdx = alertaIndex % categories.length;
+        const currentCat = categories[currentCatIdx];
+        const currentItems = grouped[currentCat] || [];
+        const currentItem = currentItems[Math.floor(alertaIndex / categories.length) % currentItems.length] || currentItems[0];
 
         return (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="mb-6"
-          >
-            <Card className="border-destructive/20 bg-card/80 backdrop-blur-sm overflow-hidden">
-              <CardHeader className="pb-2 pt-4 px-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="relative">
-                      <AlertTriangle className="h-4 w-4 text-destructive" />
-                      {criticalCount > 0 && (
-                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-destructive text-destructive-foreground text-[7px] font-bold rounded-full flex items-center justify-center animate-pulse">
-                          {criticalCount}
-                        </span>
-                      )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            {/* Rotating category cards */}
+            {categories.slice(0, 3).map((cat, catIdx) => {
+              const items = grouped[cat];
+              const itemIdx = Math.floor(alertaIndex / categories.length) % items.length;
+              const item = items[itemIdx] || items[0];
+              const charImg = postItCharacters[catIdx % postItCharacters.length];
+
+              return (
+                <motion.div
+                  key={cat + itemIdx}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.35, delay: catIdx * 0.08 }}
+                  onClick={() => navigate("/painel/estoque")}
+                  className={`relative rounded-2xl border-2 ${postItColors[cat] || "bg-muted border-border"} p-4 cursor-pointer hover:scale-[1.02] transition-transform overflow-hidden min-h-[140px]`}
+                >
+                  {/* Wave decoration top */}
+                  <svg className="absolute top-0 left-0 right-0 w-full" viewBox="0 0 300 20" preserveAspectRatio="none" style={{ height: "14px" }}>
+                    <path d="M0,10 Q30,0 60,10 T120,10 T180,10 T240,10 T300,10 L300,0 L0,0 Z" fill="currentColor" className="text-background/30" />
+                  </svg>
+
+                  {/* Category label + count */}
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <AlertTriangle className={`h-3.5 w-3.5 ${postItLabelColors[cat] || "text-foreground"}`} />
+                      <span className={`text-xs font-extrabold uppercase tracking-wide ${postItLabelColors[cat] || "text-foreground"}`}>
+                        {cat}
+                      </span>
                     </div>
-                    <CardTitle className="text-sm font-bold">Alertas de Estoque</CardTitle>
-                    <div className="flex gap-1.5 ml-1">
-                      {criticalCount > 0 && (
-                        <Badge variant="destructive" className="text-[9px] h-4 px-1.5">{criticalCount} crítico{criticalCount > 1 ? "s" : ""}</Badge>
-                      )}
-                      {warningCount > 0 && (
-                        <Badge variant="secondary" className="text-[9px] h-4 px-1.5 bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-400/30">{warningCount} alerta{warningCount > 1 ? "s" : ""}</Badge>
-                      )}
-                    </div>
+                    <span className="text-xs font-bold text-muted-foreground">{items.length}</span>
                   </div>
-                  <button
-                    onClick={() => navigate("/painel/estoque")}
-                    className="text-[11px] text-primary hover:underline font-medium"
-                  >
-                    Ver estoque →
-                  </button>
+
+                  {/* Item info */}
+                  <p className="text-base font-bold text-foreground truncate mb-1">{item.nome}</p>
+                  <p className="text-sm text-foreground/80">
+                    Atual: <span className="font-bold text-primary">{item.atual}</span> / Mín: {item.minimo}
+                  </p>
+
+                  {/* Dots indicator */}
+                  <div className="flex gap-1 mt-3">
+                    {items.map((_: any, i: number) => (
+                      <span
+                        key={i}
+                        className={`w-2 h-2 rounded-full transition-colors ${i === itemIdx ? "bg-destructive" : "bg-foreground/20"}`}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Character */}
+                  <img
+                    src={charImg}
+                    alt=""
+                    aria-hidden
+                    className="absolute bottom-1 right-1 w-16 h-16 object-contain opacity-25 pointer-events-none select-none"
+                  />
+                </motion.div>
+              );
+            })}
+
+            {/* Summary card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.35, delay: 0.24 }}
+              onClick={() => navigate("/painel/estoque")}
+              className="relative rounded-2xl border-2 border-green-200 dark:border-green-700 bg-green-100 dark:bg-green-900/40 p-4 cursor-pointer hover:scale-[1.02] transition-transform overflow-hidden min-h-[140px]"
+            >
+              {/* Wave decoration top */}
+              <svg className="absolute top-0 left-0 right-0 w-full" viewBox="0 0 300 20" preserveAspectRatio="none" style={{ height: "14px" }}>
+                <path d="M0,10 Q30,0 60,10 T120,10 T180,10 T240,10 T300,10 L300,0 L0,0 Z" fill="currentColor" className="text-background/30" />
+              </svg>
+
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-1.5">
+                  <Bell className="h-3.5 w-3.5 text-foreground" />
+                  <span className="text-xs font-extrabold uppercase tracking-wide text-foreground">Resumo</span>
                 </div>
-              </CardHeader>
-              <CardContent className="px-4 pb-3 pt-1">
-                <div className="divide-y divide-border/50">
-                  {visibleItems.map((item, idx) => {
-                    const severity = getSeverity(item);
-                    const pct = item.minimo > 0 ? Math.min(100, Math.round((item.atual / item.minimo) * 100)) : item.atual > 0 ? 100 : 0;
-                    const barColor = severity === "critical" ? "bg-destructive" : severity === "warning" ? "bg-amber-500" : "bg-primary";
-                    const textColor = severity === "critical" ? "text-destructive" : severity === "warning" ? "text-amber-500" : "text-muted-foreground";
+                {/* Character top-right */}
+                <img
+                  src={postItCharacters[3 % postItCharacters.length]}
+                  alt=""
+                  aria-hidden
+                  className="w-10 h-10 object-contain opacity-30 pointer-events-none select-none"
+                />
+              </div>
 
-                    return (
-                      <motion.div
-                        key={item.nome + item.tipo}
-                        initial={{ opacity: 0, x: -8 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: idx * 0.03, duration: 0.25 }}
-                        className="flex items-center gap-3 py-2 first:pt-0 last:pb-0 cursor-pointer hover:bg-muted/30 -mx-1 px-1 rounded transition-colors"
-                        onClick={() => navigate("/painel/estoque")}
-                      >
-                        {/* Severity dot */}
-                        <div className="shrink-0">
-                          {severity === "critical" ? (
-                            <span className="relative flex h-2 w-2">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
-                              <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
-                            </span>
-                          ) : (
-                            <span className={`block h-2 w-2 rounded-full ${severity === "warning" ? "bg-amber-500" : "bg-primary/50"}`} />
-                          )}
-                        </div>
+              <p className="text-3xl font-black text-foreground">{alertasEstoque.length}</p>
+              <p className="text-xs text-muted-foreground mb-2">alertas ativos</p>
 
-                        {/* Icon + Name */}
-                        <span className="text-xs shrink-0">{tipoIcon[item.tipo] || "📋"}</span>
-                        <span className="text-sm font-medium text-foreground truncate min-w-0 flex-1">{item.nome}</span>
-
-                        {/* Progress bar (inline) */}
-                        <div className="w-16 h-1.5 rounded-full bg-muted/60 overflow-hidden shrink-0">
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${pct}%` }}
-                            transition={{ delay: idx * 0.03 + 0.15, duration: 0.5, ease: "easeOut" }}
-                            className={`h-full rounded-full ${barColor}`}
-                          />
-                        </div>
-
-                        {/* Values */}
-                        <span className={`text-xs font-bold tabular-nums shrink-0 ${textColor}`}>
-                          {item.atual}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground shrink-0">/ {item.minimo}</span>
-                      </motion.div>
-                    );
-                  })}
+              {categories.map((cat) => (
+                <div key={cat} className="flex items-center justify-between text-sm">
+                  <span className="text-foreground/80">{cat}</span>
+                  <span className="font-bold text-foreground">{grouped[cat].length}</span>
                 </div>
-
-                {/* Show more/less */}
-                {sorted.length > 5 && (
-                  <button
-                    onClick={() => setShowAllAlertas(!showAllAlertas)}
-                    className="mt-2 text-[11px] text-primary hover:underline font-medium w-full text-center"
-                  >
-                    {showAllAlertas ? "Mostrar menos ↑" : `Ver todos (${sorted.length}) ↓`}
-                  </button>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
+              ))}
+            </motion.div>
+          </div>
         );
       })()}
 
