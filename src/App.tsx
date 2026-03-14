@@ -58,6 +58,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
+            <SnowEffect />
             <GlobalSearch />
             <Routes>
               {/* Public */}
