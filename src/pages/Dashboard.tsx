@@ -255,12 +255,51 @@ export default function Dashboard() {
 
   return (
     <div>
-      {/* Animated Welcome Banner */}
-      <div className="mb-6 relative overflow-hidden rounded-xl bg-gradient-to-r from-primary/10 via-accent/10 to-primary/5 border border-primary/20 p-5">
-        <div className="absolute top-0 right-0 w-32 h-32 opacity-10">
-          <Sparkles className="w-full h-full text-primary" />
+      {/* Animated Welcome Banner with Lamp Effect */}
+      <div className="mb-6 relative overflow-hidden rounded-xl border border-primary/20" style={{ minHeight: '180px' }}>
+        {/* Mini Lamp background */}
+        <div className="absolute inset-0 bg-background overflow-hidden">
+          <div className="absolute inset-0 flex items-start justify-center">
+            <motion.div
+              initial={{ opacity: 0.3, width: "8rem" }}
+              animate={{ opacity: 0.7, width: "20rem" }}
+              transition={{ delay: 0.2, duration: 1, ease: "easeInOut" }}
+              style={{ backgroundImage: `conic-gradient(var(--conic-position), var(--tw-gradient-stops))` }}
+              className="absolute top-0 right-1/2 h-32 overflow-visible bg-gradient-conic from-primary via-transparent to-transparent [--conic-position:from_70deg_at_center_top]"
+            >
+              <div className="absolute w-full left-0 bg-background h-20 bottom-0 z-20 [mask-image:linear-gradient(to_top,white,transparent)]" />
+              <div className="absolute w-20 h-full left-0 bg-background bottom-0 z-20 [mask-image:linear-gradient(to_right,white,transparent)]" />
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0.3, width: "8rem" }}
+              animate={{ opacity: 0.7, width: "20rem" }}
+              transition={{ delay: 0.2, duration: 1, ease: "easeInOut" }}
+              style={{ backgroundImage: `conic-gradient(var(--conic-position), var(--tw-gradient-stops))` }}
+              className="absolute top-0 left-1/2 h-32 overflow-visible bg-gradient-conic from-transparent via-transparent to-primary [--conic-position:from_290deg_at_center_top]"
+            >
+              <div className="absolute w-20 h-full right-0 bg-background bottom-0 z-20 [mask-image:linear-gradient(to_left,white,transparent)]" />
+              <div className="absolute w-full right-0 bg-background h-20 bottom-0 z-20 [mask-image:linear-gradient(to_top,white,transparent)]" />
+            </motion.div>
+            <div className="absolute top-12 h-24 w-full scale-x-150 bg-background blur-2xl" />
+            <div className="absolute top-10 z-30 h-20 w-[16rem] rounded-full bg-primary opacity-30 blur-3xl" />
+            <motion.div
+              initial={{ width: "4rem" }}
+              animate={{ width: "10rem" }}
+              transition={{ delay: 0.2, duration: 1, ease: "easeInOut" }}
+              className="absolute top-8 z-30 h-20 rounded-full bg-primary/60 blur-2xl"
+            />
+            <motion.div
+              initial={{ width: "8rem" }}
+              animate={{ width: "18rem" }}
+              transition={{ delay: 0.2, duration: 1, ease: "easeInOut" }}
+              className="absolute top-6 z-40 h-0.5 bg-primary/80"
+            />
+            <div className="absolute top-0 z-30 h-8 w-full bg-background" />
+          </div>
         </div>
-        <div className="absolute -bottom-4 -right-4 w-24 h-24 opacity-[0.15] pointer-events-none select-none">
+
+        {/* Character watermark */}
+        <div className="absolute -bottom-4 -right-4 w-24 h-24 opacity-[0.12] pointer-events-none select-none z-10">
           <img
             src={postItCharacters[Math.abs((user?.id || "").charCodeAt(0) || 0) % postItCharacters.length]}
             alt=""
@@ -268,21 +307,29 @@ export default function Dashboard() {
             className="w-full h-full object-contain"
           />
         </div>
-        <div className="relative animate-fade-in">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-2xl">{dailyMessage.emoji}</span>
-            <h2 className="text-lg font-bold text-foreground">
-              {getGreeting()}, <span className="text-primary">{userName || "Colaborador"}</span>!
-            </h2>
-          </div>
-          <p className="text-sm text-muted-foreground max-w-lg leading-relaxed">
-            {dailyMessage.text}
-          </p>
-          <div className="flex items-center gap-2 mt-2">
-            <span className="text-[10px] text-muted-foreground/60">
-              {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
-            </span>
-          </div>
+
+        {/* Content */}
+        <div className="relative z-20 p-5">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.6, ease: "easeOut" }}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-2xl">{dailyMessage.emoji}</span>
+              <h2 className="text-lg font-bold text-foreground">
+                {getGreeting()}, <span className="text-primary">{userName || "Colaborador"}</span>!
+              </h2>
+            </div>
+            <p className="text-sm text-muted-foreground max-w-lg leading-relaxed">
+              {dailyMessage.text}
+            </p>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="text-[10px] text-muted-foreground/60">
+                {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+              </span>
+            </div>
+          </motion.div>
         </div>
       </div>
 
