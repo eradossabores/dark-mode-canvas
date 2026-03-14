@@ -177,18 +177,13 @@ export default function ChecklistProducaoDia() {
 
   useEffect(() => { fetchDecisoes(); }, []);
 
-  // Load registered items from localStorage
+  // Load registered items from localStorage as initial fallback
   useEffect(() => {
     try {
       const saved = localStorage.getItem(REGISTRADOS_KEY);
       if (saved) setRegistrados(new Set(JSON.parse(saved)));
     } catch {}
   }, []);
-
-  function saveRegistrados(newSet: Set<string>) {
-    setRegistrados(newSet);
-    localStorage.setItem(REGISTRADOS_KEY, JSON.stringify([...newSet]));
-  }
 
   async function fetchDecisoes() {
     setLoading(true);
@@ -202,17 +197,55 @@ export default function ChecklistProducaoDia() {
       if (error) throw error;
       if (!data || data.length === 0) { setChecklist([]); setLoading(false); return; }
 
+      // ── Carregar produções JÁ registradas hoje do banco (server-side dedup) ──
+      const { data: producoesHoje } = await (supabase as any)
+        .from("producoes").select("sabor_id, observacoes")
+        .gte("created_at", inicioHoje).lte("created_at", fimHoje)
+        .like("observacoes", "%Checklist produção diária%");
+
+      // Mapear produções existentes por sabor para contar lotes já registrados
+      const lotesRegistradosDB: Record<string, number> = {};
+      (producoesHoje || []).forEach((p: any) => {
+        lotesRegistradosDB[p.sabor_id] = (lotesRegistradosDB[p.sabor_id] || 0) + 1;
+      });
+
       let concluidos: Record<string, string> = {};
       try { const saved = localStorage.getItem(CONCLUIDOS_KEY); if (saved) concluidos = JSON.parse(saved); } catch {}
 
       const items: ChecklistItem[] = [];
+      const dbRegistrados = new Set<string>();
+
       data.forEach((d: any) => {
+        const jaRegistradosQtd = lotesRegistradosDB[d.sabor_id] || 0;
         for (let l = 1; l <= d.lotes_autorizados; l++) {
           const itemId = `${d.sabor_id}-${l}`;
-          items.push({ id: itemId, saborId: d.sabor_id, saborNome: d.sabor_nome, loteNumero: l, totalLotes: d.lotes_autorizados, concluido: !!concluidos[itemId], horaConclusao: concluidos[itemId] || undefined });
+          // Se o lote já existe no banco, marcar como registrado E concluído
+          const jaRegistradoNoBanco = l <= jaRegistradosQtd;
+          if (jaRegistradoNoBanco) {
+            dbRegistrados.add(itemId);
+            if (!concluidos[itemId]) {
+              concluidos[itemId] = "DB";
+            }
+          }
+          items.push({
+            id: itemId, saborId: d.sabor_id, saborNome: d.sabor_nome,
+            loteNumero: l, totalLotes: d.lotes_autorizados,
+            concluido: !!concluidos[itemId] || jaRegistradoNoBanco,
+            horaConclusao: concluidos[itemId] || (jaRegistradoNoBanco ? "✓" : undefined),
+          });
         }
       });
+
+      // Merge localStorage registrados com os do banco
+      const mergedRegistrados = new Set([
+        ...dbRegistrados,
+        ...((() => { try { const s = localStorage.getItem(REGISTRADOS_KEY); return s ? JSON.parse(s) : []; } catch { return []; } })()),
+      ]);
+      saveRegistrados(mergedRegistrados);
+
       setChecklist(items);
+      // Sync concluidos com o que veio do banco
+      localStorage.setItem(CONCLUIDOS_KEY, JSON.stringify(concluidos));
     } catch (e) { console.error("Erro ao carregar checklist:", e); }
     finally { setLoading(false); }
   }
