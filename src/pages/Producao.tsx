@@ -78,6 +78,20 @@ export default function Producao() {
 
   useEffect(() => { loadData(); }, []);
 
+  // Scroll to specific date from query param
+  useEffect(() => {
+    if (dataParam && producoes.length > 0) {
+      setTimeout(() => {
+        const el = document.getElementById(`producao-dia-${dataParam}`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.classList.add("ring-2", "ring-primary", "ring-offset-2");
+          setTimeout(() => el.classList.remove("ring-2", "ring-primary", "ring-offset-2"), 3000);
+        }
+      }, 300);
+    }
+  }, [dataParam, producoes]);
+
   useEffect(() => {
     if (modo === "lote") setQtdTotal(qtdLotes * 84);
   }, [qtdLotes, modo]);
