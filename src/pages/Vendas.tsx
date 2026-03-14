@@ -183,7 +183,7 @@ export default function Vendas() {
       (supabase as any).from("sabores").select("*").eq("ativo", true).order("nome"),
       (supabase as any).from("vendas").select("*, clientes(nome)").order("created_at", { ascending: false }).limit(500),
       (supabase as any).from("venda_itens").select("venda_id, quantidade"),
-      (supabase as any).from("pedidos_producao").select("venda_id, status").not("venda_id", "is", null),
+      (supabase as any).from("pedidos_producao").select("venda_id, status, tipo_pedido").not("venda_id", "is", null),
     ]);
     setClientes(c.data || []);
     setSabores(s.data || []);
@@ -194,10 +194,14 @@ export default function Vendas() {
     });
     // Build pedido status map per venda
     const pedidoStatusMap: Record<string, string> = {};
+    const pedidoTipoMap: Record<string, string> = {};
     (pp.data || []).forEach((p: any) => {
-      if (p.venda_id) pedidoStatusMap[p.venda_id] = p.status;
+      if (p.venda_id) {
+        pedidoStatusMap[p.venda_id] = p.status;
+        pedidoTipoMap[p.venda_id] = p.tipo_pedido;
+      }
     });
-    setVendas((v.data || []).map((vd: any) => ({ ...vd, totalUnidades: unitsMap[vd.id] || 0, pedido_status: pedidoStatusMap[vd.id] || null })));
+    setVendas((v.data || []).map((vd: any) => ({ ...vd, totalUnidades: unitsMap[vd.id] || 0, pedido_status: pedidoStatusMap[vd.id] || null, pedido_tipo: pedidoTipoMap[vd.id] || null })));
   }
 
   function addItem() { setItens([...itens, { sabor_id: "", quantidade: 1, preco_unitario: "", preco_auto: false }]); }
@@ -1204,7 +1208,11 @@ export default function Vendas() {
                                 ? "bg-muted text-muted-foreground border-border"
                                 : "bg-green-500/10 text-green-700 border-green-300"
                             }`}>
-                              {v.pedido_status === "retirado" || v.pedido_status === "enviado" ? "Finalizado" : "No Monitor"}
+                              {v.pedido_status === "enviado"
+                                ? "Entregue"
+                                : v.pedido_status === "retirado"
+                                  ? "Retirado"
+                                  : "No Monitor"}
                             </Badge>
                           )}
                         </TooltipProvider>
