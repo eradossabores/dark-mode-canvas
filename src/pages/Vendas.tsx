@@ -1208,7 +1208,11 @@ export default function Vendas() {
                                 ? "bg-muted text-muted-foreground border-border"
                                 : "bg-green-500/10 text-green-700 border-green-300"
                             }`}>
-                              {v.pedido_status === "retirado" || v.pedido_status === "enviado" ? "Finalizado" : "No Monitor"}
+                              {v.pedido_status === "enviado"
+                                ? "Entregue"
+                                : v.pedido_status === "retirado"
+                                  ? "Retirado"
+                                  : "No Monitor"}
                             </Badge>
                           )}
                         </TooltipProvider>
