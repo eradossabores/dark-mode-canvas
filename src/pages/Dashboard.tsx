@@ -130,6 +130,8 @@ export default function Dashboard() {
   const [contasReceber, setContasReceber] = useState({ total: 0, vencidas: 0, quantidade: 0 });
   const [periodoFaturamento, setPeriodoFaturamento] = useState<PeriodoFiltro>("7dias");
   const [periodoProducao, setPeriodoProducao] = useState<PeriodoFiltro>("7dias");
+  const [mesFaturamento, setMesFaturamento] = useState(new Date().getMonth());
+  const [mesProducao, setMesProducao] = useState(new Date().getMonth());
   const [allVendas, setAllVendas] = useState<any[]>([]);
   const [allProducoes, setAllProducoes] = useState<any[]>([]);
   const [fatPeriodo, setFatPeriodo] = useState<FaturamentoPeriodo>("total");
