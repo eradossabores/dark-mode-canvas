@@ -522,7 +522,7 @@ export default function Dashboard() {
       {/* Widgets: Estoque Inteligente + Ranking + Clientes Inativos */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 opacity-0 animate-fade-in" style={{ animationDelay: "700ms", animationFillMode: "forwards" }}>
         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
-          <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
+          <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={1} />
           <div className="relative"><EstoqueInteligente /></div>
         </div>
         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
