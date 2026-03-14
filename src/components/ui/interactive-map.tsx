@@ -122,7 +122,7 @@ function LayerControls({
   const map = useMap();
 
   useEffect(() => {
-    const control = L.control({ position: 'topright' });
+    const control = (L.control as any)({ position: 'topright' });
 
     control.onAdd = () => {
       const div = L.DomUtil.create('div', '');
