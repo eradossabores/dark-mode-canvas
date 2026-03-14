@@ -292,7 +292,8 @@ export default function Dashboard() {
   ];
 
   return (
-    <div>
+    <div className="relative">
+      <GradientDots duration={30} colorCycleDuration={10} dotSize={5} spacing={14} className="opacity-15 pointer-events-none z-0 fixed" />
       {/* Animated Welcome Banner with Lamp Effect */}
       <div className="mb-6 relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-b from-background via-background to-primary/5">
         {/* Lamp glow effect - centered top (teal/cyan theme) */}

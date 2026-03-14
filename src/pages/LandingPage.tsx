@@ -162,7 +162,8 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
+    <div className="relative min-h-screen bg-background text-foreground overflow-x-hidden">
+      <GradientDots duration={25} colorCycleDuration={8} dotSize={6} spacing={12} className="opacity-30 pointer-events-none z-0 fixed" />
       <Helmet>
         <title>A Era dos Sabores | Gelo Saborizado em Boa Vista, Roraima</title>
         <meta name="description" content="Fábrica de gelo saborizado artesanal em Boa Vista, Roraima. Morango, maracujá, maçã verde e Bob Marley. Peça agora!" />
