@@ -1,8 +1,7 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from "react-leaflet";
+import { AdvancedMap, createSvgIcon, type MapMarker, type MapCircle } from "@/components/ui/interactive-map";
 import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,24 +10,8 @@ import { MapPin, Save, X, Users, RefreshCw, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-// Fix leaflet default icons
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-
-const createSvgIcon = (color: string) => {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="25" height="41" viewBox="0 0 25 41"><path d="M12.5 0C5.6 0 0 5.6 0 12.5C0 21.9 12.5 41 12.5 41S25 21.9 25 12.5C25 5.6 19.4 0 12.5 0z" fill="${color}" stroke="#fff" stroke-width="1.5"/><circle cx="12.5" cy="12.5" r="5" fill="#fff"/></svg>`;
-  return L.divIcon({
-    html: svg,
-    className: '',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-  });
-};
-
 const clienteIcon = createSvgIcon('#2563eb');
 const pendingIcon = createSvgIcon('#dc2626');
-
-// Boa Vista center coordinates
 const BOA_VISTA_CENTER: [number, number] = [2.8195, -60.6714];
 
 interface Cliente {
@@ -43,32 +26,13 @@ interface Cliente {
   possui_freezer: boolean;
 }
 
-function ClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number) => void }) {
-  useMapEvents({
-    click(e) {
-      onMapClick(e.latlng.lat, e.latlng.lng);
-    },
-  });
-  return null;
-}
-
-function FlyToClient({ target }: { target: { lat: number; lng: number } | null }) {
-  const map = useMap();
-  useEffect(() => {
-    if (target) {
-      map.flyTo([target.lat, target.lng], 17, { duration: 1.2 });
-    }
-  }, [target, map]);
-  return null;
-}
-
 export default function MapaClientes() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [placingClienteId, setPlacingClienteId] = useState<string | null>(null);
   const [tempMarker, setTempMarker] = useState<[number, number] | null>(null);
   const [filterBairro, setFilterBairro] = useState<string>("todos");
   const [searchTerm, setSearchTerm] = useState("");
-  const [flyTarget, setFlyTarget] = useState<{ lat: number; lng: number } | null>(null);
+  const [flyTarget, setFlyTarget] = useState<[number, number] | null>(null);
 
   useEffect(() => { loadClientes(); }, []);
 
@@ -97,7 +61,7 @@ export default function MapaClientes() {
 
   function focusCliente(c: Cliente) {
     if (c.latitude && c.longitude) {
-      setFlyTarget({ lat: c.latitude, lng: c.longitude });
+      setFlyTarget([c.latitude, c.longitude]);
       setSearchTerm("");
     }
   }
@@ -108,9 +72,9 @@ export default function MapaClientes() {
     toast({ title: "Clique no mapa para posicionar o cliente" });
   }
 
-  function handleMapClick(lat: number, lng: number) {
+  function handleMapClick(latlng: L.LatLng) {
     if (!placingClienteId) return;
-    setTempMarker([lat, lng]);
+    setTempMarker([latlng.lat, latlng.lng]);
   }
 
   async function savePosition() {
@@ -149,6 +113,50 @@ export default function MapaClientes() {
   }
 
   const placingCliente = clientes.find(c => c.id === placingClienteId);
+
+  // Build markers for AdvancedMap
+  const markers: MapMarker[] = [
+    ...clientesFiltrados.map(c => ({
+      id: c.id,
+      position: [c.latitude!, c.longitude!] as [number, number],
+      icon: clienteIcon,
+      popup: {
+        title: c.nome,
+        content: (
+          <div className="space-y-1">
+            {c.bairro && <p className="text-xs text-gray-600">{c.bairro}</p>}
+            {c.endereco && <p className="text-xs text-gray-500">{c.endereco}</p>}
+            {c.telefone && <p className="text-xs text-gray-500">📞 {c.telefone}</p>}
+            {c.possui_freezer && <p className="text-xs text-blue-600 font-medium mt-1">❄️ Possui Freezer</p>}
+            <div className="flex gap-1 mt-2">
+              <button
+                className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+                onClick={() => startPlacing(c.id)}
+              >
+                Reposicionar
+              </button>
+              <button
+                className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+                onClick={() => removePosition(c.id)}
+              >
+                Remover
+              </button>
+            </div>
+          </div>
+        ),
+      },
+      data: c,
+    })),
+    ...(tempMarker ? [{
+      id: 'temp-marker',
+      position: tempMarker,
+      icon: pendingIcon,
+      popup: {
+        title: placingCliente?.nome || '',
+        content: <p className="text-xs text-gray-500">Nova posição</p>,
+      },
+    }] : []),
+  ];
 
   return (
     <div>
@@ -239,63 +247,17 @@ export default function MapaClientes() {
         {/* Map */}
         <div className="lg:col-span-3">
           <Card className="overflow-hidden">
-            <div style={{ height: "600px" }}>
-              <MapContainer
-                center={BOA_VISTA_CENTER}
-                zoom={13}
-                style={{ height: "100%", width: "100%" }}
-                scrollWheelZoom={true}
-              >
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                <ClickHandler onMapClick={handleMapClick} />
-                <FlyToClient target={flyTarget} />
-                {/* Client markers */}
-                {clientesFiltrados.map(c => (
-                  <Marker
-                    key={c.id}
-                    position={[c.latitude!, c.longitude!]}
-                    icon={clienteIcon}
-                  >
-                    <Popup>
-                      <div className="min-w-[180px]">
-                        <p className="font-bold text-sm">{c.nome}</p>
-                        {c.bairro && <p className="text-xs text-gray-600">{c.bairro}</p>}
-                        {c.endereco && <p className="text-xs text-gray-500">{c.endereco}</p>}
-                        {c.telefone && <p className="text-xs text-gray-500">📞 {c.telefone}</p>}
-                        {c.possui_freezer && <p className="text-xs text-blue-600 font-medium mt-1">❄️ Possui Freezer</p>}
-                        <div className="flex gap-1 mt-2">
-                          <button
-                            className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
-                            onClick={() => startPlacing(c.id)}
-                          >
-                            Reposicionar
-                          </button>
-                          <button
-                            className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
-                            onClick={() => removePosition(c.id)}
-                          >
-                            Remover
-                          </button>
-                        </div>
-                      </div>
-                    </Popup>
-                  </Marker>
-                ))}
-
-                {/* Temp marker for placing */}
-                {tempMarker && (
-                  <Marker position={tempMarker} icon={pendingIcon}>
-                    <Popup>
-                      <p className="font-bold text-sm">{placingCliente?.nome}</p>
-                      <p className="text-xs text-gray-500">Nova posição</p>
-                    </Popup>
-                  </Marker>
-                )}
-              </MapContainer>
-            </div>
+            <AdvancedMap
+              center={BOA_VISTA_CENTER}
+              zoom={13}
+              markers={markers}
+              onMapClick={handleMapClick}
+              enableClustering={clientesFiltrados.length > 20}
+              enableControls={true}
+              flyTo={flyTarget}
+              flyToZoom={17}
+              style={{ height: "600px", width: "100%" }}
+            />
           </Card>
 
           {/* Filter */}
