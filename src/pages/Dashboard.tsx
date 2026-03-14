@@ -588,23 +588,42 @@ export default function Dashboard() {
           <GlowingEffect spread={20} glow disabled={false} proximity={40} inactiveZone={0.2} borderWidth={1} />
           <Card className="relative border-0 bg-background">
             <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm">Produção - {getPeriodLabel(periodoProducao)}</CardTitle>
-                <div className="flex gap-1">
-                  {(["7dias", "15dias", "mensal"] as PeriodoFiltro[]).map((p) => (
-                    <button
-                      key={p}
-                      onClick={() => setPeriodoProducao(p)}
-                      className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
-                        periodoProducao === p
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground hover:bg-muted/80"
-                      }`}
-                    >
-                      {p === "7dias" ? "7D" : p === "15dias" ? "15D" : "Mês"}
-                    </button>
-                  ))}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm">Produção - {getPeriodLabel(periodoProducao, mesProducao)}</CardTitle>
+                  <div className="flex gap-1">
+                    {(["7dias", "15dias", "mensal"] as PeriodoFiltro[]).map((p) => (
+                      <button
+                        key={p}
+                        onClick={() => setPeriodoProducao(p)}
+                        className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
+                          periodoProducao === p
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        }`}
+                      >
+                        {p === "7dias" ? "7D" : p === "15dias" ? "15D" : "Mês"}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+                {periodoProducao === "mensal" && (
+                  <div className="flex gap-1 flex-wrap">
+                    {MESES_NOME.map((nome, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setMesProducao(idx)}
+                        className={`px-1.5 py-0.5 text-[9px] rounded-full transition-colors ${
+                          mesProducao === idx
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        }`}
+                      >
+                        {nome.slice(0, 3)}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </CardHeader>
             <CardContent>
