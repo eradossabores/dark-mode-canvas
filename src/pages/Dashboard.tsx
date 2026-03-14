@@ -292,15 +292,15 @@ export default function Dashboard() {
   return (
     <div>
       {/* Animated Welcome Banner with Lamp Effect */}
-      <div className="mb-6 relative overflow-hidden rounded-2xl border border-amber-400/20 bg-gradient-to-b from-background via-background to-amber-500/5">
-        {/* Lamp glow effect - centered top */}
+      <div className="mb-6 relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-b from-background via-background to-primary/5">
+        {/* Lamp glow effect - centered top (teal/cyan theme) */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {/* Main conic rays - left */}
           <motion.div
             initial={{ opacity: 0, width: "6rem" }}
-            animate={{ opacity: 0.5, width: "22rem" }}
+            animate={{ opacity: 0.45, width: "22rem" }}
             transition={{ delay: 0.1, duration: 1.2, ease: "easeOut" }}
-            style={{ backgroundImage: `conic-gradient(from 70deg at center top, hsl(42, 85%, 55%), transparent, transparent)` }}
+            style={{ backgroundImage: `conic-gradient(from 70deg at center top, hsl(174, 50%, 45%), transparent, transparent)` }}
             className="absolute -top-4 right-1/2 h-28"
           >
             <div className="absolute w-full left-0 bg-background/80 h-16 bottom-0 [mask-image:linear-gradient(to_top,white,transparent)]" />
@@ -309,9 +309,9 @@ export default function Dashboard() {
           {/* Main conic rays - right */}
           <motion.div
             initial={{ opacity: 0, width: "6rem" }}
-            animate={{ opacity: 0.5, width: "22rem" }}
+            animate={{ opacity: 0.45, width: "22rem" }}
             transition={{ delay: 0.1, duration: 1.2, ease: "easeOut" }}
-            style={{ backgroundImage: `conic-gradient(from 290deg at center top, transparent, transparent, hsl(42, 85%, 55%))` }}
+            style={{ backgroundImage: `conic-gradient(from 290deg at center top, transparent, transparent, hsl(174, 50%, 45%))` }}
             className="absolute -top-4 left-1/2 h-28"
           >
             <div className="absolute w-16 h-full right-0 bg-background/80 bottom-0 [mask-image:linear-gradient(to_left,white,transparent)]" />
@@ -320,18 +320,18 @@ export default function Dashboard() {
           {/* Soft glow blob */}
           <motion.div
             initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 0.3, scale: 1 }}
+            animate={{ opacity: 0.25, scale: 1 }}
             transition={{ delay: 0.3, duration: 1, ease: "easeOut" }}
             className="absolute top-0 left-1/2 -translate-x-1/2 w-80 h-24 rounded-full blur-3xl"
-            style={{ background: "hsl(42, 80%, 50%)" }}
+            style={{ background: "hsl(174, 45%, 45%)" }}
           />
           {/* Thin light bar */}
           <motion.div
             initial={{ width: "4rem", opacity: 0 }}
-            animate={{ width: "14rem", opacity: 0.7 }}
+            animate={{ width: "14rem", opacity: 0.6 }}
             transition={{ delay: 0.2, duration: 1, ease: "easeOut" }}
             className="absolute top-0 left-1/2 -translate-x-1/2 h-[2px]"
-            style={{ background: "linear-gradient(to right, transparent, hsl(42, 85%, 55%), transparent)" }}
+            style={{ background: "linear-gradient(to right, transparent, hsl(174, 50%, 50%), transparent)" }}
           />
           {/* Bottom fade to blend */}
           <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-background to-transparent" />
