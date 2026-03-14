@@ -401,8 +401,7 @@ export default function Dashboard() {
         const warningCount = sorted.filter(i => getSeverity(i) === "warning").length;
         const tipoIcon: Record<string, string> = { "Matéria-prima": "🧪", "Embalagem": "📦", "Gelo": "🧊" };
 
-        const [showAll, setShowAll] = useState(false);
-        const visibleItems = showAll ? sorted : sorted.slice(0, 5);
+        const visibleItems = showAllAlertas ? sorted : sorted.slice(0, 5);
 
         return (
           <motion.div
