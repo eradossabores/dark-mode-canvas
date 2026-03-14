@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Package, Users, ShoppingCart, Factory,
-  Warehouse, ClipboardList, UserCog, BarChart3, FileUp, Menu, X, DollarSign, Monitor, ShoppingBag, Database, LogOut, Shield, Brain, MapPin, Map, Target, HardDrive
+  Warehouse, ClipboardList, UserCog, BarChart3, FileUp, DollarSign, Monitor, ShoppingBag, Database, LogOut, Shield, Brain, MapPin, Map, Target, HardDrive
 } from "lucide-react";
+import { AnimatedMenuToggle } from "@/components/ui/animated-menu-toggle";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { isRouteAllowed } from "@/components/ProtectedRoute";
