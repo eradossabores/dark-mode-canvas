@@ -270,8 +270,15 @@ export default function Dashboard() {
     }
   }
 
-  const faturamentoValor = fatPeriodo === "semanal" ? stats.faturamentoSemanal : fatPeriodo === "mensal" ? stats.faturamentoMensal : fatPeriodo === "anual" ? stats.faturamentoAnual : stats.faturamento;
-  const faturamentoLabel = fatPeriodo === "semanal" ? "Fat. Semanal" : fatPeriodo === "mensal" ? "Fat. Mensal" : fatPeriodo === "anual" ? "Fat. Anual" : "Faturamento Total";
+  const faturamentoMesEspecifico = useMemo(() => {
+    const ano = new Date().getFullYear();
+    return allVendas
+      .filter((v: any) => { const d = new Date(v.created_at); return d.getMonth() === mesFatCard && d.getFullYear() === ano; })
+      .reduce((s: number, v: any) => s + Number(v.total), 0);
+  }, [allVendas, mesFatCard]);
+
+  const faturamentoValor = fatPeriodo === "semanal" ? stats.faturamentoSemanal : fatPeriodo === "mensal" ? faturamentoMesEspecifico : fatPeriodo === "anual" ? stats.faturamentoAnual : stats.faturamento;
+  const faturamentoLabel = fatPeriodo === "semanal" ? "Fat. Semanal" : fatPeriodo === "mensal" ? `Fat. ${MESES_NOME[mesFatCard]}` : fatPeriodo === "anual" ? "Fat. Anual" : "Faturamento Total";
 
   const cards = [
     { title: "Gelos em Estoque", value: stats.totalGelos.toLocaleString(), icon: Package, color: "text-primary", href: "/painel/estoque" },
