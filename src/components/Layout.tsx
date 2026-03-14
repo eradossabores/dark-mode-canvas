@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Package, Users, ShoppingCart, Factory,
-  Warehouse, ClipboardList, UserCog, ChevronLeft, ChevronRight, BarChart3, FileUp, Menu, X, DollarSign, Monitor, ShoppingBag, Database, LogOut, Shield, Brain, MapPin, Map, Target, HardDrive
+  Warehouse, ClipboardList, UserCog, BarChart3, FileUp, Menu, X, DollarSign, Monitor, ShoppingBag, Database, LogOut, Shield, Brain, MapPin, Map, Target, HardDrive
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -128,7 +128,9 @@ function getPageCharacters(pathname: string) {
 }
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
+  const [hovered, setHovered] = useState(false);
+  const isExpanded = !collapsed || hovered;
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -160,7 +162,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <>
       <div className="flex items-center gap-3 px-3 py-3 border-b border-sidebar-border">
         <img src={logo} alt="A Era dos Sabores" className="h-12 w-12 shrink-0 rounded-lg shadow-sm object-contain" />
-        {!collapsed && (
+        {isExpanded && (
           <div className="flex flex-col min-w-0">
             <span className="font-bold text-sm whitespace-nowrap leading-tight">A Era dos Sabores</span>
             <span className="text-[10px] text-sidebar-foreground/60 leading-tight">Gelos Saborizados</span>
@@ -171,7 +173,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {filteredGroups.map((group, gi) => (
           <div key={group.label}>
             {gi > 0 && <div className="mx-4 my-1.5 border-t border-sidebar-border" />}
-            {!collapsed && (
+            {isExpanded && (
               <p className="px-4 pt-1 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
                 {group.label}
               </p>
@@ -191,7 +193,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   )}
                 >
                   <item.icon className="h-4 w-4 shrink-0" />
-                  {!collapsed && <span>{item.label}</span>}
+                  {isExpanded && <span>{item.label}</span>}
                 </Link>
               );
             })}
@@ -203,11 +205,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         onClick={handleLogout}
         className={cn(
           "flex items-center gap-3 px-4 py-2.5 text-sm transition-colors mx-2 rounded-md text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-          collapsed ? "justify-center" : ""
+          !isExpanded ? "justify-center" : ""
         )}
       >
         <LogOut className="h-4 w-4 shrink-0" />
-        {!collapsed && <span>Sair</span>}
+        {isExpanded && <span>Sair</span>}
       </button>
       <div className="flex justify-center py-2 border-t border-sidebar-border">
         <img
@@ -217,7 +219,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           aria-hidden
           className={cn(
             "object-contain pointer-events-none select-none animate-fade-in transition-opacity duration-500",
-            collapsed ? "w-10 h-10" : "w-24 h-24"
+            !isExpanded ? "w-10 h-10" : "w-24 h-24"
           )}
         />
       </div>
@@ -314,26 +316,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Desktop sidebar */}
       <aside
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
         className={cn(
           "hidden md:flex flex-col bg-sidebar-background text-sidebar-foreground transition-all duration-300 border-r border-sidebar-border",
-          collapsed ? "w-16" : "w-60"
+          isExpanded ? "w-60" : "w-16"
         )}
       >
         {sidebarContent}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className={cn(
-            "flex items-center gap-2 py-3 border-t border-sidebar-border hover:bg-sidebar-accent transition-colors",
-            collapsed ? "justify-center px-2" : "px-4"
-          )}
-        >
-          {collapsed ? <ChevronRight className="h-5 w-5" /> : (
-            <>
-              <ChevronLeft className="h-5 w-5" />
-              <span className="text-xs text-sidebar-foreground/70">Recolher menu</span>
-            </>
-          )}
-        </button>
       </aside>
 
       <main className="flex-1 overflow-auto relative bg-background">
