@@ -527,7 +527,7 @@ export default function Dashboard() {
               onClick={() => !c.isFaturamento && navigate(c.href)}
             >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-medium text-muted-foreground">{c.title}</CardTitle>
+                <CardTitle className="text-xs font-medium text-zinc-400">{c.title}</CardTitle>
                 <c.icon className={`h-4 w-4 ${c.color}`} />
               </CardHeader>
               <CardContent>
