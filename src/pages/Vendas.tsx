@@ -683,7 +683,7 @@ export default function Vendas() {
                 </div>
                 {itens.length === 0 && <p className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md">Clique em "Add"</p>}
                 {itens.map((item, i) => (
-                  <div key={i} className="flex gap-2 mb-2 items-center">
+                  <div key={i} className={cn("flex gap-2 mb-2 items-center rounded-lg px-2 py-1.5 transition-colors", item.quantidade > 0 && "bg-secondary/60 ring-1 ring-secondary")}>
                     <Select value={item.sabor_id} onValueChange={(v) => updateItem(i, "sabor_id", v)}>
                       <SelectTrigger className="flex-1"><SelectValue placeholder="Sabor" /></SelectTrigger>
                       <SelectContent>{sabores.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}</SelectContent>
