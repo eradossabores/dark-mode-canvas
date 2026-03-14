@@ -542,7 +542,7 @@ export default function Dashboard() {
                           className={`px-1.5 py-0.5 text-[9px] rounded-full transition-colors ${
                             fatPeriodo === p
                               ? "bg-primary text-primary-foreground"
-                              : "bg-muted text-muted-foreground hover:bg-muted/80"
+                              : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
                           }`}
                         >
                           {p === "total" ? "Total" : p === "semanal" ? "Semana" : p === "mensal" ? "Mês" : "Ano"}
