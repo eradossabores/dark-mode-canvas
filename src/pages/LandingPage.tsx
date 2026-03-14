@@ -14,7 +14,7 @@ import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
-import { LampContainer } from "@/components/ui/lamp";
+
 import logo from "@/assets/logo.png";
 import geloBobMarley from "@/assets/gelo-bob-marley.png";
 import geloMelanciaMaca from "@/assets/gelo-melancia-maca.png";
