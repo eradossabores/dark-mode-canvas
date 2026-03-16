@@ -272,7 +272,7 @@ export default function Pedir() {
       dinheiro: "💵 Dinheiro",
       pix: "📱 PIX",
       cartao: "💳 Cartão",
-      fiado: "📝 Fiado",
+      fiado: "📝 A Prazo",
     };
 
     const itensText = cart
