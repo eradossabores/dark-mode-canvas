@@ -638,7 +638,7 @@ export default function PlanoProducaoDiario() {
       .filter(Boolean)
       .join(", ") || "sistema";
 
-    const alvoIso = `${dataAlvo.getFullYear()}-${String(dataAlvo.getMonth() + 1).padStart(2, "0")}-${String(dataAlvo.getDate()).padStart(2, "0")}T08:00:00`;
+    const alvoIso = `${dataAlvo.getFullYear()}-${String(dataAlvo.getMonth() + 1).padStart(2, "0")}-${String(dataAlvo.getDate()).padStart(2, "0")}T08:00:00-03:00`;
 
     const rows = itens.map(item => ({
       dia_semana: diaSemana,
@@ -655,7 +655,8 @@ export default function PlanoProducaoDiario() {
       created_at: alvoIso,
     }));
 
-    await (supabase as any).from("decisoes_producao").insert(rows);
+    const { error } = await (supabase as any).from("decisoes_producao").insert(rows);
+    if (error) throw error;
   }
 
   async function editarPlanoExistente() {
