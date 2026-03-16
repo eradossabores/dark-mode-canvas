@@ -125,7 +125,7 @@ export default function RelatorioProducao() {
             { label: "Total de Lotes", value: totalLotes.toLocaleString("pt-BR") },
             { label: "Produções Registradas", value: filtered.length.toString() },
             { label: "Período", value: periodoLabel },
-          ])}
+          ], "charts-producao")}
           onExcel={() => exportToExcel(headers, rows, "Produção", "relatorio-producao")}
         />
       </DateRangeFilter>
