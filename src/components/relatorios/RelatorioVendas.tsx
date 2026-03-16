@@ -228,7 +228,7 @@ export default function RelatorioVendas() {
                 </ResponsiveContainer>
               </CardContent>
             </Card>
-            <Card>
+            <Card data-chart-export>
               <CardHeader><CardTitle className="text-sm">Faturamento por Sabor</CardTitle></CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={280}>
