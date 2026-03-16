@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import html2canvas from "html2canvas";
 import logoUrl from "@/assets/logo.png";
 
 function loadImageAsBase64(url: string): Promise<string> {
@@ -20,12 +21,28 @@ function loadImageAsBase64(url: string): Promise<string> {
   });
 }
 
+async function captureChartElement(element: HTMLElement): Promise<string | null> {
+  try {
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: "#ffffff",
+    });
+    return canvas.toDataURL("image/png");
+  } catch (e) {
+    console.error("Erro ao capturar gráfico:", e);
+    return null;
+  }
+}
+
 export async function exportToPDF(
   title: string,
   headers: string[],
   rows: (string | number)[][],
   filename: string,
-  totals?: { label: string; value: string }[]
+  totals?: { label: string; value: string }[],
+  chartContainerId?: string
 ) {
   const doc = new jsPDF();
 
@@ -54,11 +71,53 @@ export async function exportToPDF(
   doc.setLineWidth(0.8);
   doc.line(14, 40, 196, 40);
 
+  let currentY = 44;
+
+  // Capturar e adicionar gráficos se houver container
+  if (chartContainerId) {
+    const chartContainer = document.getElementById(chartContainerId);
+    if (chartContainer) {
+      // Capturar cada card de gráfico individualmente
+      const chartCards = chartContainer.querySelectorAll<HTMLElement>("[data-chart-export]");
+      const elements = chartCards.length > 0 ? Array.from(chartCards) : [chartContainer];
+
+      for (const el of elements) {
+        const imgData = await captureChartElement(el);
+        if (imgData) {
+          const imgWidth = 180;
+          const imgHeight = (el.offsetHeight * imgWidth) / el.offsetWidth;
+          const scaledHeight = Math.min(imgHeight, 120); // max height per chart
+
+          // Check if needs new page
+          if (currentY + scaledHeight > 275) {
+            doc.addPage();
+            currentY = 15;
+          }
+
+          doc.addImage(imgData, "PNG", 14, currentY, imgWidth, scaledHeight);
+          currentY += scaledHeight + 6;
+        }
+      }
+
+      // Add separator after charts
+      if (currentY > 50) {
+        if (currentY + 10 > 275) {
+          doc.addPage();
+          currentY = 15;
+        }
+        doc.setDrawColor(200);
+        doc.setLineWidth(0.3);
+        doc.line(14, currentY, 196, currentY);
+        currentY += 6;
+      }
+    }
+  }
+
   // Tabela
   autoTable(doc, {
     head: [headers],
     body: rows,
-    startY: 44,
+    startY: currentY,
     styles: { fontSize: 8 },
     headStyles: { fillColor: [0, 100, 160], textColor: 255, fontStyle: "bold" },
     alternateRowStyles: { fillColor: [240, 248, 255] },

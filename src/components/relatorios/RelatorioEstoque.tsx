@@ -106,7 +106,7 @@ export default function RelatorioEstoque() {
             { label: "Saídas (período)", value: saidas.toLocaleString("pt-BR") },
             { label: "Itens Estoque Baixo", value: totalBaixo.toString() },
             { label: "Período", value: periodoLabel },
-          ])}
+          ], "charts-estoque")}
           onExcel={() => exportToExcel(movHeaders, movRows, "Estoque", "relatorio-estoque")}
         />
       </DateRangeFilter>
@@ -136,8 +136,8 @@ export default function RelatorioEstoque() {
             <KpiCard title="Itens com Estoque Baixo" value={totalBaixo.toString()} icon={AlertTriangle} subtitle={totalBaixo > 0 ? "Atenção!" : "OK"} />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
+          <div id="charts-estoque" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card data-chart-export>
               <CardHeader><CardTitle className="text-sm">Estoque de Gelos por Sabor</CardTitle></CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={280}>
@@ -151,7 +151,7 @@ export default function RelatorioEstoque() {
                 </ResponsiveContainer>
               </CardContent>
             </Card>
-            <Card>
+            <Card data-chart-export>
               <CardHeader><CardTitle className="text-sm">Movimentações por Dia</CardTitle></CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={280}>

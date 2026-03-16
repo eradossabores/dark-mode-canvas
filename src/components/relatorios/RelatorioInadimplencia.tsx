@@ -126,7 +126,7 @@ export default function RelatorioInadimplencia() {
             { label: "Parcelas Vencidas", value: parcelasVencidas.length.toString() },
             { label: "Clientes Devedores", value: clienteDebitos.length.toString() },
             ...(filtroFaixa !== "todos" ? [{ label: "Filtro Faixa", value: filtroFaixa }] : []),
-          ])}
+          ], "charts-inadimplencia")}
           onExcel={() => exportToExcel(headers, rows, "Inadimplência", "relatorio-inadimplencia")}
         />
       </div>
@@ -151,8 +151,8 @@ export default function RelatorioInadimplencia() {
             <KpiCard title="Clientes Devedores" value={clienteDebitos.length.toString()} icon={Users} />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
+          <div id="charts-inadimplencia" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card data-chart-export>
               <CardHeader><CardTitle className="text-sm">Aging - Tempo de Atraso</CardTitle></CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={250}>
@@ -167,7 +167,7 @@ export default function RelatorioInadimplencia() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card data-chart-export>
               <CardHeader><CardTitle className="text-sm">Top Devedores</CardTitle></CardHeader>
               <CardContent>
                 {clienteDebitos.length === 0 ? (

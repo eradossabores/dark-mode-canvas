@@ -177,7 +177,7 @@ export default function RelatorioVendas() {
             { label: "Período", value: periodoLabel },
             ...(filtroPagamento !== "todos" ? [{ label: "Filtro Pagamento", value: filtroPagamento.toUpperCase() }] : []),
             ...(filtroStatus !== "todos" ? [{ label: "Filtro Status", value: filtroStatus }] : []),
-          ])}
+          ], "charts-vendas")}
           onExcel={() => exportToExcel(headers, rows, "Vendas", "relatorio-vendas")}
         />
       </DateRangeFilter>
@@ -213,8 +213,9 @@ export default function RelatorioVendas() {
             <KpiCard title="Unidades Vendidas" value={totalUnidades.toLocaleString("pt-BR")} icon={TrendingUp} />
           </div>
 
+          <div id="charts-vendas" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card>
+            <Card data-chart-export>
               <CardHeader><CardTitle className="text-sm">Ranking - Mais Vendidos</CardTitle></CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={280}>
@@ -228,7 +229,7 @@ export default function RelatorioVendas() {
                 </ResponsiveContainer>
               </CardContent>
             </Card>
-            <Card>
+            <Card data-chart-export>
               <CardHeader><CardTitle className="text-sm">Faturamento por Sabor</CardTitle></CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={280}>
@@ -241,7 +242,7 @@ export default function RelatorioVendas() {
                 </ResponsiveContainer>
               </CardContent>
             </Card>
-            <Card>
+            <Card data-chart-export>
               <CardHeader><CardTitle className="text-sm">Por Forma de Pagamento</CardTitle></CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={280}>
@@ -256,7 +257,7 @@ export default function RelatorioVendas() {
             </Card>
           </div>
 
-          <Card>
+          <Card id="chart-vendas-linha" data-chart-export>
             <CardHeader><CardTitle className="text-sm">Faturamento por Dia</CardTitle></CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={250}>
@@ -270,6 +271,7 @@ export default function RelatorioVendas() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
+          </div>
 
           <Card>
             <CardHeader><CardTitle className="text-sm">Histórico de Vendas</CardTitle></CardHeader>
