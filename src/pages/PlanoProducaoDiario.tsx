@@ -370,6 +370,10 @@ export default function PlanoProducaoDiario() {
           .filter(Boolean)
           .map((f: any) => f.id);
         if (ids.length > 0) setFuncSelecionados(ids);
+        else setFuncSelecionados([""]);
+      } else {
+        // Garantir pelo menos um slot vazio para seleção manual
+        setFuncSelecionados(prev => prev.length === 0 ? [""] : prev);
       }
 
       const decisoes = decisoesRes.data || [];
