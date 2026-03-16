@@ -18,6 +18,7 @@ import scratHangingImg from "@/assets/scrat-hanging.png";
 import EstoqueInteligente from "@/components/dashboard/EstoqueInteligente";
 import RankingClientes from "@/components/dashboard/RankingClientes";
 import ClientesInativos from "@/components/dashboard/ClientesInativos";
+import GastosColaboradores from "@/components/dashboard/GastosColaboradores";
 
 const postItCharacters = [sidImg, scratAcornImg, buckImg, scrat3dImg, scratStandingImg, scratHangingImg];
 
