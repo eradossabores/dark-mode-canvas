@@ -787,6 +787,14 @@ export default function Dashboard() {
           </Card>
         </div>
       </div>
+
+      {/* Gastos com Colaboradores */}
+      <div className="mt-6 opacity-0 animate-fade-in" style={{ animationDelay: "1100ms", animationFillMode: "forwards" }}>
+        <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
+          <GlowingEffect spread={20} glow disabled={false} proximity={40} inactiveZone={0.2} borderWidth={1} />
+          <div className="relative"><GastosColaboradores /></div>
+        </div>
+      </div>
     </div>
   );
 }
