@@ -155,8 +155,8 @@ export default function RelatorioProducao() {
             <KpiCard title="Média por Produção" value={filtered.length ? Math.round(totalProduzido / filtered.length).toString() : "0"} icon={Users} subtitle="unidades" />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
+          <div id="charts-producao" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card data-chart-export>
               <CardHeader><CardTitle className="text-sm">Produção por Sabor</CardTitle></CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={280}>
