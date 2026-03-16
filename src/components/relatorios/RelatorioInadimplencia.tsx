@@ -151,8 +151,8 @@ export default function RelatorioInadimplencia() {
             <KpiCard title="Clientes Devedores" value={clienteDebitos.length.toString()} icon={Users} />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
+          <div id="charts-inadimplencia" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card data-chart-export>
               <CardHeader><CardTitle className="text-sm">Aging - Tempo de Atraso</CardTitle></CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={250}>
