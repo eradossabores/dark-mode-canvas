@@ -45,7 +45,7 @@ const PRODUCTION_INDICATORS = ["responsavel", "responsável", "operador", "lote"
 const STATUS_MAP: Record<string, string> = {
   pago: "Pago", paga: "Pago", sim: "Pago", ok: "Pago", "1": "Pago",
   pendente: "Pendente", nao: "Pendente", não: "Pendente", "0": "Pendente",
-  fiado: "Fiado", fiar: "Fiado",
+  fiado: "A Prazo", fiar: "A Prazo",
   atrasado: "Atrasado", atraso: "Atrasado",
   parcelado: "Parcelado", parcial: "Parcial", parcialmente: "Parcial",
   "ñ pago": "Pendente", "nao pago": "Pendente", "não pago": "Pendente",
