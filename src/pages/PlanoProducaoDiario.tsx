@@ -494,8 +494,8 @@ export default function PlanoProducaoDiario() {
         return a.diasCobertura - b.diasCobertura;
       });
 
-      // Normalizar para que o total sugerido seja sempre 7 lotes
-      const META_LOTES_TOTAL = 7;
+      // Normalizar para que o total sugerido seja sempre 6 lotes (504 unidades)
+      const META_LOTES_TOTAL = 6;
       const totalSugerido = result.reduce((s, r) => s + r.lotesCustom, 0);
       if (totalSugerido > 0 && totalSugerido !== META_LOTES_TOTAL) {
         // Distribuir proporcionalmente, priorizando quem tem mais deficit
