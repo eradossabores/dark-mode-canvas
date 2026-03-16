@@ -241,7 +241,7 @@ export default function RelatorioVendas() {
                 </ResponsiveContainer>
               </CardContent>
             </Card>
-            <Card>
+            <Card data-chart-export>
               <CardHeader><CardTitle className="text-sm">Por Forma de Pagamento</CardTitle></CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={280}>
