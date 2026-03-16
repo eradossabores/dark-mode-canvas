@@ -644,6 +644,7 @@ export default function PlanoProducaoDiario() {
 
     const alvoIso = `${dataAlvo.getFullYear()}-${String(dataAlvo.getMonth() + 1).padStart(2, "0")}-${String(dataAlvo.getDate()).padStart(2, "0")}T08:00:00-03:00`;
 
+    // Build rows WITHOUT 'ajuste' (it's a generated column in DB)
     const rows = itens.map(item => ({
       dia_semana: diaSemana,
       sabor_id: item.id,
