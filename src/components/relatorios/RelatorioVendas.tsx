@@ -213,8 +213,8 @@ export default function RelatorioVendas() {
             <KpiCard title="Unidades Vendidas" value={totalUnidades.toLocaleString("pt-BR")} icon={TrendingUp} />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card>
+          <div id="charts-vendas" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card data-chart-export>
               <CardHeader><CardTitle className="text-sm">Ranking - Mais Vendidos</CardTitle></CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={280}>
