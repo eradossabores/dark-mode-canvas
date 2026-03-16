@@ -98,7 +98,7 @@ export default function AnaliseResumoCard({ analise, tipo }: { analise: AnaliseR
       )}
 
       {analise.pendentes.length > 0 && (
-        <PendingTable title="Pagamentos Pendentes / Fiado" rows={analise.pendentes} hasValor={hasValor} />
+        <PendingTable title="Pagamentos Pendentes / A Prazo" rows={analise.pendentes} hasValor={hasValor} />
       )}
       {analise.atrasados.length > 0 && (
         <PendingTable title="Pagamentos em Atraso" rows={analise.atrasados} hasValor={hasValor} />
