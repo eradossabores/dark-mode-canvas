@@ -654,7 +654,6 @@ export default function PlanoProducaoDiario() {
       dias_cobertura: item.diasCobertura,
       lotes_sugeridos: item.loteSugerido,
       lotes_autorizados: item.lotesCustom,
-      ajuste: item.lotesCustom - item.loteSugerido,
       operador,
       created_at: alvoIso,
     }));
