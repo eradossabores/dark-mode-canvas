@@ -295,7 +295,7 @@ export default function MonitorProducao() {
           observacoes: `🌐 Portal | ${order.forma_pagamento?.toUpperCase()} | ${order.endereco}, ${order.bairro}${order.observacoes ? ` | ${order.observacoes}` : ""}`,
           tipo_pedido: "entrega",
           status: "aguardando_producao",
-          status_pagamento: order.forma_pagamento === "fiado" ? "fiado" : "aguardando_pagamento",
+          status_pagamento: order.forma_pagamento === "fiado" ? "a_prazo" : "aguardando_pagamento",
         } as any)
         .select("id")
         .single();
@@ -679,7 +679,7 @@ export default function MonitorProducao() {
           </div>
           <div className={`grid gap-4 ${tv ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1 md:grid-cols-2"}`}>
             {(pedidosPublicos || []).map((order: any, i: number) => {
-              const pagLabels: Record<string, string> = { dinheiro: "💵 Dinheiro", pix: "📱 PIX", cartao: "💳 Cartão", fiado: "📝 Fiado" };
+              const pagLabels: Record<string, string> = { dinheiro: "💵 Dinheiro", pix: "📱 PIX", cartao: "💳 Cartão", fiado: "📝 A Prazo" };
               const itens = order.itens || [];
               return (
                 <div key={order.id} className="rounded-2xl overflow-hidden shadow-lg shadow-cyan-500/10 bg-card border border-cyan-500/30 animate-fade-in" style={{ animationDelay: `${i * 60}ms` }}>

@@ -45,7 +45,7 @@ const PRODUCTION_INDICATORS = ["responsavel", "responsável", "operador", "lote"
 const STATUS_MAP: Record<string, string> = {
   pago: "Pago", paga: "Pago", sim: "Pago", ok: "Pago", "1": "Pago",
   pendente: "Pendente", nao: "Pendente", não: "Pendente", "0": "Pendente",
-  fiado: "Fiado", fiar: "Fiado",
+  fiado: "A Prazo", fiar: "A Prazo",
   atrasado: "Atrasado", atraso: "Atrasado",
   parcelado: "Parcelado", parcial: "Parcial", parcialmente: "Parcial",
   "ñ pago": "Pendente", "nao pago": "Pendente", "não pago": "Pendente",
@@ -627,7 +627,7 @@ export function buildAnalise(rows: ImportRow[]): AnaliseResumo {
     .map(([status, v]) => ({ status, ...v }))
     .sort((a, b) => b.count - a.count);
 
-  const pendentes = valid.filter(r => r.statusPagamento === "Pendente" || r.statusPagamento === "Fiado");
+  const pendentes = valid.filter(r => r.statusPagamento === "Pendente" || r.statusPagamento === "A Prazo");
   const atrasados = valid.filter(r => r.statusPagamento === "Atrasado");
 
   return {

@@ -64,7 +64,7 @@ export default function AnaliseResumoCard({ analise, tipo }: { analise: AnaliseR
                   <Badge
                     variant={
                       s.status === "Pago" ? "default" :
-                      s.status === "Pendente" || s.status === "Fiado" ? "secondary" :
+                      s.status === "Pendente" || s.status === "A Prazo" ? "secondary" :
                       s.status === "Atrasado" ? "destructive" : "outline"
                     }
                     className="mb-1"
@@ -91,14 +91,14 @@ export default function AnaliseResumoCard({ analise, tipo }: { analise: AnaliseR
               <span>{analise.atrasados.length} transação(ões) em <strong>atraso</strong>. </span>
             )}
             {analise.pendentes.length > 0 && (
-              <span>{analise.pendentes.length} transação(ões) com pagamento <strong>pendente/fiado</strong>.</span>
+              <span>{analise.pendentes.length} transação(ões) com pagamento <strong>pendente/a prazo</strong>.</span>
             )}
           </AlertDescription>
         </Alert>
       )}
 
       {analise.pendentes.length > 0 && (
-        <PendingTable title="Pagamentos Pendentes / Fiado" rows={analise.pendentes} hasValor={hasValor} />
+        <PendingTable title="Pagamentos Pendentes / A Prazo" rows={analise.pendentes} hasValor={hasValor} />
       )}
       {analise.atrasados.length > 0 && (
         <PendingTable title="Pagamentos em Atraso" rows={analise.atrasados} hasValor={hasValor} />

@@ -272,7 +272,7 @@ export default function Pedir() {
       dinheiro: "💵 Dinheiro",
       pix: "📱 PIX",
       cartao: "💳 Cartão",
-      fiado: "📝 Fiado",
+      fiado: "📝 A Prazo",
     };
 
     const itensText = cart
@@ -761,7 +761,7 @@ export default function Pedir() {
                     { value: "pix", label: "PIX", icon: "📱", desc: "Transferência instantânea" },
                     { value: "dinheiro", label: "Dinheiro", icon: "💵", desc: "Na entrega" },
                     { value: "cartao", label: "Cartão", icon: "💳", desc: "Crédito ou débito" },
-                    { value: "fiado", label: "Fiado", icon: "📝", desc: "Para clientes cadastrados" },
+                    { value: "fiado", label: "A Prazo", icon: "📝", desc: "Para clientes cadastrados" },
                   ].map((op) => (
                     <button
                       key={op.value}
