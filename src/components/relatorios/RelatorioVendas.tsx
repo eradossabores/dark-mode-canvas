@@ -271,8 +271,8 @@ export default function RelatorioVendas() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
+          </div>
 
-          <Card>
             <CardHeader><CardTitle className="text-sm">Histórico de Vendas</CardTitle></CardHeader>
             <CardContent>
               <Table>
