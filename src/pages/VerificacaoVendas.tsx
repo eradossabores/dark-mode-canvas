@@ -70,7 +70,7 @@ const PLANILHA_RAW: Array<{data:string; cliente:string; sabores:number[]; qtd:nu
   {data:"2/11/26",cliente:"STEM",sabores:[100,100,100,50,50,0,50,0,0,0,0],qtd:450,valor:"R$ 832.50",status:"PAGO",pagto:"BOLETO"},
   {data:"2/11/26",cliente:"SMOKE",sabores:[20,20,20,20,20,0,0,0,0,0,0],qtd:100,valor:"R$ 195.00",status:"PAGO",pagto:"PIX"},
   {data:"2/12/26",cliente:"SMOKE",sabores:[20,20,20,20,20,0,0,0,0,0,0],qtd:100,valor:"R$ 195.00",status:"PAGO",pagto:"PIX"},
-  {data:"2/12/26",cliente:"BRETS",sabores:[60,60,60,60,60,0,0,0,0,0,0],qtd:300,valor:"R$ 597.00",status:"FIADO",pagto:"FIADO"},
+  {data:"2/12/26",cliente:"BRETS",sabores:[60,60,60,60,60,0,0,0,0,0,0],qtd:300,valor:"R$ 597.00",status:"A PRAZO",pagto:"A PRAZO"},
   {data:"2/13/26",cliente:"PORÃO",sabores:[175,175,175,175,0,0,0,0,0,0,0],qtd:700,valor:"R$ 1,260.00",status:"PENDENTE",pagto:""},
   {data:"2/13/26",cliente:"MARLON BARBER",sabores:[10,0,10,10,0,0,0,0,0,0,0],qtd:30,valor:"R$ 75.00",status:"PAGO",pagto:"PIX"},
   {data:"2/13/26",cliente:"THONNY",sabores:[0,8,8,7,0,0,7,0,0,0,0],qtd:30,valor:"R$ 82.00",status:"PAGO",pagto:"PIX"},
