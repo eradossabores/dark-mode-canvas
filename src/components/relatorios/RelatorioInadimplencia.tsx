@@ -167,7 +167,7 @@ export default function RelatorioInadimplencia() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card data-chart-export>
               <CardHeader><CardTitle className="text-sm">Top Devedores</CardTitle></CardHeader>
               <CardContent>
                 {clienteDebitos.length === 0 ? (

@@ -170,7 +170,7 @@ export default function RelatorioProducao() {
                 </ResponsiveContainer>
               </CardContent>
             </Card>
-            <Card>
+            <Card data-chart-export>
               <CardHeader><CardTitle className="text-sm">Produções por Responsável</CardTitle></CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={280}>

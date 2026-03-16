@@ -256,7 +256,7 @@ export default function RelatorioVendas() {
             </Card>
           </div>
 
-          <Card>
+          <Card id="chart-vendas-linha" data-chart-export>
             <CardHeader><CardTitle className="text-sm">Faturamento por Dia</CardTitle></CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={250}>
