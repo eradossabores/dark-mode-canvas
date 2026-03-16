@@ -91,7 +91,7 @@ export default function AnaliseResumoCard({ analise, tipo }: { analise: AnaliseR
               <span>{analise.atrasados.length} transação(ões) em <strong>atraso</strong>. </span>
             )}
             {analise.pendentes.length > 0 && (
-              <span>{analise.pendentes.length} transação(ões) com pagamento <strong>pendente/fiado</strong>.</span>
+              <span>{analise.pendentes.length} transação(ões) com pagamento <strong>pendente/a prazo</strong>.</span>
             )}
           </AlertDescription>
         </Alert>
