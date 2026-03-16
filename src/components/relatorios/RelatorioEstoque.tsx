@@ -106,7 +106,7 @@ export default function RelatorioEstoque() {
             { label: "Saídas (período)", value: saidas.toLocaleString("pt-BR") },
             { label: "Itens Estoque Baixo", value: totalBaixo.toString() },
             { label: "Período", value: periodoLabel },
-          ])}
+          ], "charts-estoque")}
           onExcel={() => exportToExcel(movHeaders, movRows, "Estoque", "relatorio-estoque")}
         />
       </DateRangeFilter>
