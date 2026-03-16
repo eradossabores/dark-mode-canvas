@@ -20,7 +20,7 @@ const FORMAS_PAGAMENTO = [
   { value: "pix", label: "PIX" },
   { value: "dinheiro", label: "Dinheiro" },
   { value: "cartao", label: "Cartão" },
-  { value: "fiado", label: "Fiado" },
+  { value: "fiado", label: "A Prazo" },
   { value: "boleto", label: "Boleto" },
 ];
 

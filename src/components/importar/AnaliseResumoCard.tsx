@@ -64,7 +64,7 @@ export default function AnaliseResumoCard({ analise, tipo }: { analise: AnaliseR
                   <Badge
                     variant={
                       s.status === "Pago" ? "default" :
-                      s.status === "Pendente" || s.status === "Fiado" ? "secondary" :
+                      s.status === "Pendente" || s.status === "A Prazo" ? "secondary" :
                       s.status === "Atrasado" ? "destructive" : "outline"
                     }
                     className="mb-1"

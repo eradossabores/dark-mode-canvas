@@ -295,7 +295,7 @@ export default function MonitorProducao() {
           observacoes: `🌐 Portal | ${order.forma_pagamento?.toUpperCase()} | ${order.endereco}, ${order.bairro}${order.observacoes ? ` | ${order.observacoes}` : ""}`,
           tipo_pedido: "entrega",
           status: "aguardando_producao",
-          status_pagamento: order.forma_pagamento === "fiado" ? "fiado" : "aguardando_pagamento",
+          status_pagamento: order.forma_pagamento === "fiado" ? "a_prazo" : "aguardando_pagamento",
         } as any)
         .select("id")
         .single();

@@ -627,7 +627,7 @@ export function buildAnalise(rows: ImportRow[]): AnaliseResumo {
     .map(([status, v]) => ({ status, ...v }))
     .sort((a, b) => b.count - a.count);
 
-  const pendentes = valid.filter(r => r.statusPagamento === "Pendente" || r.statusPagamento === "Fiado");
+  const pendentes = valid.filter(r => r.statusPagamento === "Pendente" || r.statusPagamento === "A Prazo");
   const atrasados = valid.filter(r => r.statusPagamento === "Atrasado");
 
   return {

@@ -108,7 +108,7 @@ const PLANILHA_RAW: Array<{data:string; cliente:string; sabores:number[]; qtd:nu
   {data:"2/16/26",cliente:"COMBO",sabores:[0,4,0,0,0,0,0,0,0,0,0],qtd:4,valor:"R$ 7.96",status:"PAGO",pagto:""},
   {data:"2/16/26",cliente:"COMBO",sabores:[0,2,2,0,0,0,2,0,0,0,0],qtd:6,valor:"R$ 60.00",status:"PAGO",pagto:"PIXESPECIE"},
   {data:"2/17/26",cliente:"COMBO",sabores:[2,0,0,0,0,0,0,0,0,0,0],qtd:2,valor:"R$ 25.00",status:"PAGO",pagto:"PIX"},
-  {data:"2/17/26",cliente:"BRETS",sabores:[30,30,30,30,30,0,0,0,0,0,0],qtd:150,valor:"R$ 298.50",status:"FIADO",pagto:""},
+  {data:"2/17/26",cliente:"BRETS",sabores:[30,30,30,30,30,0,0,0,0,0,0],qtd:150,valor:"R$ 298.50",status:"A PRAZO",pagto:""},
   {data:"2/17/26",cliente:"AVULSO",sabores:[5,5,3,4,0,3,0,0,0,0,0],qtd:20,valor:"R$ 39.80",status:"PAGO",pagto:""},
   {data:"2/17/26",cliente:"VILE CLUB",sabores:[66,67,67,0,0,0,0,0,0,0,0],qtd:200,valor:"R$ 398.00",status:"PENDENTE",pagto:""},
   {data:"2/17/26",cliente:"COMBO",sabores:[2,2,2,2,1,1,0,0,0,0,0],qtd:10,valor:"R$ 73.00",status:"PAGO",pagto:""},
