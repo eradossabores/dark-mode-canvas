@@ -565,8 +565,8 @@ export default function PlanoProducaoDiario() {
       setAiResumo(data?.resumo || null);
       setAiAtivo(true);
 
-      // Merge AI suggestions into analises, then normalize to 6 total
-      const META_LOTES_TOTAL = 6;
+      // Merge AI suggestions into analises, then normalize to 7 total
+      const META_LOTES_TOTAL = 7;
       setAnalises(prev => {
         let updated = prev.map(a => {
           const sug = sugestoes.find((s: any) => 
