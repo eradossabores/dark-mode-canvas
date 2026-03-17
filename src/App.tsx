@@ -36,6 +36,7 @@ import Prospeccao from "@/pages/Prospeccao";
 import Cadastro from "@/pages/Cadastro";
 import Pedir from "@/pages/Pedir";
 import Backup from "@/pages/Backup";
+import PresencaProducao from "@/pages/PresencaProducao";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
