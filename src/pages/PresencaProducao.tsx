@@ -77,6 +77,29 @@ export default function PresencaProducao() {
     setPresencas(data);
   }
 
+  function verificarLocalizacao(): Promise<{ ok: boolean; distancia?: number; erro?: string }> {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        resolve({ ok: false, erro: "Geolocalização não suportada pelo navegador." });
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const dist = calcularDistancia(pos.coords.latitude, pos.coords.longitude, FABRICA_LAT, FABRICA_LNG);
+          if (dist <= RAIO_MAXIMO_METROS) {
+            resolve({ ok: true, distancia: Math.round(dist) });
+          } else {
+            resolve({ ok: false, distancia: Math.round(dist), erro: `Você está a ${(dist / 1000).toFixed(1)}km da fábrica. Máximo permitido: ${RAIO_MAXIMO_METROS}m.` });
+          }
+        },
+        (err) => {
+          resolve({ ok: false, erro: `Erro ao obter localização: ${err.message}. Ative o GPS e tente novamente.` });
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    });
+  }
+
   async function togglePresenca(funcionarioId: string) {
     setToggling(funcionarioId);
     try {
@@ -85,13 +108,23 @@ export default function PresencaProducao() {
         await (supabase as any).from("presenca_producao").delete().eq("id", existing.id);
         toast({ title: "Presença removida" });
       } else {
+        // Verificar localização antes de confirmar
+        const loc = await verificarLocalizacao();
+        if (!loc.ok) {
+          toast({
+            title: "⚠️ Localização não permitida",
+            description: loc.erro,
+            variant: "destructive",
+          });
+          return;
+        }
         const { error } = await (supabase as any).from("presenca_producao").insert({
           funcionario_id: funcionarioId,
           data: dataFiltro,
           confirmado_por: user?.id,
         });
         if (error) throw error;
-        toast({ title: "Presença confirmada! ✅" });
+        toast({ title: `Presença confirmada! ✅`, description: `Distância da fábrica: ${loc.distancia}m` });
       }
       await loadPresencas();
     } catch (e: any) {
