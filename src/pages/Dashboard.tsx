@@ -548,7 +548,7 @@ export default function Dashboard() {
                               : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
                           }`}
                         >
-                          {p === "total" ? "Total" : p === "semanal" ? "Semana" : p === "mensal" ? "Mês" : "Ano"}
+                          {p === "total" ? "Total" : p === "semanal" ? "Semana" : p === "mensal" ? MESES_NOME[mesFatCard].slice(0, 3) : "Ano"}
                         </button>
                       ))}
                     </div>
@@ -598,7 +598,7 @@ export default function Dashboard() {
                             : "bg-muted text-muted-foreground hover:bg-muted/80"
                         }`}
                       >
-                        {p === "7dias" ? "7D" : p === "15dias" ? "15D" : "Mês"}
+                        {p === "7dias" ? "7D" : p === "15dias" ? "15D" : MESES_NOME[mesFaturamento].slice(0, 3)}
                       </button>
                     ))}
                   </div>
@@ -655,7 +655,7 @@ export default function Dashboard() {
                             : "bg-muted text-muted-foreground hover:bg-muted/80"
                         }`}
                       >
-                        {p === "7dias" ? "7D" : p === "15dias" ? "15D" : "Mês"}
+                        {p === "7dias" ? "7D" : p === "15dias" ? "15D" : MESES_NOME[mesProducao].slice(0, 3)}
                       </button>
                     ))}
                   </div>
