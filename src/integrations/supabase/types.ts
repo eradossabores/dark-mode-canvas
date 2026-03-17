@@ -861,6 +861,38 @@ export type Database = {
         }
         Relationships: []
       }
+      presenca_producao: {
+        Row: {
+          confirmado_por: string | null
+          created_at: string
+          data: string
+          funcionario_id: string
+          id: string
+        }
+        Insert: {
+          confirmado_por?: string | null
+          created_at?: string
+          data?: string
+          funcionario_id: string
+          id?: string
+        }
+        Update: {
+          confirmado_por?: string | null
+          created_at?: string
+          data?: string
+          funcionario_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presenca_producao_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "funcionarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       producao_funcionarios: {
         Row: {
           funcionario_id: string

@@ -227,6 +227,7 @@ export default function PlanoProducaoDiario() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResumo, setAiResumo] = useState<string | null>(null);
   const [aiAtivo, setAiAtivo] = useState(false);
+  const [presencas, setPresencas] = useState<any[]>([]);
 
   const hoje = new Date();
   const diasDisponiveis = Array.from({ length: 5 }, (_, i) => {
@@ -243,7 +244,18 @@ export default function PlanoProducaoDiario() {
   useEffect(() => {
     calcular();
     fetchHistorico();
+    fetchPresencas();
   }, [diaOffset]);
+
+  async function fetchPresencas() {
+    const d = diasDisponiveis[diaOffset] || new Date();
+    const alvoIso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const { data } = await (supabase as any)
+      .from("presenca_producao")
+      .select("*, funcionarios(nome)")
+      .eq("data", alvoIso);
+    setPresencas(data || []);
+  }
 
   async function fetchHistorico() {
     try {
@@ -956,6 +968,30 @@ export default function PlanoProducaoDiario() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Presença dos Colaboradores */}
+      {presencas.length > 0 && (
+        <Card className="border-dashed border-green-500/30 bg-green-500/5">
+          <CardContent className="py-3 px-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                <CheckCircle2 className="h-3 w-3 text-green-600" /> Presença Confirmada
+              </p>
+              <Badge variant="outline" className="text-[10px] border-green-500/30 text-green-600">
+                {presencas.length} colaborador(es)
+              </Badge>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {presencas.map((p: any) => (
+                <Badge key={p.id} className="bg-green-600 text-white text-xs gap-1">
+                  <CheckCircle2 className="h-3 w-3" />
+                  {p.funcionarios?.nome || "?"}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Checklist de sabores */}
       <div className="space-y-2">
