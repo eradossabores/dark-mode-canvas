@@ -244,7 +244,18 @@ export default function PlanoProducaoDiario() {
   useEffect(() => {
     calcular();
     fetchHistorico();
+    fetchPresencas();
   }, [diaOffset]);
+
+  async function fetchPresencas() {
+    const d = diasDisponiveis[diaOffset] || new Date();
+    const alvoIso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const { data } = await (supabase as any)
+      .from("presenca_producao")
+      .select("*, funcionarios(nome)")
+      .eq("data", alvoIso);
+    setPresencas(data || []);
+  }
 
   async function fetchHistorico() {
     try {
