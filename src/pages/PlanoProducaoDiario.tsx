@@ -227,6 +227,7 @@ export default function PlanoProducaoDiario() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResumo, setAiResumo] = useState<string | null>(null);
   const [aiAtivo, setAiAtivo] = useState(false);
+  const [presencas, setPresencas] = useState<any[]>([]);
 
   const hoje = new Date();
   const diasDisponiveis = Array.from({ length: 5 }, (_, i) => {
