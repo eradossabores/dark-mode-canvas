@@ -5,8 +5,22 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { CheckCircle2, Circle, CalendarDays, Users, Clock } from "lucide-react";
+import { CheckCircle2, Circle, CalendarDays, Users, Clock, MapPin, AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
+
+// Fábrica: Av. Consolação de Matos 103, Cidade Satélite, Boa Vista-RR
+const FABRICA_LAT = 2.8195;
+const FABRICA_LNG = -60.6735;
+const RAIO_MAXIMO_METROS = 1000; // 1km
+
+function calcularDistancia(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371e3;
+  const toRad = (v: number) => (v * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 export default function PresencaProducao() {
   const { user } = useAuth();
