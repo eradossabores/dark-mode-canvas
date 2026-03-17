@@ -655,7 +655,7 @@ export default function Dashboard() {
                             : "bg-muted text-muted-foreground hover:bg-muted/80"
                         }`}
                       >
-                        {p === "7dias" ? "7D" : p === "15dias" ? "15D" : "Mês"}
+                        {p === "7dias" ? "7D" : p === "15dias" ? "15D" : MESES_NOME[mesProducao].slice(0, 3)}
                       </button>
                     ))}
                   </div>
