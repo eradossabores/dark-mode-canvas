@@ -548,7 +548,7 @@ export default function Dashboard() {
                               : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
                           }`}
                         >
-                          {p === "total" ? "Total" : p === "semanal" ? "Semana" : p === "mensal" ? "Mês" : "Ano"}
+                          {p === "total" ? "Total" : p === "semanal" ? "Semana" : p === "mensal" ? MESES_NOME[mesFatCard].slice(0, 3) : "Ano"}
                         </button>
                       ))}
                     </div>
