@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { AdvancedMap, createSvgIcon, type MapMarker } from "@/components/ui/interactive-map";
+import { AdvancedMap, createSvgIcon, MAP_ICONS, type MapMarker } from "@/components/ui/interactive-map";
 import L from "leaflet";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,8 @@ interface Cliente {
 type AutoGeocodeStatus = "pendente" | "localizado" | "nao-encontrado";
 
 export default function MapaClientes() {
+  const [searchParams] = useSearchParams();
+  const highlightedClienteId = searchParams.get("cliente");
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [placingClienteId, setPlacingClienteId] = useState<string | null>(null);
   const [tempMarker, setTempMarker] = useState<[number, number] | null>(null);
@@ -106,6 +109,17 @@ export default function MapaClientes() {
   }, []);
 
   useEffect(() => { void loadClientes(); }, []);
+
+  useEffect(() => {
+    if (!highlightedClienteId || clientes.length === 0) return;
+
+    const cliente = clientes.find((item) => item.id === highlightedClienteId);
+    if (!cliente) return;
+
+    if (cliente.latitude != null && cliente.longitude != null) {
+      setFlyTarget([cliente.latitude, cliente.longitude]);
+    }
+  }, [clientes, highlightedClienteId]);
 
   async function loadClientes(runAutoGeocode = true) {
     const { data } = await (supabase as any)
@@ -196,7 +210,7 @@ export default function MapaClientes() {
     ...clientesFiltrados.map(c => ({
       id: c.id,
       position: [c.latitude!, c.longitude!] as [number, number],
-      icon: clienteIcon,
+      icon: c.id === highlightedClienteId ? MAP_ICONS.gold : clienteIcon,
       popup: {
         title: c.nome,
         content: (
@@ -332,7 +346,7 @@ export default function MapaClientes() {
               enableClustering={clientesFiltrados.length > 20}
               enableControls={true}
               flyTo={flyTarget}
-              flyToZoom={17}
+              flyToZoom={highlightedClienteId ? 18 : 17}
               style={{ height: "600px", width: "100%" }}
             />
           </Card>
