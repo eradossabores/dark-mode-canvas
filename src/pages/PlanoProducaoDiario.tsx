@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -207,6 +208,7 @@ function calcularFeedback(
 
 
 export default function PlanoProducaoDiario() {
+  const navigate = useNavigate();
   const [analises, setAnalises] = useState<SaborAnalise[]>([]);
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
   const [funcSelecionados, setFuncSelecionados] = useState<string[]>([]);
@@ -723,6 +725,7 @@ export default function PlanoProducaoDiario() {
       setExecutado(true);
       setPlanoHojeJaFeito(true);
       fetchHistorico();
+      navigate(`/painel/producao?data=${alvoStr}`);
     } catch (e: any) {
       toast({ title: "Erro ao autorizar", description: e.message, variant: "destructive" });
     } finally {
