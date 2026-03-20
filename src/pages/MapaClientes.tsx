@@ -27,6 +27,8 @@ interface Cliente {
   possui_freezer: boolean;
 }
 
+type AutoGeocodeStatus = "pendente" | "localizado" | "nao-encontrado";
+
 export default function MapaClientes() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [placingClienteId, setPlacingClienteId] = useState<string | null>(null);
@@ -35,11 +37,34 @@ export default function MapaClientes() {
   const [searchTerm, setSearchTerm] = useState("");
   const [flyTarget, setFlyTarget] = useState<[number, number] | null>(null);
   const [autoGeocoding, setAutoGeocoding] = useState(false);
+  const [autoGeocodeStatus, setAutoGeocodeStatus] = useState<Record<string, AutoGeocodeStatus>>({});
+
+  function getStatusLabel(status?: AutoGeocodeStatus) {
+    switch (status) {
+      case "localizado":
+        return { label: "Localizado", variant: "default" as const };
+      case "nao-encontrado":
+        return { label: "Não encontrado", variant: "destructive" as const };
+      case "pendente":
+      default:
+        return { label: "Pendente", variant: "secondary" as const };
+    }
+  }
 
   const autoGeocodeMissingClientes = useCallback(async (lista: Cliente[]) => {
     const pendentes = lista.filter((cliente) =>
       cliente.latitude == null && cliente.longitude == null && hasAddressForGeocoding(cliente)
     );
+
+    setAutoGeocodeStatus((prev) => {
+      const next = { ...prev };
+      lista.forEach((cliente) => {
+        if (cliente.latitude == null || cliente.longitude == null) {
+          next[cliente.id] = hasAddressForGeocoding(cliente) ? (prev[cliente.id] ?? "pendente") : "nao-encontrado";
+        }
+      });
+      return next;
+    });
 
     if (pendentes.length === 0) return;
 
@@ -48,8 +73,12 @@ export default function MapaClientes() {
 
     for (const cliente of pendentes) {
       try {
+        setAutoGeocodeStatus((prev) => ({ ...prev, [cliente.id]: "pendente" }));
         const coords = await geocodeClienteAddress(cliente);
-        if (!coords) continue;
+        if (!coords) {
+          setAutoGeocodeStatus((prev) => ({ ...prev, [cliente.id]: "nao-encontrado" }));
+          continue;
+        }
 
         const { error } = await (supabase as any)
           .from("clientes")
@@ -57,8 +86,10 @@ export default function MapaClientes() {
           .eq("id", cliente.id);
 
         if (error) throw error;
+        setAutoGeocodeStatus((prev) => ({ ...prev, [cliente.id]: "localizado" }));
         atualizados += 1;
       } catch (error) {
+        setAutoGeocodeStatus((prev) => ({ ...prev, [cliente.id]: "nao-encontrado" }));
         console.warn("Falha ao geocodificar cliente automaticamente:", cliente.nome, error);
       }
     }
@@ -334,10 +365,17 @@ export default function MapaClientes() {
             {semCoordenadas.map(c => (
               <Card key={c.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => startPlacing(c.id)}>
                 <CardContent className="pt-3 pb-3">
-                  <p className="font-medium text-sm truncate">{c.nome}</p>
-                  {c.bairro && <p className="text-xs text-muted-foreground">{c.bairro}</p>}
+                  <div className="mb-2 flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm truncate">{c.nome}</p>
+                      {c.bairro && <p className="text-xs text-muted-foreground">{c.bairro}</p>}
+                    </div>
+                    <Badge variant={getStatusLabel(autoGeocodeStatus[c.id]).variant} className="shrink-0 text-[10px]">
+                      {getStatusLabel(autoGeocodeStatus[c.id]).label}
+                    </Badge>
+                  </div>
                   {c.endereco && <p className="text-xs text-muted-foreground truncate">{c.endereco}</p>}
-                  <Badge variant="outline" className="text-[10px] mt-1">Clique para posicionar</Badge>
+                  <Badge variant="outline" className="mt-2 text-[10px]">Clique para posicionar</Badge>
                 </CardContent>
               </Card>
             ))}
