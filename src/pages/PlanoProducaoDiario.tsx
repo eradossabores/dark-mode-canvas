@@ -17,6 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ToastAction } from "@/components/ui/toast";
 
 
 interface SaborAnalise {
@@ -717,15 +718,21 @@ export default function PlanoProducaoDiario() {
       const totalLotesCalc = itens.reduce((s, i) => s + i.lotesCustom, 0);
       const totalUnidadesCalc = totalLotesCalc * 84;
       const labelDia = diaOffset > 0 ? `para ${dataAlvo.toLocaleDateString("pt-BR")}` : "de hoje";
+      const producaoUrl = `/painel/producao?data=${alvoStr}`;
+
       toast({
         title: "✅ Plano autorizado!",
         description: `${itens.length} sabor(es) · ${totalLotesCalc} lote(s) · ${totalUnidadesCalc.toLocaleString()} un ${labelDia} — vá para Produção para acompanhar o checklist.`,
+        action: (
+          <ToastAction altText="Abrir produção" onClick={() => navigate(producaoUrl)}>
+            Abrir Produção
+          </ToastAction>
+        ),
       });
 
       setExecutado(true);
       setPlanoHojeJaFeito(true);
       fetchHistorico();
-      navigate(`/painel/producao?data=${alvoStr}`);
     } catch (e: any) {
       toast({ title: "Erro ao autorizar", description: e.message, variant: "destructive" });
     } finally {
