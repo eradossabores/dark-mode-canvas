@@ -163,9 +163,22 @@ function Celebration() {
 }
 
 /* ─── Main Component ─── */
-export default function ChecklistProducaoDia() {
-  const hoje = new Date();
-  const hojeStr = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}-${String(hoje.getDate()).padStart(2, "0")}`;
+interface ChecklistProducaoDiaProps {
+  targetDate?: string;
+}
+
+function parseLocalDate(dateStr?: string) {
+  if (!dateStr) return new Date();
+
+  const [year, month, day] = dateStr.split("-").map(Number);
+  if (!year || !month || !day) return new Date();
+
+  return new Date(year, month - 1, day);
+}
+
+export default function ChecklistProducaoDia({ targetDate }: ChecklistProducaoDiaProps) {
+  const dataBase = parseLocalDate(targetDate);
+  const hojeStr = `${dataBase.getFullYear()}-${String(dataBase.getMonth() + 1).padStart(2, "0")}-${String(dataBase.getDate()).padStart(2, "0")}`;
   const CONCLUIDOS_KEY = `checklist-concluidos-${hojeStr}`;
   const REGISTRADOS_KEY = `checklist-registrados-${hojeStr}`;
 
@@ -180,7 +193,7 @@ export default function ChecklistProducaoDia() {
     localStorage.setItem(REGISTRADOS_KEY, JSON.stringify([...newSet]));
   }
 
-  useEffect(() => { fetchDecisoes(); }, []);
+  useEffect(() => { fetchDecisoes(); }, [hojeStr]);
 
   // Load registered items from localStorage as initial fallback
   useEffect(() => {
@@ -188,7 +201,7 @@ export default function ChecklistProducaoDia() {
       const saved = localStorage.getItem(REGISTRADOS_KEY);
       if (saved) setRegistrados(new Set(JSON.parse(saved)));
     } catch {}
-  }, []);
+  }, [REGISTRADOS_KEY]);
 
   async function fetchDecisoes() {
     setLoading(true);
