@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { AdvancedMap, createSvgIcon, type MapMarker, type MapCircle } from "@/components/ui/interactive-map";
+import { AdvancedMap, createSvgIcon, type MapMarker } from "@/components/ui/interactive-map";
 import L from "leaflet";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import { MapPin, Save, X, Users, RefreshCw, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { geocodeClienteAddress, hasAddressForGeocoding } from "@/lib/geocoding";
 
 const clienteIcon = createSvgIcon('#2563eb');
 const pendingIcon = createSvgIcon('#dc2626');
@@ -33,10 +34,49 @@ export default function MapaClientes() {
   const [filterBairro, setFilterBairro] = useState<string>("todos");
   const [searchTerm, setSearchTerm] = useState("");
   const [flyTarget, setFlyTarget] = useState<[number, number] | null>(null);
+  const [autoGeocoding, setAutoGeocoding] = useState(false);
 
-  useEffect(() => { loadClientes(); }, []);
+  const autoGeocodeMissingClientes = useCallback(async (lista: Cliente[]) => {
+    const pendentes = lista.filter((cliente) =>
+      cliente.latitude == null && cliente.longitude == null && hasAddressForGeocoding(cliente)
+    );
 
-  async function loadClientes() {
+    if (pendentes.length === 0) return;
+
+    setAutoGeocoding(true);
+    let atualizados = 0;
+
+    for (const cliente of pendentes) {
+      try {
+        const coords = await geocodeClienteAddress(cliente);
+        if (!coords) continue;
+
+        const { error } = await (supabase as any)
+          .from("clientes")
+          .update({ latitude: coords.lat, longitude: coords.lng })
+          .eq("id", cliente.id);
+
+        if (error) throw error;
+        atualizados += 1;
+      } catch (error) {
+        console.warn("Falha ao geocodificar cliente automaticamente:", cliente.nome, error);
+      }
+    }
+
+    setAutoGeocoding(false);
+
+    if (atualizados > 0) {
+      toast({
+        title: "📍 Clientes adicionados ao mapa",
+        description: `${atualizados} cliente(s) com endereço foram posicionados automaticamente.`,
+      });
+      await loadClientes(false);
+    }
+  }, []);
+
+  useEffect(() => { void loadClientes(); }, []);
+
+  async function loadClientes(runAutoGeocode = true) {
     const { data } = await (supabase as any)
       .from("clientes")
       .select("id, nome, bairro, endereco, telefone, status, latitude, longitude, possui_freezer")
@@ -44,11 +84,17 @@ export default function MapaClientes() {
       .not("nome", "ilike", "%amostra%")
       .not("nome", "ilike", "%avulso%")
       .order("nome");
-    setClientes(data || []);
+
+    const lista = data || [];
+    setClientes(lista);
+
+    if (runAutoGeocode) {
+      await autoGeocodeMissingClientes(lista);
+    }
   }
 
-  const semCoordenadas = clientes.filter(c => !c.latitude || !c.longitude);
-  const comCoordenadas = clientes.filter(c => c.latitude && c.longitude);
+  const semCoordenadas = clientes.filter(c => c.latitude == null || c.longitude == null);
+  const comCoordenadas = clientes.filter(c => c.latitude != null && c.longitude != null);
   const bairros = [...new Set(clientes.map(c => c.bairro).filter(Boolean))].sort() as string[];
 
   const clientesFiltrados = filterBairro === "todos"
@@ -165,7 +211,7 @@ export default function MapaClientes() {
           <MapPin className="h-6 w-6 text-primary" />
           <h1 className="text-2xl font-bold">Mapa de Clientes</h1>
         </div>
-        <Button variant="outline" size="sm" onClick={loadClientes}>
+        <Button variant="outline" size="sm" onClick={() => loadClientes()} disabled={autoGeocoding}>
           <RefreshCw className="h-4 w-4 mr-1" /> Atualizar
         </Button>
       </div>
@@ -272,7 +318,9 @@ export default function MapaClientes() {
                 {bairros.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
               </SelectContent>
             </Select>
-            <span className="text-sm text-muted-foreground">{clientesFiltrados.length} cliente(s) no mapa</span>
+            <span className="text-sm text-muted-foreground">
+              {autoGeocoding ? "Localizando endereços automaticamente..." : `${clientesFiltrados.length} cliente(s) no mapa`}
+            </span>
           </div>
         </div>
 
