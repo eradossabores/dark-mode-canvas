@@ -76,6 +76,11 @@ export default function Producao() {
   const [detailProd, setDetailProd] = useState<any>(null);
   const [detailFuncs, setDetailFuncs] = useState<any[]>([]);
 
+  const checklistDate = useMemo(() => {
+    if (!dataParam || !/^\d{4}-\d{2}-\d{2}$/.test(dataParam)) return undefined;
+    return dataParam;
+  }, [dataParam]);
+
   useEffect(() => { loadData(); }, []);
 
   // Scroll to specific date from query param
@@ -728,7 +733,7 @@ export default function Producao() {
       />
 
       {/* Checklist de Produção do Dia */}
-      <ChecklistProducaoDia />
+      <ChecklistProducaoDia targetDate={checklistDate} />
 
       <Card>
         <CardHeader><CardTitle>Histórico de Produções</CardTitle></CardHeader>
