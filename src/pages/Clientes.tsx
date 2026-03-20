@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { insertRow } from "@/lib/supabase-helpers";
+import { geocodeClienteAddress, hasAddressForGeocoding } from "@/lib/geocoding";
 import { toast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, History } from "lucide-react";
 import HistoricoCompras from "@/components/clientes/HistoricoCompras";
@@ -65,31 +66,6 @@ export default function Clientes() {
     setOpen(true);
   }
 
-  async function geocodeAddress(endereco: string, bairro: string, cidade: string, estado: string): Promise<{ lat: number; lng: number } | null> {
-    const cidadeVal = cidade || "Boa Vista";
-    const estadoVal = estado || "RR";
-    
-    // Tentar múltiplas estratégias de busca para maximizar sucesso
-    const queries = [
-      [endereco, bairro, cidadeVal, estadoVal, "Brasil"].filter(Boolean).join(", "),
-      [endereco, cidadeVal, estadoVal, "Brasil"].filter(Boolean).join(", "),
-      [bairro, cidadeVal, estadoVal, "Brasil"].filter(Boolean).join(", "),
-    ];
-
-    for (const q of queries) {
-      try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1&countrycodes=br`);
-        const data = await res.json();
-        if (data && data.length > 0) {
-          return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-        }
-      } catch (e) {
-        console.warn("Geocoding falhou para query:", q, e);
-      }
-    }
-    return null;
-  }
-
   async function handleSubmit() {
     if (!form.nome) return toast({ title: "Nome obrigatório", variant: "destructive" });
     try {
@@ -101,8 +77,8 @@ export default function Clientes() {
       payload.longitude = payload.longitude ? Number(payload.longitude) : null;
 
       // Sempre geocodificar quando tem endereço (novo ou editado)
-      if (payload.endereco) {
-        const coords = await geocodeAddress(payload.endereco, payload.bairro, payload.cidade, payload.estado);
+      if (hasAddressForGeocoding(payload)) {
+        const coords = await geocodeClienteAddress(payload);
         if (coords) {
           payload.latitude = coords.lat;
           payload.longitude = coords.lng;
