@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { insertRow } from "@/lib/supabase-helpers";
 import { geocodeClienteAddress, hasAddressForGeocoding } from "@/lib/geocoding";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, History } from "lucide-react";
+import { Plus, Pencil, Trash2, History, Map } from "lucide-react";
 import HistoricoCompras from "@/components/clientes/HistoricoCompras";
 
 const emptyForm = {
@@ -23,6 +24,7 @@ const emptyForm = {
 };
 
 export default function Clientes() {
+  const navigate = useNavigate();
   const [clientes, setClientes] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -151,7 +153,12 @@ export default function Clientes() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold">Clientes</h1>
-        <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" />Novo Cliente</Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => navigate("/painel/mapa-clientes")}>
+            <Map className="mr-2 h-4 w-4" /> Ver no mapa
+          </Button>
+          <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" />Novo Cliente</Button>
+        </div>
       </div>
 
       <div className="mb-4">
