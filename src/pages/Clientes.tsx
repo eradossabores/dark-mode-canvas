@@ -149,6 +149,10 @@ export default function Clientes() {
     return Math.floor((Date.now() - new Date(ultima).getTime()) / 86400000);
   }
 
+  function openClienteOnMap(clienteId: string) {
+    navigate(`/painel/mapa-clientes?cliente=${clienteId}`);
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
@@ -260,6 +264,7 @@ export default function Clientes() {
                       ) : "Nunca comprou"}
                     </TableCell>
                     <TableCell className="text-right space-x-1">
+                      <Button size="icon" variant="ghost" onClick={() => openClienteOnMap(c.id)} title="Ver no mapa"><Map className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" onClick={() => setHistoricoCliente({ id: c.id, nome: c.nome })} title="Histórico"><History className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" onClick={() => setDeleteId(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
