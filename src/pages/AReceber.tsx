@@ -693,7 +693,10 @@ export default function AReceber() {
   const hoje = new Date().toISOString().split("T")[0];
   const buscaLower = busca.toLowerCase().trim();
   const vendasFiltradas = buscaLower
-    ? vendas.filter(v => v.clientes?.nome?.toLowerCase().includes(buscaLower))
+    ? vendas.filter(v =>
+        v.clientes?.nome?.toLowerCase().includes(buscaLower) ||
+        String(v.numero_nf || "").toLowerCase().includes(buscaLower)
+      )
     : vendas;
   const totalPendente = vendasFiltradas.reduce((s, v) => s + (Number(v.total) - Number(v.valor_pago || 0)), 0);
   const vencidas = vendasFiltradas.filter(v => v.created_at.split("T")[0] < hoje);
@@ -706,7 +709,7 @@ export default function AReceber() {
         <div className="relative w-full sm:w-72">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por cliente..."
+            placeholder="Buscar por cliente ou NF..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             className="pl-9"
@@ -900,6 +903,7 @@ export default function AReceber() {
               <TableRow>
                 <TableHead>Data</TableHead>
                 <TableHead>Cliente</TableHead>
+                <TableHead>Nota Fiscal</TableHead>
                 <TableHead>Total</TableHead>
                 <TableHead>Pago</TableHead>
                 <TableHead>Restante</TableHead>
@@ -919,6 +923,9 @@ export default function AReceber() {
                   <TableRow key={v.id}>
                     <TableCell>{new Date(v.created_at).toLocaleDateString("pt-BR")}</TableCell>
                     <TableCell className="font-medium">{v.clientes?.nome}</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {v.numero_nf ? v.numero_nf : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
                     <TableCell>R$ {total.toFixed(2)}</TableCell>
                     <TableCell>
                       {pago > 0 ? (
@@ -980,7 +987,7 @@ export default function AReceber() {
               })}
               {vendasFiltradas.length === 0 && !loading && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center text-muted-foreground">
                     Nenhuma venda pendente.
                   </TableCell>
                 </TableRow>
