@@ -562,7 +562,7 @@ export default function Dashboard() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
         {cards.map((c: any, idx: number) => (
-          <div key={c.title} className="relative rounded-xl border-[0.75px] border-border p-0.5 opacity-0 animate-fade-in" style={{ animationDelay: `${idx * 80}ms`, animationFillMode: "forwards" }}>
+          <div key={c.title} className="relative self-start overflow-hidden rounded-xl border-[0.75px] border-border p-0.5 opacity-0 animate-fade-in" style={{ animationDelay: `${idx * 80}ms`, animationFillMode: "forwards" }}>
             <GlowingEffect
               spread={40}
               glow={true}
@@ -572,7 +572,7 @@ export default function Dashboard() {
               borderWidth={2}
             />
             <Card
-              className="relative cursor-pointer transition-all hover:scale-[1.03] hover:shadow-md border-0 bg-zinc-950 dark:bg-zinc-950 text-zinc-50"
+              className="relative cursor-pointer rounded-[calc(var(--radius)-2px)] transition-all hover:scale-[1.03] hover:shadow-md border-0 bg-zinc-950 dark:bg-zinc-950 text-zinc-50"
               onClick={() => !c.isFaturamento && navigate(c.href)}
             >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
