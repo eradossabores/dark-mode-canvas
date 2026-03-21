@@ -127,6 +127,7 @@ export default function MapaClientes() {
       .select("id, nome, bairro, endereco, telefone, status, latitude, longitude, possui_freezer")
       .eq("status", "ativo")
       .not("nome", "ilike", "%amostra%")
+      .not("nome", "ilike", "%combo%")
       .not("nome", "ilike", "%avulso%")
       .order("nome");
 
