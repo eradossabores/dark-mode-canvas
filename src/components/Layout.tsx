@@ -10,7 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { isRouteAllowed } from "@/components/ProtectedRoute";
 import logo from "@/assets/logo.png";
 import useKeyboardShortcuts from "@/hooks/useKeyboardShortcuts";
-import GenerativeMountainScene from "@/components/ui/mountain-scene";
+import DottedSurface from "@/components/ui/dotted-surface";
 import sidImg from "@/assets/sid.png";
 import buckImg from "@/assets/buck.png";
 import scrat3dImg from "@/assets/scrat-3d.png";
@@ -343,7 +343,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="sticky top-0 left-0 w-full h-0 pointer-events-none" style={{ zIndex: 0 }}>
           <div className="absolute top-0 left-0 w-full h-screen overflow-hidden">
             <div className="absolute inset-0 opacity-60 dark:opacity-35">
-              <GenerativeMountainScene />
+              <DottedSurface className="opacity-80 dark:opacity-100" />
             </div>
             {/* Aurora gradient */}
             <div className="absolute inset-0 bg-gradient-to-b from-sky-100/50 via-sky-50/20 to-cyan-100/30 dark:from-sky-950/30 dark:via-transparent dark:to-cyan-950/20" />
