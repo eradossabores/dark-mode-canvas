@@ -579,16 +579,16 @@ export default function Dashboard() {
                 <CardTitle className="text-xs font-medium text-zinc-400">{c.title}</CardTitle>
                 <c.icon className={`h-4 w-4 ${c.color}`} />
               </CardHeader>
-              <CardContent>
+              <CardContent className={c.periodo ? "flex min-h-[92px] flex-col justify-between gap-3" : undefined}>
                 <p className="text-lg font-bold">{c.value}</p>
                 {c.periodo && c.onPeriodoChange && (
-                  <div className="space-y-1.5 mt-2">
+                  <div className="space-y-1.5">
                     <div className="flex flex-wrap gap-1">
                       {RESUMO_PERIODOS.map(({ value, label }) => (
                         <button
                           key={value}
                           onClick={(e) => { e.stopPropagation(); c.onPeriodoChange(value); }}
-                          className={`px-1.5 py-0.5 text-[9px] rounded-full transition-colors ${
+                          className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
                             c.periodo === value
                               ? "bg-primary text-primary-foreground"
                               : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
