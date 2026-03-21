@@ -473,47 +473,59 @@ export default function Dashboard() {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.35, delay: catIdx * 0.08 }}
                   onClick={() => navigate("/painel/estoque")}
-                  className={`relative rounded-2xl border-2 ${postItColors[cat] || "bg-muted border-border"} p-4 cursor-pointer hover:scale-[1.02] transition-transform overflow-hidden min-h-[140px]`}
+                  className="relative self-start overflow-hidden rounded-2xl p-[2px] cursor-pointer transition-transform hover:scale-[1.02]"
                 >
-                  {/* Wave decoration top */}
-                  <svg className="absolute top-0 left-0 right-0 w-full" viewBox="0 0 300 20" preserveAspectRatio="none" style={{ height: "14px" }}>
-                    <path d="M0,10 Q30,0 60,10 T120,10 T180,10 T240,10 T300,10 L300,0 L0,0 Z" fill="currentColor" className="text-background/30" />
-                  </svg>
-
-                  {/* Category label + count */}
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-1.5">
-                      <AlertTriangle className={`h-3.5 w-3.5 ${postItLabelColors[cat] || "text-foreground"}`} />
-                      <span className={`text-xs font-extrabold uppercase tracking-wide ${postItLabelColors[cat] || "text-foreground"}`}>
-                        {cat}
-                      </span>
-                    </div>
-                    <span className="text-xs font-bold text-muted-foreground">{items.length}</span>
-                  </div>
-
-                  {/* Item info */}
-                  <p className="text-base font-bold text-foreground truncate mb-1">{item.nome}</p>
-                  <p className="text-sm text-foreground/80">
-                    Atual: <span className="font-bold text-primary">{item.atual}</span> / Mín: {item.minimo}
-                  </p>
-
-                  {/* Dots indicator */}
-                  <div className="flex gap-1 mt-3">
-                    {items.map((_: any, i: number) => (
-                      <span
-                        key={i}
-                        className={`w-2 h-2 rounded-full transition-colors ${i === itemIdx ? "bg-destructive" : "bg-foreground/20"}`}
-                      />
-                    ))}
-                  </div>
-
-                  {/* Character */}
-                  <img
-                    src={charImg}
-                    alt=""
-                    aria-hidden
-                    className="absolute bottom-1 right-1 w-16 h-16 object-contain opacity-25 pointer-events-none select-none"
+                  <GlowingEffect
+                    spread={58}
+                    glow
+                    disabled={false}
+                    proximity={88}
+                    inactiveZone={0.01}
+                    borderWidth={3}
+                    className="saturate-150"
                   />
+
+                  <div className={`relative min-h-[140px] rounded-[inherit] border-2 ${postItColors[cat] || "bg-muted border-border"} p-4`}>
+                    {/* Wave decoration top */}
+                    <svg className="absolute top-0 left-0 right-0 w-full" viewBox="0 0 300 20" preserveAspectRatio="none" style={{ height: "14px" }}>
+                      <path d="M0,10 Q30,0 60,10 T120,10 T180,10 T240,10 T300,10 L300,0 L0,0 Z" fill="currentColor" className="text-background/30" />
+                    </svg>
+
+                    {/* Category label + count */}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-1.5">
+                        <AlertTriangle className={`h-3.5 w-3.5 ${postItLabelColors[cat] || "text-foreground"}`} />
+                        <span className={`text-xs font-extrabold uppercase tracking-wide ${postItLabelColors[cat] || "text-foreground"}`}>
+                          {cat}
+                        </span>
+                      </div>
+                      <span className="text-xs font-bold text-muted-foreground">{items.length}</span>
+                    </div>
+
+                    {/* Item info */}
+                    <p className="text-base font-bold text-foreground truncate mb-1">{item.nome}</p>
+                    <p className="text-sm text-foreground/80">
+                      Atual: <span className="font-bold text-primary">{item.atual}</span> / Mín: {item.minimo}
+                    </p>
+
+                    {/* Dots indicator */}
+                    <div className="flex gap-1 mt-3">
+                      {items.map((_: any, i: number) => (
+                        <span
+                          key={i}
+                          className={`w-2 h-2 rounded-full transition-colors ${i === itemIdx ? "bg-destructive" : "bg-foreground/20"}`}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Character */}
+                    <img
+                      src={charImg}
+                      alt=""
+                      aria-hidden
+                      className="absolute bottom-1 right-1 w-16 h-16 object-contain opacity-25 pointer-events-none select-none"
+                    />
+                  </div>
                 </motion.div>
               );
             })}
@@ -524,36 +536,48 @@ export default function Dashboard() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.35, delay: 0.24 }}
               onClick={() => navigate("/painel/estoque")}
-              className="relative rounded-2xl border-2 border-green-200 dark:border-green-700 bg-green-100 dark:bg-green-900/40 p-4 cursor-pointer hover:scale-[1.02] transition-transform overflow-hidden min-h-[140px]"
+              className="relative self-start overflow-hidden rounded-2xl p-[2px] cursor-pointer transition-transform hover:scale-[1.02]"
             >
-              {/* Wave decoration top */}
-              <svg className="absolute top-0 left-0 right-0 w-full" viewBox="0 0 300 20" preserveAspectRatio="none" style={{ height: "14px" }}>
-                <path d="M0,10 Q30,0 60,10 T120,10 T180,10 T240,10 T300,10 L300,0 L0,0 Z" fill="currentColor" className="text-background/30" />
-              </svg>
+              <GlowingEffect
+                spread={58}
+                glow
+                disabled={false}
+                proximity={88}
+                inactiveZone={0.01}
+                borderWidth={3}
+                className="saturate-150"
+              />
 
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-1.5">
-                  <Bell className="h-3.5 w-3.5 text-foreground" />
-                  <span className="text-xs font-extrabold uppercase tracking-wide text-foreground">Resumo</span>
+              <div className="relative min-h-[140px] rounded-[inherit] border-2 border-green-200 dark:border-green-700 bg-green-100 dark:bg-green-900/40 p-4">
+                {/* Wave decoration top */}
+                <svg className="absolute top-0 left-0 right-0 w-full" viewBox="0 0 300 20" preserveAspectRatio="none" style={{ height: "14px" }}>
+                  <path d="M0,10 Q30,0 60,10 T120,10 T180,10 T240,10 T300,10 L300,0 L0,0 Z" fill="currentColor" className="text-background/30" />
+                </svg>
+
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-1.5">
+                    <Bell className="h-3.5 w-3.5 text-foreground" />
+                    <span className="text-xs font-extrabold uppercase tracking-wide text-foreground">Resumo</span>
+                  </div>
+                  {/* Character top-right */}
+                  <img
+                    src={postItCharacters[3 % postItCharacters.length]}
+                    alt=""
+                    aria-hidden
+                    className="w-10 h-10 object-contain opacity-30 pointer-events-none select-none"
+                  />
                 </div>
-                {/* Character top-right */}
-                <img
-                  src={postItCharacters[3 % postItCharacters.length]}
-                  alt=""
-                  aria-hidden
-                  className="w-10 h-10 object-contain opacity-30 pointer-events-none select-none"
-                />
+
+                <p className="text-3xl font-black text-foreground">{alertasEstoque.length}</p>
+                <p className="text-xs text-muted-foreground mb-2">alertas ativos</p>
+
+                {categories.map((cat) => (
+                  <div key={cat} className="flex items-center justify-between text-sm">
+                    <span className="text-foreground/80">{cat}</span>
+                    <span className="font-bold text-foreground">{grouped[cat].length}</span>
+                  </div>
+                ))}
               </div>
-
-              <p className="text-3xl font-black text-foreground">{alertasEstoque.length}</p>
-              <p className="text-xs text-muted-foreground mb-2">alertas ativos</p>
-
-              {categories.map((cat) => (
-                <div key={cat} className="flex items-center justify-between text-sm">
-                  <span className="text-foreground/80">{cat}</span>
-                  <span className="font-bold text-foreground">{grouped[cat].length}</span>
-                </div>
-              ))}
             </motion.div>
           </div>
         );
