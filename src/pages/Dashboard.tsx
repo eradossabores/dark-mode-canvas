@@ -481,7 +481,7 @@ export default function Dashboard() {
                     disabled={false}
                     proximity={88}
                     inactiveZone={0.01}
-                    borderWidth={3}
+                    borderWidth={5}
                     className="saturate-150"
                   />
 
@@ -544,7 +544,7 @@ export default function Dashboard() {
                 disabled={false}
                 proximity={88}
                 inactiveZone={0.01}
-                borderWidth={3}
+                borderWidth={5}
                 className="saturate-150"
               />
 
@@ -593,7 +593,7 @@ export default function Dashboard() {
               disabled={false}
               proximity={64}
               inactiveZone={0.01}
-              borderWidth={2}
+              borderWidth={4}
             />
             <Card
               className="relative cursor-pointer rounded-[calc(var(--radius)-2px)] transition-all hover:scale-[1.03] hover:shadow-md border-0 bg-zinc-950 dark:bg-zinc-950 text-zinc-50"
@@ -634,7 +634,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 opacity-0 animate-fade-in" style={{ animationDelay: "500ms", animationFillMode: "forwards" }}>
         {/* Faturamento */}
         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
-          <GlowingEffect spread={20} glow disabled={false} proximity={40} inactiveZone={0.2} borderWidth={1} />
+          <GlowingEffect spread={20} glow disabled={false} proximity={40} inactiveZone={0.2} borderWidth={3} />
           <Card className="relative border-0 bg-background">
             <CardHeader className="pb-2">
               <div className="flex flex-col gap-2">
@@ -691,7 +691,7 @@ export default function Dashboard() {
 
         {/* Produção */}
         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
-          <GlowingEffect spread={20} glow disabled={false} proximity={40} inactiveZone={0.2} borderWidth={1} />
+          <GlowingEffect spread={20} glow disabled={false} proximity={40} inactiveZone={0.2} borderWidth={3} />
           <Card className="relative border-0 bg-background">
             <CardHeader className="pb-2">
               <div className="flex flex-col gap-2">
@@ -758,15 +758,15 @@ export default function Dashboard() {
       {/* Widgets: Estoque Inteligente + Ranking + Clientes Inativos */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 opacity-0 animate-fade-in" style={{ animationDelay: "700ms", animationFillMode: "forwards" }}>
         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
-          <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={1} />
+          <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
           <div className="relative"><EstoqueInteligente /></div>
         </div>
         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
-          <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={1} />
+          <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
           <div className="relative"><RankingClientes /></div>
         </div>
         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
-          <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={1} />
+          <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
           <div className="relative"><ClientesInativos /></div>
         </div>
       </div>
@@ -774,7 +774,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 opacity-0 animate-fade-in" style={{ animationDelay: "900ms", animationFillMode: "forwards" }}>
         {/* Top 5 Sabores - Pie Chart */}
         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
-          <GlowingEffect spread={20} glow disabled={false} proximity={40} inactiveZone={0.2} borderWidth={1} />
+          <GlowingEffect spread={20} glow disabled={false} proximity={40} inactiveZone={0.2} borderWidth={3} />
           <Card className="relative border-0 bg-background">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm">Top 5 Sabores Vendidos</CardTitle>
@@ -811,7 +811,7 @@ export default function Dashboard() {
 
         {/* Contas a Receber */}
         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
-          <GlowingEffect spread={20} glow disabled={false} proximity={40} inactiveZone={0.2} borderWidth={1} />
+          <GlowingEffect spread={20} glow disabled={false} proximity={40} inactiveZone={0.2} borderWidth={3} />
           <Card className="relative border-0 bg-background">
             <CardHeader className="pb-2">
               <div className="flex items-start justify-between gap-2">
@@ -861,7 +861,7 @@ export default function Dashboard() {
       {/* Gastos com Colaboradores */}
       <div className="mt-6 opacity-0 animate-fade-in" style={{ animationDelay: "1100ms", animationFillMode: "forwards" }}>
         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
-          <GlowingEffect spread={20} glow disabled={false} proximity={40} inactiveZone={0.2} borderWidth={1} />
+          <GlowingEffect spread={20} glow disabled={false} proximity={40} inactiveZone={0.2} borderWidth={3} />
           <div className="relative"><GastosColaboradores /></div>
         </div>
       </div>
