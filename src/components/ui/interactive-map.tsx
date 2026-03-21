@@ -17,17 +17,57 @@ import 'leaflet/dist/leaflet.css';
 // Fix for default markers in React-Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 
+const ICON_SIZES = { small: [20, 32], medium: [25, 41], large: [30, 50] } as const;
+
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+const createMarkerSvg = (color: string, width: number, height: number) =>
+  `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 25 41"><path d="M12.5 0C5.6 0 0 5.6 0 12.5C0 21.9 12.5 41 12.5 41S25 21.9 25 12.5C25 5.6 19.4 0 12.5 0z" fill="${color}" stroke="#fff" stroke-width="1.5"/><circle cx="12.5" cy="12.5" r="5" fill="#fff"/></svg>`;
+
 // SVG-based custom icons (avoids MIME-type/loading issues with PNGs)
 export const createSvgIcon = (color = '#2563eb', size: 'small' | 'medium' | 'large' = 'medium') => {
-  const sizes = { small: [20, 32], medium: [25, 41], large: [30, 50] };
-  const [w, h] = sizes[size];
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 25 41"><path d="M12.5 0C5.6 0 0 5.6 0 12.5C0 21.9 12.5 41 12.5 41S25 21.9 25 12.5C25 5.6 19.4 0 12.5 0z" fill="${color}" stroke="#fff" stroke-width="1.5"/><circle cx="12.5" cy="12.5" r="5" fill="#fff"/></svg>`;
+  const [w, h] = ICON_SIZES[size];
+  const svg = createMarkerSvg(color, w, h);
   return L.divIcon({
     html: svg,
     className: '',
     iconSize: [w, h] as [number, number],
     iconAnchor: [w / 2, h] as [number, number],
     popupAnchor: [1, -h + 7] as [number, number],
+  });
+};
+
+export const createLabeledSvgIcon = (
+  color = '#2563eb',
+  label = '',
+  size: 'small' | 'medium' | 'large' = 'medium'
+) => {
+  const [w, h] = ICON_SIZES[size];
+  const svg = createMarkerSvg(color, w, h);
+  const safeLabel = escapeHtml(label.trim());
+  const labelWidth = Math.max(92, Math.min(160, safeLabel.length * 7));
+  const labelOffset = 30;
+  const totalHeight = h + labelOffset;
+
+  return L.divIcon({
+    html: `
+      <div style="display:flex; flex-direction:column; align-items:center; transform:translateY(-${labelOffset - 4}px);">
+        <div style="max-width:${labelWidth}px; min-width:72px; padding:2px 8px; margin-bottom:4px; border-radius:999px; background:hsl(var(--popover)); color:hsl(var(--popover-foreground)); border:1px solid hsl(var(--border)); box-shadow:0 4px 10px -6px hsl(var(--foreground) / 0.45); font-family:Montserrat, system-ui, sans-serif; font-size:12px; font-weight:700; line-height:1.2; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+          ${safeLabel}
+        </div>
+        ${svg}
+      </div>
+    `,
+    className: '',
+    iconSize: [Math.max(w, labelWidth), totalHeight] as [number, number],
+    iconAnchor: [Math.max(w, labelWidth) / 2, totalHeight] as [number, number],
+    popupAnchor: [1, -totalHeight + 10] as [number, number],
   });
 };
 
