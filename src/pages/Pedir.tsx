@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import {
   ShoppingCart, Plus, Minus, Send, ArrowLeft, Trash2,
@@ -146,6 +145,16 @@ export default function Pedir() {
   const [addedAnimation, setAddedAnimation] = useState<string | null>(null);
 
   useEffect(() => {
+    document.title = "Faça seu Pedido | A Era dos Sabores";
+
+    let description = document.head.querySelector("meta[name='description']") as HTMLMetaElement | null;
+    if (!description) {
+      description = document.createElement("meta");
+      description.setAttribute("name", "description");
+      document.head.appendChild(description);
+    }
+    description.setAttribute("content", "Peça gelos artesanais com sabor de verdade. Monte seu pedido e envie pelo WhatsApp.");
+
     (async () => {
       // Fetch sabores with their stock
       const { data: saboresData } = await supabase
@@ -316,11 +325,6 @@ export default function Pedir() {
 
   return (
     <>
-      <Helmet>
-        <title>Faça seu Pedido | A Era dos Sabores</title>
-        <meta name="description" content="Peça gelos artesanais com sabor de verdade. Monte seu pedido e envie pelo WhatsApp." />
-      </Helmet>
-
       <div className="min-h-screen bg-background">
         {/* STICKY HEADER */}
         <header className="sticky top-0 z-50 border-b border-border/50 bg-card/90 backdrop-blur-xl shadow-sm">
