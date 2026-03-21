@@ -52,13 +52,14 @@ export const createLabeledSvgIcon = (
   const svg = createMarkerSvg(color, w, h);
   const safeLabel = escapeHtml(label.trim());
   const labelWidth = Math.max(92, Math.min(160, safeLabel.length * 7));
-  const labelOffset = 30;
-  const totalHeight = h + labelOffset;
+  const labelHeight = 24;
+  const labelGap = 4;
+  const totalHeight = h + labelHeight + labelGap;
 
   return L.divIcon({
     html: `
-      <div style="display:flex; flex-direction:column; align-items:center; transform:translateY(-${labelOffset - 4}px);">
-        <div style="max-width:${labelWidth}px; min-width:72px; padding:2px 8px; margin-bottom:4px; border-radius:999px; background:hsl(var(--popover)); color:hsl(var(--popover-foreground)); border:1px solid hsl(var(--border)); box-shadow:0 4px 10px -6px hsl(var(--foreground) / 0.45); font-family:Montserrat, system-ui, sans-serif; font-size:12px; font-weight:700; line-height:1.2; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+      <div style="display:flex; flex-direction:column; align-items:center; justify-content:flex-start; width:${Math.max(w, labelWidth)}px; height:${totalHeight}px;">
+        <div style="max-width:${labelWidth}px; min-width:72px; height:${labelHeight}px; padding:2px 8px; margin-bottom:${labelGap}px; border-radius:999px; background:hsl(var(--popover)); color:hsl(var(--popover-foreground)); border:1px solid hsl(var(--border)); box-shadow:0 4px 10px -6px hsl(var(--foreground) / 0.45); font-family:Montserrat, system-ui, sans-serif; font-size:12px; font-weight:700; line-height:18px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
           ${safeLabel}
         </div>
         ${svg}
