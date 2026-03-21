@@ -10,7 +10,6 @@ import {
   useMap,
   useMapEvents
 } from 'react-leaflet';
-import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -311,13 +310,7 @@ export function AdvancedMap({
         )}
 
         {/* Markers */}
-        {enableClustering ? (
-          <MarkerClusterGroup chunkedLoading>
-            {renderMarkers(markers)}
-          </MarkerClusterGroup>
-        ) : (
-          renderMarkers(markers)
-        )}
+        {renderMarkers(markers)}
 
         {/* User location */}
         {userLocation && (
