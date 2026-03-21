@@ -78,7 +78,34 @@ function buildMonthChartData(data: any[], month: number, year: number, dateKey: 
   return Object.entries(map).map(([dia, val]) => ({ dia, [isSum ? "valor" : "total"]: val }));
 }
 
-type FaturamentoPeriodo = "total" | "semanal" | "mensal" | "anual";
+type ResumoPeriodo = "total" | "semanal" | "mensal" | "anual";
+
+const RESUMO_PERIODOS: { value: ResumoPeriodo; label: string }[] = [
+  { value: "total", label: "Total" },
+  { value: "semanal", label: "Semana" },
+  { value: "mensal", label: "Mês" },
+  { value: "anual", label: "Ano" },
+];
+
+function isWithinResumoPeriod(dateValue: string, periodo: ResumoPeriodo) {
+  const data = new Date(dateValue);
+  const now = new Date();
+
+  if (periodo === "total") return true;
+  if (periodo === "anual") return data.getFullYear() === now.getFullYear();
+  if (periodo === "mensal") return data.getMonth() === now.getMonth() && data.getFullYear() === now.getFullYear();
+
+  const inicioSemana = new Date();
+  inicioSemana.setDate(inicioSemana.getDate() - 7);
+  return data >= inicioSemana;
+}
+
+function getResumoTitle(base: string, periodo: ResumoPeriodo) {
+  if (periodo === "semanal") return `${base} · Semana`;
+  if (periodo === "mensal") return `${base} · Mês`;
+  if (periodo === "anual") return `${base} · Ano`;
+  return `${base} · Total`;
+}
 
 // Motivational greetings per collaborator
 const motivationalMessages = [
@@ -137,8 +164,9 @@ export default function Dashboard() {
   const [mesProducao, setMesProducao] = useState(new Date().getMonth());
   const [allVendas, setAllVendas] = useState<any[]>([]);
   const [allProducoes, setAllProducoes] = useState<any[]>([]);
-  const [fatPeriodo, setFatPeriodo] = useState<FaturamentoPeriodo>("total");
-  const [mesFatCard, setMesFatCard] = useState(new Date().getMonth());
+  const [fatPeriodo, setFatPeriodo] = useState<ResumoPeriodo>("total");
+  const [vendasPeriodo, setVendasPeriodo] = useState<ResumoPeriodo>("total");
+  const [producoesPeriodo, setProducoesPeriodo] = useState<ResumoPeriodo>("total");
   useEffect(() => { loadStats(); loadUserName(); }, []);
 
   async function loadUserName() {
@@ -273,22 +301,26 @@ export default function Dashboard() {
     }
   }
 
-  const faturamentoMesEspecifico = useMemo(() => {
-    const ano = new Date().getFullYear();
+  const faturamentoValor = useMemo(() => {
     return allVendas
-      .filter((v: any) => { const d = new Date(v.created_at); return d.getMonth() === mesFatCard && d.getFullYear() === ano; })
+      .filter((v: any) => isWithinResumoPeriod(v.created_at, fatPeriodo))
       .reduce((s: number, v: any) => s + Number(v.total), 0);
-  }, [allVendas, mesFatCard]);
+  }, [allVendas, fatPeriodo]);
 
-  const faturamentoValor = fatPeriodo === "semanal" ? stats.faturamentoSemanal : fatPeriodo === "mensal" ? faturamentoMesEspecifico : fatPeriodo === "anual" ? stats.faturamentoAnual : stats.faturamento;
-  const faturamentoLabel = fatPeriodo === "semanal" ? "Fat. Semanal" : fatPeriodo === "mensal" ? `Fat. ${MESES_NOME[mesFatCard]}` : fatPeriodo === "anual" ? "Fat. Anual" : "Faturamento Total";
+  const vendasCardValor = useMemo(() => {
+    return allVendas.filter((v: any) => isWithinResumoPeriod(v.created_at, vendasPeriodo)).length;
+  }, [allVendas, vendasPeriodo]);
+
+  const producoesCardValor = useMemo(() => {
+    return allProducoes.filter((p: any) => isWithinResumoPeriod(p.created_at, producoesPeriodo)).length;
+  }, [allProducoes, producoesPeriodo]);
 
   const cards = [
     { title: "Gelos em Estoque", value: stats.totalGelos.toLocaleString(), icon: Package, color: "text-primary", href: "/painel/estoque" },
     { title: "Clientes Ativos", value: stats.totalClientes, icon: Users, color: "text-secondary-foreground", href: "/painel/clientes" },
-    { title: "Total Vendas", value: stats.totalVendas, icon: ShoppingCart, color: "text-accent", href: "/painel/vendas" },
-    { title: faturamentoLabel, value: `R$ ${faturamentoValor.toFixed(2)}`, icon: TrendingUp, color: "text-primary", href: "/painel/vendas", isFaturamento: true },
-    { title: "Produções", value: stats.totalProducoes, icon: Factory, color: "text-secondary-foreground", href: "/painel/producao" },
+    { title: getResumoTitle("Vendas", vendasPeriodo), value: vendasCardValor, icon: ShoppingCart, color: "text-accent", href: "/painel/vendas", periodo: vendasPeriodo, onPeriodoChange: setVendasPeriodo },
+    { title: getResumoTitle("Faturamento", fatPeriodo), value: `R$ ${faturamentoValor.toFixed(2)}`, icon: TrendingUp, color: "text-primary", href: "/painel/vendas", periodo: fatPeriodo, onPeriodoChange: setFatPeriodo },
+    { title: getResumoTitle("Produções", producoesPeriodo), value: producoesCardValor, icon: Factory, color: "text-secondary-foreground", href: "/painel/producao", periodo: producoesPeriodo, onPeriodoChange: setProducoesPeriodo },
     { title: "A Receber", value: `R$ ${contasReceber.total.toFixed(2)}`, icon: DollarSign, color: contasReceber.vencidas > 0 ? "text-destructive" : "text-primary", href: "/painel/a-receber" },
   ];
 
@@ -535,40 +567,23 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <p className="text-lg font-bold">{c.value}</p>
-                {c.isFaturamento && (
+                {c.periodo && c.onPeriodoChange && (
                   <div className="space-y-1.5 mt-2">
-                    <div className="flex gap-1">
-                      {(["total", "semanal", "mensal", "anual"] as FaturamentoPeriodo[]).map((p) => (
+                    <div className="flex flex-wrap gap-1">
+                      {RESUMO_PERIODOS.map(({ value, label }) => (
                         <button
-                          key={p}
-                          onClick={(e) => { e.stopPropagation(); setFatPeriodo(p); }}
+                          key={value}
+                          onClick={(e) => { e.stopPropagation(); c.onPeriodoChange(value); }}
                           className={`px-1.5 py-0.5 text-[9px] rounded-full transition-colors ${
-                            fatPeriodo === p
+                            c.periodo === value
                               ? "bg-primary text-primary-foreground"
                               : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
                           }`}
                         >
-                          {p === "total" ? "Total" : p === "semanal" ? "Semana" : p === "mensal" ? MESES_NOME[mesFatCard].slice(0, 3) : "Ano"}
+                          {label}
                         </button>
                       ))}
                     </div>
-                    {fatPeriodo === "mensal" && (
-                      <div className="flex gap-0.5 flex-wrap">
-                        {MESES_NOME.map((nome, idx) => (
-                          <button
-                            key={idx}
-                            onClick={(e) => { e.stopPropagation(); setMesFatCard(idx); }}
-                            className={`px-1 py-0.5 text-[8px] rounded-full transition-colors ${
-                              mesFatCard === idx
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
-                            }`}
-                          >
-                            {nome.slice(0, 3)}
-                          </button>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 )}
               </CardContent>
