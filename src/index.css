@@ -51,6 +51,12 @@
     --chart-4: 270 40% 65%;
     --chart-5: 174 35% 60%;
 
+    --kpi-surface: 220 38% 9%;
+    --kpi-surface-foreground: 210 40% 98%;
+    --kpi-surface-muted: 221 24% 18%;
+    --kpi-surface-muted-foreground: 220 16% 72%;
+    --kpi-surface-border: 217 34% 22%;
+
     --shadow-2xs: 0px 1px 2px 0px hsl(270 30% 15% / 0.05);
     --shadow-xs: 0px 1px 3px 0px hsl(270 30% 15% / 0.06);
     --shadow-sm: 0px 2px 4px -1px hsl(270 30% 15% / 0.08), 0px 1px 2px -1px hsl(270 30% 15% / 0.06);
@@ -96,6 +102,11 @@
     --chart-3: 38 80% 55%;
     --chart-4: 270 35% 50%;
     --chart-5: 174 30% 45%;
+    --kpi-surface: 220 38% 9%;
+    --kpi-surface-foreground: 210 40% 98%;
+    --kpi-surface-muted: 221 24% 18%;
+    --kpi-surface-muted-foreground: 220 16% 72%;
+    --kpi-surface-border: 217 34% 22%;
     --shadow-2xs: 0px 1px 2px 0px hsl(270 20% 5% / 0.15);
     --shadow-xs: 0px 1px 3px 0px hsl(270 20% 5% / 0.2);
     --shadow-sm: 0px 2px 4px -1px hsl(270 20% 5% / 0.25), 0px 1px 2px -1px hsl(270 20% 5% / 0.2);

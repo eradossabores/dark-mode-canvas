@@ -586,7 +586,7 @@ export default function Dashboard() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
         {cards.map((c: any, idx: number) => (
-          <div key={c.title} className="relative self-start overflow-hidden rounded-xl border-[0.75px] border-border p-0.5 opacity-0 animate-fade-in" style={{ animationDelay: `${idx * 80}ms`, animationFillMode: "forwards" }}>
+          <div key={c.title} className="relative self-start overflow-hidden rounded-xl border-[0.75px] border-[hsl(var(--kpi-surface-border))] p-0.5 opacity-0 animate-fade-in" style={{ animationDelay: `${idx * 80}ms`, animationFillMode: "forwards" }}>
             <GlowingEffect
               spread={40}
               glow={true}
@@ -596,11 +596,11 @@ export default function Dashboard() {
               borderWidth={4}
             />
             <Card
-              className="relative cursor-pointer rounded-[calc(var(--radius)-2px)] transition-all hover:scale-[1.03] hover:shadow-md border-0 bg-zinc-950 dark:bg-zinc-950 text-zinc-50"
+              className="relative cursor-pointer rounded-[calc(var(--radius)-2px)] border-0 bg-[hsl(var(--kpi-surface))] text-[hsl(var(--kpi-surface-foreground))] transition-all hover:scale-[1.03] hover:shadow-md"
               onClick={() => !c.isFaturamento && navigate(c.href)}
             >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-medium text-zinc-400">{c.title}</CardTitle>
+                <CardTitle className="text-xs font-medium text-[hsl(var(--kpi-surface-muted-foreground))]">{c.title}</CardTitle>
                 <c.icon className={`h-4 w-4 ${c.color}`} />
               </CardHeader>
               <CardContent className={c.periodo ? "flex min-h-[92px] flex-col justify-between gap-3" : undefined}>
@@ -615,7 +615,7 @@ export default function Dashboard() {
                           className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
                             c.periodo === value
                               ? "bg-primary text-primary-foreground"
-                              : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
+                              : "bg-[hsl(var(--kpi-surface-muted))] text-[hsl(var(--kpi-surface-muted-foreground))] hover:brightness-110"
                           }`}
                         >
                           {label}
