@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { GradientDots } from "@/components/ui/gradient-dots";
 import { Link } from "react-router-dom";
 import { LogIn, ShoppingCart, Download, Share, Plus, MoreVertical, X, Smartphone, Monitor, Menu } from "lucide-react";
@@ -88,37 +88,15 @@ function useScrollFadeIn() {
   return { ref, className: `transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}` };
 }
 
-const FadeInSection = useRef ? (function () {
-  return null;
-})() : null;
+const FadeInSection = forwardRef<HTMLDivElement, { children: React.ReactNode; className?: string }>(
+  function FadeInSection({ children, className = "" }, forwardedRef) {
+    const fade = useScrollFadeIn();
 
-const FadeInSectionBase = ({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}, forwardedRef: React.ForwardedRef<HTMLDivElement>) => {
-  const fade = useScrollFadeIn();
+    useImperativeHandle(forwardedRef, () => fade.ref.current as HTMLDivElement | null, [fade.ref]);
 
-  const setRefs = (node: HTMLDivElement | null) => {
-    if (typeof fade.ref === "function") {
-      fade.ref(node);
-    } else if (fade.ref) {
-      fade.ref.current = node;
-    }
-
-    if (typeof forwardedRef === "function") {
-      forwardedRef(node);
-    } else if (forwardedRef) {
-      forwardedRef.current = node;
-    }
-  };
-
-  return <div ref={setRefs} className={`${fade.className} ${className}`}>{children}</div>;
-};
-
-const FadeInSectionForwardRef = (await import("react")).forwardRef<HTMLDivElement, { children: React.ReactNode; className?: string }>(FadeInSectionBase as any);
+    return <div ref={fade.ref} className={`${fade.className} ${className}`}>{children}</div>;
+  }
+);
 
 export default function LandingPage() {
   const [formNome, setFormNome] = useState("");
