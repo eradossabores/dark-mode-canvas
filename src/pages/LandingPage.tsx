@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { GradientDots } from "@/components/ui/gradient-dots";
-import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import { LogIn, ShoppingCart, Download, Share, Plus, MoreVertical, X, Smartphone, Monitor, Menu } from "lucide-react";
 import {
@@ -109,6 +108,64 @@ export default function LandingPage() {
   const isAndroid = /Android/.test(navigator.userAgent);
 
   useEffect(() => {
+    document.title = "A Era dos Sabores | Gelo Saborizado em Boa Vista, Roraima";
+
+    const setMeta = (name: string, content: string, attribute: "name" | "property" = "name") => {
+      let element = document.head.querySelector(`meta[${attribute}='${name}']`) as HTMLMetaElement | null;
+
+      if (!element) {
+        element = document.createElement("meta");
+        element.setAttribute(attribute, name);
+        document.head.appendChild(element);
+      }
+
+      element.setAttribute("content", content);
+    };
+
+    const setLink = (rel: string, href: string) => {
+      let element = document.head.querySelector(`link[rel='${rel}']`) as HTMLLinkElement | null;
+
+      if (!element) {
+        element = document.createElement("link");
+        element.setAttribute("rel", rel);
+        document.head.appendChild(element);
+      }
+
+      element.setAttribute("href", href);
+    };
+
+    setMeta("description", "Fábrica de gelo saborizado artesanal em Boa Vista, Roraima. Morango, maracujá, maçã verde e Bob Marley. Peça agora!");
+    setLink("canonical", "https://aeradossabores.com.br");
+    setMeta("og:title", "A Era dos Sabores | Gelo Saborizado Artesanal", "property");
+    setMeta("og:description", "Gelos saborizados de qualidade, direto de Boa Vista para o Brasil. Morango, maracujá, maçã verde e Bob Marley!", "property");
+    setMeta("twitter:title", "A Era dos Sabores | Gelo Saborizado");
+    setMeta("twitter:description", "Gelos saborizados artesanais de Boa Vista, Roraima.");
+
+    let jsonLd = document.head.querySelector("script[data-page='landing-jsonld']") as HTMLScriptElement | null;
+
+    if (!jsonLd) {
+      jsonLd = document.createElement("script");
+      jsonLd.type = "application/ld+json";
+      jsonLd.setAttribute("data-page", "landing-jsonld");
+      document.head.appendChild(jsonLd);
+    }
+
+    jsonLd.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      name: "A Era dos Sabores",
+      description: "Fábrica de gelo saborizado artesanal em Boa Vista, Roraima",
+      address: { "@type": "PostalAddress", addressLocality: "Boa Vista", addressRegion: "RR", addressCountry: "BR" },
+      url: "https://aeradossabores.com.br",
+      image: "/favicon.png",
+    });
+
+    return () => {
+      jsonLd?.remove();
+    };
+  }, []);
+
+  useEffect(() => {
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -164,20 +221,6 @@ export default function LandingPage() {
   return (
     <div className="relative min-h-screen bg-background text-foreground overflow-x-hidden">
       <GradientDots duration={25} colorCycleDuration={8} dotSize={6} spacing={12} className="opacity-30 pointer-events-none z-0 fixed" />
-      <Helmet>
-        <title>A Era dos Sabores | Gelo Saborizado em Boa Vista, Roraima</title>
-        <meta name="description" content="Fábrica de gelo saborizado artesanal em Boa Vista, Roraima. Morango, maracujá, maçã verde e Bob Marley. Peça agora!" />
-        <link rel="canonical" href="https://aeradossabores.com.br" />
-        <script type="application/ld+json">{JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "LocalBusiness",
-          "name": "A Era dos Sabores",
-          "description": "Fábrica de gelo saborizado artesanal em Boa Vista, Roraima",
-          "address": { "@type": "PostalAddress", "addressLocality": "Boa Vista", "addressRegion": "RR", "addressCountry": "BR" },
-          "url": "https://aeradossabores.com.br",
-          "image": "/favicon.png"
-        })}</script>
-      </Helmet>
 
       {/* ─── HEADER ─── */}
       <header className="sticky top-0 z-50 bg-background md:bg-background/80 backdrop-blur-lg border-b border-border">
