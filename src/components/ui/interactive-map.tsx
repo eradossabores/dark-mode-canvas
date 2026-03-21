@@ -27,6 +27,17 @@ const escapeHtml = (value: string) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 
+const hexToRgba = (hex: string, alpha: number) => {
+  const normalized = hex.replace('#', '');
+  if (normalized.length !== 6) return `rgba(37, 99, 235, ${alpha})`;
+
+  const r = parseInt(normalized.slice(0, 2), 16);
+  const g = parseInt(normalized.slice(2, 4), 16);
+  const b = parseInt(normalized.slice(4, 6), 16);
+
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
 const createMarkerSvg = (color: string, width: number, height: number) =>
   `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 25 41"><path d="M12.5 0C5.6 0 0 5.6 0 12.5C0 21.9 12.5 41 12.5 41S25 21.9 25 12.5C25 5.6 19.4 0 12.5 0z" fill="${color}" stroke="#fff" stroke-width="1.5"/><circle cx="12.5" cy="12.5" r="5" fill="#fff"/></svg>`;
 
@@ -51,16 +62,27 @@ export const createLabeledSvgIcon = (
   const [w, h] = ICON_SIZES[size];
   const svg = createMarkerSvg(color, w, h);
   const safeLabel = escapeHtml(label.trim());
-  const labelWidth = Math.max(104, Math.min(188, safeLabel.length * 7));
-  const labelHeight = 36;
-  const labelGap = 6;
+  const labelWidth = Math.max(132, Math.min(220, safeLabel.length * 7.4));
+  const labelHeight = 52;
+  const labelGap = 8;
   const totalHeight = h + labelHeight + labelGap;
+  const accentSoft = hexToRgba(color, 0.14);
+  const accentBorder = hexToRgba(color, 0.22);
+  const accentStrong = hexToRgba(color, 0.92);
 
   return L.divIcon({
     html: `
       <div style="display:flex; flex-direction:column; align-items:center; justify-content:flex-start; width:${Math.max(w, labelWidth)}px; height:${totalHeight}px;">
-        <div style="max-width:${labelWidth}px; min-width:84px; height:${labelHeight}px; padding:5px 10px; margin-bottom:${labelGap}px; border-radius:16px; background:hsl(var(--card) / 0.94); color:hsl(var(--foreground)); border:1px solid hsl(var(--border) / 0.9); box-shadow:0 10px 24px -16px hsl(var(--foreground) / 0.45), 0 2px 10px -6px hsl(var(--foreground) / 0.28); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); font-family:'DM Sans', 'Montserrat', system-ui, sans-serif; font-size:12px; font-weight:700; letter-spacing:-0.02em; line-height:1.05; text-align:center; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; text-overflow:ellipsis; text-wrap:balance;">
-          ${safeLabel}
+        <div style="position:relative; width:${labelWidth}px; min-width:112px; min-height:${labelHeight}px; padding:4px; margin-bottom:${labelGap}px; border-radius:22px; background:linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.88)); border:1px solid hsl(var(--border) / 0.85); box-shadow:0 22px 40px -24px rgba(15,23,42,0.48), 0 10px 18px -14px ${accentBorder}; backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); overflow:hidden;">
+          <div style="position:absolute; inset:0; border-radius:inherit; background:radial-gradient(circle at top right, ${accentSoft} 0%, transparent 48%);"></div>
+          <div style="position:relative; display:flex; align-items:center; gap:10px; min-height:${labelHeight - 8}px; padding:0 12px; border-radius:18px; background:rgba(255,255,255,0.72);">
+            <div style="display:flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:999px; background:${accentSoft}; border:1px solid ${accentBorder}; box-shadow:inset 0 1px 0 rgba(255,255,255,0.7); flex-shrink:0;">
+              <div style="width:8px; height:8px; border-radius:999px; background:${accentStrong};"></div>
+            </div>
+            <div style="flex:1; min-width:0; color:hsl(var(--foreground)); font-family:'DM Sans', 'Montserrat', system-ui, sans-serif; font-size:12.5px; font-weight:800; letter-spacing:-0.03em; line-height:1.02; text-align:left; text-transform:uppercase; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; text-overflow:ellipsis; text-wrap:balance;">
+              ${safeLabel}
+            </div>
+          </div>
         </div>
         ${svg}
       </div>
