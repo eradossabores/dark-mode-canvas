@@ -51,15 +51,15 @@ export const createLabeledSvgIcon = (
   const [w, h] = ICON_SIZES[size];
   const svg = createMarkerSvg(color, w, h);
   const safeLabel = escapeHtml(label.trim());
-  const labelWidth = Math.max(92, Math.min(160, safeLabel.length * 7));
-  const labelHeight = 24;
-  const labelGap = 4;
+  const labelWidth = Math.max(104, Math.min(188, safeLabel.length * 7));
+  const labelHeight = 36;
+  const labelGap = 6;
   const totalHeight = h + labelHeight + labelGap;
 
   return L.divIcon({
     html: `
       <div style="display:flex; flex-direction:column; align-items:center; justify-content:flex-start; width:${Math.max(w, labelWidth)}px; height:${totalHeight}px;">
-        <div style="max-width:${labelWidth}px; min-width:72px; height:${labelHeight}px; padding:2px 8px; margin-bottom:${labelGap}px; border-radius:999px; background:hsl(var(--popover)); color:hsl(var(--popover-foreground)); border:1px solid hsl(var(--border)); box-shadow:0 4px 10px -6px hsl(var(--foreground) / 0.45); font-family:Montserrat, system-ui, sans-serif; font-size:12px; font-weight:700; line-height:18px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+        <div style="max-width:${labelWidth}px; min-width:84px; height:${labelHeight}px; padding:5px 10px; margin-bottom:${labelGap}px; border-radius:16px; background:hsl(var(--card) / 0.94); color:hsl(var(--foreground)); border:1px solid hsl(var(--border) / 0.9); box-shadow:0 10px 24px -16px hsl(var(--foreground) / 0.45), 0 2px 10px -6px hsl(var(--foreground) / 0.28); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); font-family:'DM Sans', 'Montserrat', system-ui, sans-serif; font-size:12px; font-weight:700; letter-spacing:-0.02em; line-height:1.05; text-align:center; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; text-overflow:ellipsis; text-wrap:balance;">
           ${safeLabel}
         </div>
         ${svg}
