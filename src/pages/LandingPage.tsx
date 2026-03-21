@@ -88,10 +88,37 @@ function useScrollFadeIn() {
   return { ref, className: `transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}` };
 }
 
-function FadeInSection({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+const FadeInSection = useRef ? (function () {
+  return null;
+})() : null;
+
+const FadeInSectionBase = ({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}, forwardedRef: React.ForwardedRef<HTMLDivElement>) => {
   const fade = useScrollFadeIn();
-  return <div ref={fade.ref} className={`${fade.className} ${className}`}>{children}</div>;
-}
+
+  const setRefs = (node: HTMLDivElement | null) => {
+    if (typeof fade.ref === "function") {
+      fade.ref(node);
+    } else if (fade.ref) {
+      fade.ref.current = node;
+    }
+
+    if (typeof forwardedRef === "function") {
+      forwardedRef(node);
+    } else if (forwardedRef) {
+      forwardedRef.current = node;
+    }
+  };
+
+  return <div ref={setRefs} className={`${fade.className} ${className}`}>{children}</div>;
+};
+
+const FadeInSectionForwardRef = (await import("react")).forwardRef<HTMLDivElement, { children: React.ReactNode; className?: string }>(FadeInSectionBase as any);
 
 export default function LandingPage() {
   const [formNome, setFormNome] = useState("");
