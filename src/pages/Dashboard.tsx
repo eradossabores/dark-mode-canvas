@@ -167,6 +167,7 @@ export default function Dashboard() {
   const [fatPeriodo, setFatPeriodo] = useState<ResumoPeriodo>("total");
   const [vendasPeriodo, setVendasPeriodo] = useState<ResumoPeriodo>("total");
   const [producoesPeriodo, setProducoesPeriodo] = useState<ResumoPeriodo>("total");
+  const [receberPeriodo, setReceberPeriodo] = useState<ResumoPeriodo>("total");
   useEffect(() => { loadStats(); loadUserName(); }, []);
 
   async function loadUserName() {
@@ -315,13 +316,26 @@ export default function Dashboard() {
     return allProducoes.filter((p: any) => isWithinResumoPeriod(p.created_at, producoesPeriodo)).length;
   }, [allProducoes, producoesPeriodo]);
 
+  const contasReceberResumo = useMemo(() => {
+    const hoje = new Date().toISOString().split("T")[0];
+    const pendentesFiltradas = allVendas.filter(
+      (v: any) => v.status === "pendente" && isWithinResumoPeriod(v.created_at, receberPeriodo),
+    );
+
+    return {
+      total: pendentesFiltradas.reduce((s: number, v: any) => s + Number(v.total), 0),
+      quantidade: pendentesFiltradas.length,
+      vencidas: pendentesFiltradas.filter((v: any) => v.created_at.split("T")[0] < hoje).length,
+    };
+  }, [allVendas, receberPeriodo]);
+
   const cards = [
     { title: "Gelos em Estoque", value: stats.totalGelos.toLocaleString(), icon: Package, color: "text-primary", href: "/painel/estoque" },
     { title: "Clientes Ativos", value: stats.totalClientes, icon: Users, color: "text-secondary-foreground", href: "/painel/clientes" },
     { title: getResumoTitle("Vendas", vendasPeriodo), value: vendasCardValor, icon: ShoppingCart, color: "text-accent", href: "/painel/vendas", periodo: vendasPeriodo, onPeriodoChange: setVendasPeriodo },
     { title: getResumoTitle("Faturamento", fatPeriodo), value: `R$ ${faturamentoValor.toFixed(2)}`, icon: TrendingUp, color: "text-primary", href: "/painel/vendas", periodo: fatPeriodo, onPeriodoChange: setFatPeriodo },
     { title: getResumoTitle("Produções", producoesPeriodo), value: producoesCardValor, icon: Factory, color: "text-secondary-foreground", href: "/painel/producao", periodo: producoesPeriodo, onPeriodoChange: setProducoesPeriodo },
-    { title: "A Receber", value: `R$ ${contasReceber.total.toFixed(2)}`, icon: DollarSign, color: contasReceber.vencidas > 0 ? "text-destructive" : "text-primary", href: "/painel/a-receber" },
+    { title: getResumoTitle("A Receber", receberPeriodo), value: `R$ ${contasReceberResumo.total.toFixed(2)}`, icon: DollarSign, color: contasReceberResumo.vencidas > 0 ? "text-destructive" : "text-primary", href: "/painel/a-receber", periodo: receberPeriodo, onPeriodoChange: setReceberPeriodo },
   ];
 
   return (
@@ -776,25 +790,42 @@ export default function Dashboard() {
           <GlowingEffect spread={20} glow disabled={false} proximity={40} inactiveZone={0.2} borderWidth={1} />
           <Card className="relative border-0 bg-background">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-primary" />
-                Contas a Receber
-              </CardTitle>
+              <div className="flex items-start justify-between gap-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <DollarSign className={`h-4 w-4 ${contasReceberResumo.vencidas > 0 ? "text-destructive" : "text-primary"}`} />
+                  {getResumoTitle("Contas a Receber", receberPeriodo)}
+                </CardTitle>
+                <div className="flex flex-wrap gap-1 justify-end">
+                  {RESUMO_PERIODOS.map(({ value, label }) => (
+                    <button
+                      key={value}
+                      onClick={() => setReceberPeriodo(value)}
+                      className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
+                        receberPeriodo === value
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground text-sm">Total pendente</span>
-                  <span className="text-xl font-bold">R$ {contasReceber.total.toFixed(2)}</span>
+                  <span className="text-xl font-bold">R$ {contasReceberResumo.total.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground text-sm">Vendas pendentes</span>
-                  <Badge variant="secondary">{contasReceber.quantidade}</Badge>
+                  <Badge variant="secondary">{contasReceberResumo.quantidade}</Badge>
                 </div>
-                {contasReceber.vencidas > 0 && (
+                {contasReceberResumo.vencidas > 0 && (
                   <div className="flex justify-between items-center">
                     <span className="text-destructive text-sm font-medium">Vencidas</span>
-                    <Badge variant="destructive">{contasReceber.vencidas}</Badge>
+                    <Badge variant="destructive">{contasReceberResumo.vencidas}</Badge>
                   </div>
                 )}
               </div>
