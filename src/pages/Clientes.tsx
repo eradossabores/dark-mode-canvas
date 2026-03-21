@@ -263,11 +263,15 @@ export default function Clientes() {
                         <span className={dias > 30 ? "text-destructive font-semibold" : ""}>{dias}d</span>
                       ) : "Nunca comprou"}
                     </TableCell>
-                    <TableCell className="text-right space-x-1">
-                      <Button size="icon" variant="ghost" onClick={() => openClienteOnMap(c.id)} title="Ver no mapa"><Map className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => setHistoricoCliente({ id: c.id, nome: c.nome })} title="Histórico"><History className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => setDeleteId(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    <TableCell className="text-right">
+                      <div className="flex flex-wrap items-center justify-end gap-1">
+                        <Button size="sm" variant="outline" onClick={() => openClienteOnMap(c.id)}>
+                          <Map className="mr-1 h-4 w-4" /> Ver no mapa
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => setHistoricoCliente({ id: c.id, nome: c.nome })} title="Histórico"><History className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" onClick={() => openEdit(c)} title="Editar"><Pencil className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" onClick={() => setDeleteId(c.id)} title="Apagar"><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
