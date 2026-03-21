@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { AdvancedMap, createSvgIcon, MAP_ICONS, type MapMarker } from "@/components/ui/interactive-map";
+import { AdvancedMap, createLabeledSvgIcon, createSvgIcon, MAP_ICONS, type MapMarker } from "@/components/ui/interactive-map";
 import L from "leaflet";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -210,7 +210,11 @@ export default function MapaClientes() {
     ...clientesFiltrados.map(c => ({
       id: c.id,
       position: [c.latitude!, c.longitude!] as [number, number],
-      icon: c.id === highlightedClienteId ? MAP_ICONS.gold : clienteIcon,
+      icon: createLabeledSvgIcon(
+        c.id === highlightedClienteId ? '#d97706' : '#2563eb',
+        c.nome,
+        c.id === highlightedClienteId ? 'large' : 'medium'
+      ),
       popup: {
         title: c.nome,
         content: (
