@@ -81,8 +81,8 @@ export default function ClientesInativos() {
 
   function formatarMensagem(cliente: ClienteInativo) {
     return mensagemModelo
-      .replaceAll("{nome}", cliente.nome.split(" ")[0] || cliente.nome)
-      .replaceAll("{dias}", cliente.diasSemCompra === 999 ? "muito tempo" : `${cliente.diasSemCompra} dias`);
+      .replace(/\{nome\}/g, cliente.nome.split(" ")[0] || cliente.nome)
+      .replace(/\{dias\}/g, cliente.diasSemCompra === 999 ? "muito tempo" : `${cliente.diasSemCompra} dias`);
   }
 
   function normalizarTelefoneWhatsapp(telefone: string) {
