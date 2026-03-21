@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { UserX, Clock, Phone, MessageCircle, Copy, CheckSquare, Square } from "lucide-react";
+import { UserX, Clock, Phone, MessageCircle, Copy } from "lucide-react";
 
 const DEFAULT_WHATSAPP_TEMPLATE = `Oi, {nome}! Tudo bem? 😊
 
@@ -24,9 +24,9 @@ interface ClienteInativo {
 export default function ClientesInativos() {
   const [clientes, setClientes] = useState<ClienteInativo[]>([]);
   const [diasLimite, setDiasLimite] = useState(15);
-  const [selecionados, setSelecionados] = useState<string[]>([]);
   const [mensagemModelo, setMensagemModelo] = useState(DEFAULT_WHATSAPP_TEMPLATE);
   const [mostrarMensagemWhatsapp, setMostrarMensagemWhatsapp] = useState(false);
+  const [clienteMensagem, setClienteMensagem] = useState<ClienteInativo | null>(null);
 
   useEffect(() => { load(); }, []);
 
@@ -57,28 +57,17 @@ export default function ClientesInativos() {
   }
 
   const filtrados = clientes.filter(c => c.diasSemCompra >= diasLimite);
-  const clientesSelecionados = useMemo(
-    () => filtrados.filter((cliente) => selecionados.includes(cliente.id)),
-    [filtrados, selecionados],
+  const clienteMensagemValido = useMemo(
+    () => filtrados.find((cliente) => cliente.id === clienteMensagem?.id) ?? null,
+    [clienteMensagem, filtrados],
   );
-  const selecionadosComTelefone = clientesSelecionados.filter((cliente) => !!cliente.telefone);
 
-  function toggleSelecao(clienteId: string) {
-    setSelecionados((atual) =>
-      atual.includes(clienteId) ? atual.filter((id) => id !== clienteId) : [...atual, clienteId],
-    );
-  }
-
-  function toggleSelecionarTodos() {
-    const idsVisiveis = filtrados.slice(0, 10).map((cliente) => cliente.id);
-    const todosVisiveisSelecionados = idsVisiveis.every((id) => selecionados.includes(id));
-
-    setSelecionados((atual) =>
-      todosVisiveisSelecionados
-        ? atual.filter((id) => !idsVisiveis.includes(id))
-        : Array.from(new Set([...atual, ...idsVisiveis])),
-    );
-  }
+  useEffect(() => {
+    if (!clienteMensagemValido && clienteMensagem) {
+      setClienteMensagem(null);
+      setMostrarMensagemWhatsapp(false);
+    }
+  }, [clienteMensagem, clienteMensagemValido]);
 
   function formatarMensagem(cliente: ClienteInativo) {
     return mensagemModelo
@@ -95,18 +84,24 @@ export default function ClientesInativos() {
   }
 
   async function copiarModelo() {
-    await navigator.clipboard.writeText(mensagemModelo);
+    const conteudo = clienteMensagemValido ? formatarMensagem(clienteMensagemValido) : mensagemModelo;
+    await navigator.clipboard.writeText(conteudo);
   }
 
-  function enviarWhatsappSelecionados() {
-    selecionadosComTelefone.forEach((cliente, index) => {
-      const telefone = cliente.telefone ? normalizarTelefoneWhatsapp(cliente.telefone) : null;
-      if (!telefone) return;
+  function abrirMensagemCliente(cliente: ClienteInativo) {
+    setClienteMensagem(cliente);
+    setMostrarMensagemWhatsapp(true);
+  }
 
-      const mensagem = encodeURIComponent(formatarMensagem(cliente));
-      const url = `https://wa.me/${telefone}?text=${mensagem}`;
-      window.setTimeout(() => window.open(url, "_blank", "noopener,noreferrer"), index * 180);
-    });
+  function enviarWhatsappCliente(cliente: ClienteInativo | null) {
+    if (!cliente?.telefone) return;
+
+    const telefone = normalizarTelefoneWhatsapp(cliente.telefone);
+    if (!telefone) return;
+
+    const mensagem = encodeURIComponent(formatarMensagem(cliente));
+    const url = `https://wa.me/${telefone}?text=${mensagem}`;
+    window.open(url, "_blank", "noopener,noreferrer");
   }
 
   if (clientes.length === 0) return null;
@@ -143,23 +138,14 @@ export default function ClientesInativos() {
           </p>
         ) : (
           <div className="space-y-3">
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={() => setMostrarMensagemWhatsapp((atual) => !atual)}
-                className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition-colors hover:opacity-90"
-              >
-                <MessageCircle className="h-3.5 w-3.5" />
-                Enviar Mensagem para o Cliente
-              </button>
-            </div>
-
-            {mostrarMensagemWhatsapp && (
+            {mostrarMensagemWhatsapp && clienteMensagemValido && (
               <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <p className="text-sm font-medium">Mensagem para WhatsApp</p>
-                    <p className="text-xs text-muted-foreground">Use {'{nome}'} e {'{dias}'} para personalizar automaticamente.</p>
+                    <p className="text-xs text-muted-foreground">
+                      Enviando para <span className="font-medium text-foreground">{clienteMensagemValido.nome}</span>. Use {'{nome}'} e {'{dias}'} para personalizar automaticamente.
+                    </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <button
@@ -171,11 +157,11 @@ export default function ClientesInativos() {
                     </button>
                     <button
                       type="button"
-                      onClick={enviarWhatsappSelecionados}
-                      disabled={selecionadosComTelefone.length === 0}
+                      onClick={() => enviarWhatsappCliente(clienteMensagemValido)}
+                      disabled={!clienteMensagemValido.telefone}
                       className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      <MessageCircle className="h-3.5 w-3.5" /> Enviar para selecionados
+                      <MessageCircle className="h-3.5 w-3.5" /> Enviar para cliente
                     </button>
                   </div>
                 </div>
@@ -187,42 +173,24 @@ export default function ClientesInativos() {
                 />
 
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-                  <button
-                    type="button"
-                    onClick={toggleSelecionarTodos}
-                    className="inline-flex items-center gap-1.5 text-foreground hover:text-primary"
-                  >
-                    {filtrados.slice(0, 10).every((cliente) => selecionados.includes(cliente.id)) ? (
-                      <CheckSquare className="h-3.5 w-3.5" />
-                    ) : (
-                      <Square className="h-3.5 w-3.5" />
-                    )}
-                    Selecionar visíveis
-                  </button>
-                  <span>
-                    {clientesSelecionados.length} selecionado(s) · {selecionadosComTelefone.length} com WhatsApp
-                  </span>
+                  <span>Prévia personalizada para envio individual.</span>
+                  <span>{clienteMensagemValido.telefone ? "WhatsApp disponível" : "Cliente sem WhatsApp"}</span>
                 </div>
               </div>
             )}
 
             <div className="space-y-2 max-h-[280px] overflow-y-auto">
               {filtrados.slice(0, 10).map(c => {
-                const selecionado = selecionados.includes(c.id);
+                const ativo = clienteMensagemValido?.id === c.id;
 
                 return (
-                  <button
+                  <div
                     key={c.id}
-                    type="button"
-                    onClick={() => toggleSelecao(c.id)}
                     className={`flex w-full items-center justify-between gap-3 rounded-lg border p-2 text-left text-sm transition-colors ${
-                      selecionado ? "border-primary bg-primary/5" : "border-transparent bg-muted/30 hover:border-border"
+                      ativo ? "border-primary bg-primary/5" : "border-transparent bg-muted/30 hover:border-border"
                     }`}
                   >
                     <div className="flex min-w-0 items-start gap-2">
-                      <div className="pt-0.5 text-primary">
-                        {selecionado ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4 text-muted-foreground" />}
-                      </div>
                       <div className="min-w-0">
                         <p className="font-medium truncate">{c.nome}</p>
                         <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
@@ -235,14 +203,24 @@ export default function ClientesInativos() {
                         </div>
                       </div>
                     </div>
-                    <Badge
-                      variant={c.diasSemCompra >= 30 ? "destructive" : c.diasSemCompra >= 15 ? "secondary" : "outline"}
-                      className="shrink-0"
-                    >
-                      <Clock className="h-3 w-3 mr-1" />
-                      {c.diasSemCompra === 999 ? "Nunca" : `${c.diasSemCompra}d`}
-                    </Badge>
-                  </button>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <Badge
+                        variant={c.diasSemCompra >= 30 ? "destructive" : c.diasSemCompra >= 15 ? "secondary" : "outline"}
+                        className="shrink-0"
+                      >
+                        <Clock className="h-3 w-3 mr-1" />
+                        {c.diasSemCompra === 999 ? "Nunca" : `${c.diasSemCompra}d`}
+                      </Badge>
+                      <button
+                        type="button"
+                        onClick={() => abrirMensagemCliente(c)}
+                        className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-[11px] font-medium text-primary-foreground transition-colors hover:opacity-90"
+                      >
+                        <MessageCircle className="h-3.5 w-3.5" />
+                        Enviar mensagem
+                      </button>
+                    </div>
+                  </div>
                 );
               })}
               {filtrados.length > 10 && (
