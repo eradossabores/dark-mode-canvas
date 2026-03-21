@@ -1,4 +1,3 @@
-import { forwardRef } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -52,62 +51,58 @@ const ProdRoute = ({ children }: { children: React.ReactNode }) => (
   <ProtectedRoute><Layout>{children}</Layout></ProtectedRoute>
 );
 
-const App = forwardRef<HTMLDivElement>(function App(_, ref) {
-  return (
-    <div ref={ref}>
-      <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <AuthProvider>
-                <SnowEffect />
-                <GlobalSearch />
-                <Routes>
-                  {/* Public */}
-                  <Route path="/" element={<LandingPage />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/cadastro" element={<Cadastro />} />
-                  <Route path="/pedir" element={<Pedir />} />
+const App = () => (
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <SnowEffect />
+            <GlobalSearch />
+            <Routes>
+              {/* Public */}
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/cadastro" element={<Cadastro />} />
+              <Route path="/pedir" element={<Pedir />} />
 
-                  {/* Admin only routes */}
-                  <Route path="/painel" element={<AdminRoute><Dashboard /></AdminRoute>} />
-                  <Route path="/painel/vendas" element={<AdminRoute><Vendas /></AdminRoute>} />
-                  <Route path="/painel/a-receber" element={<AdminRoute><AReceber /></AdminRoute>} />
-                  <Route path="/painel/contas-a-pagar" element={<AdminRoute><ContasAPagar /></AdminRoute>} />
-                  <Route path="/painel/clientes" element={<AdminRoute><Clientes /></AdminRoute>} />
-                  <Route path="/painel/funcionarios" element={<AdminRoute><Funcionarios /></AdminRoute>} />
-                  <Route path="/painel/sabores" element={<AdminRoute><Sabores /></AdminRoute>} />
-                  <Route path="/painel/relatorios" element={<AdminRoute><Relatorios /></AdminRoute>} />
-                  <Route path="/painel/importar-planilha" element={<AdminRoute><ImportarPlanilha /></AdminRoute>} />
-                  <Route path="/painel/auditoria" element={<AdminRoute><Auditoria /></AdminRoute>} />
-                  <Route path="/painel/diagnostico" element={<AdminRoute><Diagnostico /></AdminRoute>} />
-                  <Route path="/painel/verificacao-vendas" element={<AdminRoute><VerificacaoVendas /></AdminRoute>} />
-                  <Route path="/painel/usuarios" element={<AdminRoute><GerenciarUsuarios /></AdminRoute>} />
-                  <Route path="/painel/previsao-demanda" element={<AdminRoute><PrevisaoDemanda /></AdminRoute>} />
-                  <Route path="/painel/mapa-entregas" element={<AdminRoute><MapaEntregas /></AdminRoute>} />
-                  <Route path="/painel/mapa-clientes" element={<AdminRoute><MapaClientes /></AdminRoute>} />
-                  <Route path="/painel/prospeccao" element={<AdminRoute><Prospeccao /></AdminRoute>} />
-                  <Route path="/painel/plano-producao" element={<AdminRoute><PlanoProducaoDiario /></AdminRoute>} />
-                  <Route path="/painel/backup" element={<AdminRoute><Backup /></AdminRoute>} />
+              {/* Admin only routes */}
+              <Route path="/painel" element={<AdminRoute><Dashboard /></AdminRoute>} />
+              <Route path="/painel/vendas" element={<AdminRoute><Vendas /></AdminRoute>} />
+              <Route path="/painel/a-receber" element={<AdminRoute><AReceber /></AdminRoute>} />
+              <Route path="/painel/contas-a-pagar" element={<AdminRoute><ContasAPagar /></AdminRoute>} />
+              <Route path="/painel/clientes" element={<AdminRoute><Clientes /></AdminRoute>} />
+              <Route path="/painel/funcionarios" element={<AdminRoute><Funcionarios /></AdminRoute>} />
+              <Route path="/painel/sabores" element={<AdminRoute><Sabores /></AdminRoute>} />
+              <Route path="/painel/relatorios" element={<AdminRoute><Relatorios /></AdminRoute>} />
+              <Route path="/painel/importar-planilha" element={<AdminRoute><ImportarPlanilha /></AdminRoute>} />
+              <Route path="/painel/auditoria" element={<AdminRoute><Auditoria /></AdminRoute>} />
+              <Route path="/painel/diagnostico" element={<AdminRoute><Diagnostico /></AdminRoute>} />
+              <Route path="/painel/verificacao-vendas" element={<AdminRoute><VerificacaoVendas /></AdminRoute>} />
+              <Route path="/painel/usuarios" element={<AdminRoute><GerenciarUsuarios /></AdminRoute>} />
+              <Route path="/painel/previsao-demanda" element={<AdminRoute><PrevisaoDemanda /></AdminRoute>} />
+              <Route path="/painel/mapa-entregas" element={<AdminRoute><MapaEntregas /></AdminRoute>} />
+              <Route path="/painel/mapa-clientes" element={<AdminRoute><MapaClientes /></AdminRoute>} />
+              <Route path="/painel/prospeccao" element={<AdminRoute><Prospeccao /></AdminRoute>} />
+              <Route path="/painel/plano-producao" element={<AdminRoute><PlanoProducaoDiario /></AdminRoute>} />
+              <Route path="/painel/backup" element={<AdminRoute><Backup /></AdminRoute>} />
 
-                  {/* Production accessible routes */}
-                  <Route path="/painel/producao" element={<ProdRoute><Producao /></ProdRoute>} />
-                  <Route path="/painel/pedidos-producao" element={<ProdRoute><PedidosProducao /></ProdRoute>} />
-                  <Route path="/painel/monitor-producao" element={<ProdRoute><MonitorProducao /></ProdRoute>} />
-                  <Route path="/painel/estoque" element={<ProdRoute><Estoque /></ProdRoute>} />
-                  <Route path="/painel/presenca" element={<ProdRoute><PresencaProducao /></ProdRoute>} />
+              {/* Production accessible routes */}
+              <Route path="/painel/producao" element={<ProdRoute><Producao /></ProdRoute>} />
+              <Route path="/painel/pedidos-producao" element={<ProdRoute><PedidosProducao /></ProdRoute>} />
+              <Route path="/painel/monitor-producao" element={<ProdRoute><MonitorProducao /></ProdRoute>} />
+              <Route path="/painel/estoque" element={<ProdRoute><Estoque /></ProdRoute>} />
+              <Route path="/painel/presenca" element={<ProdRoute><PresencaProducao /></ProdRoute>} />
 
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </AuthProvider>
-            </BrowserRouter>
-          </TooltipProvider>
-        </QueryClientProvider>
-      </ErrorBoundary>
-    </div>
-  );
-});
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
+);
 
 export default App;
