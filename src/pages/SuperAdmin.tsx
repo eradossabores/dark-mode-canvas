@@ -457,6 +457,16 @@ export default function SuperAdmin() {
           ))}
         </div>
       )}
+
+      {/* Edit Factory Dialog */}
+      {editingFactory && (
+        <EditFactoryDialog
+          open={!!editingFactory}
+          onOpenChange={(open) => !open && setEditingFactory(null)}
+          factory={editingFactory}
+          onSaved={loadFactories}
+        />
+      )}
     </div>
   );
 }
