@@ -45,6 +45,8 @@ export default function SuperAdmin() {
     ownerPassword: "",
     ownerName: "",
   });
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   async function loadFactories() {
     try {
