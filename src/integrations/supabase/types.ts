@@ -17,6 +17,7 @@ export type Database = {
       abatimentos_historico: {
         Row: {
           created_at: string
+          factory_id: string | null
           forma_pagamento: string
           id: string
           valor: number
@@ -26,6 +27,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          factory_id?: string | null
           forma_pagamento?: string
           id?: string
           valor: number
@@ -35,6 +37,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          factory_id?: string | null
           forma_pagamento?: string
           id?: string
           valor?: number
@@ -43,6 +46,13 @@ export type Database = {
           venda_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "abatimentos_historico_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "abatimentos_historico_venda_id_fkey"
             columns: ["venda_id"]
@@ -91,6 +101,7 @@ export type Database = {
           created_at: string
           descricao: string | null
           dispositivo: string | null
+          factory_id: string | null
           id: string
           modulo: string
           registro_afetado: string | null
@@ -101,6 +112,7 @@ export type Database = {
           created_at?: string
           descricao?: string | null
           dispositivo?: string | null
+          factory_id?: string | null
           id?: string
           modulo: string
           registro_afetado?: string | null
@@ -111,16 +123,26 @@ export type Database = {
           created_at?: string
           descricao?: string | null
           dispositivo?: string | null
+          factory_id?: string | null
           id?: string
           modulo?: string
           registro_afetado?: string | null
           usuario_nome?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "auditoria_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       avarias: {
         Row: {
           created_at: string
+          factory_id: string | null
           id: string
           motivo: string
           operador: string
@@ -129,6 +151,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          factory_id?: string | null
           id?: string
           motivo: string
           operador?: string
@@ -137,6 +160,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          factory_id?: string | null
           id?: string
           motivo?: string
           operador?: string
@@ -144,6 +168,13 @@ export type Database = {
           sabor_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "avarias_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "avarias_sabor_id_fkey"
             columns: ["sabor_id"]
@@ -156,18 +187,21 @@ export type Database = {
       cliente_preco_sabor: {
         Row: {
           cliente_id: string
+          factory_id: string | null
           id: string
           preco_unitario: number
           sabor_id: string
         }
         Insert: {
           cliente_id: string
+          factory_id?: string | null
           id?: string
           preco_unitario: number
           sabor_id: string
         }
         Update: {
           cliente_id?: string
+          factory_id?: string | null
           id?: string
           preco_unitario?: number
           sabor_id?: string
@@ -178,6 +212,13 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_preco_sabor_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
             referencedColumns: ["id"]
           },
           {
@@ -192,18 +233,21 @@ export type Database = {
       cliente_tabela_preco: {
         Row: {
           cliente_id: string
+          factory_id: string | null
           id: string
           preco_unitario: number
           quantidade_minima: number
         }
         Insert: {
           cliente_id: string
+          factory_id?: string | null
           id?: string
           preco_unitario: number
           quantidade_minima: number
         }
         Update: {
           cliente_id?: string
+          factory_id?: string | null
           id?: string
           preco_unitario?: number
           quantidade_minima?: number
@@ -214,6 +258,13 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_tabela_preco_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
             referencedColumns: ["id"]
           },
         ]
@@ -228,6 +279,7 @@ export type Database = {
           email: string | null
           endereco: string | null
           estado: string | null
+          factory_id: string | null
           freezer_identificacao: string | null
           id: string
           latitude: number | null
@@ -250,6 +302,7 @@ export type Database = {
           email?: string | null
           endereco?: string | null
           estado?: string | null
+          factory_id?: string | null
           freezer_identificacao?: string | null
           id?: string
           latitude?: number | null
@@ -272,6 +325,7 @@ export type Database = {
           email?: string | null
           endereco?: string | null
           estado?: string | null
+          factory_id?: string | null
           freezer_identificacao?: string | null
           id?: string
           latitude?: number | null
@@ -285,13 +339,22 @@ export type Database = {
           ultima_compra?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clientes_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contas_a_pagar: {
         Row: {
           ativa: boolean
           created_at: string
           descricao: string
+          factory_id: string | null
           id: string
           mes_referencia: string | null
           pago_mes: boolean
@@ -309,6 +372,7 @@ export type Database = {
           ativa?: boolean
           created_at?: string
           descricao: string
+          factory_id?: string | null
           id?: string
           mes_referencia?: string | null
           pago_mes?: boolean
@@ -326,6 +390,7 @@ export type Database = {
           ativa?: boolean
           created_at?: string
           descricao?: string
+          factory_id?: string | null
           id?: string
           mes_referencia?: string | null
           pago_mes?: boolean
@@ -339,12 +404,21 @@ export type Database = {
           valor_restante?: number | null
           valor_total?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contas_a_pagar_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contato_landing: {
         Row: {
           created_at: string
           email: string
+          factory_id: string | null
           id: string
           mensagem: string
           nome: string
@@ -353,6 +427,7 @@ export type Database = {
         Insert: {
           created_at?: string
           email: string
+          factory_id?: string | null
           id?: string
           mensagem: string
           nome: string
@@ -361,12 +436,21 @@ export type Database = {
         Update: {
           created_at?: string
           email?: string
+          factory_id?: string | null
           id?: string
           mensagem?: string
           nome?: string
           telefone?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contato_landing_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       decisoes_producao: {
         Row: {
@@ -375,6 +459,7 @@ export type Database = {
           dia_semana: number
           dias_cobertura: number
           estoque_no_momento: number
+          factory_id: string | null
           id: string
           lotes_autorizados: number
           lotes_sugeridos: number
@@ -390,6 +475,7 @@ export type Database = {
           dia_semana: number
           dias_cobertura?: number
           estoque_no_momento?: number
+          factory_id?: string | null
           id?: string
           lotes_autorizados?: number
           lotes_sugeridos?: number
@@ -405,6 +491,7 @@ export type Database = {
           dia_semana?: number
           dias_cobertura?: number
           estoque_no_momento?: number
+          factory_id?: string | null
           id?: string
           lotes_autorizados?: number
           lotes_sugeridos?: number
@@ -415,6 +502,13 @@ export type Database = {
           vendas_7d?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "decisoes_producao_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "decisoes_producao_sabor_id_fkey"
             columns: ["sabor_id"]
@@ -429,6 +523,7 @@ export type Database = {
           created_at: string
           estoque_atual: number
           estoque_minimo: number
+          factory_id: string | null
           id: string
           nome: string
           updated_at: string
@@ -437,6 +532,7 @@ export type Database = {
           created_at?: string
           estoque_atual?: number
           estoque_minimo?: number
+          factory_id?: string | null
           id?: string
           nome: string
           updated_at?: string
@@ -445,15 +541,25 @@ export type Database = {
           created_at?: string
           estoque_atual?: number
           estoque_minimo?: number
+          factory_id?: string | null
           id?: string
           nome?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "embalagens_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       estoque_freezer: {
         Row: {
           cliente_id: string
+          factory_id: string | null
           id: string
           quantidade: number
           sabor_id: string
@@ -461,6 +567,7 @@ export type Database = {
         }
         Insert: {
           cliente_id: string
+          factory_id?: string | null
           id?: string
           quantidade?: number
           sabor_id: string
@@ -468,6 +575,7 @@ export type Database = {
         }
         Update: {
           cliente_id?: string
+          factory_id?: string | null
           id?: string
           quantidade?: number
           sabor_id?: string
@@ -482,6 +590,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "estoque_freezer_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "estoque_freezer_sabor_id_fkey"
             columns: ["sabor_id"]
             isOneToOne: false
@@ -492,24 +607,34 @@ export type Database = {
       }
       estoque_gelos: {
         Row: {
+          factory_id: string | null
           id: string
           quantidade: number
           sabor_id: string
           updated_at: string
         }
         Insert: {
+          factory_id?: string | null
           id?: string
           quantidade?: number
           sabor_id: string
           updated_at?: string
         }
         Update: {
+          factory_id?: string | null
           id?: string
           quantidade?: number
           sabor_id?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "estoque_gelos_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "estoque_gelos_sabor_id_fkey"
             columns: ["sabor_id"]
@@ -519,11 +644,45 @@ export type Database = {
           },
         ]
       }
+      factories: {
+        Row: {
+          created_at: string | null
+          id: string
+          logo_url: string | null
+          max_collaborators: number | null
+          name: string
+          owner_id: string
+          theme: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          logo_url?: string | null
+          max_collaborators?: number | null
+          name: string
+          owner_id: string
+          theme?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          logo_url?: string | null
+          max_collaborators?: number | null
+          name?: string
+          owner_id?: string
+          theme?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       followup_mensagens: {
         Row: {
           created_at: string
           data_agendada: string
           data_envio: string | null
+          factory_id: string | null
           id: string
           mensagem_editada: string | null
           mensagem_gerada: string
@@ -539,6 +698,7 @@ export type Database = {
           created_at?: string
           data_agendada: string
           data_envio?: string | null
+          factory_id?: string | null
           id?: string
           mensagem_editada?: string | null
           mensagem_gerada: string
@@ -554,6 +714,7 @@ export type Database = {
           created_at?: string
           data_agendada?: string
           data_envio?: string | null
+          factory_id?: string | null
           id?: string
           mensagem_editada?: string | null
           mensagem_gerada?: string
@@ -566,6 +727,13 @@ export type Database = {
           visita_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "followup_mensagens_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "followup_mensagens_prospecto_id_fkey"
             columns: ["prospecto_id"]
@@ -586,6 +754,7 @@ export type Database = {
         Row: {
           ativo: boolean
           created_at: string
+          factory_id: string | null
           id: string
           nome: string
           tipo_pagamento: Database["public"]["Enums"]["tipo_pagamento_funcionario"]
@@ -595,6 +764,7 @@ export type Database = {
         Insert: {
           ativo?: boolean
           created_at?: string
+          factory_id?: string | null
           id?: string
           nome: string
           tipo_pagamento?: Database["public"]["Enums"]["tipo_pagamento_funcionario"]
@@ -604,13 +774,22 @@ export type Database = {
         Update: {
           ativo?: boolean
           created_at?: string
+          factory_id?: string | null
           id?: string
           nome?: string
           tipo_pagamento?: Database["public"]["Enums"]["tipo_pagamento_funcionario"]
           updated_at?: string
           valor_pagamento?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "funcionarios_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       invites: {
         Row: {
@@ -650,6 +829,7 @@ export type Database = {
           created_at: string
           estoque_atual: number
           estoque_minimo: number
+          factory_id: string | null
           id: string
           nome: string
           unidade: Database["public"]["Enums"]["unidade_medida"]
@@ -659,6 +839,7 @@ export type Database = {
           created_at?: string
           estoque_atual?: number
           estoque_minimo?: number
+          factory_id?: string | null
           id?: string
           nome: string
           unidade?: Database["public"]["Enums"]["unidade_medida"]
@@ -668,16 +849,26 @@ export type Database = {
           created_at?: string
           estoque_atual?: number
           estoque_minimo?: number
+          factory_id?: string | null
           id?: string
           nome?: string
           unidade?: Database["public"]["Enums"]["unidade_medida"]
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "materias_primas_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       movimentacoes_estoque: {
         Row: {
           created_at: string
+          factory_id: string | null
           id: string
           item_id: string
           operador: string
@@ -689,6 +880,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          factory_id?: string | null
           id?: string
           item_id: string
           operador?: string
@@ -700,6 +892,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          factory_id?: string | null
           id?: string
           item_id?: string
           operador?: string
@@ -709,10 +902,19 @@ export type Database = {
           tipo_item?: Database["public"]["Enums"]["tipo_item_estoque"]
           tipo_movimentacao?: Database["public"]["Enums"]["tipo_movimentacao"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "movimentacoes_estoque_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pedido_producao_itens: {
         Row: {
+          factory_id: string | null
           id: string
           pedido_id: string
           quantidade: number
@@ -720,6 +922,7 @@ export type Database = {
           separado: boolean
         }
         Insert: {
+          factory_id?: string | null
           id?: string
           pedido_id: string
           quantidade: number
@@ -727,6 +930,7 @@ export type Database = {
           separado?: boolean
         }
         Update: {
+          factory_id?: string | null
           id?: string
           pedido_id?: string
           quantidade?: number
@@ -734,6 +938,13 @@ export type Database = {
           separado?: boolean
         }
         Relationships: [
+          {
+            foreignKeyName: "pedido_producao_itens_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "pedido_producao_itens_pedido_id_fkey"
             columns: ["pedido_id"]
@@ -755,6 +966,7 @@ export type Database = {
           cliente_id: string
           created_at: string
           data_entrega: string
+          factory_id: string | null
           id: string
           observacoes: string | null
           operador: string
@@ -769,6 +981,7 @@ export type Database = {
           cliente_id: string
           created_at?: string
           data_entrega: string
+          factory_id?: string | null
           id?: string
           observacoes?: string | null
           operador?: string
@@ -783,6 +996,7 @@ export type Database = {
           cliente_id?: string
           created_at?: string
           data_entrega?: string
+          factory_id?: string | null
           id?: string
           observacoes?: string | null
           operador?: string
@@ -802,6 +1016,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "pedidos_producao_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "pedidos_producao_venda_id_fkey"
             columns: ["venda_id"]
             isOneToOne: false
@@ -815,6 +1036,7 @@ export type Database = {
           bairro: string
           created_at: string
           endereco: string
+          factory_id: string | null
           forma_pagamento: string
           id: string
           itens: Json
@@ -831,6 +1053,7 @@ export type Database = {
           bairro: string
           created_at?: string
           endereco: string
+          factory_id?: string | null
           forma_pagamento?: string
           id?: string
           itens?: Json
@@ -847,6 +1070,7 @@ export type Database = {
           bairro?: string
           created_at?: string
           endereco?: string
+          factory_id?: string | null
           forma_pagamento?: string
           id?: string
           itens?: Json
@@ -859,13 +1083,22 @@ export type Database = {
           updated_at?: string
           valor_total?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pedidos_publicos_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       presenca_producao: {
         Row: {
           confirmado_por: string | null
           created_at: string
           data: string
+          factory_id: string | null
           funcionario_id: string
           id: string
         }
@@ -873,6 +1106,7 @@ export type Database = {
           confirmado_por?: string | null
           created_at?: string
           data?: string
+          factory_id?: string | null
           funcionario_id: string
           id?: string
         }
@@ -880,10 +1114,18 @@ export type Database = {
           confirmado_por?: string | null
           created_at?: string
           data?: string
+          factory_id?: string | null
           funcionario_id?: string
           id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "presenca_producao_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "presenca_producao_funcionario_id_fkey"
             columns: ["funcionario_id"]
@@ -895,24 +1137,34 @@ export type Database = {
       }
       producao_funcionarios: {
         Row: {
+          factory_id: string | null
           funcionario_id: string
           id: string
           producao_id: string
           quantidade_produzida: number
         }
         Insert: {
+          factory_id?: string | null
           funcionario_id: string
           id?: string
           producao_id: string
           quantidade_produzida?: number
         }
         Update: {
+          factory_id?: string | null
           funcionario_id?: string
           id?: string
           producao_id?: string
           quantidade_produzida?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "producao_funcionarios_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "producao_funcionarios_funcionario_id_fkey"
             columns: ["funcionario_id"]
@@ -932,6 +1184,7 @@ export type Database = {
       producoes: {
         Row: {
           created_at: string
+          factory_id: string | null
           id: string
           modo: Database["public"]["Enums"]["modo_producao"]
           observacoes: string | null
@@ -942,6 +1195,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          factory_id?: string | null
           id?: string
           modo?: Database["public"]["Enums"]["modo_producao"]
           observacoes?: string | null
@@ -952,6 +1206,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          factory_id?: string | null
           id?: string
           modo?: Database["public"]["Enums"]["modo_producao"]
           observacoes?: string | null
@@ -961,6 +1216,13 @@ export type Database = {
           sabor_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "producoes_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "producoes_sabor_id_fkey"
             columns: ["sabor_id"]
@@ -974,27 +1236,39 @@ export type Database = {
         Row: {
           created_at: string
           email: string | null
+          factory_id: string | null
           id: string
           nome: string
         }
         Insert: {
           created_at?: string
           email?: string | null
+          factory_id?: string | null
           id: string
           nome?: string
         }
         Update: {
           created_at?: string
           email?: string | null
+          factory_id?: string | null
           id?: string
           nome?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       prospecto_visitas: {
         Row: {
           created_at: string
           data_visita: string
+          factory_id: string | null
           feedback: string | null
           id: string
           operador: string
@@ -1006,6 +1280,7 @@ export type Database = {
         Insert: {
           created_at?: string
           data_visita?: string
+          factory_id?: string | null
           feedback?: string | null
           id?: string
           operador?: string
@@ -1017,6 +1292,7 @@ export type Database = {
         Update: {
           created_at?: string
           data_visita?: string
+          factory_id?: string | null
           feedback?: string | null
           id?: string
           operador?: string
@@ -1026,6 +1302,13 @@ export type Database = {
           resultado?: Database["public"]["Enums"]["status_prospecto"]
         }
         Relationships: [
+          {
+            foreignKeyName: "prospecto_visitas_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "prospecto_visitas_prospecto_id_fkey"
             columns: ["prospecto_id"]
@@ -1041,6 +1324,7 @@ export type Database = {
           contato_nome: string | null
           created_at: string
           endereco: string | null
+          factory_id: string | null
           id: string
           latitude: number | null
           longitude: number | null
@@ -1062,6 +1346,7 @@ export type Database = {
           contato_nome?: string | null
           created_at?: string
           endereco?: string | null
+          factory_id?: string | null
           id?: string
           latitude?: number | null
           longitude?: number | null
@@ -1083,6 +1368,7 @@ export type Database = {
           contato_nome?: string | null
           created_at?: string
           endereco?: string | null
+          factory_id?: string | null
           id?: string
           latitude?: number | null
           longitude?: number | null
@@ -1099,12 +1385,21 @@ export type Database = {
           updated_at?: string
           volume_potencial?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "prospectos_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sabor_receita: {
         Row: {
           embalagem_id: string
           embalagens_por_lote: number
+          factory_id: string | null
           gelos_por_lote: number
           id: string
           materia_prima_id: string
@@ -1114,6 +1409,7 @@ export type Database = {
         Insert: {
           embalagem_id: string
           embalagens_por_lote?: number
+          factory_id?: string | null
           gelos_por_lote?: number
           id?: string
           materia_prima_id: string
@@ -1123,6 +1419,7 @@ export type Database = {
         Update: {
           embalagem_id?: string
           embalagens_por_lote?: number
+          factory_id?: string | null
           gelos_por_lote?: number
           id?: string
           materia_prima_id?: string
@@ -1135,6 +1432,13 @@ export type Database = {
             columns: ["embalagem_id"]
             isOneToOne: false
             referencedRelation: "embalagens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sabor_receita_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
             referencedColumns: ["id"]
           },
           {
@@ -1157,6 +1461,7 @@ export type Database = {
         Row: {
           ativo: boolean
           created_at: string
+          factory_id: string | null
           id: string
           imagem_url: string | null
           nome: string
@@ -1165,6 +1470,7 @@ export type Database = {
         Insert: {
           ativo?: boolean
           created_at?: string
+          factory_id?: string | null
           id?: string
           imagem_url?: string | null
           nome: string
@@ -1173,33 +1479,107 @@ export type Database = {
         Update: {
           ativo?: boolean
           created_at?: string
+          factory_id?: string | null
           id?: string
           imagem_url?: string | null
           nome?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sabores_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          amount: number | null
+          blocked_at: string | null
+          created_at: string | null
+          current_period_end: string | null
+          current_period_start: string | null
+          factory_id: string
+          grace_until: string | null
+          id: string
+          paid_at: string | null
+          status: string
+          trial_start: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount?: number | null
+          blocked_at?: string | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          factory_id: string
+          grace_until?: string | null
+          id?: string
+          paid_at?: string | null
+          status?: string
+          trial_start?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number | null
+          blocked_at?: string | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          factory_id?: string
+          grace_until?: string | null
+          id?: string
+          paid_at?: string | null
+          status?: string
+          trial_start?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: true
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
+          factory_id: string | null
           id: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
+          factory_id?: string | null
           id?: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
+          factory_id?: string | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       venda_itens: {
         Row: {
+          factory_id: string | null
           id: string
           preco_unitario: number
           quantidade: number
@@ -1209,6 +1589,7 @@ export type Database = {
           venda_id: string
         }
         Insert: {
+          factory_id?: string | null
           id?: string
           preco_unitario: number
           quantidade: number
@@ -1218,6 +1599,7 @@ export type Database = {
           venda_id: string
         }
         Update: {
+          factory_id?: string | null
           id?: string
           preco_unitario?: number
           quantidade?: number
@@ -1227,6 +1609,13 @@ export type Database = {
           venda_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "venda_itens_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "venda_itens_sabor_id_fkey"
             columns: ["sabor_id"]
@@ -1247,6 +1636,7 @@ export type Database = {
         Row: {
           created_at: string
           data_pagamento: string | null
+          factory_id: string | null
           id: string
           numero: number
           paga: boolean
@@ -1257,6 +1647,7 @@ export type Database = {
         Insert: {
           created_at?: string
           data_pagamento?: string | null
+          factory_id?: string | null
           id?: string
           numero: number
           paga?: boolean
@@ -1267,6 +1658,7 @@ export type Database = {
         Update: {
           created_at?: string
           data_pagamento?: string | null
+          factory_id?: string | null
           id?: string
           numero?: number
           paga?: boolean
@@ -1275,6 +1667,13 @@ export type Database = {
           venda_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "venda_parcelas_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "venda_parcelas_venda_id_fkey"
             columns: ["venda_id"]
@@ -1289,6 +1688,7 @@ export type Database = {
           cliente_id: string
           created_at: string
           enviado_producao: boolean
+          factory_id: string | null
           forma_pagamento: string
           id: string
           numero_nf: string | null
@@ -1305,6 +1705,7 @@ export type Database = {
           cliente_id: string
           created_at?: string
           enviado_producao?: boolean
+          factory_id?: string | null
           forma_pagamento?: string
           id?: string
           numero_nf?: string | null
@@ -1321,6 +1722,7 @@ export type Database = {
           cliente_id?: string
           created_at?: string
           enviado_producao?: boolean
+          factory_id?: string | null
           forma_pagamento?: string
           id?: string
           numero_nf?: string | null
@@ -1339,6 +1741,13 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
             referencedColumns: ["id"]
           },
         ]
@@ -1410,7 +1819,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "producao"
+      app_role: "admin" | "producao" | "super_admin" | "factory_owner"
       modo_producao: "unidade" | "lote"
       prioridade_prospecto: "alta" | "media" | "baixa"
       status_cliente: "ativo" | "inativo"
@@ -1569,7 +1978,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "producao"],
+      app_role: ["admin", "producao", "super_admin", "factory_owner"],
       modo_producao: ["unidade", "lote"],
       prioridade_prospecto: ["alta", "media", "baixa"],
       status_cliente: ["ativo", "inativo"],
