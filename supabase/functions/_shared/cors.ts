@@ -2,6 +2,7 @@ const ALLOWED_ORIGINS = [
   "https://aeradossabores.online",
   "https://www.aeradossabores.online",
   "https://id-preview--3a2cd490-bdee-4720-a89d-1604941d4960.lovable.app",
+  "https://3a2cd490-bdee-4720-a89d-1604941d4960.lovableproject.com",
 ];
 
 export function getCorsHeaders(req: Request): Record<string, string> {

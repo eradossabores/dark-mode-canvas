@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.suggest-producao]
 verify_jwt = false
+
+[functions.create-factory-owner]
+verify_jwt = false
