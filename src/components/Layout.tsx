@@ -284,7 +284,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen overflow-hidden">
       {/* Mobile hamburger */}
       <div className="md:hidden fixed top-3 left-3 z-50 p-1 rounded-md bg-card shadow-md border border-border flex items-center gap-1">
-        <img src={logo} alt="" className="h-7 w-7 rounded" />
+        <img src={factoryLogo} alt="" className="h-7 w-7 rounded" />
         <AnimatedMenuToggle
           isOpen={mobileOpen}
           toggle={() => setMobileOpen(!mobileOpen)}
