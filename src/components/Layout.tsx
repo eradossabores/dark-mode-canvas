@@ -204,6 +204,28 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         ))}
       </nav>
+      {/* Super Admin link */}
+      {role === "super_admin" && (
+        <Link
+          to="/super-admin"
+          onClick={() => setMobileOpen(false)}
+          className={cn(
+            "flex items-center gap-3 px-4 py-2 text-sm transition-colors rounded-md mx-2 mb-1",
+            location.pathname === "/super-admin"
+              ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold shadow-md"
+              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          )}
+        >
+          <Crown className="h-4 w-4 shrink-0" />
+          {isExpanded && <span>Super Admin</span>}
+        </Link>
+      )}
+      {/* Factory name indicator */}
+      {factoryName && role !== "super_admin" && isExpanded && (
+        <div className="mx-3 mb-1 px-2 py-1.5 rounded-md bg-sidebar-accent/30 text-[11px] text-sidebar-foreground/70 text-center truncate">
+          🏭 {factoryName}
+        </div>
+      )}
       {/* Logout button */}
       <button
         onClick={handleLogout}
