@@ -79,10 +79,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (roleData.factory_id) {
           const { data: factoryData } = await (supabase as any)
             .from("factories")
-            .select("name")
+            .select("name, logo_url, theme")
             .eq("id", roleData.factory_id)
             .maybeSingle();
           setFactoryName(factoryData?.name || null);
+          setBranding({
+            logoUrl: factoryData?.logo_url || null,
+            theme: factoryData?.theme && Object.keys(factoryData.theme).length > 0 ? factoryData.theme : null,
+          });
 
           // Fetch subscription info
           await fetchSubscription(roleData.factory_id);
