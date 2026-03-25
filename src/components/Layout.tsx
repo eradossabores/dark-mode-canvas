@@ -335,7 +335,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {sidebarContent}
       </aside>
 
-      <main className="flex-1 overflow-auto relative bg-background">
+      <main className="flex-1 overflow-auto relative bg-background flex flex-col">
+        <PaymentBanner />
         {/* Watermark logo */}
         <div className="fixed bottom-4 right-4 pointer-events-none z-0 opacity-[0.06] dark:opacity-[0.04]">
           <img src={logo} alt="" aria-hidden className="w-32 h-32 object-contain" />
