@@ -8,10 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
-import { Factory, Plus, Users, CreditCard, CheckCircle, XCircle, Clock, AlertTriangle, Upload, Image } from "lucide-react";
+import { Factory, Plus, Users, CreditCard, CheckCircle, XCircle, Clock, AlertTriangle, Upload, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { extractColorsFromImage } from "@/lib/color-extract";
+import EditFactoryDialog from "@/components/superadmin/EditFactoryDialog";
 
 interface FactoryRow {
   id: string;
@@ -38,6 +39,7 @@ export default function SuperAdmin() {
   const [loading, setLoading] = useState(true);
   const [showNewFactory, setShowNewFactory] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [editingFactory, setEditingFactory] = useState<FactoryRow | null>(null);
 
   // New factory form
   const [newFactory, setNewFactory] = useState({
@@ -432,6 +434,9 @@ export default function SuperAdmin() {
                 )}
 
                 <div className="flex gap-2 pt-2">
+                  <Button size="sm" variant="secondary" className="flex-1" onClick={() => setEditingFactory(factory)}>
+                    <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
+                  </Button>
                   {factory.subscription?.status === "blocked" ? (
                     <Button size="sm" className="flex-1" onClick={() => handleUnblock(factory.id)}>
                       Desbloquear
@@ -439,10 +444,10 @@ export default function SuperAdmin() {
                   ) : (
                     <>
                       <Button size="sm" variant="outline" className="flex-1" onClick={() => handleMarkPaid(factory.id)}>
-                        <CheckCircle className="h-3.5 w-3.5 mr-1" /> Marcar Pago
+                        <CheckCircle className="h-3.5 w-3.5 mr-1" /> Pago
                       </Button>
-                      <Button size="sm" variant="destructive" className="flex-1" onClick={() => handleBlock(factory.id)}>
-                        <XCircle className="h-3.5 w-3.5 mr-1" /> Bloquear
+                      <Button size="sm" variant="destructive" onClick={() => handleBlock(factory.id)}>
+                        <XCircle className="h-3.5 w-3.5" />
                       </Button>
                     </>
                   )}
@@ -451,6 +456,16 @@ export default function SuperAdmin() {
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Edit Factory Dialog */}
+      {editingFactory && (
+        <EditFactoryDialog
+          open={!!editingFactory}
+          onOpenChange={(open) => !open && setEditingFactory(null)}
+          factory={editingFactory}
+          onSaved={loadFactories}
+        />
       )}
     </div>
   );
