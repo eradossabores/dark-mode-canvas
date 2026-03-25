@@ -480,6 +480,30 @@ export default function SuperAdmin() {
                     </>
                   )}
                 </div>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="ghost" className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 mt-1">
+                      <Trash2 className="h-3.5 w-3.5 mr-1" /> Excluir Fábrica
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Excluir "{factory.name}"?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Esta ação é irreversível. Todos os dados da fábrica (clientes, vendas, produção, estoque, colaboradores e o proprietário) serão excluídos permanentemente.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        onClick={() => handleDeleteFactory(factory.id)}
+                      >
+                        Sim, excluir tudo
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </CardContent>
             </Card>
           ))}
