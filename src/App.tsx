@@ -10,8 +10,8 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Layout from "@/components/Layout";
 import SnowEffect from "@/components/SnowEffect";
 import ThemeProvider from "@/components/ThemeProvider";
-import LandingPage from "@/pages/LandingPage";
 import Login from "@/pages/Login";
+import { Navigate } from "react-router-dom";
 import Dashboard from "@/pages/Dashboard";
 import Producao from "@/pages/Producao";
 import Vendas from "@/pages/Vendas";
@@ -65,7 +65,7 @@ const App = () => (
               <GlobalSearch />
               <Routes>
               {/* Public */}
-              <Route path="/" element={<LandingPage />} />
+              <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="/login" element={<Login />} />
               <Route path="/cadastro" element={<Cadastro />} />
               <Route path="/pedir" element={<Pedir />} />
