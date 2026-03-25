@@ -209,6 +209,33 @@ export default function SuperAdmin() {
     }
   }
 
+  async function handleDeleteFactory(factoryId: string) {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-factory`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ factory_id: factoryId }),
+        }
+      );
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Erro ao excluir");
+
+      toast({ title: "Fábrica excluída com sucesso!" });
+      loadFactories();
+    } catch (e: any) {
+      toast({ title: "Erro ao excluir", description: e.message, variant: "destructive" });
+    }
+  }
+
   async function handleUnblock(factoryId: string) {
     await handleMarkPaid(factoryId);
   }
