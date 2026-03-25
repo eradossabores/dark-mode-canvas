@@ -2,8 +2,16 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
-type AppRole = "admin" | "producao" | null;
+type AppRole = "super_admin" | "admin" | "factory_owner" | "producao" | null;
 type ApprovalStatus = "pendente" | "aprovado" | "rejeitado" | null;
+
+interface SubscriptionInfo {
+  status: string; // trial, active, overdue, blocked
+  daysUntilDue: number | null;
+  trialEnd: string | null;
+  currentPeriodEnd: string | null;
+  graceUntil: string | null;
+}
 
 interface AuthContextType {
   user: User | null;
@@ -11,6 +19,9 @@ interface AuthContextType {
   role: AppRole;
   approvalStatus: ApprovalStatus;
   loading: boolean;
+  factoryId: string | null;
+  factoryName: string | null;
+  subscription: SubscriptionInfo | null;
   signOut: () => Promise<void>;
 }
 
@@ -20,6 +31,9 @@ const AuthContext = createContext<AuthContextType>({
   role: null,
   approvalStatus: null,
   loading: true,
+  factoryId: null,
+  factoryName: null,
+  subscription: null,
   signOut: async () => {},
 });
 
@@ -31,19 +45,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<AppRole>(null);
   const [approvalStatus, setApprovalStatus] = useState<ApprovalStatus>(null);
   const [loading, setLoading] = useState(true);
+  const [factoryId, setFactoryId] = useState<string | null>(null);
+  const [factoryName, setFactoryName] = useState<string | null>(null);
+  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
 
   async function fetchRoleAndApproval(userId: string) {
     try {
       // Check role
       const { data: roleData } = await (supabase as any)
         .from("user_roles")
-        .select("role")
+        .select("role, factory_id")
         .eq("user_id", userId)
         .maybeSingle();
       
       if (roleData?.role) {
         setRole(roleData.role);
         setApprovalStatus("aprovado");
+        setFactoryId(roleData.factory_id || null);
+
+        // Fetch factory name if factory_id exists
+        if (roleData.factory_id) {
+          const { data: factoryData } = await (supabase as any)
+            .from("factories")
+            .select("name")
+            .eq("id", roleData.factory_id)
+            .maybeSingle();
+          setFactoryName(factoryData?.name || null);
+
+          // Fetch subscription info
+          await fetchSubscription(roleData.factory_id);
+        }
         return;
       }
 
@@ -63,6 +94,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function fetchSubscription(fId: string) {
+    try {
+      const { data } = await (supabase as any)
+        .from("subscriptions")
+        .select("*")
+        .eq("factory_id", fId)
+        .maybeSingle();
+
+      if (!data) {
+        setSubscription(null);
+        return;
+      }
+
+      const now = new Date();
+      let daysUntilDue: number | null = null;
+
+      if (data.status === "trial" && data.trial_start) {
+        const trialEnd = new Date(data.trial_start);
+        trialEnd.setDate(trialEnd.getDate() + 30);
+        daysUntilDue = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      } else if (data.current_period_end) {
+        const periodEnd = new Date(data.current_period_end);
+        daysUntilDue = Math.ceil((periodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      }
+
+      setSubscription({
+        status: data.status,
+        daysUntilDue,
+        trialEnd: data.trial_start ? new Date(new Date(data.trial_start).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString() : null,
+        currentPeriodEnd: data.current_period_end,
+        graceUntil: data.grace_until,
+      });
+    } catch (error) {
+      console.error("Erro ao buscar assinatura:", error);
+    }
+  }
+
   useEffect(() => {
     let isMounted = true;
 
@@ -75,12 +143,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!nextSession?.user) {
         setRole(null);
         setApprovalStatus(null);
+        setFactoryId(null);
+        setFactoryName(null);
+        setSubscription(null);
         setLoading(false);
         return;
       }
 
-      // Busca role em microtask para não bloquear o callback do auth,
-      // mas só libera loading DEPOIS de concluir.
       window.setTimeout(async () => {
         if (!isMounted) return;
         try {
@@ -93,14 +162,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }, 0);
     };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+    const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (event === "TOKEN_REFRESHED" && !nextSession) {
-        // Token refresh failed — session expired
         console.warn("Sessão expirada, redirecionando...");
         setUser(null);
         setSession(null);
         setRole(null);
         setApprovalStatus(null);
+        setFactoryId(null);
+        setFactoryName(null);
+        setSubscription(null);
         setLoading(false);
         return;
       }
@@ -109,6 +180,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(null);
         setRole(null);
         setApprovalStatus(null);
+        setFactoryId(null);
+        setFactoryName(null);
+        setSubscription(null);
         setLoading(false);
         return;
       }
@@ -126,7 +200,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       isMounted = false;
-      subscription.unsubscribe();
+      authSub.unsubscribe();
     };
   }, []);
 
@@ -140,11 +214,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(null);
       setRole(null);
       setApprovalStatus(null);
+      setFactoryId(null);
+      setFactoryName(null);
+      setSubscription(null);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, role, approvalStatus, loading, signOut }}>
+    <AuthContext.Provider value={{ user, session, role, approvalStatus, loading, factoryId, factoryName, subscription, signOut }}>
       {children}
     </AuthContext.Provider>
   );
