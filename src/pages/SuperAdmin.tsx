@@ -243,6 +243,44 @@ export default function SuperAdmin() {
               <DialogTitle>Criar Nova Fábrica</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-2">
+              {/* Logo upload */}
+              <div>
+                <Label>Logomarca da Fábrica</Label>
+                <div className="mt-1 flex items-center gap-4">
+                  {logoPreview ? (
+                    <div className="relative">
+                      <img src={logoPreview} alt="Preview" className="h-16 w-16 rounded-lg object-contain border border-border bg-muted" />
+                      <button
+                        type="button"
+                        onClick={() => { setLogoFile(null); setLogoPreview(null); }}
+                        className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-xs"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="h-16 w-16 rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors bg-muted/30">
+                      <Upload className="h-5 w-5 text-muted-foreground" />
+                      <span className="text-[9px] text-muted-foreground mt-0.5">Logo</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setLogoFile(file);
+                            setLogoPreview(URL.createObjectURL(file));
+                          }
+                        }}
+                      />
+                    </label>
+                  )}
+                  <p className="text-[11px] text-muted-foreground flex-1">
+                    Envie a logomarca. As cores do tema serão extraídas automaticamente.
+                  </p>
+                </div>
+              </div>
               <div>
                 <Label>Nome da Fábrica</Label>
                 <Input
