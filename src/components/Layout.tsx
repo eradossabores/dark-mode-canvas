@@ -138,7 +138,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { role, signOut, user } = useAuth();
+  const { role, signOut, user, factoryName } = useAuth();
   useKeyboardShortcuts();
 
   const filteredGroups = menuGroups
