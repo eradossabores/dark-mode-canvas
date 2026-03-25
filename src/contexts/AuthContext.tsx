@@ -44,6 +44,7 @@ const AuthContext = createContext<AuthContextType>({
   factoryId: null,
   factoryName: null,
   subscription: null,
+  branding: null,
   signOut: async () => {},
 });
 
