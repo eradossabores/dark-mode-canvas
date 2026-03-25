@@ -2,7 +2,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock, XCircle, LogOut } from "lucide-react";
+import { Clock, XCircle, LogOut, Lock } from "lucide-react";
 import logo from "@/assets/logo.png";
 
 // Routes collaborators (producao) can access
@@ -13,13 +13,19 @@ const PRODUCAO_ROUTES = [
   "/painel/estoque",
 ];
 
+// Routes only super_admin can access
+const SUPER_ADMIN_ROUTES = [
+  "/super-admin",
+];
+
 interface ProtectedRouteProps {
   children: React.ReactNode;
   adminOnly?: boolean;
+  superAdminOnly?: boolean;
 }
 
-export default function ProtectedRoute({ children, adminOnly }: ProtectedRouteProps) {
-  const { user, role, approvalStatus, loading, signOut } = useAuth();
+export default function ProtectedRoute({ children, adminOnly, superAdminOnly }: ProtectedRouteProps) {
+  const { user, role, approvalStatus, loading, signOut, subscription } = useAuth();
   const navigate = useNavigate();
 
   if (loading) {
@@ -88,7 +94,7 @@ export default function ProtectedRoute({ children, adminOnly }: ProtectedRoutePr
     );
   }
 
-  // No role and no request (user can get stuck here) - show actionable fallback
+  // No role and no request
   if (!role) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-sky-100 via-sky-50 to-cyan-100 dark:from-sky-950 dark:via-gray-900 dark:to-cyan-950 px-4">
@@ -115,7 +121,42 @@ export default function ProtectedRoute({ children, adminOnly }: ProtectedRoutePr
     );
   }
 
-  if (adminOnly && role !== "admin") {
+  // Subscription blocked (not for super_admin)
+  if (role !== "super_admin" && subscription?.status === "blocked") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-sky-100 via-sky-50 to-cyan-100 dark:from-sky-950 dark:via-gray-900 dark:to-cyan-950 px-4">
+        <Card className="w-full max-w-md shadow-2xl border-destructive/30">
+          <CardHeader className="text-center space-y-3">
+            <div className="flex justify-center">
+              <Lock className="h-12 w-12 text-destructive" />
+            </div>
+            <CardTitle className="text-xl font-bold text-destructive">
+              Acesso Bloqueado
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-center space-y-4">
+            <p className="text-muted-foreground">
+              Sua assinatura está vencida e o período de carência expirou. Entre em contato com o administrador para regularizar o pagamento.
+            </p>
+            <p className="text-sm font-semibold text-destructive">
+              Valor: R$ 99,90/mês
+            </p>
+            <Button variant="outline" className="gap-2" onClick={async () => { await signOut(); navigate("/login"); }}>
+              <LogOut className="h-4 w-4" /> Sair
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Super admin only routes
+  if (superAdminOnly && role !== "super_admin") {
+    return <Navigate to="/painel" replace />;
+  }
+
+  // Admin only routes (admin or factory_owner or super_admin can access)
+  if (adminOnly && role !== "admin" && role !== "factory_owner" && role !== "super_admin") {
     return <Navigate to="/painel/producao" replace />;
   }
 
@@ -123,11 +164,12 @@ export default function ProtectedRoute({ children, adminOnly }: ProtectedRoutePr
 }
 
 export function isRouteAllowed(path: string, role: string | null): boolean {
-  if (role === "admin") return true;
+  if (role === "super_admin") return true;
+  if (role === "admin" || role === "factory_owner") return true;
   if (role === "producao") {
     return PRODUCAO_ROUTES.some((r) => path === r || path.startsWith(r + "/"));
   }
   return false;
 }
 
-export { PRODUCAO_ROUTES };
+export { PRODUCAO_ROUTES, SUPER_ADMIN_ROUTES };

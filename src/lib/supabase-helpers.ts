@@ -1,8 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
 
-// Generic fetch helper
-export async function fetchAll(table: string, orderBy = "created_at", ascending = false) {
-  const { data, error } = await (supabase as any).from(table).select("*").order(orderBy, { ascending });
+// Generic fetch helper with optional factory_id filter
+export async function fetchAll(table: string, orderBy = "created_at", ascending = false, factoryId?: string | null) {
+  let query = (supabase as any).from(table).select("*").order(orderBy, { ascending });
+  if (factoryId) {
+    query = query.eq("factory_id", factoryId);
+  }
+  const { data, error } = await query;
   if (error) throw error;
   return data;
 }

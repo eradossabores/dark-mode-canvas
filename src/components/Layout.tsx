@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Package, Users, ShoppingCart, Factory,
-  Warehouse, ClipboardList, UserCog, BarChart3, FileUp, DollarSign, Monitor, ShoppingBag, Database, LogOut, Shield, Brain, MapPin, Map, Target, HardDrive, UserCheck
+  Warehouse, ClipboardList, UserCog, BarChart3, FileUp, DollarSign, Monitor, ShoppingBag, Database, LogOut, Shield, Brain, MapPin, Map, Target, HardDrive, UserCheck, Crown
 } from "lucide-react";
+import PaymentBanner from "@/components/PaymentBanner";
 import { AnimatedMenuToggle } from "@/components/ui/animated-menu-toggle";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -137,7 +138,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { role, signOut, user } = useAuth();
+  const { role, signOut, user, factoryName } = useAuth();
   useKeyboardShortcuts();
 
   const filteredGroups = menuGroups
@@ -203,6 +204,28 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         ))}
       </nav>
+      {/* Super Admin link */}
+      {role === "super_admin" && (
+        <Link
+          to="/super-admin"
+          onClick={() => setMobileOpen(false)}
+          className={cn(
+            "flex items-center gap-3 px-4 py-2 text-sm transition-colors rounded-md mx-2 mb-1",
+            location.pathname === "/super-admin"
+              ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold shadow-md"
+              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          )}
+        >
+          <Crown className="h-4 w-4 shrink-0" />
+          {isExpanded && <span>Super Admin</span>}
+        </Link>
+      )}
+      {/* Factory name indicator */}
+      {factoryName && role !== "super_admin" && isExpanded && (
+        <div className="mx-3 mb-1 px-2 py-1.5 rounded-md bg-sidebar-accent/30 text-[11px] text-sidebar-foreground/70 text-center truncate">
+          🏭 {factoryName}
+        </div>
+      )}
       {/* Logout button */}
       <button
         onClick={handleLogout}
@@ -334,7 +357,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {sidebarContent}
       </aside>
 
-      <main className="flex-1 overflow-auto relative bg-background">
+      <main className="flex-1 overflow-auto relative bg-background flex flex-col">
+        <PaymentBanner />
         {/* Watermark logo */}
         <div className="fixed bottom-4 right-4 pointer-events-none z-0 opacity-[0.06] dark:opacity-[0.04]">
           <img src={logo} alt="" aria-hidden className="w-32 h-32 object-contain" />

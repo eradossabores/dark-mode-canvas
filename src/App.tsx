@@ -38,11 +38,12 @@ import Cadastro from "@/pages/Cadastro";
 import Pedir from "@/pages/Pedir";
 import Backup from "@/pages/Backup";
 import PresencaProducao from "@/pages/PresencaProducao";
+import SuperAdmin from "@/pages/SuperAdmin";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Helper for admin-only routes
+// Helper for admin-only routes (admin, factory_owner, super_admin)
 const AdminRoute = ({ children }: { children: React.ReactNode }) => (
   <ProtectedRoute adminOnly><Layout>{children}</Layout></ProtectedRoute>
 );
@@ -50,6 +51,11 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => (
 // Helper for routes accessible by producao role too
 const ProdRoute = ({ children }: { children: React.ReactNode }) => (
   <ProtectedRoute><Layout>{children}</Layout></ProtectedRoute>
+);
+
+// Helper for super admin only routes
+const SuperRoute = ({ children }: { children: React.ReactNode }) => (
+  <ProtectedRoute superAdminOnly><Layout>{children}</Layout></ProtectedRoute>
 );
 
 const App = () => (
@@ -69,6 +75,9 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/cadastro" element={<Cadastro />} />
               <Route path="/pedir" element={<Pedir />} />
+
+              {/* Super Admin */}
+              <Route path="/super-admin" element={<SuperRoute><SuperAdmin /></SuperRoute>} />
 
               {/* Admin only routes */}
               <Route path="/painel" element={<AdminRoute><Dashboard /></AdminRoute>} />
