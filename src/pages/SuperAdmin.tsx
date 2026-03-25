@@ -103,7 +103,26 @@ export default function SuperAdmin() {
 
     setCreating(true);
     try {
-      // 1. Create the user via edge function
+      // 1. Upload logo if provided
+      let logoUrl: string | null = null;
+      if (logoFile) {
+        const fileExt = logoFile.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('factory-logos')
+          .upload(fileName, logoFile, { contentType: logoFile.type });
+        if (uploadError) throw new Error("Erro ao enviar logo: " + uploadError.message);
+        const { data: urlData } = supabase.storage.from('factory-logos').getPublicUrl(fileName);
+        logoUrl = urlData.publicUrl;
+      }
+
+      // 2. Extract dominant colors from logo for theme
+      let theme: any = null;
+      if (logoUrl && logoFile) {
+        theme = await extractColorsFromImage(logoFile);
+      }
+
+      // 3. Create the user via edge function
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
 
@@ -120,6 +139,8 @@ export default function SuperAdmin() {
             password: newFactory.ownerPassword,
             nome: newFactory.ownerName,
             factory_name: newFactory.name,
+            logo_url: logoUrl,
+            theme,
           }),
         }
       );
@@ -130,6 +151,8 @@ export default function SuperAdmin() {
       toast({ title: "Fábrica criada com sucesso!", description: `${newFactory.name} - ${newFactory.ownerEmail}` });
       setShowNewFactory(false);
       setNewFactory({ name: "", ownerEmail: "", ownerPassword: "", ownerName: "" });
+      setLogoFile(null);
+      setLogoPreview(null);
       loadFactories();
     } catch (e: any) {
       toast({ title: "Erro ao criar fábrica", description: e.message, variant: "destructive" });
