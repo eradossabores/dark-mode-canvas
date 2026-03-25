@@ -59,6 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [factoryId, setFactoryId] = useState<string | null>(null);
   const [factoryName, setFactoryName] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
+  const [branding, setBranding] = useState<FactoryBranding | null>(null);
 
   async function fetchRoleAndApproval(userId: string) {
     try {
