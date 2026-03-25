@@ -11,6 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { Factory, Plus, Users, CreditCard, CheckCircle, XCircle, Clock, AlertTriangle, Upload, Image } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { extractColorsFromImage } from "@/lib/color-extract";
 
 interface FactoryRow {
   id: string;

@@ -78,6 +78,8 @@ Deno.serve(async (req) => {
       .insert({
         name: factory_name,
         owner_id: newUser.user.id,
+        logo_url: logo_url || null,
+        theme: theme || {},
       })
       .select()
       .single();
