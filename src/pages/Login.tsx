@@ -25,6 +25,11 @@ export default function Login() {
   useEffect(() => {
     if (authLoading || !user) return;
 
+    if (role === "super_admin") {
+      navigate("/super-admin", { replace: true });
+      return;
+    }
+
     if (role === "producao") {
       navigate("/painel/producao", { replace: true });
       return;
