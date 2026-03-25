@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.create-factory-owner]
 verify_jwt = false
+
+[functions.delete-factory]
+verify_jwt = false
