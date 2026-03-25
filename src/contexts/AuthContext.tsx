@@ -13,6 +13,15 @@ interface SubscriptionInfo {
   graceUntil: string | null;
 }
 
+interface FactoryBranding {
+  logoUrl: string | null;
+  theme: {
+    primary?: string;
+    secondary?: string;
+    accent?: string;
+  } | null;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -22,6 +31,7 @@ interface AuthContextType {
   factoryId: string | null;
   factoryName: string | null;
   subscription: SubscriptionInfo | null;
+  branding: FactoryBranding | null;
   signOut: () => Promise<void>;
 }
 
@@ -34,6 +44,7 @@ const AuthContext = createContext<AuthContextType>({
   factoryId: null,
   factoryName: null,
   subscription: null,
+  branding: null,
   signOut: async () => {},
 });
 
@@ -48,6 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [factoryId, setFactoryId] = useState<string | null>(null);
   const [factoryName, setFactoryName] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
+  const [branding, setBranding] = useState<FactoryBranding | null>(null);
 
   async function fetchRoleAndApproval(userId: string) {
     try {
@@ -67,10 +79,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (roleData.factory_id) {
           const { data: factoryData } = await (supabase as any)
             .from("factories")
-            .select("name")
+            .select("name, logo_url, theme")
             .eq("id", roleData.factory_id)
             .maybeSingle();
           setFactoryName(factoryData?.name || null);
+          setBranding({
+            logoUrl: factoryData?.logo_url || null,
+            theme: factoryData?.theme && Object.keys(factoryData.theme).length > 0 ? factoryData.theme : null,
+          });
 
           // Fetch subscription info
           await fetchSubscription(roleData.factory_id);
@@ -146,6 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setFactoryId(null);
         setFactoryName(null);
         setSubscription(null);
+        setBranding(null);
         setLoading(false);
         return;
       }
@@ -172,6 +189,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setFactoryId(null);
         setFactoryName(null);
         setSubscription(null);
+        setBranding(null);
         setLoading(false);
         return;
       }
@@ -183,6 +201,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setFactoryId(null);
         setFactoryName(null);
         setSubscription(null);
+        setBranding(null);
         setLoading(false);
         return;
       }
@@ -217,11 +236,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setFactoryId(null);
       setFactoryName(null);
       setSubscription(null);
+      setBranding(null);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, role, approvalStatus, loading, factoryId, factoryName, subscription, signOut }}>
+    <AuthContext.Provider value={{ user, session, role, approvalStatus, loading, factoryId, factoryName, subscription, branding, signOut }}>
       {children}
     </AuthContext.Provider>
   );

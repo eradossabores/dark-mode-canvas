@@ -8,9 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
-import { Factory, Plus, Users, CreditCard, CheckCircle, XCircle, Clock, AlertTriangle } from "lucide-react";
+import { Factory, Plus, Users, CreditCard, CheckCircle, XCircle, Clock, AlertTriangle, Upload, Image } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { extractColorsFromImage } from "@/lib/color-extract";
 
 interface FactoryRow {
   id: string;
@@ -45,6 +46,8 @@ export default function SuperAdmin() {
     ownerPassword: "",
     ownerName: "",
   });
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   async function loadFactories() {
     try {
@@ -101,7 +104,26 @@ export default function SuperAdmin() {
 
     setCreating(true);
     try {
-      // 1. Create the user via edge function
+      // 1. Upload logo if provided
+      let logoUrl: string | null = null;
+      if (logoFile) {
+        const fileExt = logoFile.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('factory-logos')
+          .upload(fileName, logoFile, { contentType: logoFile.type });
+        if (uploadError) throw new Error("Erro ao enviar logo: " + uploadError.message);
+        const { data: urlData } = supabase.storage.from('factory-logos').getPublicUrl(fileName);
+        logoUrl = urlData.publicUrl;
+      }
+
+      // 2. Extract dominant colors from logo for theme
+      let theme: any = null;
+      if (logoUrl && logoFile) {
+        theme = await extractColorsFromImage(logoFile);
+      }
+
+      // 3. Create the user via edge function
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
 
@@ -118,6 +140,8 @@ export default function SuperAdmin() {
             password: newFactory.ownerPassword,
             nome: newFactory.ownerName,
             factory_name: newFactory.name,
+            logo_url: logoUrl,
+            theme,
           }),
         }
       );
@@ -128,6 +152,8 @@ export default function SuperAdmin() {
       toast({ title: "Fábrica criada com sucesso!", description: `${newFactory.name} - ${newFactory.ownerEmail}` });
       setShowNewFactory(false);
       setNewFactory({ name: "", ownerEmail: "", ownerPassword: "", ownerName: "" });
+      setLogoFile(null);
+      setLogoPreview(null);
       loadFactories();
     } catch (e: any) {
       toast({ title: "Erro ao criar fábrica", description: e.message, variant: "destructive" });
@@ -218,6 +244,44 @@ export default function SuperAdmin() {
               <DialogTitle>Criar Nova Fábrica</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-2">
+              {/* Logo upload */}
+              <div>
+                <Label>Logomarca da Fábrica</Label>
+                <div className="mt-1 flex items-center gap-4">
+                  {logoPreview ? (
+                    <div className="relative">
+                      <img src={logoPreview} alt="Preview" className="h-16 w-16 rounded-lg object-contain border border-border bg-muted" />
+                      <button
+                        type="button"
+                        onClick={() => { setLogoFile(null); setLogoPreview(null); }}
+                        className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-xs"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="h-16 w-16 rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors bg-muted/30">
+                      <Upload className="h-5 w-5 text-muted-foreground" />
+                      <span className="text-[9px] text-muted-foreground mt-0.5">Logo</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setLogoFile(file);
+                            setLogoPreview(URL.createObjectURL(file));
+                          }
+                        }}
+                      />
+                    </label>
+                  )}
+                  <p className="text-[11px] text-muted-foreground flex-1">
+                    Envie a logomarca. As cores do tema serão extraídas automaticamente.
+                  </p>
+                </div>
+              </div>
               <div>
                 <Label>Nome da Fábrica</Label>
                 <Input

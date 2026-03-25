@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { email, password, nome, factory_name } = await req.json();
+    const { email, password, nome, factory_name, logo_url, theme } = await req.json();
 
     if (!email || !password || !nome || !factory_name) {
       return new Response(JSON.stringify({ error: "Campos obrigatórios faltando" }), {
@@ -78,6 +78,8 @@ Deno.serve(async (req) => {
       .insert({
         name: factory_name,
         owner_id: newUser.user.id,
+        logo_url: logo_url || null,
+        theme: theme || {},
       })
       .select()
       .single();

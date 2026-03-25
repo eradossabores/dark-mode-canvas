@@ -138,8 +138,36 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { role, signOut, user, factoryName } = useAuth();
+  const { role, signOut, user, factoryName, branding } = useAuth();
   useKeyboardShortcuts();
+
+  // Apply factory theme as CSS variables
+  useEffect(() => {
+    if (branding?.theme) {
+      const root = document.documentElement;
+      if (branding.theme.primary) {
+        root.style.setProperty('--primary', branding.theme.primary);
+        root.style.setProperty('--ring', branding.theme.primary);
+        root.style.setProperty('--sidebar-primary', branding.theme.primary);
+      }
+      if (branding.theme.secondary) {
+        root.style.setProperty('--secondary', branding.theme.secondary);
+      }
+      if (branding.theme.accent) {
+        root.style.setProperty('--accent', branding.theme.accent);
+      }
+      return () => {
+        // Reset to defaults on unmount / change
+        root.style.removeProperty('--primary');
+        root.style.removeProperty('--ring');
+        root.style.removeProperty('--sidebar-primary');
+        root.style.removeProperty('--secondary');
+        root.style.removeProperty('--accent');
+      };
+    }
+  }, [branding?.theme]);
+
+  const factoryLogo = branding?.logoUrl || logo;
 
   const filteredGroups = menuGroups
     .map((g) => ({ ...g, items: g.items.filter((item) => isRouteAllowed(item.path, role)) }))
@@ -165,10 +193,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const sidebarContent = (
     <>
       <div className="flex items-center gap-3 px-3 py-3 border-b border-sidebar-border">
-        <img src={logo} alt="A Era dos Sabores" className="h-12 w-12 shrink-0 rounded-lg shadow-sm object-contain" />
+        <img src={factoryLogo} alt={factoryName || "Logo"} className="h-12 w-12 shrink-0 rounded-lg shadow-sm object-contain" />
         {isExpanded && (
           <div className="flex flex-col min-w-0">
-            <span className="font-bold text-sm whitespace-nowrap leading-tight">A Era dos Sabores</span>
+            <span className="font-bold text-sm whitespace-nowrap leading-tight">{factoryName || "A Era dos Sabores"}</span>
             <span className="text-[10px] text-sidebar-foreground/60 leading-tight">Gelos Saborizados</span>
           </div>
         )}
@@ -256,7 +284,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen overflow-hidden">
       {/* Mobile hamburger */}
       <div className="md:hidden fixed top-3 left-3 z-50 p-1 rounded-md bg-card shadow-md border border-border flex items-center gap-1">
-        <img src={logo} alt="" className="h-7 w-7 rounded" />
+        <img src={factoryLogo} alt="" className="h-7 w-7 rounded" />
         <AnimatedMenuToggle
           isOpen={mobileOpen}
           toggle={() => setMobileOpen(!mobileOpen)}
@@ -283,9 +311,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           >
             <div className="flex items-center justify-between p-3 border-b border-white/10">
               <div className="flex items-center gap-2">
-                <img src={logo} alt="A Era dos Sabores" className="h-10 w-10 rounded-lg shadow-sm object-contain" />
+                <img src={factoryLogo} alt={factoryName || "Logo"} className="h-10 w-10 rounded-lg shadow-sm object-contain" />
                 <div className="flex flex-col">
-                  <span className="font-bold text-sm text-white leading-tight">A Era dos Sabores</span>
+                  <span className="font-bold text-sm text-white leading-tight">{factoryName || "A Era dos Sabores"}</span>
                   <span className="text-[10px] text-white/60 leading-tight">Gelos Saborizados</span>
                 </div>
               </div>
@@ -361,7 +389,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <PaymentBanner />
         {/* Watermark logo */}
         <div className="fixed bottom-4 right-4 pointer-events-none z-0 opacity-[0.06] dark:opacity-[0.04]">
-          <img src={logo} alt="" aria-hidden className="w-32 h-32 object-contain" />
+          <img src={factoryLogo} alt="" aria-hidden className="w-32 h-32 object-contain" />
         </div>
         {/* Ice Age themed background - positioned behind content */}
         <div className="sticky top-0 left-0 w-full h-0 pointer-events-none" style={{ zIndex: 0 }}>
