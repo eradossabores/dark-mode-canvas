@@ -311,9 +311,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           >
             <div className="flex items-center justify-between p-3 border-b border-white/10">
               <div className="flex items-center gap-2">
-                <img src={logo} alt="A Era dos Sabores" className="h-10 w-10 rounded-lg shadow-sm object-contain" />
+                <img src={factoryLogo} alt={factoryName || "Logo"} className="h-10 w-10 rounded-lg shadow-sm object-contain" />
                 <div className="flex flex-col">
-                  <span className="font-bold text-sm text-white leading-tight">A Era dos Sabores</span>
+                  <span className="font-bold text-sm text-white leading-tight">{factoryName || "A Era dos Sabores"}</span>
                   <span className="text-[10px] text-white/60 leading-tight">Gelos Saborizados</span>
                 </div>
               </div>
