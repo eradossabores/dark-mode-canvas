@@ -389,7 +389,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <PaymentBanner />
         {/* Watermark logo */}
         <div className="fixed bottom-4 right-4 pointer-events-none z-0 opacity-[0.06] dark:opacity-[0.04]">
-          <img src={logo} alt="" aria-hidden className="w-32 h-32 object-contain" />
+          <img src={factoryLogo} alt="" aria-hidden className="w-32 h-32 object-contain" />
         </div>
         {/* Ice Age themed background - positioned behind content */}
         <div className="sticky top-0 left-0 w-full h-0 pointer-events-none" style={{ zIndex: 0 }}>
