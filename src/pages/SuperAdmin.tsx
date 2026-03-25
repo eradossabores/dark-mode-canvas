@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { Factory, Plus, Users, CreditCard, CheckCircle, XCircle, Clock, AlertTriangle, Upload, Pencil } from "lucide-react";
+import { Factory, Plus, Users, CreditCard, CheckCircle, XCircle, Clock, AlertTriangle, Upload, Pencil, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { extractColorsFromImage } from "@/lib/color-extract";
@@ -205,6 +206,33 @@ export default function SuperAdmin() {
       loadFactories();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+  }
+
+  async function handleDeleteFactory(factoryId: string) {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-factory`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ factory_id: factoryId }),
+        }
+      );
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Erro ao excluir");
+
+      toast({ title: "Fábrica excluída com sucesso!" });
+      loadFactories();
+    } catch (e: any) {
+      toast({ title: "Erro ao excluir", description: e.message, variant: "destructive" });
     }
   }
 
@@ -452,6 +480,30 @@ export default function SuperAdmin() {
                     </>
                   )}
                 </div>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="ghost" className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 mt-1">
+                      <Trash2 className="h-3.5 w-3.5 mr-1" /> Excluir Fábrica
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Excluir "{factory.name}"?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Esta ação é irreversível. Todos os dados da fábrica (clientes, vendas, produção, estoque, colaboradores e o proprietário) serão excluídos permanentemente.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        onClick={() => handleDeleteFactory(factory.id)}
+                      >
+                        Sim, excluir tudo
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </CardContent>
             </Card>
           ))}
