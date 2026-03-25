@@ -13,6 +13,15 @@ interface SubscriptionInfo {
   graceUntil: string | null;
 }
 
+interface FactoryBranding {
+  logoUrl: string | null;
+  theme: {
+    primary?: string;
+    secondary?: string;
+    accent?: string;
+  } | null;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -22,6 +31,7 @@ interface AuthContextType {
   factoryId: string | null;
   factoryName: string | null;
   subscription: SubscriptionInfo | null;
+  branding: FactoryBranding | null;
   signOut: () => Promise<void>;
 }
 
