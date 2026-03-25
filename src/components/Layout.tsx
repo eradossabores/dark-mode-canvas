@@ -138,8 +138,36 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { role, signOut, user, factoryName } = useAuth();
+  const { role, signOut, user, factoryName, branding } = useAuth();
   useKeyboardShortcuts();
+
+  // Apply factory theme as CSS variables
+  useEffect(() => {
+    if (branding?.theme) {
+      const root = document.documentElement;
+      if (branding.theme.primary) {
+        root.style.setProperty('--primary', branding.theme.primary);
+        root.style.setProperty('--ring', branding.theme.primary);
+        root.style.setProperty('--sidebar-primary', branding.theme.primary);
+      }
+      if (branding.theme.secondary) {
+        root.style.setProperty('--secondary', branding.theme.secondary);
+      }
+      if (branding.theme.accent) {
+        root.style.setProperty('--accent', branding.theme.accent);
+      }
+      return () => {
+        // Reset to defaults on unmount / change
+        root.style.removeProperty('--primary');
+        root.style.removeProperty('--ring');
+        root.style.removeProperty('--sidebar-primary');
+        root.style.removeProperty('--secondary');
+        root.style.removeProperty('--accent');
+      };
+    }
+  }, [branding?.theme]);
+
+  const factoryLogo = branding?.logoUrl || logo;
 
   const filteredGroups = menuGroups
     .map((g) => ({ ...g, items: g.items.filter((item) => isRouteAllowed(item.path, role)) }))
