@@ -12,6 +12,7 @@ import { Factory, Plus, Users, CreditCard, CheckCircle, XCircle, Clock, AlertTri
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { extractColorsFromImage } from "@/lib/color-extract";
+import EditFactoryDialog from "@/components/superadmin/EditFactoryDialog";
 
 interface FactoryRow {
   id: string;
