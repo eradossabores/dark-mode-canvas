@@ -162,6 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setFactoryId(null);
         setFactoryName(null);
         setSubscription(null);
+        setBranding(null);
         setLoading(false);
         return;
       }
