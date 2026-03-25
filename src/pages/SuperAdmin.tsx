@@ -434,6 +434,9 @@ export default function SuperAdmin() {
                 )}
 
                 <div className="flex gap-2 pt-2">
+                  <Button size="sm" variant="secondary" className="flex-1" onClick={() => setEditingFactory(factory)}>
+                    <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
+                  </Button>
                   {factory.subscription?.status === "blocked" ? (
                     <Button size="sm" className="flex-1" onClick={() => handleUnblock(factory.id)}>
                       Desbloquear
@@ -441,10 +444,10 @@ export default function SuperAdmin() {
                   ) : (
                     <>
                       <Button size="sm" variant="outline" className="flex-1" onClick={() => handleMarkPaid(factory.id)}>
-                        <CheckCircle className="h-3.5 w-3.5 mr-1" /> Marcar Pago
+                        <CheckCircle className="h-3.5 w-3.5 mr-1" /> Pago
                       </Button>
-                      <Button size="sm" variant="destructive" className="flex-1" onClick={() => handleBlock(factory.id)}>
-                        <XCircle className="h-3.5 w-3.5 mr-1" /> Bloquear
+                      <Button size="sm" variant="destructive" onClick={() => handleBlock(factory.id)}>
+                        <XCircle className="h-3.5 w-3.5" />
                       </Button>
                     </>
                   )}
