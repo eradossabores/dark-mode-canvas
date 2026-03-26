@@ -102,6 +102,11 @@ export default function Sabores() {
         const { error: recErr } = await (supabase as any).from("sabor_receita").insert(receitaPayload);
         if (recErr) throw recErr;
 
+        // Auto-create estoque_gelos entry for this sabor
+        const estoquePayload: any = { sabor_id: newSabor.id, quantidade: 0 };
+        if (factoryId) estoquePayload.factory_id = factoryId;
+        await (supabase as any).from("estoque_gelos").insert(estoquePayload);
+
         toast({ title: "Sabor cadastrado com insumo e embalagem!" });
       }
       setOpen(false);
