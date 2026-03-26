@@ -49,6 +49,9 @@ const AuthContext = createContext<AuthContextType>({
   subscription: null,
   branding: null,
   signOut: async () => {},
+  impersonatingFactory: false,
+  impersonateFactory: () => {},
+  clearImpersonation: () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
