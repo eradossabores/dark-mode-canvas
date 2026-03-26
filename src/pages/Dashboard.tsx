@@ -404,20 +404,22 @@ export default function Dashboard() {
           <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-background to-transparent" />
         </div>
 
-        {/* Character watermark */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 0.18, x: 0 }}
-          transition={{ delay: 0.6, duration: 0.8 }}
-          className="absolute -bottom-2 -right-2 w-20 h-20 pointer-events-none select-none z-10"
-        >
-          <img
-            src={postItCharacters[Math.abs((user?.id || "").charCodeAt(0) || 0) % postItCharacters.length]}
-            alt=""
-            aria-hidden
-            className="w-full h-full object-contain drop-shadow-sm"
-          />
-        </motion.div>
+        {/* Character watermark - only for Era dos Sabores */}
+        {isIceAgeFactory && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 0.18, x: 0 }}
+            transition={{ delay: 0.6, duration: 0.8 }}
+            className="absolute -bottom-2 -right-2 w-20 h-20 pointer-events-none select-none z-10"
+          >
+            <img
+              src={postItCharacters[Math.abs((user?.id || "").charCodeAt(0) || 0) % postItCharacters.length]}
+              alt=""
+              aria-hidden
+              className="w-full h-full object-contain drop-shadow-sm"
+            />
+          </motion.div>
+        )}
 
         {/* Content */}
         <div className="relative z-20 px-6 py-5">
