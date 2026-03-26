@@ -49,7 +49,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Como funciona o sistema de preços?",
-    a: "O sistema aplica uma tabela progressiva de preços baseada na quantidade total do pedido. Você pode configurar preços personalizados por cliente em Cadastros > Clientes.",
+    a: "O sistema aplica uma tabela progressiva de preços baseada na quantidade total do pedido. Você pode configurar preços personalizados por cliente em Cadastros > Clientes, e a tabela geral de preços em Configurar Fábrica > Tabela de Preços.",
   },
   {
     q: "Como gerenciar colaboradores?",
@@ -70,6 +70,41 @@ const FAQ_ITEMS = [
   {
     q: "Como faço backup dos meus dados?",
     a: "Acesse Sistema > Backup para exportar seus dados. Os dados também são salvos automaticamente na nuvem com segurança.",
+  },
+  {
+    q: "Como funciona o 'A Receber' (Abatimentos)?",
+    a: `A página "A Receber" centraliza toda a gestão de cobranças de vendas pendentes. Ela possui dois modos principais:
+
+📌 **Abatimento Individual** — Permite registrar um pagamento parcial ou total em uma venda específica. Selecione a venda pendente no campo "Venda", escolha a forma de pagamento (PIX, Espécie ou Misto) e informe o valor recebido. Se escolher "Misto", você pode detalhar quanto foi pago em PIX e quanto em dinheiro. Ao clicar em "Abater", o valor é descontado do saldo devedor daquela venda. Quando o valor pago atingir o total da venda, ela é automaticamente marcada como "paga".
+
+📌 **Abatimento em Lote por Cliente** — Ideal para quando o cliente paga um valor que cobre várias vendas de uma vez. Selecione o cliente, escolha a forma de pagamento e informe o valor total recebido. O sistema distribui automaticamente o valor entre as vendas pendentes daquele cliente, começando pelas mais antigas (FIFO). Se o valor cobrir toda uma venda, ela é quitada; se sobrar valor, ele é aplicado na próxima venda pendente.
+
+💡 **Dicas importantes:**
+• Cada abatimento é registrado no histórico com data, hora, valor e forma de pagamento.
+• Após quitar uma venda, o sistema oferece automaticamente o envio do recibo via WhatsApp.
+• Você pode buscar vendas por nome do cliente ou número da Nota Fiscal usando a barra de pesquisa.
+• A tabela mostra o valor total, valor já pago e o saldo restante de cada venda pendente.
+• Clique no ícone de impressora (🖨️) em qualquer venda para gerar um recibo PDF completo com histórico de pagamentos.`,
+  },
+  {
+    q: "Como funciona o Configurar Fábrica?",
+    a: `A página "Configurar Fábrica" (no menu Sistema) permite personalizar as configurações da sua fábrica em duas áreas:
+
+💰 **Tabela de Preços** — Defina os preços unitários por faixa de quantidade. Por padrão, o sistema vem com faixas para 1, 10, 30, 50, 100, 200 e 500 unidades, com descontos progressivos. Você pode editar os valores, adicionar novas faixas ou remover faixas existentes. Esses preços são aplicados automaticamente nas vendas quando nenhum preço personalizado estiver configurado para o cliente.
+
+⚙️ **Produção (Receitas)** — Configure a quantidade de gelos produzidos por lote e a quantidade de matéria-prima consumida por lote para cada sabor. As embalagens são descontadas automaticamente na proporção de 1 embalagem por gelo produzido.`,
+  },
+  {
+    q: "Como funciona o Monitor de Produção?",
+    a: `O Monitor de Produção é o painel em tempo real para acompanhar os pedidos de separação. Quando uma venda é enviada para o monitor (via botão "Entrega" ou "Retirada" na página de Vendas), ela aparece aqui como um card com todos os itens a serem separados.
+
+🔄 **Fluxo de Status:** Aguardando Produção → Em Produção → Separado p/ Entrega ou Retirada → Finalizado.
+🏷️ **Badges:** Pedidos de Entrega aparecem em violeta e de Retirada em laranja.
+📋 **Ações:** Você pode marcar itens como separados, editar pedidos e finalizar a entrega/retirada.`,
+  },
+  {
+    q: "Como funciona a Prospecção de Clientes?",
+    a: `O módulo de Prospecção permite gerenciar potenciais novos clientes. Cadastre estabelecimentos como bares, restaurantes, mercados etc., registre visitas comerciais com feedback, e acompanhe o funil de vendas. O sistema também gera mensagens de follow-up automáticas via IA para manter o relacionamento com os prospectos.`,
   },
 ];
 
