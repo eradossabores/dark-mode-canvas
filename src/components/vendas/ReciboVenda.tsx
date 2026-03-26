@@ -1,10 +1,11 @@
-import { useRef } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Printer, MessageCircle } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import logoRecibo from "@/assets/logo-recibo.png";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ReciboItem {
   sabor_nome: string;
