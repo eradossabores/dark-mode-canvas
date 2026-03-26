@@ -161,16 +161,7 @@ export default function ConfigProducaoDialog({ open, onOpenChange, factoryId }: 
                           />
                           <span className="text-xs text-muted-foreground">g</span>
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          min={1}
-                          className="h-8 text-center text-sm w-20 mx-auto"
-                          value={r.embalagens_por_lote}
-                          onChange={(e) => updateReceita(idx, "embalagens_por_lote", Number(e.target.value))}
-                        />
-                      </TableCell>
+                    </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
