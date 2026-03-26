@@ -139,7 +139,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { role, signOut, user, factoryName, branding } = useAuth();
+  const { role, signOut, user, factoryName, branding, impersonatingFactory, clearImpersonation } = useAuth();
   useKeyboardShortcuts();
 
   // Apply factory theme as CSS variables
