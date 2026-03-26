@@ -256,10 +256,12 @@ export default function PlanoProducaoDiario() {
   async function fetchPresencas() {
     const d = diasDisponiveis[diaOffset] || new Date();
     const alvoIso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    const { data } = await (supabase as any)
+    let pq = (supabase as any)
       .from("presenca_producao")
       .select("*, funcionarios(nome)")
       .eq("data", alvoIso);
+    if (factoryId) pq = pq.eq("factory_id", factoryId);
+    const { data } = await pq;
     setPresencas(data || []);
   }
 
