@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Package, Users, ShoppingCart, Factory,
-  Warehouse, ClipboardList, UserCog, BarChart3, FileUp, DollarSign, Monitor, ShoppingBag, Database, LogOut, Shield, Brain, MapPin, Map, Target, HardDrive, UserCheck, Crown
+  Warehouse, ClipboardList, UserCog, BarChart3, FileUp, DollarSign, Monitor, ShoppingBag, Database, LogOut, Shield, Brain, MapPin, Map, Target, HardDrive, UserCheck, Crown, MessageCircle
 } from "lucide-react";
 import PaymentBanner from "@/components/PaymentBanner";
 import { AnimatedMenuToggle } from "@/components/ui/animated-menu-toggle";
