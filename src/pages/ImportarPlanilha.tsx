@@ -47,6 +47,7 @@ function findTargetSheet(sheetNames: string[], target: typeof TARGET_SHEETS[0]):
 }
 
 export default function ImportarPlanilha() {
+  const { factoryId, role } = useAuth();
   const [sabores, setSabores] = useState<any[]>([]);
   const [clientes, setClientes] = useState<any[]>([]);
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
@@ -70,27 +71,35 @@ export default function ImportarPlanilha() {
   const [lastImport, setLastImport] = useState<{ id: string; descricao: string; created_at: string; modulo: string } | null>(null);
 
   function loadLastImport() {
-    (supabase as any).from("auditoria")
+    let q = (supabase as any).from("auditoria")
       .select("id, descricao, created_at, modulo")
       .eq("acao", "importar_planilha")
       .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle()
+      .limit(1);
+    if (factoryId) q = q.eq("factory_id", factoryId);
+    q.maybeSingle()
       .then(({ data }: any) => setLastImport(data || null));
   }
 
   useEffect(() => {
+    if (role !== "super_admin" && !factoryId) return;
+    const buildQ = (table: string, filters: Record<string, any> = {}) => {
+      let q = (supabase as any).from(table).select("id, nome");
+      Object.entries(filters).forEach(([k, v]) => { q = q.eq(k, v); });
+      if (factoryId) q = q.eq("factory_id", factoryId);
+      return q;
+    };
     Promise.all([
-      (supabase as any).from("sabores").select("id, nome").eq("ativo", true),
-      (supabase as any).from("clientes").select("id, nome").eq("status", "ativo"),
-      (supabase as any).from("funcionarios").select("id, nome").eq("ativo", true),
+      buildQ("sabores", { ativo: true }),
+      buildQ("clientes", { status: "ativo" }),
+      buildQ("funcionarios", { ativo: true }),
     ]).then(([s, c, f]) => {
       setSabores(s.data || []);
       setClientes(c.data || []);
       setFuncionarios(f.data || []);
     });
     loadLastImport();
-  }, []);
+  }, [factoryId, role]);
 
   function resetAll() {
     setFile(null); setWorkbook(null); setAvailableSheetNames([]);

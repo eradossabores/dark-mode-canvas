@@ -105,6 +105,7 @@ export default function ContasAPagar() {
       tipo,
       valor_total: vt,
       valor_restante: Math.max(0, vr),
+      factory_id: factoryId,
     });
     setSaving(false);
     if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
