@@ -373,15 +373,23 @@ export default function PlanoProducaoDiario() {
       const trintaDias = new Date();
       trintaDias.setDate(trintaDias.getDate() - 30);
 
-      const [vendasRes, gelosRes, saboresRes, funcsRes, decisoesRes, producoesRes, vendaItensRecentesRes] = await Promise.all([
-        (supabase as any).from("venda_itens").select("sabor_id, quantidade, vendas!inner(created_at, status)"),
-        (supabase as any).from("estoque_gelos").select("quantidade, sabor_id, sabores(nome, id)"),
-        (supabase as any).from("sabores").select("id, nome").eq("ativo", true).order("nome"),
-        (supabase as any).from("funcionarios").select("id, nome").eq("ativo", true).order("nome"),
-        (supabase as any).from("decisoes_producao").select("*").order("created_at", { ascending: false }).limit(500),
-        (supabase as any).from("producoes").select("sabor_id, quantidade_total, created_at").gte("created_at", trintaDias.toISOString()),
-        (supabase as any).from("venda_itens").select("sabor_id, quantidade, vendas!inner(created_at, status)").gte("vendas.created_at", trintaDias.toISOString()).neq("vendas.status", "cancelada"),
-      ]);
+      let q1 = (supabase as any).from("venda_itens").select("sabor_id, quantidade, vendas!inner(created_at, status)");
+      let q2 = (supabase as any).from("estoque_gelos").select("quantidade, sabor_id, sabores(nome, id)");
+      let q3 = (supabase as any).from("sabores").select("id, nome").eq("ativo", true).order("nome");
+      let q4 = (supabase as any).from("funcionarios").select("id, nome").eq("ativo", true).order("nome");
+      let q5 = (supabase as any).from("decisoes_producao").select("*").order("created_at", { ascending: false }).limit(500);
+      let q6 = (supabase as any).from("producoes").select("sabor_id, quantidade_total, created_at").gte("created_at", trintaDias.toISOString());
+      let q7 = (supabase as any).from("venda_itens").select("sabor_id, quantidade, vendas!inner(created_at, status)").gte("vendas.created_at", trintaDias.toISOString()).neq("vendas.status", "cancelada");
+      
+      if (factoryId) {
+        q2 = q2.eq("factory_id", factoryId);
+        q3 = q3.eq("factory_id", factoryId);
+        q4 = q4.eq("factory_id", factoryId);
+        q5 = q5.eq("factory_id", factoryId);
+        q6 = q6.eq("factory_id", factoryId);
+      }
+
+      const [vendasRes, gelosRes, saboresRes, funcsRes, decisoesRes, producoesRes, vendaItensRecentesRes] = await Promise.all([q1, q2, q3, q4, q5, q6, q7]);
 
       const funcs = funcsRes.data || [];
       setFuncionarios(funcs);
