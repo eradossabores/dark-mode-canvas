@@ -31,6 +31,8 @@ export default function EditFactoryDialog({ open, onOpenChange, factory, onSaved
   const [amount, setAmount] = useState(factory.subscription?.amount ?? 99.90);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(factory.logo_url);
+  const [latitude, setLatitude] = useState(factory.latitude?.toString() || "");
+  const [longitude, setLongitude] = useState(factory.longitude?.toString() || "");
   const [saving, setSaving] = useState(false);
 
   async function handleSave() {
