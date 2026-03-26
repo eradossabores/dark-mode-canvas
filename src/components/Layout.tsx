@@ -71,6 +71,7 @@ const menuGroups = [
       { path: "/painel/diagnostico", label: "Diagnóstico", icon: Database },
       { path: "/painel/usuarios", label: "Usuários", icon: Shield },
       { path: "/painel/backup", label: "Backup", icon: HardDrive },
+      { path: "/painel/suporte", label: "Suporte", icon: MessageCircle },
     ],
   },
 ];
