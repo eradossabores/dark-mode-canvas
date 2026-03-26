@@ -29,14 +29,14 @@ export default function ConfigurarFabrica() {
   }, [factoryId]);
 
   async function loadReceitas() {
+    if (!factoryId) { setLoadingRec(false); return; }
     setLoadingRec(true);
     try {
-      let q = (supabase as any)
+      const { data, error } = await (supabase as any)
         .from("sabor_receita")
         .select("*, sabores(nome), materias_primas(nome)")
+        .eq("factory_id", factoryId)
         .order("sabores(nome)");
-      if (factoryId) q = q.eq("factory_id", factoryId);
-      const { data, error } = await q;
       if (error) throw error;
       setReceitas(
         (data || []).map((r: any) => ({
