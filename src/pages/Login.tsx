@@ -19,13 +19,18 @@ export default function Login() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
-  const { user, role, loading: authLoading } = useAuth();
+  const { user, role, factoryId, loading: authLoading } = useAuth();
 
   useEffect(() => {
     if (authLoading || !user) return;
 
     if (role === "super_admin") {
-      navigate("/super-admin", { replace: true });
+      // Se o super_admin tem uma fábrica vinculada, entra direto no painel dela
+      if (factoryId) {
+        navigate("/painel", { replace: true });
+      } else {
+        navigate("/super-admin", { replace: true });
+      }
       return;
     }
 
@@ -35,7 +40,7 @@ export default function Login() {
     }
 
     navigate("/painel", { replace: true });
-  }, [authLoading, user, role, navigate]);
+  }, [authLoading, user, role, factoryId, navigate]);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
