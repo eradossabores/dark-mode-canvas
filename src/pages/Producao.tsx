@@ -522,7 +522,10 @@ export default function Producao() {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
+
+      <ConfigProducaoDialog open={configOpen} onOpenChange={setConfigOpen} factoryId={factoryId} />
 
       {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
