@@ -464,6 +464,12 @@ export default function SuperAdmin() {
                 )}
 
                 <div className="flex gap-2 pt-2">
+                  <Button size="sm" variant="default" className="flex-1" onClick={() => {
+                    impersonateFactory({ id: factory.id, name: factory.name, logo_url: factory.logo_url, theme: undefined });
+                    navigate("/painel");
+                  }}>
+                    <LogIn className="h-3.5 w-3.5 mr-1" /> Entrar
+                  </Button>
                   <Button size="sm" variant="secondary" className="flex-1" onClick={() => setEditingFactory(factory)}>
                     <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
                   </Button>
