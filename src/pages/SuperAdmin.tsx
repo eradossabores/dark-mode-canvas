@@ -485,8 +485,8 @@ export default function SuperAdmin() {
                       <Button size="sm" variant="outline" className="flex-1" onClick={() => handleMarkPaid(factory.id)}>
                         <CheckCircle className="h-3.5 w-3.5 mr-1" /> Pago
                       </Button>
-                      <Button size="sm" variant="destructive" onClick={() => handleBlock(factory.id)}>
-                        <XCircle className="h-3.5 w-3.5" />
+                      <Button size="sm" variant="secondary" onClick={() => setDetailsFactory(factory)}>
+                        <Info className="h-3.5 w-3.5 mr-1" /> Detalhes
                       </Button>
                     </>
                   )}
