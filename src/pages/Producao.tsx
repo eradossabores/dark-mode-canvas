@@ -19,11 +19,12 @@ import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Plus, Trash2, Pencil, Eye, TrendingUp, CalendarIcon, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, Pencil, Eye, TrendingUp, CalendarIcon, AlertTriangle, Settings } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import Chart3DBarProducao from "@/components/Chart3DBarProducao";
 import ChecklistProducaoDia from "@/components/producao/ChecklistProducaoDia";
 import EditDayProducoesDialog from "@/components/producao/EditDayProducoesDialog";
+import ConfigProducaoDialog from "@/components/producao/ConfigProducaoDialog";
 
 export default function Producao() {
   const { factoryId } = useAuth();
@@ -42,6 +43,7 @@ export default function Producao() {
   const [deleteDayItems, setDeleteDayItems] = useState<any[] | null>(null);
   const [editDayItems, setEditDayItems] = useState<any[] | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [configOpen, setConfigOpen] = useState(false);
 
   interface ProdItem {
     sabor_id: string;
@@ -392,7 +394,11 @@ export default function Producao() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Produção</h1>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <div className="flex gap-2">
+          <Button variant="outline" size="icon" onClick={() => setConfigOpen(true)} title="Configurações de Produção">
+            <Settings className="h-4 w-4" />
+          </Button>
+          <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-2" />Nova Produção</Button></DialogTrigger>
           <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto pb-6">
             <DialogHeader><DialogTitle>Nova Produção</DialogTitle></DialogHeader>
@@ -516,7 +522,10 @@ export default function Producao() {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
+
+      <ConfigProducaoDialog open={configOpen} onOpenChange={setConfigOpen} factoryId={factoryId} />
 
       {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
