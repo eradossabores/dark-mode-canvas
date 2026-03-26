@@ -17,6 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Checkbox } from "@/components/ui/checkbox";
 
 export default function Estoque() {
+  const { factoryId } = useAuth();
   const [gelos, setGelos] = useState<any[]>([]);
   const [materias, setMaterias] = useState<any[]>([]);
   const [embalagens, setEmbalagens] = useState<any[]>([]);
