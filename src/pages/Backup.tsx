@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Download, RefreshCw, CheckCircle, Clock, Database, Shield } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
+import { useAuth } from "@/contexts/AuthContext";
 
 const TABLES_TO_BACKUP = [
   { table: "clientes", label: "Clientes" },
@@ -25,6 +26,7 @@ const TABLES_TO_BACKUP = [
 ];
 
 export default function Backup() {
+  const { factoryId } = useAuth();
   const [exporting, setExporting] = useState(false);
   const [lastBackup, setLastBackup] = useState<string | null>(null);
   const [autoBackupEnabled, setAutoBackupEnabled] = useState(false);
@@ -37,7 +39,9 @@ export default function Backup() {
       let totalRows = 0;
 
       for (const { table, label } of TABLES_TO_BACKUP) {
-        const { data, error } = await (supabase as any).from(table).select("*");
+        let q = (supabase as any).from(table).select("*");
+        if (factoryId) q = q.eq("factory_id", factoryId);
+        const { data, error } = await q;
         if (error) {
           console.error(`Erro ao exportar ${table}:`, error);
           continue;

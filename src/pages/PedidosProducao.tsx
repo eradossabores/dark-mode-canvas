@@ -72,19 +72,25 @@ export default function PedidosProducao() {
   const [editSaborSel, setEditSaborSel] = useState("");
   const [editQtdSel, setEditQtdSel] = useState("");
 
+  const { factoryId } = useAuth();
+
   const { data: clientes } = useQuery({
-    queryKey: ["clientes-ativos"],
+    queryKey: ["clientes-ativos", factoryId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("clientes").select("id, nome").eq("status", "ativo").order("nome");
+      let q = supabase.from("clientes").select("id, nome").eq("status", "ativo").order("nome");
+      if (factoryId) q = q.eq("factory_id", factoryId);
+      const { data, error } = await q;
       if (error) throw error;
       return data;
     },
   });
 
   const { data: sabores } = useQuery({
-    queryKey: ["sabores-ativos"],
+    queryKey: ["sabores-ativos", factoryId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("sabores").select("id, nome").eq("ativo", true).order("nome");
+      let q = supabase.from("sabores").select("id, nome").eq("ativo", true).order("nome");
+      if (factoryId) q = q.eq("factory_id", factoryId);
+      const { data, error } = await q;
       if (error) throw error;
       return data;
     },
@@ -92,13 +98,12 @@ export default function PedidosProducao() {
 
   // Query top 5 best-selling flavors
   const { data: topSabores } = useQuery({
-    queryKey: ["top-sabores-vendas"],
+    queryKey: ["top-sabores-vendas", factoryId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("venda_itens")
-        .select("sabor_id, quantidade, sabores(nome)");
+      let q = supabase.from("venda_itens").select("sabor_id, quantidade, sabores(nome)");
+      if (factoryId) q = q.eq("factory_id", factoryId);
+      const { data, error } = await q;
       if (error) throw error;
-      // Aggregate by sabor_id
       const agg: Record<string, { sabor_id: string; nome: string; total: number }> = {};
       for (const item of data || []) {
         const id = item.sabor_id;
@@ -113,12 +118,14 @@ export default function PedidosProducao() {
   });
 
   const { data: pedidos, isLoading } = useQuery({
-    queryKey: ["pedidos-producao"],
+    queryKey: ["pedidos-producao", factoryId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("pedidos_producao")
         .select("*, clientes(nome), pedido_producao_itens(*, sabores(nome))")
         .order("data_entrega", { ascending: true });
+      if (factoryId) q = q.eq("factory_id", factoryId);
+      const { data, error } = await q;
       if (error) throw error;
       return data;
     },

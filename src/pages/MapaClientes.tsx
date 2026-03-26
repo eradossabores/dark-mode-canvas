@@ -110,7 +110,7 @@ export default function MapaClientes() {
     }
   }, []);
 
-  useEffect(() => { void loadClientes(); }, []);
+  useEffect(() => { void loadClientes(); }, [factoryId]);
 
   useEffect(() => {
     if (!highlightedClienteId || clientes.length === 0) return;
@@ -124,7 +124,7 @@ export default function MapaClientes() {
   }, [clientes, highlightedClienteId]);
 
   async function loadClientes(runAutoGeocode = true) {
-    const { data } = await (supabase as any)
+    let q = (supabase as any)
       .from("clientes")
       .select("id, nome, bairro, endereco, telefone, status, latitude, longitude, possui_freezer")
       .eq("status", "ativo")
@@ -132,6 +132,8 @@ export default function MapaClientes() {
       .not("nome", "ilike", "%combo%")
       .not("nome", "ilike", "%avulso%")
       .order("nome");
+    if (factoryId) q = q.eq("factory_id", factoryId);
+    const { data } = await q;
 
     const lista = data || [];
     setClientes(lista);

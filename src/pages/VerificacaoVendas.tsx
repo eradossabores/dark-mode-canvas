@@ -188,21 +188,27 @@ interface CompareResult {
 
 export default function VerificacaoVendas() {
   const navigate = useNavigate();
+  const { factoryId, role } = useAuth();
   const [loading, setLoading] = useState(true);
   const [dbVendas, setDbVendas] = useState<DbVenda[]>([]);
   const [results, setResults] = useState<CompareResult[]>([]);
 
-  useEffect(() => { loadAndCompare(); }, []);
+  useEffect(() => {
+    if (role !== "super_admin" && !factoryId) return;
+    loadAndCompare();
+  }, [factoryId, role]);
 
   async function loadAndCompare() {
     setLoading(true);
     try {
-      // Buscar TODAS as vendas (sem filtro de mês)
-      const [vendasRes, itensRes] = await Promise.all([
-        (supabase as any).from("vendas").select("*, clientes(nome)")
-          .order("created_at", { ascending: true }),
-        (supabase as any).from("venda_itens").select("*, sabores(nome)"),
-      ]);
+      let vendasQ = (supabase as any).from("vendas").select("*, clientes(nome)")
+        .order("created_at", { ascending: true });
+      let itensQ = (supabase as any).from("venda_itens").select("*, sabores(nome)");
+      if (factoryId) {
+        vendasQ = vendasQ.eq("factory_id", factoryId);
+        itensQ = itensQ.eq("factory_id", factoryId);
+      }
+      const [vendasRes, itensRes] = await Promise.all([vendasQ, itensQ]);
 
       const vendas = vendasRes.data || [];
       const itens = itensRes.data || [];

@@ -20,6 +20,7 @@ import {
   detectLayout, detectTipo, unpivotMatrix, unpivotWide, parseRows, buildAnalise,
 } from "@/lib/spreadsheet-helpers";
 import AnaliseResumoCard from "@/components/importar/AnaliseResumoCard";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SheetData {
   sheetName: string;
