@@ -34,6 +34,30 @@ interface Props {
 }
 
 export default function ReciboVenda({ open, onOpenChange, data }: Props) {
+  const { branding, factoryName } = useAuth();
+  const [factoryLogo, setFactoryLogo] = useState<string>(logoRecibo);
+
+  useEffect(() => {
+    if (branding?.logoUrl) {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          setFactoryLogo(canvas.toDataURL("image/png"));
+        }
+      };
+      img.onerror = () => setFactoryLogo(logoRecibo);
+      img.src = branding.logoUrl;
+    } else {
+      setFactoryLogo(logoRecibo);
+    }
+  }, [branding?.logoUrl]);
+
   if (!data) return null;
 
   function drawDottedLine(doc: jsPDF, x1: number, yy: number, x2: number) {
