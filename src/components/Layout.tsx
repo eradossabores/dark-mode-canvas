@@ -455,6 +455,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
+        {impersonatingFactory && (
+          <div className="bg-primary text-primary-foreground px-4 py-2 flex items-center justify-between text-sm font-medium">
+            <span>🏭 Visualizando fábrica: <strong>{factoryName}</strong></span>
+            <Button size="sm" variant="secondary" onClick={() => { clearImpersonation(); navigate("/super-admin"); }}>
+              Sair da Fábrica
+            </Button>
+          </div>
+        )}
         <div className="relative p-4 md:p-6 pt-14 md:pt-6" style={{ zIndex: 1 }}>{children}</div>
       </main>
     </div>
