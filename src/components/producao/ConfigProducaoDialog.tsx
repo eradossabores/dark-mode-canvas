@@ -67,12 +67,7 @@ export default function ConfigProducaoDialog({ open, onOpenChange, factoryId }: 
   function updateReceita(idx: number, field: keyof ReceitaConfig, value: number) {
     setReceitas((prev) => {
       const updated = [...prev];
-      const item = { ...updated[idx], [field]: value };
-      // Sync embalagens_por_lote with gelos_por_lote (1 embalagem per gelo)
-      if (field === "gelos_por_lote") {
-        item.embalagens_por_lote = value;
-      }
-      updated[idx] = item;
+      updated[idx] = { ...updated[idx], [field]: value };
       return updated;
     });
   }
