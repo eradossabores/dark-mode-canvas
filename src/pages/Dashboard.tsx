@@ -422,24 +422,24 @@ export default function Dashboard() {
         )}
 
         {/* Content */}
-        <div className="relative z-20 px-6 py-5">
+        <div className="relative z-20 px-4 py-3 sm:px-6 sm:py-5">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35, duration: 0.5, ease: "easeOut" }}
-            className="space-y-1.5"
+            className="space-y-1 sm:space-y-1.5"
           >
-            <div className="flex items-center gap-2.5">
-              <span className="text-2xl">{dailyMessage.emoji}</span>
-              <h2 className="text-lg font-bold text-foreground tracking-tight">
+            <div className="flex items-center gap-2 sm:gap-2.5">
+              <span className="text-xl sm:text-2xl">{dailyMessage.emoji}</span>
+              <h2 className="text-base sm:text-lg font-bold text-foreground tracking-tight">
                 {getGreeting()}, <span className="text-primary">{userName || "Colaborador"}</span>!
               </h2>
             </div>
-            <p className="text-sm text-muted-foreground max-w-lg leading-relaxed pl-[2.75rem]">
+            <p className="text-xs sm:text-sm text-muted-foreground max-w-lg leading-relaxed pl-8 sm:pl-[2.75rem]">
               {dailyMessage.text}
             </p>
-            <div className="pl-[2.75rem]">
-              <span className="text-[10px] text-muted-foreground/50 tracking-wide uppercase">
+            <div className="pl-8 sm:pl-[2.75rem]">
+              <span className="text-[9px] sm:text-[10px] text-muted-foreground/50 tracking-wide uppercase">
                 {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
               </span>
             </div>
