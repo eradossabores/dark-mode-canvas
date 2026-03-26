@@ -36,7 +36,8 @@ interface FactoryRow {
 }
 
 export default function SuperAdmin() {
-  const { user } = useAuth();
+  const { user, impersonateFactory, impersonatingFactory, clearImpersonation } = useAuth();
+  const navigate = useNavigate();
   const [factories, setFactories] = useState<FactoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewFactory, setShowNewFactory] = useState(false);
