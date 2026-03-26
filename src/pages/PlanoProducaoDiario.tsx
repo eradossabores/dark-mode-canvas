@@ -687,6 +687,7 @@ export default function PlanoProducaoDiario() {
       lotes_autorizados: item.lotesCustom,
       operador,
       created_at: alvoIso,
+      ...(factoryId ? { factory_id: factoryId } : {}),
     }));
 
     const { error } = await (supabase as any).from("decisoes_producao").insert(rows);
