@@ -10,16 +10,17 @@ interface ClienteRanking {
   vendas: number;
 }
 
-export default function RankingClientes() {
+export default function RankingClientes({ factoryId }: { factoryId?: string | null }) {
   const [ranking, setRanking] = useState<ClienteRanking[]>([]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [factoryId]);
 
   async function load() {
     try {
-      const { data } = await (supabase as any)
+      let q = (supabase as any)
         .from("vendas")
         .select("total, cliente_id, clientes(nome), venda_itens(quantidade)");
+      if (factoryId) q = q.eq("factory_id", factoryId);
 
       const map: Record<string, ClienteRanking> = {};
       (data || []).forEach((v: any) => {
