@@ -530,6 +530,14 @@ export default function SuperAdmin() {
           onSaved={loadFactories}
         />
       )}
+
+      {detailsFactory && (
+        <FactoryDetailsDialog
+          open={!!detailsFactory}
+          onOpenChange={(open) => !open && setDetailsFactory(null)}
+          factory={detailsFactory}
+        />
+      )}
     </div>
   );
 }
