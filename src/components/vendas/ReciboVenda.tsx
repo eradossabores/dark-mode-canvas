@@ -80,16 +80,15 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     // Logo
     const logoW = 36;
     const logoH = 28;
-    doc.addImage(logoRecibo, "PNG", (w - logoW) / 2, y, logoW, logoH);
+    try {
+      doc.addImage(factoryLogo, "PNG", (w - logoW) / 2, y, logoW, logoH);
+    } catch { /* fallback: no logo */ }
     y += logoH + 2;
 
     doc.setFontSize(6.5);
     doc.setTextColor(80, 80, 80);
     doc.setFont("helvetica", "italic");
-    doc.text("Cor, Cheiro e Sabor da Fruta", w / 2, y, { align: "center" });
-    y += 3;
-    doc.setFont("helvetica", "normal");
-    doc.text("Tel: (95) 99172-5677", w / 2, y, { align: "center" });
+    doc.text(factoryName || "Gelos Saborizados", w / 2, y, { align: "center" });
     y += 4;
 
     // Decorative double line
