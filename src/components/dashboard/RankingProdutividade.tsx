@@ -9,16 +9,18 @@ interface FuncRanking {
   producoes: number;
 }
 
-export default function RankingProdutividade() {
+export default function RankingProdutividade({ factoryId }: { factoryId?: string | null }) {
   const [ranking, setRanking] = useState<FuncRanking[]>([]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [factoryId]);
 
   async function load() {
     try {
-      const { data } = await (supabase as any)
+      let q = (supabase as any)
         .from("producao_funcionarios")
         .select("quantidade_produzida, funcionarios(nome)");
+      if (factoryId) q = q.eq("factory_id", factoryId);
+      const { data } = await q;
 
       const map: Record<string, FuncRanking> = {};
       (data || []).forEach((pf: any) => {

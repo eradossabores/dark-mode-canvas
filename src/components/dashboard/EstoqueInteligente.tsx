@@ -11,17 +11,17 @@ interface EstoqueItem {
   diasRestantes: number | null;
 }
 
-export default function EstoqueInteligente() {
+export default function EstoqueInteligente({ factoryId }: { factoryId?: string | null }) {
   const [items, setItems] = useState<EstoqueItem[]>([]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [factoryId]);
 
   async function load() {
     try {
-      const [gelosRes, vendasRes] = await Promise.all([
-        (supabase as any).from("estoque_gelos").select("quantidade, sabores(nome, id)"),
-        (supabase as any).from("venda_itens").select("sabor_id, quantidade, vendas!inner(created_at, status)"),
-      ]);
+      let gQ = (supabase as any).from("estoque_gelos").select("quantidade, sabores(nome, id)");
+      let vQ = (supabase as any).from("venda_itens").select("sabor_id, quantidade, vendas!inner(created_at, status)");
+      if (factoryId) { gQ = gQ.eq("factory_id", factoryId); vQ = vQ.eq("factory_id", factoryId); }
+      const [gelosRes, vendasRes] = await Promise.all([gQ, vQ]);
 
       const gelos = gelosRes.data || [];
       const vendaItens = (vendasRes.data || []).filter((v: any) => v.vendas?.status !== "cancelada");
