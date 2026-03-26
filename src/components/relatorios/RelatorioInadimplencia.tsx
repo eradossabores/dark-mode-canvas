@@ -11,6 +11,7 @@ import { AlertTriangle, DollarSign, Clock, Users } from "lucide-react";
 import KpiCard from "./KpiCard";
 import ExportButtons from "./ExportButtons";
 import { exportToPDF, exportToExcel } from "@/lib/export-utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 const COLORS = ["hsl(0,72%,50%)", "hsl(38,92%,50%)", "hsl(200,98%,39%)", "hsl(142,71%,45%)"];
 
@@ -23,20 +24,21 @@ const FAIXAS_ATRASO = [
 ];
 
 export default function RelatorioInadimplencia() {
+  const { factoryId } = useAuth();
   const [parcelas, setParcelas] = useState<any[]>([]);
   const [vendas, setVendas] = useState<any[]>([]);
   const [previewLoaded, setPreviewLoaded] = useState(false);
   const [filtroFaixa, setFiltroFaixa] = useState("todos");
   const [filtroCliente, setFiltroCliente] = useState("");
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [factoryId]);
   useEffect(() => { setPreviewLoaded(false); }, [filtroFaixa, filtroCliente]);
 
   async function loadData() {
-    const [p, v] = await Promise.all([
-      (supabase as any).from("venda_parcelas").select("*, vendas(cliente_id, clientes(nome))").eq("paga", false).order("vencimento"),
-      (supabase as any).from("vendas").select("*, clientes(nome)").eq("status", "pendente"),
-    ]);
+    let pQ = (supabase as any).from("venda_parcelas").select("*, vendas(cliente_id, clientes(nome))").eq("paga", false).order("vencimento");
+    let vQ = (supabase as any).from("vendas").select("*, clientes(nome)").eq("status", "pendente");
+    if (factoryId) { pQ = pQ.eq("factory_id", factoryId); vQ = vQ.eq("factory_id", factoryId); }
+    const [p, v] = await Promise.all([pQ, vQ]);
     setParcelas(p.data || []);
     setVendas(v.data || []);
   }
