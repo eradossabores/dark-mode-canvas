@@ -368,15 +368,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <LogOut className="h-4 w-4 shrink-0" />
               <span>Sair</span>
             </button>
-            <div className="flex justify-center py-2 border-t border-white/10">
-              <img
-                key={sidebarCharIdx}
-                src={sidebarChar.src}
-                alt=""
-                aria-hidden
-                className="w-20 h-20 object-contain pointer-events-none select-none animate-fade-in"
-              />
-            </div>
+            {isIceAgeFactory && (
+              <div className="flex justify-center py-2 border-t border-white/10">
+                <img
+                  key={sidebarCharIdx}
+                  src={sidebarChar.src}
+                  alt=""
+                  aria-hidden
+                  className="w-20 h-20 object-contain pointer-events-none select-none animate-fade-in"
+                />
+              </div>
+            )}
           </aside>
         </div>
       )}
