@@ -11,6 +11,7 @@ import EditPedidoDialog from "@/components/monitor/EditPedidoDialog";
 import MonitorTopBar from "@/components/monitor/MonitorTopBar";
 import { useMonitorAlerts } from "@/hooks/useMonitorAlerts";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { format, isPast, isToday, isTomorrow, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 function getElapsedTime(createdAt: string): string {
