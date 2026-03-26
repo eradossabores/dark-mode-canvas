@@ -21,6 +21,7 @@ import ClientesInativos from "@/components/dashboard/ClientesInativos";
 import GastosColaboradores from "@/components/dashboard/GastosColaboradores";
 
 const postItCharacters = [sidImg, scratAcornImg, buckImg, scrat3dImg, scratStandingImg, scratHangingImg];
+const ERA_DOS_SABORES_ID = "00000000-0000-0000-0000-000000000001";
 
 const CHART_COLORS = [
   "hsl(270, 60%, 50%)",
@@ -145,6 +146,7 @@ function getDailyMessage(userId: string) {
 export default function Dashboard() {
   const navigate = useNavigate();
   const { user, factoryId } = useAuth();
+  const isIceAgeFactory = factoryId === ERA_DOS_SABORES_ID;
   const [userName, setUserName] = useState("");
   const [stats, setStats] = useState({
     totalGelos: 0, totalClientes: 0, totalVendas: 0,
@@ -402,20 +404,22 @@ export default function Dashboard() {
           <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-background to-transparent" />
         </div>
 
-        {/* Character watermark */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 0.18, x: 0 }}
-          transition={{ delay: 0.6, duration: 0.8 }}
-          className="absolute -bottom-2 -right-2 w-20 h-20 pointer-events-none select-none z-10"
-        >
-          <img
-            src={postItCharacters[Math.abs((user?.id || "").charCodeAt(0) || 0) % postItCharacters.length]}
-            alt=""
-            aria-hidden
-            className="w-full h-full object-contain drop-shadow-sm"
-          />
-        </motion.div>
+        {/* Character watermark - only for Era dos Sabores */}
+        {isIceAgeFactory && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 0.18, x: 0 }}
+            transition={{ delay: 0.6, duration: 0.8 }}
+            className="absolute -bottom-2 -right-2 w-20 h-20 pointer-events-none select-none z-10"
+          >
+            <img
+              src={postItCharacters[Math.abs((user?.id || "").charCodeAt(0) || 0) % postItCharacters.length]}
+              alt=""
+              aria-hidden
+              className="w-full h-full object-contain drop-shadow-sm"
+            />
+          </motion.div>
+        )}
 
         {/* Content */}
         <div className="relative z-20 px-6 py-5">
@@ -533,13 +537,15 @@ export default function Dashboard() {
                       ))}
                     </div>
 
-                    {/* Character */}
-                    <img
-                      src={charImg}
-                      alt=""
-                      aria-hidden
-                      className="absolute bottom-1 right-1 w-16 h-16 object-contain opacity-25 pointer-events-none select-none"
-                    />
+                    {/* Character - only for Era dos Sabores */}
+                    {isIceAgeFactory && (
+                      <img
+                        src={charImg}
+                        alt=""
+                        aria-hidden
+                        className="absolute bottom-1 right-1 w-16 h-16 object-contain opacity-25 pointer-events-none select-none"
+                      />
+                    )}
                   </div>
                 </motion.div>
               );
@@ -574,13 +580,15 @@ export default function Dashboard() {
                     <Bell className="h-3.5 w-3.5 text-foreground" />
                     <span className="text-xs font-extrabold uppercase tracking-wide text-foreground">Resumo</span>
                   </div>
-                  {/* Character top-right */}
-                  <img
-                    src={postItCharacters[3 % postItCharacters.length]}
-                    alt=""
-                    aria-hidden
-                    className="w-10 h-10 object-contain opacity-30 pointer-events-none select-none"
-                  />
+                  {/* Character top-right - only for Era dos Sabores */}
+                  {isIceAgeFactory && (
+                    <img
+                      src={postItCharacters[3 % postItCharacters.length]}
+                      alt=""
+                      aria-hidden
+                      className="w-10 h-10 object-contain opacity-30 pointer-events-none select-none"
+                    />
+                  )}
                 </div>
 
                 <p className="text-3xl font-black text-foreground">{alertasEstoque.length}</p>
