@@ -16,6 +16,8 @@ interface EditFactoryDialogProps {
     name: string;
     logo_url: string | null;
     max_collaborators: number;
+    latitude?: number | null;
+    longitude?: number | null;
     subscription?: {
       amount: number;
     };
