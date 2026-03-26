@@ -18,7 +18,29 @@ import logoRecibo from "@/assets/logo-recibo.png";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function AReceber() {
-  const { factoryId, role } = useAuth();
+  const { factoryId, role, branding, factoryName } = useAuth();
+  const [factoryLogo, setFactoryLogo] = useState<string>(logoRecibo);
+
+  useEffect(() => {
+    if (branding?.logoUrl) {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          setFactoryLogo(canvas.toDataURL("image/png"));
+        }
+      };
+      img.onerror = () => setFactoryLogo(logoRecibo);
+      img.src = branding.logoUrl;
+    } else {
+      setFactoryLogo(logoRecibo);
+    }
+  }, [branding?.logoUrl]);
   const [vendas, setVendas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [abaterVenda, setAbaterVenda] = useState<any>(null);
@@ -97,14 +119,12 @@ export default function AReceber() {
     let y = 4;
 
     try {
-      doc.addImage(logoRecibo, "PNG", (w - 40) / 2, y, 40, 32);
+      doc.addImage(factoryLogo, "PNG", (w - 40) / 2, y, 40, 32);
       y += 34;
     } catch { y += 4; }
 
     doc.setFontSize(7);
-    doc.text("Cor, Cheiro e Sabor da Fruta", w / 2, y, { align: "center" });
-    y += 3;
-    doc.text("Tel: (95) 99172-5677", w / 2, y, { align: "center" });
+    doc.text(factoryName || "Gelos Saborizados", w / 2, y, { align: "center" });
     y += 5;
 
     doc.setLineWidth(0.3);
@@ -441,17 +461,14 @@ export default function AReceber() {
     y = 6;
 
     try {
-      doc.addImage(logoRecibo, "PNG", (w - 36) / 2, y, 36, 28);
+      doc.addImage(factoryLogo, "PNG", (w - 36) / 2, y, 36, 28);
       y += 30;
     } catch { y += 4; }
 
     doc.setFontSize(6.5);
     doc.setTextColor(80, 80, 80);
     doc.setFont("helvetica", "italic");
-    doc.text("Cor, Cheiro e Sabor da Fruta", w / 2, y, { align: "center" });
-    y += 3;
-    doc.setFont("helvetica", "normal");
-    doc.text("Tel: (95) 99172-5677", w / 2, y, { align: "center" });
+    doc.text(factoryName || "Gelos Saborizados", w / 2, y, { align: "center" });
     y += 4;
 
     // Decorative double line

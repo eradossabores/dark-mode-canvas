@@ -1,10 +1,11 @@
-import { useRef } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Printer, MessageCircle } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import logoRecibo from "@/assets/logo-recibo.png";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ReciboItem {
   sabor_nome: string;
@@ -33,6 +34,30 @@ interface Props {
 }
 
 export default function ReciboVenda({ open, onOpenChange, data }: Props) {
+  const { branding, factoryName } = useAuth();
+  const [factoryLogo, setFactoryLogo] = useState<string>(logoRecibo);
+
+  useEffect(() => {
+    if (branding?.logoUrl) {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          setFactoryLogo(canvas.toDataURL("image/png"));
+        }
+      };
+      img.onerror = () => setFactoryLogo(logoRecibo);
+      img.src = branding.logoUrl;
+    } else {
+      setFactoryLogo(logoRecibo);
+    }
+  }, [branding?.logoUrl]);
+
   if (!data) return null;
 
   function drawDottedLine(doc: jsPDF, x1: number, yy: number, x2: number) {
@@ -55,16 +80,15 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     // Logo
     const logoW = 36;
     const logoH = 28;
-    doc.addImage(logoRecibo, "PNG", (w - logoW) / 2, y, logoW, logoH);
+    try {
+      doc.addImage(factoryLogo, "PNG", (w - logoW) / 2, y, logoW, logoH);
+    } catch { /* fallback: no logo */ }
     y += logoH + 2;
 
     doc.setFontSize(6.5);
     doc.setTextColor(80, 80, 80);
     doc.setFont("helvetica", "italic");
-    doc.text("Cor, Cheiro e Sabor da Fruta", w / 2, y, { align: "center" });
-    y += 3;
-    doc.setFont("helvetica", "normal");
-    doc.text("Tel: (95) 99172-5677", w / 2, y, { align: "center" });
+    doc.text(factoryName || "Gelos Saborizados", w / 2, y, { align: "center" });
     y += 4;
 
     // Decorative double line
@@ -252,7 +276,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     const fileName = `recibo-${data.cliente_nome.replace(/\s+/g, "-")}.pdf`;
     const file = new File([pdfBlob], fileName, { type: "application/pdf" });
 
-    const msg = `*A ERA DOS SABORES*\n\nOla ${data.cliente_nome}, segue seu recibo.\n\nTotal: R$ ${data.total.toFixed(2)}\nData: ${data.data}\nPagamento: ${data.forma_pagamento}`;
+    const msg = `*${factoryName || "Gelos Saborizados"}*\n\nOla ${data.cliente_nome}, segue seu recibo.\n\nTotal: R$ ${data.total.toFixed(2)}\nData: ${data.data}\nPagamento: ${data.forma_pagamento}`;
 
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
       try {
@@ -280,9 +304,8 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
 
         <div className="space-y-3 text-sm">
           <div className="text-center border-b pb-3">
-            <img src={logoRecibo} alt="A Era dos Sabores" className="h-28 mx-auto mb-1" />
-            <p className="text-muted-foreground text-xs">Cor, Cheiro e Sabor da Fruta</p>
-            <p className="text-muted-foreground text-xs">Tel: (95) 99172-5677</p>
+            <img src={factoryLogo} alt={factoryName || "Logo"} className="h-28 mx-auto mb-1" />
+            <p className="text-muted-foreground text-xs font-semibold">{factoryName || "Gelos Saborizados"}</p>
           </div>
 
           <div className="space-y-1">
