@@ -5,7 +5,7 @@ import { Users } from "lucide-react";
 
 type Periodo = "dia" | "semana" | "mes";
 
-export default function GastosColaboradores() {
+export default function GastosColaboradores({ factoryId }: { factoryId?: string | null }) {
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
   const [producaoFunc, setProducaoFunc] = useState<any[]>([]);
   const [producoes, setProducoes] = useState<any[]>([]);
@@ -13,14 +13,14 @@ export default function GastosColaboradores() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [factoryId]);
 
   async function loadData() {
-    const [f, pf, p] = await Promise.all([
-      (supabase as any).from("funcionarios").select("*"),
-      (supabase as any).from("producao_funcionarios").select("*, producoes(created_at)"),
-      (supabase as any).from("producoes").select("id, created_at"),
-    ]);
+    let fQ = (supabase as any).from("funcionarios").select("*");
+    let pfQ = (supabase as any).from("producao_funcionarios").select("*, producoes(created_at)");
+    let pQ = (supabase as any).from("producoes").select("id, created_at");
+    if (factoryId) { fQ = fQ.eq("factory_id", factoryId); pfQ = pfQ.eq("factory_id", factoryId); pQ = pQ.eq("factory_id", factoryId); }
+    const [f, pf, p] = await Promise.all([fQ, pfQ, pQ]);
     setFuncionarios(f.data || []);
     setProducaoFunc(pf.data || []);
     setProducoes(p.data || []);

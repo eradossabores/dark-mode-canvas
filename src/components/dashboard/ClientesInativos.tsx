@@ -21,23 +21,25 @@ interface ClienteInativo {
   ultimaCompra: string | null;
 }
 
-export default function ClientesInativos() {
+export default function ClientesInativos({ factoryId }: { factoryId?: string | null }) {
   const [clientes, setClientes] = useState<ClienteInativo[]>([]);
   const [diasLimite, setDiasLimite] = useState(15);
   const [mensagemModelo, setMensagemModelo] = useState(DEFAULT_WHATSAPP_TEMPLATE);
   const [mostrarMensagemWhatsapp, setMostrarMensagemWhatsapp] = useState(false);
   const [clienteMensagem, setClienteMensagem] = useState<ClienteInativo | null>(null);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [factoryId]);
 
   async function load() {
     try {
-      const { data } = await (supabase as any)
+      let q = (supabase as any)
         .from("clientes")
         .select("id, nome, telefone, bairro, ultima_compra")
         .eq("status", "ativo")
         .not("nome", "ilike", "%amostra%")
         .not("nome", "ilike", "%avulso%");
+      if (factoryId) q = q.eq("factory_id", factoryId);
+      const { data } = await q;
 
       const hoje = new Date();
       const result: ClienteInativo[] = (data || [])
