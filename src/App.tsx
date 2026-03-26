@@ -39,6 +39,7 @@ import Pedir from "@/pages/Pedir";
 import Backup from "@/pages/Backup";
 import PresencaProducao from "@/pages/PresencaProducao";
 import SuperAdmin from "@/pages/SuperAdmin";
+import Suporte from "@/pages/Suporte";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -99,6 +100,7 @@ const App = () => (
               <Route path="/painel/prospeccao" element={<AdminRoute><Prospeccao /></AdminRoute>} />
               <Route path="/painel/plano-producao" element={<AdminRoute><PlanoProducaoDiario /></AdminRoute>} />
               <Route path="/painel/backup" element={<AdminRoute><Backup /></AdminRoute>} />
+              <Route path="/painel/suporte" element={<ProdRoute><Suporte /></ProdRoute>} />
 
               {/* Production accessible routes */}
               <Route path="/painel/producao" element={<ProdRoute><Producao /></ProdRoute>} />
