@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useSessionTracker } from "@/hooks/useSessionTracker";
 import type { User, Session } from "@supabase/supabase-js";
 
 type AppRole = "super_admin" | "admin" | "factory_owner" | "producao" | null;
@@ -273,6 +274,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setBranding(null);
     }
   };
+
+  // Track user session time (only for non-impersonating, logged-in users)
+  useSessionTracker(
+    !impersonatingFactory ? user?.id ?? null : null,
+    !impersonatingFactory ? factoryId : null
+  );
 
   return (
     <AuthContext.Provider value={{ user, session, role, approvalStatus, loading, factoryId, factoryName, subscription, branding, signOut, impersonatingFactory, impersonateFactory, clearImpersonation }}>

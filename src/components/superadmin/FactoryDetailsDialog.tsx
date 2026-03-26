@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Users, Package, ShoppingCart, DollarSign, Factory, Calendar, IceCream, AlertTriangle, CheckCircle, Clock, XCircle } from "lucide-react";
+import { Users, Package, ShoppingCart, DollarSign, Factory, IceCream, AlertTriangle, CheckCircle, Clock, XCircle, Activity } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -30,13 +30,125 @@ interface Props {
   };
 }
 
+interface UserUsage {
+  nome: string;
+  email: string;
+  role: string;
+  totalSessions: number;
+  totalMinutes: number;
+  lastSeen: string | null;
+  firstSeen: string | null;
+}
+
+function formatDuration(totalMinutes: number) {
+  if (totalMinutes < 1) return "< 1 min";
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const mins = totalMinutes % 60;
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days}d`);
+  if (hours > 0) parts.push(`${hours}h`);
+  if (mins > 0) parts.push(`${mins}min`);
+  return parts.join(" ") || "0min";
+}
+
+function formatDurationLong(totalMinutes: number) {
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const mins = totalMinutes % 60;
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days} dia${days > 1 ? "s" : ""}`);
+  if (hours > 0) parts.push(`${hours} hora${hours > 1 ? "s" : ""}`);
+  if (mins > 0) parts.push(`${mins} minuto${mins > 1 ? "s" : ""}`);
+  return parts.join(", ") || "Menos de 1 minuto";
+}
+
 export default function FactoryDetailsDialog({ open, onOpenChange, factory }: Props) {
   const [details, setDetails] = useState<any>(null);
+  const [usageData, setUsageData] = useState<UserUsage[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (open) loadDetails();
+    if (open) {
+      loadDetails();
+      loadUsageData();
+    }
   }, [open]);
+
+  async function loadUsageData() {
+    try {
+      const fid = factory.id;
+
+      // Get all user_roles for this factory
+      const { data: roles } = await (supabase as any)
+        .from("user_roles")
+        .select("user_id, role")
+        .eq("factory_id", fid);
+
+      if (!roles || roles.length === 0) {
+        setUsageData([]);
+        return;
+      }
+
+      const userIds = roles.map((r: any) => r.user_id);
+
+      // Get profiles for these users
+      const { data: profiles } = await (supabase as any)
+        .from("profiles")
+        .select("id, nome, email")
+        .in("id", userIds);
+
+      // Get sessions for this factory
+      const { data: sessions } = await (supabase as any)
+        .from("user_sessions")
+        .select("user_id, duration_minutes, started_at, last_seen_at")
+        .eq("factory_id", fid);
+
+      const profileMap: Record<string, any> = {};
+      (profiles || []).forEach((p: any) => { profileMap[p.id] = p; });
+
+      const roleMap: Record<string, string> = {};
+      roles.forEach((r: any) => { roleMap[r.user_id] = r.role; });
+
+      // Aggregate sessions per user
+      const sessionMap: Record<string, { total: number; count: number; first: string | null; last: string | null }> = {};
+      (sessions || []).forEach((s: any) => {
+        if (!sessionMap[s.user_id]) {
+          sessionMap[s.user_id] = { total: 0, count: 0, first: null, last: null };
+        }
+        const entry = sessionMap[s.user_id];
+        entry.total += s.duration_minutes || 0;
+        entry.count += 1;
+        if (!entry.first || s.started_at < entry.first) entry.first = s.started_at;
+        if (!entry.last || s.last_seen_at > entry.last) entry.last = s.last_seen_at;
+      });
+
+      const usage: UserUsage[] = userIds.map((uid: string) => {
+        const profile = profileMap[uid];
+        const sess = sessionMap[uid] || { total: 0, count: 0, first: null, last: null };
+        return {
+          nome: profile?.nome || "Desconhecido",
+          email: profile?.email || "",
+          role: roleMap[uid] || "N/A",
+          totalSessions: sess.count,
+          totalMinutes: sess.total,
+          lastSeen: sess.last,
+          firstSeen: sess.first,
+        };
+      });
+
+      // Sort: owner first, then by total usage desc
+      usage.sort((a, b) => {
+        if (a.role === "factory_owner" || a.role === "admin") return -1;
+        if (b.role === "factory_owner" || b.role === "admin") return 1;
+        return b.totalMinutes - a.totalMinutes;
+      });
+
+      setUsageData(usage);
+    } catch (e) {
+      console.error("Usage data error:", e);
+    }
+  }
 
   async function loadDetails() {
     setLoading(true);
@@ -54,7 +166,6 @@ export default function FactoryDetailsDialog({ open, onOpenChange, factory }: Pr
 
       const vendasData = (vendas.data || []).filter((v: any) => v.status !== "cancelada");
       const faturamentoTotal = vendasData.reduce((s: number, v: any) => s + Number(v.total), 0);
-
       const now = new Date();
       const faturamentoMes = vendasData
         .filter((v: any) => { const d = new Date(v.created_at); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); })
@@ -62,17 +173,14 @@ export default function FactoryDetailsDialog({ open, onOpenChange, factory }: Pr
 
       const totalEstoque = (estoque.data || []).reduce((s: number, g: any) => s + g.quantidade, 0);
       const totalProd = (producoes.data || []).reduce((s: number, p: any) => s + p.quantidade_total, 0);
-
       const clientesAtivos = (clientes.data || []).filter((c: any) => c.status === "ativo").length;
-      const clientesInativos = (clientes.data || []).filter((c: any) => c.status === "inativo").length;
-
       const pedidosPendentes = (pedidos.data || []).filter((p: any) => p.status === "pendente").length;
       const pedidosConcluidos = (pedidos.data || []).filter((p: any) => p.status === "concluido" || p.status === "entregue").length;
 
       setDetails({
         totalClientes: (clientes.data || []).length,
         clientesAtivos,
-        clientesInativos,
+        clientesInativos: (clientes.data || []).filter((c: any) => c.status === "inativo").length,
         totalVendas: vendasData.length,
         faturamentoTotal,
         faturamentoMes,
@@ -104,9 +212,21 @@ export default function FactoryDetailsDialog({ open, onOpenChange, factory }: Pr
     }
   }
 
+  function getRoleName(role: string) {
+    switch (role) {
+      case "factory_owner": return "Proprietário";
+      case "admin": return "Administrador";
+      case "producao": return "Colaborador";
+      case "super_admin": return "Super Admin";
+      default: return role;
+    }
+  }
+
+  const totalUsageMinutes = usageData.reduce((s, u) => s + u.totalMinutes, 0);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             {factory.logo_url ? (
@@ -149,6 +269,69 @@ export default function FactoryDetailsDialog({ open, onOpenChange, factory }: Pr
               )}
               <div className="text-muted-foreground">Colaboradores</div>
               <div className="text-right font-medium">{factory.collaborator_count}/{factory.max_collaborators}</div>
+            </div>
+
+            <Separator />
+
+            {/* Tempo de Uso */}
+            <div>
+              <h4 className="text-sm font-semibold flex items-center gap-2 mb-3">
+                <Activity className="h-4 w-4 text-primary" />
+                Tempo de Uso do Sistema
+              </h4>
+
+              {/* Total geral */}
+              <div className="rounded-lg bg-primary/5 border border-primary/10 p-3 mb-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Tempo total da fábrica</span>
+                  <span className="text-sm font-bold text-primary">{formatDurationLong(totalUsageMinutes)}</span>
+                </div>
+                <div className="flex items-center justify-between mt-1">
+                  <span className="text-xs text-muted-foreground">Total de sessões</span>
+                  <span className="text-xs font-medium">{usageData.reduce((s, u) => s + u.totalSessions, 0)}</span>
+                </div>
+              </div>
+
+              {/* Per user */}
+              {usageData.length > 0 ? (
+                <div className="space-y-2">
+                  {usageData.map((u, i) => (
+                    <div key={i} className="rounded-lg bg-muted/50 p-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{u.nome}</p>
+                            <p className="text-[11px] text-muted-foreground truncate">{u.email}</p>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="text-[10px] shrink-0 ml-2">{getRoleName(u.role)}</Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
+                        <div>
+                          <span className="text-muted-foreground">Tempo total:</span>
+                          <p className="font-semibold">{formatDuration(u.totalMinutes)}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Sessões:</span>
+                          <p className="font-semibold">{u.totalSessions}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Primeiro acesso:</span>
+                          <p className="font-semibold">{u.firstSeen ? format(new Date(u.firstSeen), "dd/MM/yy HH:mm", { locale: ptBR }) : "—"}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Último acesso:</span>
+                          <p className="font-semibold">{u.lastSeen ? format(new Date(u.lastSeen), "dd/MM/yy HH:mm", { locale: ptBR }) : "—"}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground text-center py-2">
+                  Nenhum dado de uso registrado ainda. Os dados começarão a aparecer conforme os usuários acessarem o sistema.
+                </p>
+              )}
             </div>
 
             <Separator />
