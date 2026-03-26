@@ -375,7 +375,7 @@ export default function MapaClientes() {
         <div className="lg:col-span-3">
           <Card className="overflow-hidden">
             <AdvancedMap
-              center={BOA_VISTA_CENTER}
+              center={factoryCenter}
               zoom={13}
               markers={markers}
               onMapClick={handleMapClick}
