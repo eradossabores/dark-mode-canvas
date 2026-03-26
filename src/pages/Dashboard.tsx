@@ -877,7 +877,7 @@ export default function Dashboard() {
       <div className="mt-6 opacity-0 animate-fade-in" style={{ animationDelay: "1100ms", animationFillMode: "forwards" }}>
         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
           <GlowingEffect spread={20} glow disabled={false} proximity={40} inactiveZone={0.2} borderWidth={3} />
-          <div className="relative"><GastosColaboradores /></div>
+          <div className="relative"><GastosColaboradores factoryId={factoryId} /></div>
         </div>
       </div>
     </div>
