@@ -15,7 +15,8 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const clienteIcon = createSvgIcon('#2563eb');
 const pendingIcon = createSvgIcon('#dc2626');
-const BOA_VISTA_CENTER: [number, number] = [2.8195, -60.6714];
+const factoryIcon = createSvgIcon('#f59e0b');
+const DEFAULT_CENTER: [number, number] = [2.8195, -60.6714];
 
 interface Cliente {
   id: string;
