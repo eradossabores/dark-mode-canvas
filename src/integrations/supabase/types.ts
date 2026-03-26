@@ -1656,6 +1656,41 @@ export type Database = {
           },
         ]
       }
+      user_sessions: {
+        Row: {
+          duration_minutes: number
+          factory_id: string | null
+          id: string
+          last_seen_at: string
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          duration_minutes?: number
+          factory_id?: string | null
+          id?: string
+          last_seen_at?: string
+          started_at?: string
+          user_id: string
+        }
+        Update: {
+          duration_minutes?: number
+          factory_id?: string | null
+          id?: string
+          last_seen_at?: string
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_sessions_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       venda_itens: {
         Row: {
           factory_id: string | null
