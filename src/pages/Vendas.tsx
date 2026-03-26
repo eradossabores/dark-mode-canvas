@@ -1096,25 +1096,25 @@ export default function Vendas() {
       })()}
 
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Histórico de Vendas</CardTitle>
+        <CardHeader className="px-3 sm:px-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <CardTitle className="text-base sm:text-lg">Histórico de Vendas</CardTitle>
             {clienteFilter && (
               <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="text-sm">Filtro: {clienteFilter}</Badge>
+                <Badge variant="secondary" className="text-xs sm:text-sm">Filtro: {clienteFilter}</Badge>
                 <Button size="sm" variant="ghost" onClick={() => setSearchParams({})}>Limpar filtro</Button>
               </div>
             )}
           </div>
-          <div className="flex flex-wrap gap-2 mt-3">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 mt-3">
             <Input
-              placeholder="Pesquisar por cliente..."
+              placeholder="Pesquisar cliente..."
               value={searchCliente}
               onChange={(e) => { setSearchCliente(e.target.value); setPage(0); }}
-              className="max-w-[200px] h-9 text-sm"
+              className="col-span-2 sm:max-w-[200px] h-9 text-sm"
             />
             <Select value={filtroData} onValueChange={(v) => { setFiltroData(v); setPage(0); }}>
-              <SelectTrigger className="w-[150px] h-9 text-sm"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-9 text-xs sm:text-sm sm:w-[150px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todas as datas</SelectItem>
                 <SelectItem value="hoje">Hoje</SelectItem>
@@ -1125,7 +1125,7 @@ export default function Vendas() {
               </SelectContent>
             </Select>
             <Select value={filtroStatus} onValueChange={(v) => { setFiltroStatus(v); setPage(0); }}>
-              <SelectTrigger className="w-[130px] h-9 text-sm"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-9 text-xs sm:text-sm sm:w-[130px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos status</SelectItem>
                 <SelectItem value="pendente">Pendente</SelectItem>
@@ -1134,7 +1134,7 @@ export default function Vendas() {
               </SelectContent>
             </Select>
             <Select value={filtroPagamento} onValueChange={(v) => { setFiltroPagamento(v); setPage(0); }}>
-              <SelectTrigger className="w-[140px] h-9 text-sm"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="col-span-2 sm:col-span-1 h-9 text-xs sm:text-sm sm:w-[140px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos pagamentos</SelectItem>
                 {FORMAS_PAGAMENTO.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
