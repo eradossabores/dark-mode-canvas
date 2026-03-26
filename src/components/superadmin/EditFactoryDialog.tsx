@@ -59,6 +59,8 @@ export default function EditFactoryDialog({ open, onOpenChange, factory, onSaved
         name,
         max_collaborators: maxCollab,
         logo_url: logoUrl,
+        latitude: latitude ? parseFloat(latitude) : null,
+        longitude: longitude ? parseFloat(longitude) : null,
       };
       if (theme) updateData.theme = theme;
 
