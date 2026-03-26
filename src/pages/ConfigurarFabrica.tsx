@@ -134,47 +134,78 @@ export default function ConfigurarFabrica() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="min-w-[120px]">Sabor</TableHead>
+                          <TableHead className="min-w-[120px]">Configuração</TableHead>
                           <TableHead className="text-center min-w-[100px]">Gelos/Lote</TableHead>
                           <TableHead className="text-center min-w-[130px]">Matéria-Prima/Lote</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {receitas.map((r, idx) => (
-                          <TableRow key={r.id}>
-                            <TableCell>
-                              <div>
-                                <span className="font-medium text-sm">{r.sabor_nome}</span>
-                                <div className="text-xs text-muted-foreground mt-0.5">{r.materia_prima_nome}</div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
+                        <TableRow>
+                          <TableCell>
+                            <div>
+                              <span className="font-medium text-sm">🧊 Geral</span>
+                              <div className="text-xs text-muted-foreground mt-0.5">Todos os sabores (exceto Água de Coco)</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              min={1}
+                              className="h-8 text-center text-sm w-20 mx-auto"
+                              value={config.gelos_por_lote}
+                              onChange={(e) => setConfig(prev => ({ ...prev, gelos_por_lote: Number(e.target.value) }))}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center justify-center gap-1">
                               <Input
                                 type="number"
-                                min={1}
-                                className="h-8 text-center text-sm w-20 mx-auto"
-                                value={r.gelos_por_lote}
-                                onChange={(e) => updateReceita(idx, "gelos_por_lote", Number(e.target.value))}
+                                min={0}
+                                step={10}
+                                className="h-8 text-center text-sm w-24"
+                                value={config.quantidade_insumo_geral}
+                                onChange={(e) => setConfig(prev => ({ ...prev, quantidade_insumo_geral: Number(e.target.value) }))}
                               />
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center justify-center gap-1">
-                                <Input
-                                  type="number"
-                                  min={0}
-                                  step={10}
-                                  className="h-8 text-center text-sm w-24"
-                                  value={r.quantidade_insumo_por_lote}
-                                  onChange={(e) => updateReceita(idx, "quantidade_insumo_por_lote", Number(e.target.value))}
-                                />
-                                <span className="text-xs text-muted-foreground">g</span>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                              <span className="text-xs text-muted-foreground">g</span>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>
+                            <div>
+                              <span className="font-medium text-sm">🥥 Água de Coco</span>
+                              <div className="text-xs text-muted-foreground mt-0.5">Configuração específica</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              min={1}
+                              className="h-8 text-center text-sm w-20 mx-auto"
+                              value={config.gelos_por_lote}
+                              disabled
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center justify-center gap-1">
+                              <Input
+                                type="number"
+                                min={0}
+                                step={10}
+                                className="h-8 text-center text-sm w-24"
+                                value={config.quantidade_insumo_agua_coco}
+                                onChange={(e) => setConfig(prev => ({ ...prev, quantidade_insumo_agua_coco: Number(e.target.value) }))}
+                              />
+                              <span className="text-xs text-muted-foreground">g</span>
+                            </div>
+                          </TableCell>
+                        </TableRow>
                       </TableBody>
                     </Table>
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    A máquina produz <strong>{config.gelos_por_lote}</strong> unidades por lote. Todos os sabores usam <strong>{config.quantidade_insumo_geral}g</strong> de matéria-prima, exceto Água de Coco que usa <strong>{config.quantidade_insumo_agua_coco}g</strong>.
+                  </p>
                   <Button className="w-full" onClick={handleSaveReceitas} disabled={savingRec}>
                     {savingRec ? (
                       <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Salvando...</>
