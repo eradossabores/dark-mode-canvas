@@ -21,6 +21,7 @@ import ClientesInativos from "@/components/dashboard/ClientesInativos";
 import GastosColaboradores from "@/components/dashboard/GastosColaboradores";
 
 const postItCharacters = [sidImg, scratAcornImg, buckImg, scrat3dImg, scratStandingImg, scratHangingImg];
+const ERA_DOS_SABORES_ID = "00000000-0000-0000-0000-000000000001";
 
 const CHART_COLORS = [
   "hsl(270, 60%, 50%)",
