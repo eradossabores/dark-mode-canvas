@@ -10,17 +10,24 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import ConfigVendasSection from "@/components/configurar/ConfigVendasSection";
 
-interface ReceitaConfig {
+interface ReceitaRaw {
   id: string;
   sabor_nome: string;
-  materia_prima_nome: string;
   gelos_por_lote: number;
   quantidade_insumo_por_lote: number;
+  is_agua_de_coco: boolean;
+}
+
+interface ConfigGeral {
+  gelos_por_lote: number;
+  quantidade_insumo_geral: number;
+  quantidade_insumo_agua_coco: number;
 }
 
 export default function ConfigurarFabrica() {
   const { factoryId } = useAuth();
-  const [receitas, setReceitas] = useState<ReceitaConfig[]>([]);
+  const [receitas, setReceitas] = useState<ReceitaRaw[]>([]);
+  const [config, setConfig] = useState<ConfigGeral>({ gelos_por_lote: 84, quantidade_insumo_geral: 400, quantidade_insumo_agua_coco: 500 });
   const [loadingRec, setLoadingRec] = useState(true);
   const [savingRec, setSavingRec] = useState(false);
 
@@ -34,19 +41,25 @@ export default function ConfigurarFabrica() {
     try {
       const { data, error } = await (supabase as any)
         .from("sabor_receita")
-        .select("*, sabores(nome), materias_primas(nome)")
-        .eq("factory_id", factoryId)
-        .order("sabores(nome)");
+        .select("*, sabores(nome)")
+        .eq("factory_id", factoryId);
       if (error) throw error;
-      setReceitas(
-        (data || []).map((r: any) => ({
-          id: r.id,
-          sabor_nome: r.sabores?.nome || "?",
-          materia_prima_nome: r.materias_primas?.nome || "?",
-          gelos_por_lote: r.gelos_por_lote,
-          quantidade_insumo_por_lote: r.quantidade_insumo_por_lote,
-        }))
-      );
+      const list = (data || []).map((r: any) => ({
+        id: r.id,
+        sabor_nome: r.sabores?.nome || "?",
+        gelos_por_lote: r.gelos_por_lote,
+        quantidade_insumo_por_lote: r.quantidade_insumo_por_lote,
+        is_agua_de_coco: (r.sabores?.nome || "").toLowerCase().includes("água de coco") || (r.sabores?.nome || "").toLowerCase().includes("agua de coco"),
+      }));
+      setReceitas(list);
+      // Derive config from first non-agua-de-coco and agua-de-coco
+      const geral = list.find((r: ReceitaRaw) => !r.is_agua_de_coco);
+      const aguaCoco = list.find((r: ReceitaRaw) => r.is_agua_de_coco);
+      setConfig({
+        gelos_por_lote: geral?.gelos_por_lote || 84,
+        quantidade_insumo_geral: geral?.quantidade_insumo_por_lote || 400,
+        quantidade_insumo_agua_coco: aguaCoco?.quantidade_insumo_por_lote || 500,
+      });
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
     } finally {
@@ -54,29 +67,22 @@ export default function ConfigurarFabrica() {
     }
   }
 
-  function updateReceita(idx: number, field: keyof ReceitaConfig, value: number) {
-    setReceitas(prev => {
-      const updated = [...prev];
-      updated[idx] = { ...updated[idx], [field]: value };
-      return updated;
-    });
-  }
-
   async function handleSaveReceitas() {
     setSavingRec(true);
     try {
       for (const r of receitas) {
+        const insumo = r.is_agua_de_coco ? config.quantidade_insumo_agua_coco : config.quantidade_insumo_geral;
         const { error } = await (supabase as any)
           .from("sabor_receita")
           .update({
-            gelos_por_lote: r.gelos_por_lote,
-            quantidade_insumo_por_lote: r.quantidade_insumo_por_lote,
-            embalagens_por_lote: r.gelos_por_lote,
+            gelos_por_lote: config.gelos_por_lote,
+            quantidade_insumo_por_lote: insumo,
+            embalagens_por_lote: config.gelos_por_lote,
           })
           .eq("id", r.id);
         if (error) throw error;
       }
-      toast({ title: `✅ ${receitas.length} receita(s) salvas!` });
+      toast({ title: `✅ Configurações de produção salvas!` });
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
     } finally {
