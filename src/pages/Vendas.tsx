@@ -43,7 +43,7 @@ function normalizeStr(s: string) {
 }
 
 export default function Vendas() {
-  const { factoryId } = useAuth();
+  const { factoryId, role } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const clienteFilter = searchParams.get("cliente") || "";
   const [clientes, setClientes] = useState<any[]>([]);
@@ -143,7 +143,16 @@ export default function Vendas() {
     return filtered;
   }, [vendas, clienteFilter, searchCliente, filtroStatus, filtroPagamento, filtroData]);
 
-  useEffect(() => { loadData(); }, [factoryId]);
+  useEffect(() => {
+    if (role !== "super_admin" && !factoryId) {
+      setClientes([]);
+      setSabores([]);
+      setVendas([]);
+      return;
+    }
+
+    loadData();
+  }, [factoryId, role]);
 
   async function loadHistorico(vendaId: string) {
     const { data } = await (supabase as any)
@@ -180,6 +189,13 @@ export default function Vendas() {
   }
 
   async function loadData() {
+    if (role !== "super_admin" && !factoryId) {
+      setClientes([]);
+      setSabores([]);
+      setVendas([]);
+      return;
+    }
+
     let cQ = (supabase as any).from("clientes").select("id, nome").eq("status", "ativo").order("nome");
     let sQ = (supabase as any).from("sabores").select("*").eq("ativo", true).order("nome");
     let vQ = (supabase as any).from("vendas").select("*, clientes(nome)").order("created_at", { ascending: false }).limit(500);
@@ -297,6 +313,7 @@ export default function Vendas() {
 
       const { data: latestVenda } = await (supabase as any)
         .from("vendas").select("id").eq("cliente_id", clienteId)
+        .eq("factory_id", factoryId)
         .order("created_at", { ascending: false }).limit(1);
       if (latestVenda?.[0]) {
         const totalVendaCalc = itensValidos.reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0);
@@ -312,6 +329,7 @@ export default function Vendas() {
       if (dataVenda.toDateString() !== hoje.toDateString()) {
         const { data: latestVendaData } = await (supabase as any)
           .from("vendas").select("id").eq("cliente_id", clienteId)
+          .eq("factory_id", factoryId)
           .order("created_at", { ascending: false }).limit(1);
         if (latestVendaData?.[0]) {
           const localStr = `${dataVenda.getFullYear()}-${String(dataVenda.getMonth() + 1).padStart(2, "0")}-${String(dataVenda.getDate()).padStart(2, "0")}T12:00:00`;
