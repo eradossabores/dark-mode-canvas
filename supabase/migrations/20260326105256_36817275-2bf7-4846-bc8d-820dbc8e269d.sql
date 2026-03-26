@@ -1,0 +1,1 @@
+UPDATE public.user_roles SET factory_id = '00000000-0000-0000-0000-000000000001' WHERE role = 'super_admin' AND user_id = 'c6cf8d86-ceee-4467-9a97-ef98ea7485c2';
