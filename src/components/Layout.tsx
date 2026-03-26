@@ -145,7 +145,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   // Only show Ice Age theme for the original factory
   const ERA_DOS_SABORES_ID = "00000000-0000-0000-0000-000000000001";
   const isIceAgeFactory = factoryId === ERA_DOS_SABORES_ID;
-  useKeyboardShortcuts();
 
   // Apply factory theme as CSS variables
   useEffect(() => {
