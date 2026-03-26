@@ -44,6 +44,7 @@ export default function SuperAdmin() {
   const [showNewFactory, setShowNewFactory] = useState(false);
   const [creating, setCreating] = useState(false);
   const [editingFactory, setEditingFactory] = useState<FactoryRow | null>(null);
+  const [detailsFactory, setDetailsFactory] = useState<FactoryRow | null>(null);
 
   // New factory form
   const [newFactory, setNewFactory] = useState({
