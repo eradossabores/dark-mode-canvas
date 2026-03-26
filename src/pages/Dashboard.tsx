@@ -214,12 +214,23 @@ export default function Dashboard() {
 
   async function loadStats() {
     try {
+      // Build queries with factory_id filter
+      let gelosQuery = (supabase as any).from("estoque_gelos").select("quantidade, sabor_id, sabores(nome)");
+      let clientesQuery = (supabase as any).from("clientes").select("id").eq("status", "ativo");
+      let vendasQuery = (supabase as any).from("vendas").select("total, created_at, status");
+      let producoesQuery = (supabase as any).from("producoes").select("quantidade_total, created_at");
+      let inativosQuery = (supabase as any).from("clientes").select("id").eq("status", "inativo");
+
+      if (factoryId) {
+        gelosQuery = gelosQuery.eq("factory_id", factoryId);
+        clientesQuery = clientesQuery.eq("factory_id", factoryId);
+        vendasQuery = vendasQuery.eq("factory_id", factoryId);
+        producoesQuery = producoesQuery.eq("factory_id", factoryId);
+        inativosQuery = inativosQuery.eq("factory_id", factoryId);
+      }
+
       const [gelos, clientes, vendas, producoes, inativos] = await Promise.all([
-        (supabase as any).from("estoque_gelos").select("quantidade, sabor_id, sabores(nome)"),
-        (supabase as any).from("clientes").select("id").eq("status", "ativo"),
-        (supabase as any).from("vendas").select("total, created_at, status"),
-        (supabase as any).from("producoes").select("quantidade_total, created_at"),
-        (supabase as any).from("clientes").select("id").eq("status", "inativo"),
+        gelosQuery, clientesQuery, vendasQuery, producoesQuery, inativosQuery,
       ]);
 
       const totalGelos = (gelos.data || []).reduce((s: number, g: any) => s + g.quantidade, 0);
@@ -245,8 +256,9 @@ export default function Dashboard() {
         .reduce((s: number, v: any) => s + Number(v.total), 0);
 
       // Top sabores vendidos
-      const { data: topData } = await (supabase as any)
-        .from("venda_itens").select("sabor_id, quantidade, sabores(nome)");
+      let topQuery = (supabase as any).from("venda_itens").select("sabor_id, quantidade, sabores(nome)");
+      if (factoryId) topQuery = topQuery.eq("factory_id", factoryId);
+      const { data: topData } = await topQuery;
       const saborMap: Record<string, { nome: string; total: number }> = {};
       (topData || []).forEach((item: any) => {
         const id = item.sabor_id;
@@ -266,10 +278,13 @@ export default function Dashboard() {
       setProducaoPorDia(buildChartData(validProd, 7, "created_at", "quantidade_total", false));
 
       // Alertas de estoque baixo
-      const [mpRes, embRes] = await Promise.all([
-        (supabase as any).from("materias_primas").select("nome, estoque_atual, estoque_minimo"),
-        (supabase as any).from("embalagens").select("nome, estoque_atual, estoque_minimo"),
-      ]);
+      let mpQuery = (supabase as any).from("materias_primas").select("nome, estoque_atual, estoque_minimo");
+      let embQuery = (supabase as any).from("embalagens").select("nome, estoque_atual, estoque_minimo");
+      if (factoryId) {
+        mpQuery = mpQuery.eq("factory_id", factoryId);
+        embQuery = embQuery.eq("factory_id", factoryId);
+      }
+      const [mpRes, embRes] = await Promise.all([mpQuery, embQuery]);
       const alertas: any[] = [];
       (mpRes.data || []).forEach((m: any) => {
         if (m.estoque_atual <= m.estoque_minimo) alertas.push({ nome: m.nome, tipo: "Matéria-prima", atual: m.estoque_atual, minimo: m.estoque_minimo });
