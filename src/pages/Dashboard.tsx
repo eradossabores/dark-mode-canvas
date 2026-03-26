@@ -774,15 +774,15 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 opacity-0 animate-fade-in" style={{ animationDelay: "700ms", animationFillMode: "forwards" }}>
         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
           <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
-          <div className="relative"><EstoqueInteligente /></div>
+          <div className="relative"><EstoqueInteligente factoryId={factoryId} /></div>
         </div>
         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
           <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
-          <div className="relative"><RankingClientes /></div>
+          <div className="relative"><RankingClientes factoryId={factoryId} /></div>
         </div>
         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
           <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
-          <div className="relative"><ClientesInativos /></div>
+          <div className="relative"><ClientesInativos factoryId={factoryId} /></div>
         </div>
       </div>
 
