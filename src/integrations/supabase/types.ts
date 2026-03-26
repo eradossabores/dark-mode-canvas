@@ -683,6 +683,38 @@ export type Database = {
         }
         Relationships: []
       }
+      factory_pricing_tiers: {
+        Row: {
+          created_at: string
+          factory_id: string | null
+          id: string
+          preco_unitario: number
+          quantidade_minima: number
+        }
+        Insert: {
+          created_at?: string
+          factory_id?: string | null
+          id?: string
+          preco_unitario?: number
+          quantidade_minima?: number
+        }
+        Update: {
+          created_at?: string
+          factory_id?: string | null
+          id?: string
+          preco_unitario?: number
+          quantidade_minima?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "factory_pricing_tiers_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       followup_mensagens: {
         Row: {
           created_at: string
