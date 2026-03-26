@@ -139,7 +139,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { role, signOut, user, factoryName, branding, impersonatingFactory, clearImpersonation } = useAuth();
+  const { role, signOut, user, factoryId, factoryName, branding, impersonatingFactory, clearImpersonation } = useAuth();
+  useKeyboardShortcuts();
+
+  // Only show Ice Age theme for the original factory
+  const ERA_DOS_SABORES_ID = "00000000-0000-0000-0000-000000000001";
+  const isIceAgeFactory = factoryId === ERA_DOS_SABORES_ID;
   useKeyboardShortcuts();
 
   // Apply factory theme as CSS variables
