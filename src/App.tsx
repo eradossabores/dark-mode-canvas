@@ -40,6 +40,7 @@ import Backup from "@/pages/Backup";
 import PresencaProducao from "@/pages/PresencaProducao";
 import SuperAdmin from "@/pages/SuperAdmin";
 import Suporte from "@/pages/Suporte";
+import ConfigurarFabrica from "@/pages/ConfigurarFabrica";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
