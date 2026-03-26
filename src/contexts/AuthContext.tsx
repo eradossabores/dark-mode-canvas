@@ -275,6 +275,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Track user session time (only for non-impersonating, logged-in users)
+  useSessionTracker(
+    !impersonatingFactory ? user?.id ?? null : null,
+    !impersonatingFactory ? factoryId : null
+  );
+
   return (
     <AuthContext.Provider value={{ user, session, role, approvalStatus, loading, factoryId, factoryName, subscription, branding, signOut, impersonatingFactory, impersonateFactory, clearImpersonation }}>
       {children}
