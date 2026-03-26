@@ -127,7 +127,6 @@ export default function ConfigProducaoDialog({ open, onOpenChange, factoryId }: 
                     <TableHead className="min-w-[120px]">Sabor</TableHead>
                     <TableHead className="text-center min-w-[100px]">Gelos/Lote</TableHead>
                     <TableHead className="text-center min-w-[130px]">Matéria-Prima/Lote</TableHead>
-                    <TableHead className="text-center min-w-[120px]">Embalagens/Lote</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
