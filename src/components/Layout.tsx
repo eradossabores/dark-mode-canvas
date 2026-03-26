@@ -271,18 +271,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <LogOut className="h-4 w-4 shrink-0" />
         {isExpanded && <span>Sair</span>}
       </button>
-      <div className="flex justify-center py-2 border-t border-sidebar-border">
-        <img
-          key={sidebarCharIdx}
-          src={sidebarChar.src}
-          alt=""
-          aria-hidden
-          className={cn(
-            "object-contain pointer-events-none select-none animate-fade-in transition-opacity duration-500",
-            !isExpanded ? "w-10 h-10" : "w-24 h-24"
-          )}
-        />
-      </div>
+      {isIceAgeFactory && (
+        <div className="flex justify-center py-2 border-t border-sidebar-border">
+          <img
+            key={sidebarCharIdx}
+            src={sidebarChar.src}
+            alt=""
+            aria-hidden
+            className={cn(
+              "object-contain pointer-events-none select-none animate-fade-in transition-opacity duration-500",
+              !isExpanded ? "w-10 h-10" : "w-24 h-24"
+            )}
+          />
+        </div>
+      )}
     </>
   );
 
