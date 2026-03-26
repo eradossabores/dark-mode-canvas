@@ -22,6 +22,7 @@ export default function RankingClientes({ factoryId }: { factoryId?: string | nu
         .select("total, cliente_id, clientes(nome), venda_itens(quantidade)");
       if (factoryId) q = q.eq("factory_id", factoryId);
 
+      const { data } = await q;
       const map: Record<string, ClienteRanking> = {};
       (data || []).forEach((v: any) => {
         const nome = v.clientes?.nome || "?";
