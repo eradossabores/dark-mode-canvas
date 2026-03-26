@@ -43,6 +43,7 @@ export default function Producao() {
   const [deleteDayItems, setDeleteDayItems] = useState<any[] | null>(null);
   const [editDayItems, setEditDayItems] = useState<any[] | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [configOpen, setConfigOpen] = useState(false);
 
   interface ProdItem {
     sabor_id: string;
