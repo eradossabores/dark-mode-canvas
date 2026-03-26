@@ -186,7 +186,7 @@ export default function Suporte() {
       await (supabase as any).from("support_messages").insert({
         ticket_id: ticket.id,
         sender_id: user?.id,
-        sender_name: profile?.nome || user?.email || "Usuário",
+        sender_name: userName || user?.email || "Usuário",
         message: newTicket.message,
       });
 
