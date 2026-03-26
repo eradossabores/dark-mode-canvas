@@ -243,7 +243,7 @@ export default function PlanoProducaoDiario() {
   });
   const dataAlvo = diasDisponiveis[diaOffset] || hoje;
   const diaSemana = dataAlvo.getDay();
-  const escalaDoDia = ESCALA_PRODUCAO[diaSemana] || [];
+  const escalaDoDia = factoryId === ERA_DOS_SABORES_ID ? (ESCALA_ERA_DOS_SABORES[diaSemana] || []) : [];
 
   const dataAlvoLabel = dataAlvo.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "2-digit" });
 
