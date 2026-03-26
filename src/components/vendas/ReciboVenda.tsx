@@ -276,7 +276,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     const fileName = `recibo-${data.cliente_nome.replace(/\s+/g, "-")}.pdf`;
     const file = new File([pdfBlob], fileName, { type: "application/pdf" });
 
-    const msg = `*A ERA DOS SABORES*\n\nOla ${data.cliente_nome}, segue seu recibo.\n\nTotal: R$ ${data.total.toFixed(2)}\nData: ${data.data}\nPagamento: ${data.forma_pagamento}`;
+    const msg = `*${factoryName || "Gelos Saborizados"}*\n\nOla ${data.cliente_nome}, segue seu recibo.\n\nTotal: R$ ${data.total.toFixed(2)}\nData: ${data.data}\nPagamento: ${data.forma_pagamento}`;
 
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
       try {
