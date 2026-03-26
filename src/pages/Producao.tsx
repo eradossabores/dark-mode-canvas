@@ -83,7 +83,7 @@ export default function Producao() {
     return dataParam;
   }, [dataParam]);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [factoryId]);
 
   // Scroll to specific date from query param
   useEffect(() => {
@@ -104,11 +104,11 @@ export default function Producao() {
   }, [qtdLotes, modo]);
 
   async function loadData() {
-    const [s, f, p] = await Promise.all([
-      (supabase as any).from("sabores").select("*").eq("ativo", true).order("nome"),
-      (supabase as any).from("funcionarios").select("*").eq("ativo", true).order("nome"),
-      (supabase as any).from("producoes").select("*, sabores(nome)").order("created_at", { ascending: false }).limit(100),
-    ]);
+    let sQ = (supabase as any).from("sabores").select("*").eq("ativo", true).order("nome");
+    let fQ = (supabase as any).from("funcionarios").select("*").eq("ativo", true).order("nome");
+    let pQ = (supabase as any).from("producoes").select("*, sabores(nome)").order("created_at", { ascending: false }).limit(100);
+    if (factoryId) { sQ = sQ.eq("factory_id", factoryId); fQ = fQ.eq("factory_id", factoryId); pQ = pQ.eq("factory_id", factoryId); }
+    const [s, f, p] = await Promise.all([sQ, fQ, pQ]);
     setSabores(s.data || []);
     setFuncionarios(f.data || []);
     setProducoes(p.data || []);

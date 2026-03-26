@@ -64,21 +64,31 @@ export default function Estoque() {
   const [editAvariaLoading, setEditAvariaLoading] = useState(false);
   const [deleteAvariaId, setDeleteAvariaId] = useState<string | null>(null);
   const [deleteAvariaLoading, setDeleteAvariaLoading] = useState(false);
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [factoryId]);
 
   async function loadData() {
-    const [g, m, e, mov] = await Promise.all([
-      (supabase as any).from("estoque_gelos").select("*, sabores(nome)").order("sabores(nome)"),
-      (supabase as any).from("materias_primas").select("*").order("nome"),
-      (supabase as any).from("embalagens").select("*").order("nome"),
-      (supabase as any).from("movimentacoes_estoque").select("*").order("created_at", { ascending: false }).limit(50),
-    ]);
-    const [fz, cli, sab, av] = await Promise.all([
-      (supabase as any).from("estoque_freezer").select("*, clientes(nome), sabores(nome)").order("updated_at", { ascending: false }),
-      (supabase as any).from("clientes").select("id, nome").eq("possui_freezer", true).order("nome"),
-      (supabase as any).from("sabores").select("id, nome").eq("ativo", true).order("nome"),
-      (supabase as any).from("avarias").select("*, sabores(nome)").order("created_at", { ascending: false }).limit(100),
-    ]);
+    let gQ = (supabase as any).from("estoque_gelos").select("*, sabores(nome)").order("sabores(nome)");
+    let mQ = (supabase as any).from("materias_primas").select("*").order("nome");
+    let eQ = (supabase as any).from("embalagens").select("*").order("nome");
+    let movQ = (supabase as any).from("movimentacoes_estoque").select("*").order("created_at", { ascending: false }).limit(50);
+    let fzQ = (supabase as any).from("estoque_freezer").select("*, clientes(nome), sabores(nome)").order("updated_at", { ascending: false });
+    let cliQ = (supabase as any).from("clientes").select("id, nome").eq("possui_freezer", true).order("nome");
+    let sabQ = (supabase as any).from("sabores").select("id, nome").eq("ativo", true).order("nome");
+    let avQ = (supabase as any).from("avarias").select("*, sabores(nome)").order("created_at", { ascending: false }).limit(100);
+
+    if (factoryId) {
+      gQ = gQ.eq("factory_id", factoryId);
+      mQ = mQ.eq("factory_id", factoryId);
+      eQ = eQ.eq("factory_id", factoryId);
+      movQ = movQ.eq("factory_id", factoryId);
+      fzQ = fzQ.eq("factory_id", factoryId);
+      cliQ = cliQ.eq("factory_id", factoryId);
+      sabQ = sabQ.eq("factory_id", factoryId);
+      avQ = avQ.eq("factory_id", factoryId);
+    }
+
+    const [g, m, e, mov] = await Promise.all([gQ, mQ, eQ, movQ]);
+    const [fz, cli, sab, av] = await Promise.all([fzQ, cliQ, sabQ, avQ]);
     setFreezers(fz.data || []);
     setClientes(cli.data || []);
     setSabores(sab.data || []);
