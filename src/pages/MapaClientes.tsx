@@ -32,6 +32,7 @@ interface Cliente {
 type AutoGeocodeStatus = "pendente" | "localizado" | "nao-encontrado";
 
 export default function MapaClientes() {
+  const { factoryId } = useAuth();
   const [searchParams] = useSearchParams();
   const highlightedClienteId = searchParams.get("cliente");
   const [clientes, setClientes] = useState<Cliente[]>([]);
