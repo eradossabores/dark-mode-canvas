@@ -44,6 +44,22 @@ export default function MapaClientes() {
   const [flyTarget, setFlyTarget] = useState<[number, number] | null>(null);
   const [autoGeocoding, setAutoGeocoding] = useState(false);
   const [autoGeocodeStatus, setAutoGeocodeStatus] = useState<Record<string, AutoGeocodeStatus>>({});
+  const [factoryCenter, setFactoryCenter] = useState<[number, number]>(DEFAULT_CENTER);
+  const [factoryName, setFactoryName] = useState<string>("");
+
+  // Load factory location
+  useEffect(() => {
+    if (!factoryId) return;
+    (supabase as any).from("factories").select("latitude, longitude, name").eq("id", factoryId).maybeSingle()
+      .then(({ data }: any) => {
+        if (data) {
+          setFactoryName(data.name || "");
+          if (data.latitude != null && data.longitude != null) {
+            setFactoryCenter([data.latitude, data.longitude]);
+          }
+        }
+      });
+  }, [factoryId]);
 
   function getStatusLabel(status?: AutoGeocodeStatus) {
     switch (status) {
