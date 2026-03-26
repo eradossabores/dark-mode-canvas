@@ -116,8 +116,8 @@ export default function ConfigProducaoDialog({ open, onOpenChange, factoryId }: 
         ) : (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Configure a quantidade de gelos, matéria-prima e embalagens por lote para cada sabor.
-              As embalagens são sincronizadas automaticamente com a quantidade de gelos.
+              Configure a quantidade de gelos e matéria-prima por lote para cada sabor.
+              As embalagens são descontadas automaticamente do estoque (1 por gelo).
             </p>
 
             <div className="rounded-lg border overflow-hidden">
