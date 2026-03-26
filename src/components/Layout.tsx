@@ -139,7 +139,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { role, signOut, user, factoryName, branding } = useAuth();
+  const { role, signOut, user, factoryName, branding, impersonatingFactory, clearImpersonation } = useAuth();
   useKeyboardShortcuts();
 
   // Apply factory theme as CSS variables
@@ -455,6 +455,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
+        {impersonatingFactory && (
+          <div className="bg-primary text-primary-foreground px-4 py-2 flex items-center justify-between text-sm font-medium">
+            <span>🏭 Visualizando fábrica: <strong>{factoryName}</strong></span>
+            <button
+              className="px-3 py-1 rounded-md bg-secondary text-secondary-foreground text-xs font-medium hover:opacity-90 transition-opacity"
+              onClick={() => { clearImpersonation(); navigate("/super-admin"); }}
+            >
+              Sair da Fábrica
+            </button>
+          </div>
+        )}
         <div className="relative p-4 md:p-6 pt-14 md:pt-6" style={{ zIndex: 1 }}>{children}</div>
       </main>
     </div>

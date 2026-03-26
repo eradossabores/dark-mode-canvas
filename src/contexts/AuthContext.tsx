@@ -33,6 +33,9 @@ interface AuthContextType {
   subscription: SubscriptionInfo | null;
   branding: FactoryBranding | null;
   signOut: () => Promise<void>;
+  impersonatingFactory: boolean;
+  impersonateFactory: (factory: { id: string; name: string; logo_url?: string | null; theme?: any }) => void;
+  clearImpersonation: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -46,6 +49,9 @@ const AuthContext = createContext<AuthContextType>({
   subscription: null,
   branding: null,
   signOut: async () => {},
+  impersonatingFactory: false,
+  impersonateFactory: () => {},
+  clearImpersonation: () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -60,6 +66,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [factoryName, setFactoryName] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
   const [branding, setBranding] = useState<FactoryBranding | null>(null);
+
+  // Impersonation state for super admin
+  const [impersonatingFactory, setImpersonatingFactory] = useState(false);
+  const [realFactoryId, setRealFactoryId] = useState<string | null>(null);
+  const [realFactoryName, setRealFactoryName] = useState<string | null>(null);
+  const [realBranding, setRealBranding] = useState<FactoryBranding | null>(null);
+
+  function impersonateFactory(factory: { id: string; name: string; logo_url?: string | null; theme?: any }) {
+    if (!impersonatingFactory) {
+      setRealFactoryId(factoryId);
+      setRealFactoryName(factoryName);
+      setRealBranding(branding);
+    }
+    setFactoryId(factory.id);
+    setFactoryName(factory.name);
+    setBranding({
+      logoUrl: factory.logo_url || null,
+      theme: factory.theme && Object.keys(factory.theme).length > 0 ? factory.theme : null,
+    });
+    setImpersonatingFactory(true);
+  }
+
+  function clearImpersonation() {
+    setFactoryId(realFactoryId);
+    setFactoryName(realFactoryName);
+    setBranding(realBranding);
+    setImpersonatingFactory(false);
+  }
 
   async function fetchRoleAndApproval(userId: string) {
     try {
@@ -241,7 +275,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, role, approvalStatus, loading, factoryId, factoryName, subscription, branding, signOut }}>
+    <AuthContext.Provider value={{ user, session, role, approvalStatus, loading, factoryId, factoryName, subscription, branding, signOut, impersonatingFactory, impersonateFactory, clearImpersonation }}>
       {children}
     </AuthContext.Provider>
   );

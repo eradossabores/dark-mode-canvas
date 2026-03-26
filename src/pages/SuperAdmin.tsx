@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { Factory, Plus, Users, CreditCard, CheckCircle, XCircle, Clock, AlertTriangle, Upload, Pencil, Trash2 } from "lucide-react";
+import { Factory, Plus, Users, CreditCard, CheckCircle, XCircle, Clock, AlertTriangle, Upload, Pencil, Trash2, LogIn } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { extractColorsFromImage } from "@/lib/color-extract";
@@ -35,7 +36,8 @@ interface FactoryRow {
 }
 
 export default function SuperAdmin() {
-  const { user } = useAuth();
+  const { user, impersonateFactory, impersonatingFactory, clearImpersonation } = useAuth();
+  const navigate = useNavigate();
   const [factories, setFactories] = useState<FactoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewFactory, setShowNewFactory] = useState(false);
@@ -462,6 +464,12 @@ export default function SuperAdmin() {
                 )}
 
                 <div className="flex gap-2 pt-2">
+                  <Button size="sm" variant="default" className="flex-1" onClick={() => {
+                    impersonateFactory({ id: factory.id, name: factory.name, logo_url: factory.logo_url, theme: undefined });
+                    navigate("/painel");
+                  }}>
+                    <LogIn className="h-3.5 w-3.5 mr-1" /> Entrar
+                  </Button>
                   <Button size="sm" variant="secondary" className="flex-1" onClick={() => setEditingFactory(factory)}>
                     <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
                   </Button>
