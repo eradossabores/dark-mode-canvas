@@ -144,7 +144,7 @@ function getDailyMessage(userId: string) {
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, factoryId } = useAuth();
   const [userName, setUserName] = useState("");
   const [stats, setStats] = useState({
     totalGelos: 0, totalClientes: 0, totalVendas: 0,
@@ -168,7 +168,7 @@ export default function Dashboard() {
   const [vendasPeriodo, setVendasPeriodo] = useState<ResumoPeriodo>("total");
   const [producoesPeriodo, setProducoesPeriodo] = useState<ResumoPeriodo>("total");
   const [receberPeriodo, setReceberPeriodo] = useState<ResumoPeriodo>("total");
-  useEffect(() => { loadStats(); loadUserName(); }, []);
+  useEffect(() => { loadStats(); loadUserName(); }, [factoryId]);
 
   async function loadUserName() {
     if (!user) return;
