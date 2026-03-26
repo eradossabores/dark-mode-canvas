@@ -26,6 +26,7 @@ const emptyForm = {
 
 export default function Clientes() {
   const navigate = useNavigate();
+  const { factoryId } = useAuth();
   const [clientes, setClientes] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -40,10 +41,12 @@ export default function Clientes() {
     c.nome?.toLowerCase().includes(busca.toLowerCase())
   );
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [factoryId]);
 
   async function loadData() {
-    const { data } = await (supabase as any).from("clientes").select("*").order("nome");
+    let q = (supabase as any).from("clientes").select("*").order("nome");
+    if (factoryId) q = q.eq("factory_id", factoryId);
+    const { data } = await q;
     setClientes(data || []);
   }
 
