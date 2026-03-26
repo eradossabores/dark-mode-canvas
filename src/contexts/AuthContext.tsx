@@ -33,6 +33,9 @@ interface AuthContextType {
   subscription: SubscriptionInfo | null;
   branding: FactoryBranding | null;
   signOut: () => Promise<void>;
+  impersonatingFactory: boolean;
+  impersonateFactory: (factory: { id: string; name: string; logo_url?: string | null; theme?: any }) => void;
+  clearImpersonation: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
