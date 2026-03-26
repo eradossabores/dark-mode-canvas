@@ -67,12 +67,7 @@ export default function ConfigProducaoDialog({ open, onOpenChange, factoryId }: 
   function updateReceita(idx: number, field: keyof ReceitaConfig, value: number) {
     setReceitas((prev) => {
       const updated = [...prev];
-      const item = { ...updated[idx], [field]: value };
-      // Sync embalagens_por_lote with gelos_por_lote (1 embalagem per gelo)
-      if (field === "gelos_por_lote") {
-        item.embalagens_por_lote = value;
-      }
-      updated[idx] = item;
+      updated[idx] = { ...updated[idx], [field]: value };
       return updated;
     });
   }
@@ -86,7 +81,7 @@ export default function ConfigProducaoDialog({ open, onOpenChange, factoryId }: 
           .update({
             gelos_por_lote: r.gelos_por_lote,
             quantidade_insumo_por_lote: r.quantidade_insumo_por_lote,
-            embalagens_por_lote: r.embalagens_por_lote,
+            embalagens_por_lote: r.gelos_por_lote, // auto-sync: 1 embalagem per gelo
           })
           .eq("id", r.id);
         if (error) throw error;
@@ -121,8 +116,8 @@ export default function ConfigProducaoDialog({ open, onOpenChange, factoryId }: 
         ) : (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Configure a quantidade de gelos, matéria-prima e embalagens por lote para cada sabor.
-              As embalagens são sincronizadas automaticamente com a quantidade de gelos.
+              Configure a quantidade de gelos e matéria-prima por lote para cada sabor.
+              As embalagens são descontadas automaticamente do estoque (1 por gelo).
             </p>
 
             <div className="rounded-lg border overflow-hidden">
@@ -132,7 +127,6 @@ export default function ConfigProducaoDialog({ open, onOpenChange, factoryId }: 
                     <TableHead className="min-w-[120px]">Sabor</TableHead>
                     <TableHead className="text-center min-w-[100px]">Gelos/Lote</TableHead>
                     <TableHead className="text-center min-w-[130px]">Matéria-Prima/Lote</TableHead>
-                    <TableHead className="text-center min-w-[120px]">Embalagens/Lote</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -167,16 +161,7 @@ export default function ConfigProducaoDialog({ open, onOpenChange, factoryId }: 
                           />
                           <span className="text-xs text-muted-foreground">g</span>
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          min={1}
-                          className="h-8 text-center text-sm w-20 mx-auto"
-                          value={r.embalagens_por_lote}
-                          onChange={(e) => updateReceita(idx, "embalagens_por_lote", Number(e.target.value))}
-                        />
-                      </TableCell>
+                    </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
