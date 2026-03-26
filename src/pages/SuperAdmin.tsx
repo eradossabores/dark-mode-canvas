@@ -59,6 +59,7 @@ export default function SuperAdmin() {
       const { data: factoriesData, error } = await (supabase as any)
         .from("factories")
         .select("*, subscriptions(*)")
+        .neq("id", "00000000-0000-0000-0000-000000000001")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
