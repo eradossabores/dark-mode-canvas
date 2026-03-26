@@ -175,7 +175,7 @@ export default function Suporte() {
         .from("support_tickets")
         .insert({
           user_id: user?.id,
-          factory_id: profile?.factory_id || null,
+          factory_id: factoryId || null,
           subject: newTicket.subject,
           category: newTicket.category,
         })
