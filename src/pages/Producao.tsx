@@ -19,7 +19,7 @@ import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Plus, Trash2, Pencil, Eye, TrendingUp, CalendarIcon, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, Pencil, Eye, TrendingUp, CalendarIcon, AlertTriangle, Settings } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import Chart3DBarProducao from "@/components/Chart3DBarProducao";
 import ChecklistProducaoDia from "@/components/producao/ChecklistProducaoDia";
