@@ -648,7 +648,9 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          latitude: number | null
           logo_url: string | null
+          longitude: number | null
           max_collaborators: number | null
           name: string
           owner_id: string
@@ -658,7 +660,9 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
+          latitude?: number | null
           logo_url?: string | null
+          longitude?: number | null
           max_collaborators?: number | null
           name: string
           owner_id: string
@@ -668,7 +672,9 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          latitude?: number | null
           logo_url?: string | null
+          longitude?: number | null
           max_collaborators?: number | null
           name?: string
           owner_id?: string

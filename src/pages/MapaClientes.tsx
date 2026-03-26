@@ -15,7 +15,8 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const clienteIcon = createSvgIcon('#2563eb');
 const pendingIcon = createSvgIcon('#dc2626');
-const BOA_VISTA_CENTER: [number, number] = [2.8195, -60.6714];
+const factoryIcon = createSvgIcon('#f59e0b');
+const DEFAULT_CENTER: [number, number] = [2.8195, -60.6714];
 
 interface Cliente {
   id: string;
@@ -43,6 +44,22 @@ export default function MapaClientes() {
   const [flyTarget, setFlyTarget] = useState<[number, number] | null>(null);
   const [autoGeocoding, setAutoGeocoding] = useState(false);
   const [autoGeocodeStatus, setAutoGeocodeStatus] = useState<Record<string, AutoGeocodeStatus>>({});
+  const [factoryCenter, setFactoryCenter] = useState<[number, number]>(DEFAULT_CENTER);
+  const [factoryName, setFactoryName] = useState<string>("");
+
+  // Load factory location
+  useEffect(() => {
+    if (!factoryId) return;
+    (supabase as any).from("factories").select("latitude, longitude, name").eq("id", factoryId).maybeSingle()
+      .then(({ data }: any) => {
+        if (data) {
+          setFactoryName(data.name || "");
+          if (data.latitude != null && data.longitude != null) {
+            setFactoryCenter([data.latitude, data.longitude]);
+          }
+        }
+      });
+  }, [factoryId]);
 
   function getStatusLabel(status?: AutoGeocodeStatus) {
     switch (status) {
@@ -256,6 +273,16 @@ export default function MapaClientes() {
         content: <p className="text-xs text-gray-500">Nova posição</p>,
       },
     }] : []),
+    // Factory marker
+    ...(factoryCenter[0] !== DEFAULT_CENTER[0] || factoryCenter[1] !== DEFAULT_CENTER[1] ? [{
+      id: 'factory-marker',
+      position: factoryCenter,
+      icon: createLabeledSvgIcon('#f59e0b', `🏭 ${factoryName || 'Fábrica'}`, 'large'),
+      popup: {
+        title: `🏭 ${factoryName || 'Fábrica'}`,
+        content: <p className="text-xs text-muted-foreground">Localização da fábrica (ponto de referência)</p>,
+      },
+    }] : []),
   ];
 
   return (
@@ -348,7 +375,7 @@ export default function MapaClientes() {
         <div className="lg:col-span-3">
           <Card className="overflow-hidden">
             <AdvancedMap
-              center={BOA_VISTA_CENTER}
+              center={factoryCenter}
               zoom={13}
               markers={markers}
               onMapClick={handleMapClick}

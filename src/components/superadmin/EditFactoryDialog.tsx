@@ -16,6 +16,8 @@ interface EditFactoryDialogProps {
     name: string;
     logo_url: string | null;
     max_collaborators: number;
+    latitude?: number | null;
+    longitude?: number | null;
     subscription?: {
       amount: number;
     };
@@ -29,6 +31,8 @@ export default function EditFactoryDialog({ open, onOpenChange, factory, onSaved
   const [amount, setAmount] = useState(factory.subscription?.amount ?? 99.90);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(factory.logo_url);
+  const [latitude, setLatitude] = useState(factory.latitude?.toString() || "");
+  const [longitude, setLongitude] = useState(factory.longitude?.toString() || "");
   const [saving, setSaving] = useState(false);
 
   async function handleSave() {
@@ -55,6 +59,8 @@ export default function EditFactoryDialog({ open, onOpenChange, factory, onSaved
         name,
         max_collaborators: maxCollab,
         logo_url: logoUrl,
+        latitude: latitude ? parseFloat(latitude) : null,
+        longitude: longitude ? parseFloat(longitude) : null,
       };
       if (theme) updateData.theme = theme;
 
@@ -154,6 +160,30 @@ export default function EditFactoryDialog({ open, onOpenChange, factory, onSaved
               onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
             />
           </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Latitude</Label>
+              <Input
+                type="number"
+                step="0.0001"
+                placeholder="Ex: 2.8195"
+                value={latitude}
+                onChange={(e) => setLatitude(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Longitude</Label>
+              <Input
+                type="number"
+                step="0.0001"
+                placeholder="Ex: -60.6714"
+                value={longitude}
+                onChange={(e) => setLongitude(e.target.value)}
+              />
+            </div>
+          </div>
+          <p className="text-[10px] text-muted-foreground -mt-2">📍 Coordenadas da fábrica (usadas como referência no mapa)</p>
 
           <Button className="w-full" onClick={handleSave} disabled={saving}>
             {saving ? "Salvando..." : "Salvar Alterações"}
