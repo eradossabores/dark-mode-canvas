@@ -15,6 +15,7 @@ import { Plus, Minus, Trash2, ClipboardList, Eye, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useAuth } from "@/contexts/AuthContext";
 
 // ... keep existing code (statusLabels, statusColors, ItemPedido interface)
 const statusLabels: Record<string, string> = {
