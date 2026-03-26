@@ -23,7 +23,7 @@ function calcularDistancia(lat1: number, lon1: number, lat2: number, lon2: numbe
 }
 
 export default function PresencaProducao() {
-  const { user } = useAuth();
+  const { user, factoryId, role } = useAuth();
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
   const [presencas, setPresencas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,11 +39,20 @@ export default function PresencaProducao() {
   })();
 
   useEffect(() => {
+    if (role !== "super_admin" && !factoryId) {
+      setFuncionarios([]);
+      setPresencas([]);
+      setLoading(false);
+      return;
+    }
+
     loadData();
-  }, [dataFiltro]);
+  }, [dataFiltro, factoryId, role]);
 
   // Realtime subscription
   useEffect(() => {
+    if (role !== "super_admin" && !factoryId) return;
+
     const channel = supabase
       .channel("presenca-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "presenca_producao" }, () => {
@@ -51,12 +60,22 @@ export default function PresencaProducao() {
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [dataFiltro]);
+  }, [dataFiltro, factoryId, role]);
 
   async function loadData() {
+    if (role !== "super_admin" && !factoryId) {
+      setFuncionarios([]);
+      setPresencas([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
+    let funcionariosQuery = (supabase as any).from("funcionarios").select("*").eq("ativo", true).order("nome");
+    if (factoryId) funcionariosQuery = funcionariosQuery.eq("factory_id", factoryId);
+
     const [f, p] = await Promise.all([
-      (supabase as any).from("funcionarios").select("*").eq("ativo", true).order("nome"),
+      funcionariosQuery,
       loadPresencasRaw(),
     ]);
     setFuncionarios(f.data || []);
@@ -65,10 +84,12 @@ export default function PresencaProducao() {
   }
 
   async function loadPresencasRaw() {
-    const { data } = await (supabase as any)
+    let query = (supabase as any)
       .from("presenca_producao")
       .select("*, funcionarios(nome), profiles:confirmado_por(nome)")
       .eq("data", dataFiltro);
+    if (factoryId) query = query.eq("factory_id", factoryId);
+    const { data } = await query;
     return data || [];
   }
 
@@ -122,6 +143,7 @@ export default function PresencaProducao() {
           funcionario_id: funcionarioId,
           data: dataFiltro,
           confirmado_por: user?.id,
+          factory_id: factoryId,
         });
         if (error) throw error;
         toast({ title: `Presença confirmada! ✅`, description: `Distância da fábrica: ${loc.distancia}m` });
