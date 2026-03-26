@@ -15,8 +15,10 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import logoRecibo from "@/assets/logo-recibo.png";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function AReceber() {
+  const { factoryId, role } = useAuth();
   const [vendas, setVendas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [abaterVenda, setAbaterVenda] = useState<any>(null);
@@ -43,15 +45,20 @@ export default function AReceber() {
   const [valorPixLote, setValorPixLote] = useState("");
   const [valorEspecieLote, setValorEspecieLote] = useState("");
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    if (role !== "super_admin" && !factoryId) { setVendas([]); setLoading(false); return; }
+    loadData();
+  }, [factoryId, role]);
 
   async function loadData() {
     setLoading(true);
-    const { data } = await (supabase as any)
+    let q = (supabase as any)
       .from("vendas")
       .select("*, clientes(nome, telefone)")
       .eq("status", "pendente")
       .order("created_at", { ascending: true });
+    if (factoryId) q = q.eq("factory_id", factoryId);
+    const { data } = await q;
     setVendas(data || []);
     setLoading(false);
   }

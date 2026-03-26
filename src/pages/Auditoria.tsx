@@ -7,8 +7,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Undo2, Loader2, AlertTriangle, Trash2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Auditoria() {
+  const { factoryId, role } = useAuth();
   const [logs, setLogs] = useState<any[]>([]);
   const [undoingId, setUndoingId] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -19,10 +21,15 @@ export default function Auditoria() {
   const [deletingAll, setDeletingAll] = useState(false);
   const [deletingImported, setDeletingImported] = useState(false);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    if (role !== "super_admin" && !factoryId) { setLogs([]); return; }
+    loadData();
+  }, [factoryId, role]);
 
   async function loadData() {
-    const { data } = await (supabase as any).from("auditoria").select("*").order("created_at", { ascending: false }).limit(100);
+    let q = (supabase as any).from("auditoria").select("*").order("created_at", { ascending: false }).limit(100);
+    if (factoryId) q = q.eq("factory_id", factoryId);
+    const { data } = await q;
     setLogs(data || []);
   }
 

@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { RefreshCw, Database, Package, Factory, ShoppingCart } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Diagnostico() {
+  const { factoryId, role } = useAuth();
   const [loading, setLoading] = useState(true);
   const [mesAno, setMesAno] = useState(() => {
     const now = new Date();
@@ -24,7 +26,10 @@ export default function Diagnostico() {
     totalFaturamento: 0,
   });
 
-  useEffect(() => { loadAll(); }, [mesAno]);
+  useEffect(() => {
+    if (role !== "super_admin" && !factoryId) return;
+    loadAll();
+  }, [mesAno, factoryId, role]);
 
   async function loadAll() {
     setLoading(true);
@@ -35,13 +40,22 @@ export default function Diagnostico() {
       const endYear = month === 12 ? year + 1 : year;
       const endDate = `${endYear}-${String(endMonth).padStart(2, "0")}-01`;
 
+      let gelosQ = (supabase as any).from("estoque_gelos").select("*, sabores(nome)");
+      let prodQ = (supabase as any).from("producoes").select("sabor_id, quantidade_total, sabores(nome)")
+        .gte("created_at", startDate).lt("created_at", endDate);
+      let viQ = (supabase as any).from("venda_itens").select("sabor_id, quantidade, subtotal, sabores(nome), venda_id");
+      let vendasQ = (supabase as any).from("vendas").select("id, total, status, created_at")
+        .gte("created_at", startDate).lt("created_at", endDate);
+
+      if (factoryId) {
+        gelosQ = gelosQ.eq("factory_id", factoryId);
+        prodQ = prodQ.eq("factory_id", factoryId);
+        viQ = viQ.eq("factory_id", factoryId);
+        vendasQ = vendasQ.eq("factory_id", factoryId);
+      }
+
       const [gelosRes, producoesRes, vendasItensRes, vendasRes] = await Promise.all([
-        (supabase as any).from("estoque_gelos").select("*, sabores(nome)"),
-        (supabase as any).from("producoes").select("sabor_id, quantidade_total, sabores(nome)")
-          .gte("created_at", startDate).lt("created_at", endDate),
-        (supabase as any).from("venda_itens").select("sabor_id, quantidade, subtotal, sabores(nome), venda_id"),
-        (supabase as any).from("vendas").select("id, total, status, created_at")
-          .gte("created_at", startDate).lt("created_at", endDate),
+        gelosQ, prodQ, viQ, vendasQ,
       ]);
 
       // Estoque atual
