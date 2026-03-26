@@ -81,7 +81,7 @@ export default function ConfigProducaoDialog({ open, onOpenChange, factoryId }: 
           .update({
             gelos_por_lote: r.gelos_por_lote,
             quantidade_insumo_por_lote: r.quantidade_insumo_por_lote,
-            embalagens_por_lote: r.embalagens_por_lote,
+            embalagens_por_lote: r.gelos_por_lote, // auto-sync: 1 embalagem per gelo
           })
           .eq("id", r.id);
         if (error) throw error;
