@@ -24,6 +24,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import Chart3DBarProducao from "@/components/Chart3DBarProducao";
 import ChecklistProducaoDia from "@/components/producao/ChecklistProducaoDia";
 import EditDayProducoesDialog from "@/components/producao/EditDayProducoesDialog";
+import ConfigProducaoDialog from "@/components/producao/ConfigProducaoDialog";
 
 export default function Producao() {
   const { factoryId } = useAuth();
