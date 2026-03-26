@@ -267,12 +267,14 @@ export default function PlanoProducaoDiario() {
 
   async function fetchHistorico() {
     try {
-      const { data, error } = await (supabase as any)
+      let hq = (supabase as any)
         .from("decisoes_producao")
         .select("*")
         .gt("lotes_autorizados", 0)
         .order("created_at", { ascending: false })
         .limit(500);
+      if (factoryId) hq = hq.eq("factory_id", factoryId);
+      const { data, error } = await hq;
       if (error) throw error;
 
       const porDia: Record<string, any[]> = {};
