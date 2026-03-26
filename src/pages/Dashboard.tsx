@@ -607,7 +607,7 @@ export default function Dashboard() {
       })()}
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mb-4 sm:mb-6">
         {cards.map((c: any, idx: number) => (
           <div key={c.title} className="relative self-start overflow-hidden rounded-xl border border-transparent p-0.5 opacity-0 animate-fade-in" style={{ animationDelay: `${idx * 80}ms`, animationFillMode: "forwards" }}>
             <GlowingEffect
