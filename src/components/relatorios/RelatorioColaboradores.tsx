@@ -9,10 +9,12 @@ import DateRangeFilter from "./DateRangeFilter";
 import KpiCard from "./KpiCard";
 import ExportButtons from "./ExportButtons";
 import { exportToPDF, exportToExcel } from "@/lib/export-utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 const COLORS = ["hsl(200,98%,39%)", "hsl(213,93%,67%)", "hsl(38,92%,50%)", "hsl(142,71%,45%)", "hsl(215,20%,65%)", "hsl(0,72%,50%)"];
 
 export default function RelatorioColaboradores() {
+  const { factoryId } = useAuth();
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
   const [producaoFunc, setProducaoFunc] = useState<any[]>([]);
   const [startDate, setStartDate] = useState<Date | undefined>(
@@ -21,14 +23,14 @@ export default function RelatorioColaboradores() {
   const [endDate, setEndDate] = useState<Date | undefined>(new Date());
   const [previewLoaded, setPreviewLoaded] = useState(false);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [factoryId]);
   useEffect(() => { setPreviewLoaded(false); }, [startDate, endDate]);
 
   async function loadData() {
-    const [f, pf] = await Promise.all([
-      (supabase as any).from("funcionarios").select("*"),
-      (supabase as any).from("producao_funcionarios").select("*, funcionarios(nome, tipo_pagamento, valor_pagamento), producoes(created_at)"),
-    ]);
+    let fQ = (supabase as any).from("funcionarios").select("*");
+    let pfQ = (supabase as any).from("producao_funcionarios").select("*, funcionarios(nome, tipo_pagamento, valor_pagamento), producoes(created_at)");
+    if (factoryId) { fQ = fQ.eq("factory_id", factoryId); pfQ = pfQ.eq("factory_id", factoryId); }
+    const [f, pf] = await Promise.all([fQ, pfQ]);
     setFuncionarios(f.data || []);
     setProducaoFunc(pf.data || []);
   }

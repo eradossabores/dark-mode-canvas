@@ -11,6 +11,7 @@ import EditPedidoDialog from "@/components/monitor/EditPedidoDialog";
 import MonitorTopBar from "@/components/monitor/MonitorTopBar";
 import { useMonitorAlerts } from "@/hooks/useMonitorAlerts";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { format, isPast, isToday, isTomorrow, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 function getElapsedTime(createdAt: string): string {
@@ -204,23 +205,29 @@ export default function MonitorProducao() {
     return () => document.removeEventListener("fullscreenchange", handleChange);
   }, []);
 
+  const { factoryId } = useAuth();
+
   const { data: gelos } = useQuery({
-    queryKey: ["monitor-gelos"],
+    queryKey: ["monitor-gelos", factoryId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("estoque_gelos").select("*, sabores(nome)").order("quantidade", { ascending: false });
+      let q = supabase.from("estoque_gelos").select("*, sabores(nome)").order("quantidade", { ascending: false });
+      if (factoryId) q = q.eq("factory_id", factoryId);
+      const { data, error } = await q;
       if (error) throw error;
       return data || [];
     },
   });
 
   const { data: pedidos, isLoading } = useQuery({
-    queryKey: ["monitor-pedidos"],
+    queryKey: ["monitor-pedidos", factoryId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("pedidos_producao")
         .select("*, clientes(nome), pedido_producao_itens(*, sabores(nome))")
         .in("status", ["aguardando_producao", "em_producao", "separado_para_entrega", "retirado"])
         .order("data_entrega", { ascending: true });
+      if (factoryId) q = q.eq("factory_id", factoryId);
+      const { data, error } = await q;
       if (error) throw error;
       return data;
     },
@@ -228,13 +235,15 @@ export default function MonitorProducao() {
 
   // Public portal orders
   const { data: pedidosPublicos } = useQuery({
-    queryKey: ["monitor-pedidos-publicos"],
+    queryKey: ["monitor-pedidos-publicos", factoryId],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      let q = (supabase as any)
         .from("pedidos_publicos")
         .select("*")
         .eq("status", "pendente")
         .order("created_at", { ascending: true });
+      if (factoryId) q = q.eq("factory_id", factoryId);
+      const { data, error } = await q;
       if (error) throw error;
       return data || [];
     },

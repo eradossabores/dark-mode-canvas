@@ -11,8 +11,10 @@ import DateRangeFilter from "./DateRangeFilter";
 import KpiCard from "./KpiCard";
 import ExportButtons from "./ExportButtons";
 import { exportToPDF, exportToExcel } from "@/lib/export-utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function RelatorioEstoque() {
+  const { factoryId } = useAuth();
   const [gelos, setGelos] = useState<any[]>([]);
   const [materias, setMaterias] = useState<any[]>([]);
   const [embalagens, setEmbalagens] = useState<any[]>([]);
@@ -24,17 +26,17 @@ export default function RelatorioEstoque() {
   const [filtroTipo, setFiltroTipo] = useState("todos");
   const [previewLoaded, setPreviewLoaded] = useState(false);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [factoryId]);
 
   useEffect(() => { setPreviewLoaded(false); }, [startDate, endDate, filtroTipo]);
 
   async function loadData() {
-    const [g, m, e, mv] = await Promise.all([
-      (supabase as any).from("estoque_gelos").select("*, sabores(nome)"),
-      (supabase as any).from("materias_primas").select("*"),
-      (supabase as any).from("embalagens").select("*"),
-      (supabase as any).from("movimentacoes_estoque").select("*").order("created_at", { ascending: false }).limit(500),
-    ]);
+    let gQ = (supabase as any).from("estoque_gelos").select("*, sabores(nome)");
+    let mQ = (supabase as any).from("materias_primas").select("*");
+    let eQ = (supabase as any).from("embalagens").select("*");
+    let mvQ = (supabase as any).from("movimentacoes_estoque").select("*").order("created_at", { ascending: false }).limit(500);
+    if (factoryId) { gQ = gQ.eq("factory_id", factoryId); mQ = mQ.eq("factory_id", factoryId); eQ = eQ.eq("factory_id", factoryId); mvQ = mvQ.eq("factory_id", factoryId); }
+    const [g, m, e, mv] = await Promise.all([gQ, mQ, eQ, mvQ]);
     setGelos(g.data || []);
     setMaterias(m.data || []);
     setEmbalagens(e.data || []);

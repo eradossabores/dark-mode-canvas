@@ -12,6 +12,7 @@ import DateRangeFilter from "./DateRangeFilter";
 import KpiCard from "./KpiCard";
 import ExportButtons from "./ExportButtons";
 import { exportToPDF, exportToExcel } from "@/lib/export-utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 const COLORS = ["hsl(200,98%,39%)", "hsl(213,93%,67%)", "hsl(38,92%,50%)", "hsl(142,71%,45%)", "hsl(215,20%,65%)", "hsl(0,72%,50%)"];
 
@@ -32,6 +33,7 @@ const STATUS_VENDA = [
 ];
 
 export default function RelatorioVendas() {
+  const { factoryId } = useAuth();
   const [vendas, setVendas] = useState<any[]>([]);
   const [itens, setItens] = useState<any[]>([]);
   const [startDate, setStartDate] = useState<Date | undefined>(
@@ -44,15 +46,15 @@ export default function RelatorioVendas() {
   const [filtroOperador, setFiltroOperador] = useState("todos");
   const [previewLoaded, setPreviewLoaded] = useState(false);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [factoryId]);
 
   useEffect(() => { setPreviewLoaded(false); }, [startDate, endDate, filtroPagamento, filtroStatus, filtroCliente, filtroOperador]);
 
   async function loadData() {
-    const [v, it] = await Promise.all([
-      (supabase as any).from("vendas").select("*, clientes(nome)").order("created_at", { ascending: false }),
-      (supabase as any).from("venda_itens").select("*, sabores(nome)"),
-    ]);
+    let vQ = (supabase as any).from("vendas").select("*, clientes(nome)").order("created_at", { ascending: false });
+    let iQ = (supabase as any).from("venda_itens").select("*, sabores(nome)");
+    if (factoryId) { vQ = vQ.eq("factory_id", factoryId); iQ = iQ.eq("factory_id", factoryId); }
+    const [v, it] = await Promise.all([vQ, iQ]);
     setVendas(v.data || []);
     setItens(it.data || []);
   }

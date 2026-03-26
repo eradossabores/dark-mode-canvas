@@ -16,6 +16,7 @@ import { toast } from "@/hooks/use-toast";
 import { DollarSign, Plus, Pencil, Trash2, Loader2, TrendingDown, Receipt, CircleDollarSign, AlertTriangle, Check, X, CalendarDays } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ContaPagar {
   id: string;
@@ -34,6 +35,7 @@ interface ContaPagar {
 }
 
 export default function ContasAPagar() {
+  const { factoryId, role } = useAuth();
   const [contas, setContas] = useState<ContaPagar[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -65,12 +67,17 @@ export default function ContasAPagar() {
   const [editValorTotal, setEditValorTotal] = useState("");
   const [editValorRestante, setEditValorRestante] = useState("");
 
-  useEffect(() => { loadContas(); }, []);
+  useEffect(() => {
+    if (role !== "super_admin" && !factoryId) { setContas([]); setLoading(false); return; }
+    loadContas();
+  }, [factoryId, role]);
 
   async function loadContas() {
     setLoading(true);
-    const { data, error } = await (supabase as any)
+    let q = (supabase as any)
       .from("contas_a_pagar").select("*").eq("ativa", true).order("created_at");
+    if (factoryId) q = q.eq("factory_id", factoryId);
+    const { data, error } = await q;
     if (error) { console.error(error); }
     setContas(data || []);
     setLoading(false);
@@ -98,6 +105,7 @@ export default function ContasAPagar() {
       tipo,
       valor_total: vt,
       valor_restante: Math.max(0, vr),
+      factory_id: factoryId,
     });
     setSaving(false);
     if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });

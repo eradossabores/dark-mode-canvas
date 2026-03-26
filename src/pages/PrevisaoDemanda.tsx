@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, TrendingDown, Minus, Brain, RefreshCw } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface PrevisaoSabor {
   nome: string;
@@ -17,18 +18,25 @@ interface PrevisaoSabor {
 }
 
 export default function PrevisaoDemanda() {
+  const { factoryId, role } = useAuth();
   const [previsoes, setPrevisoes] = useState<PrevisaoSabor[]>([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => { calcular(); }, []);
+  useEffect(() => {
+    if (role !== "super_admin" && !factoryId) return;
+    calcular();
+  }, [factoryId, role]);
 
   async function calcular() {
     setLoading(true);
     try {
-      const [vendasRes, gelosRes] = await Promise.all([
-        (supabase as any).from("venda_itens").select("sabor_id, quantidade, sabores(nome), vendas!inner(created_at, status)"),
-        (supabase as any).from("estoque_gelos").select("quantidade, sabores(nome, id)"),
-      ]);
+      let vendasQ = (supabase as any).from("venda_itens").select("sabor_id, quantidade, sabores(nome), vendas!inner(created_at, status)");
+      let gelosQ = (supabase as any).from("estoque_gelos").select("quantidade, sabores(nome, id)");
+      if (factoryId) {
+        vendasQ = vendasQ.eq("factory_id", factoryId);
+        gelosQ = gelosQ.eq("factory_id", factoryId);
+      }
+      const [vendasRes, gelosRes] = await Promise.all([vendasQ, gelosQ]);
 
       const vendaItens = (vendasRes.data || []).filter((v: any) => v.vendas?.status !== "cancelada");
       const gelos = gelosRes.data || [];

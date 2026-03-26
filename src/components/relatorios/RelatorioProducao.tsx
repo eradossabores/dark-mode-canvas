@@ -11,10 +11,12 @@ import DateRangeFilter from "./DateRangeFilter";
 import KpiCard from "./KpiCard";
 import ExportButtons from "./ExportButtons";
 import { exportToPDF, exportToExcel } from "@/lib/export-utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 const COLORS = ["hsl(200,98%,39%)", "hsl(213,93%,67%)", "hsl(215,20%,65%)", "hsl(38,92%,50%)", "hsl(142,71%,45%)", "hsl(0,72%,50%)"];
 
 export default function RelatorioProducao() {
+  const { factoryId } = useAuth();
   const [producoes, setProducoes] = useState<any[]>([]);
   const [sabores, setSabores] = useState<any[]>([]);
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
@@ -27,17 +29,17 @@ export default function RelatorioProducao() {
   const [filtroResp, setFiltroResp] = useState("todos");
   const [previewLoaded, setPreviewLoaded] = useState(false);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [factoryId]);
 
   useEffect(() => { setPreviewLoaded(false); }, [startDate, endDate, filtroSabor, filtroResp]);
 
   async function loadData() {
-    const [p, s, f, pf] = await Promise.all([
-      (supabase as any).from("producoes").select("*, sabores(nome)").order("created_at", { ascending: false }),
-      (supabase as any).from("sabores").select("id, nome"),
-      (supabase as any).from("funcionarios").select("id, nome"),
-      (supabase as any).from("producao_funcionarios").select("*, funcionarios(nome)"),
-    ]);
+    let pQ = (supabase as any).from("producoes").select("*, sabores(nome)").order("created_at", { ascending: false });
+    let sQ = (supabase as any).from("sabores").select("id, nome");
+    let fQ = (supabase as any).from("funcionarios").select("id, nome");
+    let pfQ = (supabase as any).from("producao_funcionarios").select("*, funcionarios(nome)");
+    if (factoryId) { pQ = pQ.eq("factory_id", factoryId); sQ = sQ.eq("factory_id", factoryId); fQ = fQ.eq("factory_id", factoryId); pfQ = pfQ.eq("factory_id", factoryId); }
+    const [p, s, f, pf] = await Promise.all([pQ, sQ, fQ, pfQ]);
     setProducoes(p.data || []);
     setSabores(s.data || []);
     setFuncionarios(f.data || []);

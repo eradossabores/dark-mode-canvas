@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MapPin, Truck, Package, Filter } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAuth } from "@/contexts/AuthContext";
 
 const BAIRRO_COLORS: Record<string, string> = {};
 const COLOR_PALETTE = [
@@ -40,19 +41,25 @@ interface PedidoEntrega {
 }
 
 export default function MapaEntregas() {
+  const { factoryId, role } = useAuth();
   const [pedidos, setPedidos] = useState<PedidoEntrega[]>([]);
   const [filtroStatus, setFiltroStatus] = useState<string>("todos");
   const [filtroBairro, setFiltroBairro] = useState<string>("todos");
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    if (role !== "super_admin" && !factoryId) { setPedidos([]); return; }
+    loadData();
+  }, [factoryId, role]);
 
   async function loadData() {
     try {
-      const { data } = await (supabase as any)
+      let q = (supabase as any)
         .from("pedidos_producao")
         .select("*, clientes(nome, bairro, endereco, cidade), pedido_producao_itens(quantidade)")
         .in("status", ["separado_para_entrega", "em_producao", "aguardando_producao"])
         .order("data_entrega");
+      if (factoryId) q = q.eq("factory_id", factoryId);
+      const { data } = await q;
 
       const mapped: PedidoEntrega[] = (data || []).map((p: any) => ({
         id: p.id,

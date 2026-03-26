@@ -11,6 +11,7 @@ import { MapPin, Save, X, Users, RefreshCw, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { geocodeClienteAddress, hasAddressForGeocoding } from "@/lib/geocoding";
+import { useAuth } from "@/contexts/AuthContext";
 
 const clienteIcon = createSvgIcon('#2563eb');
 const pendingIcon = createSvgIcon('#dc2626');
@@ -31,6 +32,7 @@ interface Cliente {
 type AutoGeocodeStatus = "pendente" | "localizado" | "nao-encontrado";
 
 export default function MapaClientes() {
+  const { factoryId } = useAuth();
   const [searchParams] = useSearchParams();
   const highlightedClienteId = searchParams.get("cliente");
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -108,7 +110,7 @@ export default function MapaClientes() {
     }
   }, []);
 
-  useEffect(() => { void loadClientes(); }, []);
+  useEffect(() => { void loadClientes(); }, [factoryId]);
 
   useEffect(() => {
     if (!highlightedClienteId || clientes.length === 0) return;
@@ -122,7 +124,7 @@ export default function MapaClientes() {
   }, [clientes, highlightedClienteId]);
 
   async function loadClientes(runAutoGeocode = true) {
-    const { data } = await (supabase as any)
+    let q = (supabase as any)
       .from("clientes")
       .select("id, nome, bairro, endereco, telefone, status, latitude, longitude, possui_freezer")
       .eq("status", "ativo")
@@ -130,6 +132,8 @@ export default function MapaClientes() {
       .not("nome", "ilike", "%combo%")
       .not("nome", "ilike", "%avulso%")
       .order("nome");
+    if (factoryId) q = q.eq("factory_id", factoryId);
+    const { data } = await q;
 
     const lista = data || [];
     setClientes(lista);
