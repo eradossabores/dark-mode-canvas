@@ -18,7 +18,29 @@ import logoRecibo from "@/assets/logo-recibo.png";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function AReceber() {
-  const { factoryId, role } = useAuth();
+  const { factoryId, role, branding, factoryName } = useAuth();
+  const [factoryLogo, setFactoryLogo] = useState<string>(logoRecibo);
+
+  useEffect(() => {
+    if (branding?.logoUrl) {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          setFactoryLogo(canvas.toDataURL("image/png"));
+        }
+      };
+      img.onerror = () => setFactoryLogo(logoRecibo);
+      img.src = branding.logoUrl;
+    } else {
+      setFactoryLogo(logoRecibo);
+    }
+  }, [branding?.logoUrl]);
   const [vendas, setVendas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [abaterVenda, setAbaterVenda] = useState<any>(null);
