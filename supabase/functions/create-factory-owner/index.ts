@@ -1,6 +1,15 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
+const DEFAULT_SABORES = [
+  "Tradicional",
+  "Limão",
+  "Morango",
+  "Maracujá",
+  "Abacaxi",
+  "Uva",
+];
+
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
@@ -85,7 +94,6 @@ Deno.serve(async (req) => {
       .single();
 
     if (factoryError) {
-      // Cleanup: delete the user if factory creation fails
       await adminClient.auth.admin.deleteUser(newUser.user.id);
       return new Response(JSON.stringify({ error: factoryError.message }), {
         status: 400,
@@ -93,13 +101,15 @@ Deno.serve(async (req) => {
       });
     }
 
+    const factoryId = factory.id;
+
     // 3. Assign factory_owner role with factory_id
     const { error: roleError } = await adminClient
       .from("user_roles")
       .insert({
         user_id: newUser.user.id,
         role: "factory_owner",
-        factory_id: factory.id,
+        factory_id: factoryId,
       });
 
     if (roleError) {
@@ -113,7 +123,7 @@ Deno.serve(async (req) => {
     const { error: subError } = await adminClient
       .from("subscriptions")
       .insert({
-        factory_id: factory.id,
+        factory_id: factoryId,
         status: "trial",
         trial_start: new Date().toISOString(),
         amount: 99.90,
@@ -129,13 +139,71 @@ Deno.serve(async (req) => {
     // 5. Update profile with factory_id
     await adminClient
       .from("profiles")
-      .update({ factory_id: factory.id })
+      .update({ factory_id: factoryId })
       .eq("id", newUser.user.id);
+
+    // 6. Seed default sabores for the new factory
+    const saboresRows = DEFAULT_SABORES.map((nome) => ({
+      nome,
+      factory_id: factoryId,
+      ativo: true,
+    }));
+
+    const { data: saboresData, error: saboresError } = await adminClient
+      .from("sabores")
+      .insert(saboresRows)
+      .select("id, nome");
+
+    if (saboresError) {
+      console.error("Erro ao criar sabores padrão:", saboresError.message);
+    }
+
+    // 7. Seed estoque_gelos zerado for each sabor
+    if (saboresData && saboresData.length > 0) {
+      const estoqueRows = saboresData.map((s: any) => ({
+        sabor_id: s.id,
+        factory_id: factoryId,
+        quantidade: 0,
+      }));
+
+      const { error: estoqueError } = await adminClient
+        .from("estoque_gelos")
+        .insert(estoqueRows);
+
+      if (estoqueError) {
+        console.error("Erro ao criar estoque inicial:", estoqueError.message);
+      }
+    }
+
+    // 8. Seed default matéria-prima
+    const { error: mpError } = await adminClient
+      .from("materias_primas")
+      .insert([
+        { nome: "Polpa de Fruta", factory_id: factoryId, unidade: "g", estoque_atual: 0, estoque_minimo: 500 },
+        { nome: "Açúcar", factory_id: factoryId, unidade: "g", estoque_atual: 0, estoque_minimo: 1000 },
+        { nome: "Água Filtrada", factory_id: factoryId, unidade: "ml", estoque_atual: 0, estoque_minimo: 5000 },
+      ]);
+
+    if (mpError) {
+      console.error("Erro ao criar matérias-primas padrão:", mpError.message);
+    }
+
+    // 9. Seed default embalagem
+    const { error: embError } = await adminClient
+      .from("embalagens")
+      .insert([
+        { nome: "Saquinho Padrão", factory_id: factoryId, estoque_atual: 0, estoque_minimo: 100 },
+      ]);
+
+    if (embError) {
+      console.error("Erro ao criar embalagens padrão:", embError.message);
+    }
 
     return new Response(JSON.stringify({
       success: true,
       user_id: newUser.user.id,
-      factory_id: factory.id,
+      factory_id: factoryId,
+      sabores_criados: saboresData?.length || 0,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
