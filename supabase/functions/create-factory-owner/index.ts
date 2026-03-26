@@ -2,12 +2,17 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
 const DEFAULT_SABORES = [
-  "Tradicional",
-  "Limão",
-  "Morango",
+  "Melancia",
+  "Maçã Verde",
+  "Água de Coco",
   "Maracujá",
-  "Abacaxi",
-  "Uva",
+  "Morango",
+  "Bob Marley",
+  "Abacaxi com Hortelã",
+  "Limão",
+  "Limão com Sal",
+  "Pitaya",
+  "Blue Ice",
 ];
 
 Deno.serve(async (req) => {
