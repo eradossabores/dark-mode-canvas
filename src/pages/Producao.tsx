@@ -26,6 +26,7 @@ import ChecklistProducaoDia from "@/components/producao/ChecklistProducaoDia";
 import EditDayProducoesDialog from "@/components/producao/EditDayProducoesDialog";
 
 export default function Producao() {
+  const { factoryId } = useAuth();
   const [searchParams] = useSearchParams();
   const dataParam = searchParams.get("data");
   const historicoRef = useRef<HTMLDivElement>(null);
