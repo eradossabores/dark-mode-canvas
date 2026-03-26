@@ -163,45 +163,44 @@ Deno.serve(async (req) => {
       console.error("Erro ao criar sabores padrão:", saboresError.message);
     }
 
-    // 7. Seed estoque_gelos zerado for each sabor
+    // 7. For each sabor, create insumo + embalagem + receita + estoque
     if (saboresData && saboresData.length > 0) {
-      const estoqueRows = saboresData.map((s: any) => ({
-        sabor_id: s.id,
-        factory_id: factoryId,
-        quantidade: 0,
-      }));
+      const estoqueRows = [];
+      for (const s of saboresData as any[]) {
+        // Create matéria-prima for this sabor
+        const { data: mpData, error: mpErr } = await adminClient
+          .from("materias_primas")
+          .insert({ nome: `Insumo ${s.nome}`, factory_id: factoryId, unidade: "g", estoque_atual: 0, estoque_minimo: 500 })
+          .select("id")
+          .single();
+        if (mpErr) { console.error("Erro MP:", mpErr.message); continue; }
 
-      const { error: estoqueError } = await adminClient
-        .from("estoque_gelos")
-        .insert(estoqueRows);
+        // Create embalagem for this sabor
+        const { data: embData, error: embErr } = await adminClient
+          .from("embalagens")
+          .insert({ nome: `Embalagem ${s.nome}`, factory_id: factoryId, estoque_atual: 0, estoque_minimo: 100 })
+          .select("id")
+          .single();
+        if (embErr) { console.error("Erro Emb:", embErr.message); continue; }
 
-      if (estoqueError) {
-        console.error("Erro ao criar estoque inicial:", estoqueError.message);
+        // Create receita linking sabor → matéria-prima → embalagem
+        await adminClient.from("sabor_receita").insert({
+          sabor_id: s.id,
+          materia_prima_id: mpData.id,
+          embalagem_id: embData.id,
+          factory_id: factoryId,
+          quantidade_insumo_por_lote: 400,
+          gelos_por_lote: 84,
+          embalagens_por_lote: 84,
+        });
+
+        estoqueRows.push({ sabor_id: s.id, factory_id: factoryId, quantidade: 0 });
       }
-    }
 
-    // 8. Seed default matéria-prima
-    const { error: mpError } = await adminClient
-      .from("materias_primas")
-      .insert([
-        { nome: "Polpa de Fruta", factory_id: factoryId, unidade: "g", estoque_atual: 0, estoque_minimo: 500 },
-        { nome: "Açúcar", factory_id: factoryId, unidade: "g", estoque_atual: 0, estoque_minimo: 1000 },
-        { nome: "Água Filtrada", factory_id: factoryId, unidade: "g", estoque_atual: 0, estoque_minimo: 5000 },
-      ]);
-
-    if (mpError) {
-      console.error("Erro ao criar matérias-primas padrão:", mpError.message);
-    }
-
-    // 9. Seed default embalagem
-    const { error: embError } = await adminClient
-      .from("embalagens")
-      .insert([
-        { nome: "Saquinho Padrão", factory_id: factoryId, estoque_atual: 0, estoque_minimo: 100 },
-      ]);
-
-    if (embError) {
-      console.error("Erro ao criar embalagens padrão:", embError.message);
+      if (estoqueRows.length > 0) {
+        const { error: estoqueError } = await adminClient.from("estoque_gelos").insert(estoqueRows);
+        if (estoqueError) console.error("Erro estoque:", estoqueError.message);
+      }
     }
 
     return new Response(JSON.stringify({
