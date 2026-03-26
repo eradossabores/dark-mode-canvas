@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,16 +15,19 @@ import { toast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 
 export default function Funcionarios() {
+  const { factoryId } = useAuth();
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState({ nome: "", tipo_pagamento: "diaria" as string, valor_pagamento: "" });
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [factoryId]);
 
   async function loadData() {
-    const { data } = await (supabase as any).from("funcionarios").select("*").order("nome");
+    let q = (supabase as any).from("funcionarios").select("*").order("nome");
+    if (factoryId) q = q.eq("factory_id", factoryId);
+    const { data } = await q;
     setFuncionarios(data || []);
   }
 
@@ -43,12 +47,13 @@ export default function Funcionarios() {
     if (!form.nome) return toast({ title: "Nome obrigatório", variant: "destructive" });
     if (!form.valor_pagamento) return toast({ title: "Valor obrigatório", variant: "destructive" });
     try {
-      const payload = { nome: form.nome, tipo_pagamento: form.tipo_pagamento, valor_pagamento: Number(form.valor_pagamento) };
+      const payload: any = { nome: form.nome, tipo_pagamento: form.tipo_pagamento, valor_pagamento: Number(form.valor_pagamento) };
       if (editingId) {
         const { error } = await (supabase as any).from("funcionarios").update(payload).eq("id", editingId);
         if (error) throw error;
         toast({ title: "Colaborador atualizado!" });
       } else {
+        if (factoryId) payload.factory_id = factoryId;
         await insertRow("funcionarios", payload);
         toast({ title: "Colaborador cadastrado!" });
       }

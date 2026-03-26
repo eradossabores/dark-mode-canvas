@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,7 @@ const emptyForm = {
 
 export default function Clientes() {
   const navigate = useNavigate();
+  const { factoryId } = useAuth();
   const [clientes, setClientes] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -39,10 +41,12 @@ export default function Clientes() {
     c.nome?.toLowerCase().includes(busca.toLowerCase())
   );
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [factoryId]);
 
   async function loadData() {
-    const { data } = await (supabase as any).from("clientes").select("*").order("nome");
+    let q = (supabase as any).from("clientes").select("*").order("nome");
+    if (factoryId) q = q.eq("factory_id", factoryId);
+    const { data } = await q;
     setClientes(data || []);
   }
 
@@ -95,6 +99,7 @@ export default function Clientes() {
         if (error) throw error;
         toast({ title: "Cliente atualizado!" });
       } else {
+        if (factoryId) payload.factory_id = factoryId;
         await insertRow("clientes", payload);
         toast({ title: "Cliente cadastrado!" });
       }

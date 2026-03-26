@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { useSearchParams } from "react-router-dom";
 import { startOfMonth, endOfMonth, subMonths, startOfWeek, endOfWeek, startOfDay, endOfDay, isAfter, isBefore } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,6 +43,7 @@ function normalizeStr(s: string) {
 }
 
 export default function Vendas() {
+  const { factoryId } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const clienteFilter = searchParams.get("cliente") || "";
   const [clientes, setClientes] = useState<any[]>([]);
@@ -141,7 +143,7 @@ export default function Vendas() {
     return filtered;
   }, [vendas, clienteFilter, searchCliente, filtroStatus, filtroPagamento, filtroData]);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [factoryId]);
 
   async function loadHistorico(vendaId: string) {
     const { data } = await (supabase as any)
@@ -178,13 +180,13 @@ export default function Vendas() {
   }
 
   async function loadData() {
-    const [c, s, v, vi, pp] = await Promise.all([
-      (supabase as any).from("clientes").select("id, nome").eq("status", "ativo").order("nome"),
-      (supabase as any).from("sabores").select("*").eq("ativo", true).order("nome"),
-      (supabase as any).from("vendas").select("*, clientes(nome)").order("created_at", { ascending: false }).limit(500),
-      (supabase as any).from("venda_itens").select("venda_id, quantidade"),
-      (supabase as any).from("pedidos_producao").select("venda_id, status, tipo_pedido").not("venda_id", "is", null),
-    ]);
+    let cQ = (supabase as any).from("clientes").select("id, nome").eq("status", "ativo").order("nome");
+    let sQ = (supabase as any).from("sabores").select("*").eq("ativo", true).order("nome");
+    let vQ = (supabase as any).from("vendas").select("*, clientes(nome)").order("created_at", { ascending: false }).limit(500);
+    let viQ = (supabase as any).from("venda_itens").select("venda_id, quantidade");
+    let ppQ = (supabase as any).from("pedidos_producao").select("venda_id, status, tipo_pedido").not("venda_id", "is", null);
+    if (factoryId) { cQ = cQ.eq("factory_id", factoryId); sQ = sQ.eq("factory_id", factoryId); vQ = vQ.eq("factory_id", factoryId); viQ = viQ.eq("factory_id", factoryId); ppQ = ppQ.eq("factory_id", factoryId); }
+    const [c, s, v, vi, pp] = await Promise.all([cQ, sQ, vQ, viQ, ppQ]);
     setClientes(c.data || []);
     setSabores(s.data || []);
     // Build units map per venda
