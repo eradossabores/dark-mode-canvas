@@ -207,7 +207,7 @@ export default function Suporte() {
       const { error } = await (supabase as any).from("support_messages").insert({
         ticket_id: selectedTicket.id,
         sender_id: user?.id,
-        sender_name: profile?.nome || user?.email || "Usuário",
+        sender_name: userName || user?.email || "Usuário",
         message: newMessage.trim(),
       });
       if (error) throw error;
