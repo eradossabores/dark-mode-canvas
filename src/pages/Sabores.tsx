@@ -13,6 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, ImagePlus, X, Upload } from "lucide-react";
 
 export default function Sabores() {
+  const { factoryId } = useAuth();
   const [sabores, setSabores] = useState<any[]>([]);
   const [receitas, setReceitas] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
@@ -24,13 +25,13 @@ export default function Sabores() {
   const [imageDialog, setImageDialog] = useState<any>(null);
   const [uploading, setUploading] = useState(false);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [factoryId]);
 
   async function loadData() {
-    const [s, r] = await Promise.all([
-      (supabase as any).from("sabores").select("*").order("nome"),
-      (supabase as any).from("sabor_receita").select("*, materias_primas(nome), embalagens(nome)"),
-    ]);
+    let sQ = (supabase as any).from("sabores").select("*").order("nome");
+    let rQ = (supabase as any).from("sabor_receita").select("*, materias_primas(nome), embalagens(nome)");
+    if (factoryId) { sQ = sQ.eq("factory_id", factoryId); rQ = rQ.eq("factory_id", factoryId); }
+    const [s, r] = await Promise.all([sQ, rQ]);
     setSabores(s.data || []);
     setReceitas(r.data || []);
   }
