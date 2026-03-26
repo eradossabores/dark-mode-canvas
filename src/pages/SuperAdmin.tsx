@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { extractColorsFromImage } from "@/lib/color-extract";
 import EditFactoryDialog from "@/components/superadmin/EditFactoryDialog";
+import FactoryDetailsDialog from "@/components/superadmin/FactoryDetailsDialog";
 
 interface FactoryRow {
   id: string;
