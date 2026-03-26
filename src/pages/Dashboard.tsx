@@ -537,13 +537,15 @@ export default function Dashboard() {
                       ))}
                     </div>
 
-                    {/* Character */}
-                    <img
-                      src={charImg}
-                      alt=""
-                      aria-hidden
-                      className="absolute bottom-1 right-1 w-16 h-16 object-contain opacity-25 pointer-events-none select-none"
-                    />
+                    {/* Character - only for Era dos Sabores */}
+                    {isIceAgeFactory && (
+                      <img
+                        src={charImg}
+                        alt=""
+                        aria-hidden
+                        className="absolute bottom-1 right-1 w-16 h-16 object-contain opacity-25 pointer-events-none select-none"
+                      />
+                    )}
                   </div>
                 </motion.div>
               );
