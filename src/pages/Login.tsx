@@ -10,8 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
-import logo from "@/assets/logo.png";
-import sidImg from "@/assets/sid.png";
+import icetechLogo from "@/assets/icetech-logo.png";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -104,13 +103,19 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-sky-100 via-sky-50 to-cyan-100 dark:from-sky-950 dark:via-gray-900 dark:to-cyan-950 px-4">
-      <Card className="w-full max-w-md shadow-2xl border-sky-200/50">
-        <CardHeader className="text-center space-y-3">
-          <div className="flex justify-center">
-            <img src={logo} alt="A Era dos Sabores" className="h-16 w-16 rounded-lg shadow-md" />
-          </div>
-          <CardTitle className="text-2xl font-bold">A Era dos Sabores</CardTitle>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 px-4 py-8">
+      {/* Logo */}
+      <div className="mb-6 flex flex-col items-center">
+        <img
+          src={icetechLogo}
+          alt="ICETECH"
+          className="h-28 w-28 sm:h-36 sm:w-36 object-contain drop-shadow-2xl"
+        />
+      </div>
+
+      <Card className="w-full max-w-md shadow-2xl border-blue-500/20 bg-card/95 backdrop-blur-sm">
+        <CardHeader className="text-center space-y-1 pb-4">
+          <CardTitle className="text-2xl font-bold tracking-wide">Acesso ao Sistema</CardTitle>
           <p className="text-sm text-muted-foreground">Entre com suas credenciais</p>
         </CardHeader>
         <CardContent>
@@ -178,12 +183,12 @@ export default function Login() {
           <p className="text-xs text-center text-muted-foreground mt-3">
             Colaboradores: entre com Google e aguarde aprovação do administrador.
           </p>
-
-          <div className="flex justify-center mt-6 opacity-30">
-            <img src={sidImg} alt="" className="h-20 object-contain" aria-hidden />
-          </div>
         </CardContent>
       </Card>
+
+      <p className="text-xs text-blue-300/50 mt-6 text-center max-w-xs">
+        Sistema de gestão exclusivo para fábricas de gelos saborizados
+      </p>
     </div>
   );
 }
