@@ -483,7 +483,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         )}
-        <div className="relative p-4 md:p-6 pt-14 md:pt-6" style={{ zIndex: 1 }}>{children}</div>
+        <div className="relative p-3 sm:p-4 md:p-6 pt-14 md:pt-6" style={{ zIndex: 1 }}>{children}</div>
       </main>
     </div>
   );

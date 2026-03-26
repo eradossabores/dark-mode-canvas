@@ -652,8 +652,8 @@ export default function Vendas() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Vendas</h1>
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold">Vendas</h1>
         <Dialog open={open} onOpenChange={(v) => {
           setOpen(v);
           if (v && itens.length === 0 && sabores.length > 0) {
@@ -1096,25 +1096,25 @@ export default function Vendas() {
       })()}
 
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Histórico de Vendas</CardTitle>
+        <CardHeader className="px-3 sm:px-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <CardTitle className="text-base sm:text-lg">Histórico de Vendas</CardTitle>
             {clienteFilter && (
               <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="text-sm">Filtro: {clienteFilter}</Badge>
+                <Badge variant="secondary" className="text-xs sm:text-sm">Filtro: {clienteFilter}</Badge>
                 <Button size="sm" variant="ghost" onClick={() => setSearchParams({})}>Limpar filtro</Button>
               </div>
             )}
           </div>
-          <div className="flex flex-wrap gap-2 mt-3">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 mt-3">
             <Input
-              placeholder="Pesquisar por cliente..."
+              placeholder="Pesquisar cliente..."
               value={searchCliente}
               onChange={(e) => { setSearchCliente(e.target.value); setPage(0); }}
-              className="max-w-[200px] h-9 text-sm"
+              className="col-span-2 sm:max-w-[200px] h-9 text-sm"
             />
             <Select value={filtroData} onValueChange={(v) => { setFiltroData(v); setPage(0); }}>
-              <SelectTrigger className="w-[150px] h-9 text-sm"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-9 text-xs sm:text-sm sm:w-[150px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todas as datas</SelectItem>
                 <SelectItem value="hoje">Hoje</SelectItem>
@@ -1125,7 +1125,7 @@ export default function Vendas() {
               </SelectContent>
             </Select>
             <Select value={filtroStatus} onValueChange={(v) => { setFiltroStatus(v); setPage(0); }}>
-              <SelectTrigger className="w-[130px] h-9 text-sm"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-9 text-xs sm:text-sm sm:w-[130px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos status</SelectItem>
                 <SelectItem value="pendente">Pendente</SelectItem>
@@ -1134,7 +1134,7 @@ export default function Vendas() {
               </SelectContent>
             </Select>
             <Select value={filtroPagamento} onValueChange={(v) => { setFiltroPagamento(v); setPage(0); }}>
-              <SelectTrigger className="w-[140px] h-9 text-sm"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="col-span-2 sm:col-span-1 h-9 text-xs sm:text-sm sm:w-[140px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos pagamentos</SelectItem>
                 {FORMAS_PAGAMENTO.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
@@ -1142,11 +1142,11 @@ export default function Vendas() {
             </Select>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-3 sm:px-6">
           {(() => {
             if (filteredVendas.length > PAGE_SIZE) return (
               <div className="flex items-center justify-between mb-4">
-                <span className="text-sm text-muted-foreground">
+                <span className="text-xs sm:text-sm text-muted-foreground">
                   {page * PAGE_SIZE + 1}-{Math.min((page + 1) * PAGE_SIZE, filteredVendas.length)} de {filteredVendas.length}
                 </span>
                 <div className="flex gap-2">
@@ -1157,7 +1157,65 @@ export default function Vendas() {
             );
             return null;
           })()}
-          <div className="overflow-x-auto">
+
+          {/* Mobile card view */}
+          <div className="block md:hidden space-y-3">
+            {filteredVendas.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8 text-sm">Nenhuma venda{clienteFilter ? ` para "${clienteFilter}"` : ""}.</p>
+            ) : (
+              filteredVendas.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((v) => (
+                <div key={v.id} className="rounded-lg border bg-card p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-sm truncate max-w-[60%]">{v.clientes?.nome}</span>
+                    <Badge variant={v.status === "paga" ? "default" : v.status === "cancelada" ? "destructive" : "secondary"} className="text-[10px]">{v.status}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{new Date(v.created_at).toLocaleDateString("pt-BR")}</span>
+                    <span>{v.totalUnidades || 0} un · {getFormaPagamentoLabel(v)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-sm">R$ {Number(v.total).toFixed(2)}</span>
+                    {v.enviado_producao && (
+                      <Badge variant="outline" className={`text-[10px] ${
+                        v.pedido_status === "retirado" || v.pedido_status === "enviado"
+                          ? "bg-muted text-muted-foreground border-border"
+                          : "bg-green-500/10 text-green-700 border-green-300"
+                      }`}>
+                        {v.pedido_status === "enviado" ? "Entregue" : v.pedido_status === "retirado" ? "Retirado" : "No Monitor"}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 pt-1 border-t">
+                    {v.status !== "cancelada" && !v.enviado_producao && (
+                      <>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 text-violet-600" disabled={sendingToProduction === v.id}
+                          onClick={() => { setProdHora(""); setProdEmbalagem("1 saco"); setProdDialog({ venda: v, tipo: "entrega" }); }}>
+                          <Truck className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 text-orange-600" disabled={sendingToProduction === v.id}
+                          onClick={() => { setProdHora(""); setProdEmbalagem("1 saco"); setProdDialog({ venda: v, tipo: "retirada" }); }}>
+                          <Package className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { setHistoricoVenda(v); loadHistorico(v.id); }}><History className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openDetailDialog(v)}><Eye className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openRecibo(v)}><Receipt className="h-4 w-4 text-emerald-600" /></Button>
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEditDialog(v)}><Pencil className="h-4 w-4" /></Button>
+                    <div className="ml-auto flex gap-1">
+                      {v.status !== "cancelada" && (
+                        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setCancelId(v.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                      )}
+                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setDeleteId(v.id)}><X className="h-4 w-4 text-destructive" /></Button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop table view */}
+          <div className="hidden md:block overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -1194,13 +1252,9 @@ export default function Vendas() {
                             <>
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-8 w-8 text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-950"
+                                  <Button size="icon" variant="ghost" className="h-8 w-8 text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-950"
                                     disabled={sendingToProduction === v.id}
-                                    onClick={() => { setProdHora(""); setProdEmbalagem("1 saco"); setProdDialog({ venda: v, tipo: "entrega" }); }}
-                                  >
+                                    onClick={() => { setProdHora(""); setProdEmbalagem("1 saco"); setProdDialog({ venda: v, tipo: "entrega" }); }}>
                                     <Truck className="h-4 w-4" />
                                   </Button>
                                 </TooltipTrigger>
@@ -1208,13 +1262,9 @@ export default function Vendas() {
                               </Tooltip>
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-8 w-8 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950"
+                                  <Button size="icon" variant="ghost" className="h-8 w-8 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950"
                                     disabled={sendingToProduction === v.id}
-                                    onClick={() => { setProdHora(""); setProdEmbalagem("1 saco"); setProdDialog({ venda: v, tipo: "retirada" }); }}
-                                  >
+                                    onClick={() => { setProdHora(""); setProdEmbalagem("1 saco"); setProdDialog({ venda: v, tipo: "retirada" }); }}>
                                     <Package className="h-4 w-4" />
                                   </Button>
                                 </TooltipTrigger>
@@ -1228,21 +1278,11 @@ export default function Vendas() {
                                 ? "bg-muted text-muted-foreground border-border"
                                 : "bg-green-500/10 text-green-700 border-green-300"
                             }`}>
-                              {v.pedido_status === "enviado"
-                                ? "Entregue"
-                                : v.pedido_status === "retirado"
-                                  ? "Retirado"
-                                  : "No Monitor"}
+                              {v.pedido_status === "enviado" ? "Entregue" : v.pedido_status === "retirado" ? "Retirado" : "No Monitor"}
                             </Badge>
                           )}
                         </TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button size="icon" variant="ghost" onClick={() => { setHistoricoVenda(v); loadHistorico(v.id); }}>
-                              <History className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                        </Tooltip>
+                        <Button size="icon" variant="ghost" onClick={() => { setHistoricoVenda(v); loadHistorico(v.id); }}><History className="h-4 w-4" /></Button>
                         <Button size="icon" variant="ghost" onClick={() => openDetailDialog(v)}><Eye className="h-4 w-4" /></Button>
                         <Button size="icon" variant="ghost" onClick={() => openRecibo(v)}><Receipt className="h-4 w-4 text-emerald-600" /></Button>
                         <Button size="icon" variant="ghost" onClick={() => openEditDialog(v)}><Pencil className="h-4 w-4" /></Button>
@@ -1260,7 +1300,7 @@ export default function Vendas() {
           </div>
           {filteredVendas.length > PAGE_SIZE && (
               <div className="flex items-center justify-between mt-4">
-                <span className="text-sm text-muted-foreground">
+                <span className="text-xs sm:text-sm text-muted-foreground">
                   {page * PAGE_SIZE + 1}-{Math.min((page + 1) * PAGE_SIZE, filteredVendas.length)} de {filteredVendas.length}
                 </span>
                 <div className="flex gap-2">

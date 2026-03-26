@@ -359,7 +359,7 @@ export default function Dashboard() {
     <div className="relative">
       <GradientDots duration={30} colorCycleDuration={10} dotSize={5} spacing={14} className="opacity-15 pointer-events-none z-0 fixed" />
       {/* Animated Welcome Banner with Lamp Effect */}
-      <div className="mb-6 relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-b from-background via-background to-primary/5">
+      <div className="mb-4 sm:mb-6 relative overflow-hidden rounded-xl sm:rounded-2xl border border-primary/20 bg-gradient-to-b from-background via-background to-primary/5">
         {/* Lamp glow effect - centered top (teal/cyan theme) */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {/* Main conic rays - left */}
@@ -422,24 +422,24 @@ export default function Dashboard() {
         )}
 
         {/* Content */}
-        <div className="relative z-20 px-6 py-5">
+        <div className="relative z-20 px-4 py-3 sm:px-6 sm:py-5">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35, duration: 0.5, ease: "easeOut" }}
-            className="space-y-1.5"
+            className="space-y-1 sm:space-y-1.5"
           >
-            <div className="flex items-center gap-2.5">
-              <span className="text-2xl">{dailyMessage.emoji}</span>
-              <h2 className="text-lg font-bold text-foreground tracking-tight">
+            <div className="flex items-center gap-2 sm:gap-2.5">
+              <span className="text-xl sm:text-2xl">{dailyMessage.emoji}</span>
+              <h2 className="text-base sm:text-lg font-bold text-foreground tracking-tight">
                 {getGreeting()}, <span className="text-primary">{userName || "Colaborador"}</span>!
               </h2>
             </div>
-            <p className="text-sm text-muted-foreground max-w-lg leading-relaxed pl-[2.75rem]">
+            <p className="text-xs sm:text-sm text-muted-foreground max-w-lg leading-relaxed pl-8 sm:pl-[2.75rem]">
               {dailyMessage.text}
             </p>
-            <div className="pl-[2.75rem]">
-              <span className="text-[10px] text-muted-foreground/50 tracking-wide uppercase">
+            <div className="pl-8 sm:pl-[2.75rem]">
+              <span className="text-[9px] sm:text-[10px] text-muted-foreground/50 tracking-wide uppercase">
                 {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
               </span>
             </div>
@@ -447,7 +447,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+      <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Dashboard</h1>
 
       {/* Alertas de Estoque - Post-it Cards com Carrossel */}
       {alertasEstoque.length > 0 && (() => {
@@ -477,7 +477,7 @@ export default function Dashboard() {
         const currentItem = currentItems[Math.floor(alertaIndex / categories.length) % currentItems.length] || currentItems[0];
 
         return (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
             {/* Rotating category cards */}
             {categories.slice(0, 3).map((cat, catIdx) => {
               const items = grouped[cat];
@@ -607,7 +607,7 @@ export default function Dashboard() {
       })()}
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mb-4 sm:mb-6">
         {cards.map((c: any, idx: number) => (
           <div key={c.title} className="relative self-start overflow-hidden rounded-xl border border-transparent p-0.5 opacity-0 animate-fade-in" style={{ animationDelay: `${idx * 80}ms`, animationFillMode: "forwards" }}>
             <GlowingEffect
@@ -654,7 +654,7 @@ export default function Dashboard() {
       </div>
 
       {/* Gráficos */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 opacity-0 animate-fade-in" style={{ animationDelay: "500ms", animationFillMode: "forwards" }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6 opacity-0 animate-fade-in" style={{ animationDelay: "500ms", animationFillMode: "forwards" }}>
         {/* Faturamento */}
         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
           <GlowingEffect spread={20} glow disabled={false} proximity={40} inactiveZone={0.2} borderWidth={3} />
@@ -779,7 +779,7 @@ export default function Dashboard() {
       </div>
 
       {/* Widgets: Estoque Inteligente + Ranking + Clientes Inativos */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 opacity-0 animate-fade-in" style={{ animationDelay: "700ms", animationFillMode: "forwards" }}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6 opacity-0 animate-fade-in" style={{ animationDelay: "700ms", animationFillMode: "forwards" }}>
         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
           <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
           <div className="relative"><EstoqueInteligente factoryId={factoryId} /></div>
@@ -794,7 +794,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 opacity-0 animate-fade-in" style={{ animationDelay: "900ms", animationFillMode: "forwards" }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 opacity-0 animate-fade-in" style={{ animationDelay: "900ms", animationFillMode: "forwards" }}>
         {/* Top 5 Sabores - Pie Chart */}
         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
           <GlowingEffect spread={20} glow disabled={false} proximity={40} inactiveZone={0.2} borderWidth={3} />
