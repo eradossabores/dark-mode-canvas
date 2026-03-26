@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -88,8 +89,9 @@ function ProgressRing({ progress, color, size = 52 }: { progress: number; color:
   );
 }
 
-// Escala fixa (todos os dias da semana)
-const ESCALA_PRODUCAO: Record<number, string[]> = {
+// Escala fixa - APENAS para a fábrica "A Era dos Sabores"
+const ERA_DOS_SABORES_ID = "00000000-0000-0000-0000-000000000001";
+const ESCALA_ERA_DOS_SABORES: Record<number, string[]> = {
   0: [], 1: [], 2: ["aghata", "maria"],
   3: ["aghata", "maria"], 4: ["jhulia", "aghata"],
   5: ["jhulia", "aghata"], 6: [],
@@ -209,6 +211,7 @@ function calcularFeedback(
 
 
 export default function PlanoProducaoDiario() {
+  const { factoryId } = useAuth();
   const navigate = useNavigate();
   const [analises, setAnalises] = useState<SaborAnalise[]>([]);
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
@@ -240,7 +243,7 @@ export default function PlanoProducaoDiario() {
   });
   const dataAlvo = diasDisponiveis[diaOffset] || hoje;
   const diaSemana = dataAlvo.getDay();
-  const escalaDoDia = ESCALA_PRODUCAO[diaSemana] || [];
+  const escalaDoDia = factoryId === ERA_DOS_SABORES_ID ? (ESCALA_ERA_DOS_SABORES[diaSemana] || []) : [];
 
   const dataAlvoLabel = dataAlvo.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "2-digit" });
 
@@ -253,21 +256,25 @@ export default function PlanoProducaoDiario() {
   async function fetchPresencas() {
     const d = diasDisponiveis[diaOffset] || new Date();
     const alvoIso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    const { data } = await (supabase as any)
+    let pq = (supabase as any)
       .from("presenca_producao")
       .select("*, funcionarios(nome)")
       .eq("data", alvoIso);
+    if (factoryId) pq = pq.eq("factory_id", factoryId);
+    const { data } = await pq;
     setPresencas(data || []);
   }
 
   async function fetchHistorico() {
     try {
-      const { data, error } = await (supabase as any)
+      let hq = (supabase as any)
         .from("decisoes_producao")
         .select("*")
         .gt("lotes_autorizados", 0)
         .order("created_at", { ascending: false })
         .limit(500);
+      if (factoryId) hq = hq.eq("factory_id", factoryId);
+      const { data, error } = await hq;
       if (error) throw error;
 
       const porDia: Record<string, any[]> = {};
@@ -366,15 +373,23 @@ export default function PlanoProducaoDiario() {
       const trintaDias = new Date();
       trintaDias.setDate(trintaDias.getDate() - 30);
 
-      const [vendasRes, gelosRes, saboresRes, funcsRes, decisoesRes, producoesRes, vendaItensRecentesRes] = await Promise.all([
-        (supabase as any).from("venda_itens").select("sabor_id, quantidade, vendas!inner(created_at, status)"),
-        (supabase as any).from("estoque_gelos").select("quantidade, sabor_id, sabores(nome, id)"),
-        (supabase as any).from("sabores").select("id, nome").eq("ativo", true).order("nome"),
-        (supabase as any).from("funcionarios").select("id, nome").eq("ativo", true).order("nome"),
-        (supabase as any).from("decisoes_producao").select("*").order("created_at", { ascending: false }).limit(500),
-        (supabase as any).from("producoes").select("sabor_id, quantidade_total, created_at").gte("created_at", trintaDias.toISOString()),
-        (supabase as any).from("venda_itens").select("sabor_id, quantidade, vendas!inner(created_at, status)").gte("vendas.created_at", trintaDias.toISOString()).neq("vendas.status", "cancelada"),
-      ]);
+      let q1 = (supabase as any).from("venda_itens").select("sabor_id, quantidade, vendas!inner(created_at, status)");
+      let q2 = (supabase as any).from("estoque_gelos").select("quantidade, sabor_id, sabores(nome, id)");
+      let q3 = (supabase as any).from("sabores").select("id, nome").eq("ativo", true).order("nome");
+      let q4 = (supabase as any).from("funcionarios").select("id, nome").eq("ativo", true).order("nome");
+      let q5 = (supabase as any).from("decisoes_producao").select("*").order("created_at", { ascending: false }).limit(500);
+      let q6 = (supabase as any).from("producoes").select("sabor_id, quantidade_total, created_at").gte("created_at", trintaDias.toISOString());
+      let q7 = (supabase as any).from("venda_itens").select("sabor_id, quantidade, vendas!inner(created_at, status)").gte("vendas.created_at", trintaDias.toISOString()).neq("vendas.status", "cancelada");
+      
+      if (factoryId) {
+        q2 = q2.eq("factory_id", factoryId);
+        q3 = q3.eq("factory_id", factoryId);
+        q4 = q4.eq("factory_id", factoryId);
+        q5 = q5.eq("factory_id", factoryId);
+        q6 = q6.eq("factory_id", factoryId);
+      }
+
+      const [vendasRes, gelosRes, saboresRes, funcsRes, decisoesRes, producoesRes, vendaItensRecentesRes] = await Promise.all([q1, q2, q3, q4, q5, q6, q7]);
 
       const funcs = funcsRes.data || [];
       setFuncionarios(funcs);
@@ -672,6 +687,7 @@ export default function PlanoProducaoDiario() {
       lotes_autorizados: item.lotesCustom,
       operador,
       created_at: alvoIso,
+      ...(factoryId ? { factory_id: factoryId } : {}),
     }));
 
     const { error } = await (supabase as any).from("decisoes_producao").insert(rows);
