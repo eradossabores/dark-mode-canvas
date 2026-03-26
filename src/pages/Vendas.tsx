@@ -652,8 +652,8 @@ export default function Vendas() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Vendas</h1>
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold">Vendas</h1>
         <Dialog open={open} onOpenChange={(v) => {
           setOpen(v);
           if (v && itens.length === 0 && sabores.length > 0) {
