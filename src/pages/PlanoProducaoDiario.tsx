@@ -211,6 +211,7 @@ function calcularFeedback(
 
 
 export default function PlanoProducaoDiario() {
+  const { factoryId } = useAuth();
   const navigate = useNavigate();
   const [analises, setAnalises] = useState<SaborAnalise[]>([]);
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
