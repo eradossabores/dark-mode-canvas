@@ -461,17 +461,14 @@ export default function AReceber() {
     y = 6;
 
     try {
-      doc.addImage(logoRecibo, "PNG", (w - 36) / 2, y, 36, 28);
+      doc.addImage(factoryLogo, "PNG", (w - 36) / 2, y, 36, 28);
       y += 30;
     } catch { y += 4; }
 
     doc.setFontSize(6.5);
     doc.setTextColor(80, 80, 80);
     doc.setFont("helvetica", "italic");
-    doc.text("Cor, Cheiro e Sabor da Fruta", w / 2, y, { align: "center" });
-    y += 3;
-    doc.setFont("helvetica", "normal");
-    doc.text("Tel: (95) 99172-5677", w / 2, y, { align: "center" });
+    doc.text(factoryName || "Gelos Saborizados", w / 2, y, { align: "center" });
     y += 4;
 
     // Decorative double line
