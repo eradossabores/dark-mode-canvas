@@ -143,7 +143,7 @@ export default function Vendas() {
     return filtered;
   }, [vendas, clienteFilter, searchCliente, filtroStatus, filtroPagamento, filtroData]);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [factoryId]);
 
   async function loadHistorico(vendaId: string) {
     const { data } = await (supabase as any)
