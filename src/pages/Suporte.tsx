@@ -97,7 +97,7 @@ function getStatusBadge(status: string) {
 }
 
 export default function Suporte() {
-  const { user, profile } = useAuth();
+  const { user, role, factoryId } = useAuth();
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [messages, setMessages] = useState<SupportMessage[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
@@ -106,8 +106,17 @@ export default function Suporte() {
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [newTicket, setNewTicket] = useState({ subject: "", category: "geral", message: "" });
+  const [userName, setUserName] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const isSuperAdmin = profile?.role === "super_admin";
+  const isSuperAdmin = role === "super_admin";
+
+  useEffect(() => {
+    if (user?.id) {
+      (supabase as any).from("profiles").select("nome").eq("id", user.id).maybeSingle().then(({ data }: any) => {
+        setUserName(data?.nome || user.email || "Usuário");
+      });
+    }
+  }, [user?.id]);
 
   async function loadTickets() {
     try {
