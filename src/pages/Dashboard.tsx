@@ -580,13 +580,15 @@ export default function Dashboard() {
                     <Bell className="h-3.5 w-3.5 text-foreground" />
                     <span className="text-xs font-extrabold uppercase tracking-wide text-foreground">Resumo</span>
                   </div>
-                  {/* Character top-right */}
-                  <img
-                    src={postItCharacters[3 % postItCharacters.length]}
-                    alt=""
-                    aria-hidden
-                    className="w-10 h-10 object-contain opacity-30 pointer-events-none select-none"
-                  />
+                  {/* Character top-right - only for Era dos Sabores */}
+                  {isIceAgeFactory && (
+                    <img
+                      src={postItCharacters[3 % postItCharacters.length]}
+                      alt=""
+                      aria-hidden
+                      className="w-10 h-10 object-contain opacity-30 pointer-events-none select-none"
+                    />
+                  )}
                 </div>
 
                 <p className="text-3xl font-black text-foreground">{alertasEstoque.length}</p>
