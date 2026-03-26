@@ -89,8 +89,9 @@ function ProgressRing({ progress, color, size = 52 }: { progress: number; color:
   );
 }
 
-// Escala fixa (todos os dias da semana)
-const ESCALA_PRODUCAO: Record<number, string[]> = {
+// Escala fixa - APENAS para a fábrica "A Era dos Sabores"
+const ERA_DOS_SABORES_ID = "00000000-0000-0000-0000-000000000001";
+const ESCALA_ERA_DOS_SABORES: Record<number, string[]> = {
   0: [], 1: [], 2: ["aghata", "maria"],
   3: ["aghata", "maria"], 4: ["jhulia", "aghata"],
   5: ["jhulia", "aghata"], 6: [],
