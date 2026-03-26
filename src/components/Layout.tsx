@@ -202,7 +202,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <img src={factoryLogo} alt={factoryName || "Logo"} className="h-12 w-12 shrink-0 rounded-lg shadow-sm object-contain" />
         {isExpanded && (
           <div className="flex flex-col min-w-0">
-            <span className="font-bold text-sm whitespace-nowrap leading-tight">{factoryName || "A Era dos Sabores"}</span>
+            <span className="font-bold text-sm whitespace-nowrap leading-tight">{factoryName || "ICETECH"}</span>
             <span className="text-[10px] text-sidebar-foreground/60 leading-tight">Gelos Saborizados</span>
           </div>
         )}
