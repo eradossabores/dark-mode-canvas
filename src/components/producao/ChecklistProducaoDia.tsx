@@ -176,7 +176,10 @@ function parseLocalDate(dateStr?: string) {
   return new Date(year, month - 1, day);
 }
 
+import { useAuth } from "@/contexts/AuthContext";
+
 export default function ChecklistProducaoDia({ targetDate }: ChecklistProducaoDiaProps) {
+  const { factoryId } = useAuth();
   const dataBase = parseLocalDate(targetDate);
   const hojeStr = `${dataBase.getFullYear()}-${String(dataBase.getMonth() + 1).padStart(2, "0")}-${String(dataBase.getDate()).padStart(2, "0")}`;
   const CONCLUIDOS_KEY = `checklist-concluidos-${hojeStr}`;
@@ -208,18 +211,22 @@ export default function ChecklistProducaoDia({ targetDate }: ChecklistProducaoDi
     try {
       const inicioHoje = `${hojeStr}T00:00:00-03:00`;
       const fimHoje = `${hojeStr}T23:59:59-03:00`;
-      const { data, error } = await (supabase as any)
+      let dq = (supabase as any)
         .from("decisoes_producao").select("*")
         .gte("created_at", inicioHoje).lte("created_at", fimHoje)
         .gt("lotes_autorizados", 0).order("created_at", { ascending: true });
+      if (factoryId) dq = dq.eq("factory_id", factoryId);
+      const { data, error } = await dq;
       if (error) throw error;
       if (!data || data.length === 0) { setChecklist([]); setLoading(false); return; }
 
       // ── Carregar produções JÁ registradas hoje do banco (server-side dedup) ──
-      const { data: producoesHoje } = await (supabase as any)
+      let pq = (supabase as any)
         .from("producoes").select("sabor_id, observacoes")
         .gte("created_at", inicioHoje).lte("created_at", fimHoje)
         .like("observacoes", "%Checklist produção diária%");
+      if (factoryId) pq = pq.eq("factory_id", factoryId);
+      const { data: producoesHoje } = await pq;
 
       // Mapear produções existentes por sabor para contar lotes já registrados
       const lotesRegistradosDB: Record<string, number> = {};
