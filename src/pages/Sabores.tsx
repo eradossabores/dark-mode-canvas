@@ -56,15 +56,53 @@ export default function Sabores() {
     if (!nome.trim()) return toast({ title: "Nome obrigatório", variant: "destructive" });
     try {
       if (editingId) {
+        // Update sabor name
         const { error } = await (supabase as any).from("sabores").update({ nome: nome.trim() }).eq("id", editingId);
         if (error) throw error;
+
+        // Also update linked matéria-prima and embalagem names
+        const receita = getReceita(editingId);
+        if (receita) {
+          await Promise.all([
+            (supabase as any).from("materias_primas").update({ nome: `Insumo ${nome.trim()}` }).eq("id", receita.materia_prima_id),
+            (supabase as any).from("embalagens").update({ nome: `Embalagem ${nome.trim()}` }).eq("id", receita.embalagem_id),
+          ]);
+        }
+
         toast({ title: "Sabor atualizado!" });
       } else {
-        const payload: any = { nome: nome.trim() };
+        const saborNome = nome.trim();
+        const payload: any = { nome: saborNome };
         if (factoryId) payload.factory_id = factoryId;
-        const { error } = await (supabase as any).from("sabores").insert(payload);
+        const { data: newSabor, error } = await (supabase as any).from("sabores").insert(payload).select().single();
         if (error) throw error;
-        toast({ title: "Sabor cadastrado!" });
+
+        // Auto-create matéria-prima for this sabor
+        const mpPayload: any = { nome: `Insumo ${saborNome}`, unidade: "g", estoque_atual: 0, estoque_minimo: 500 };
+        if (factoryId) mpPayload.factory_id = factoryId;
+        const { data: newMP, error: mpErr } = await (supabase as any).from("materias_primas").insert(mpPayload).select().single();
+        if (mpErr) throw mpErr;
+
+        // Auto-create embalagem for this sabor
+        const embPayload: any = { nome: `Embalagem ${saborNome}`, estoque_atual: 0, estoque_minimo: 100 };
+        if (factoryId) embPayload.factory_id = factoryId;
+        const { data: newEmb, error: embErr } = await (supabase as any).from("embalagens").insert(embPayload).select().single();
+        if (embErr) throw embErr;
+
+        // Auto-create receita linking sabor → matéria-prima → embalagem
+        const receitaPayload: any = {
+          sabor_id: newSabor.id,
+          materia_prima_id: newMP.id,
+          embalagem_id: newEmb.id,
+          quantidade_insumo_por_lote: 400,
+          gelos_por_lote: 84,
+          embalagens_por_lote: 84,
+        };
+        if (factoryId) receitaPayload.factory_id = factoryId;
+        const { error: recErr } = await (supabase as any).from("sabor_receita").insert(receitaPayload);
+        if (recErr) throw recErr;
+
+        toast({ title: "Sabor cadastrado com insumo e embalagem!" });
       }
       setOpen(false);
       setEditingId(null);
