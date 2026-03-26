@@ -9,12 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { Factory, Plus, Users, CreditCard, CheckCircle, XCircle, Clock, AlertTriangle, Upload, Pencil, Trash2, LogIn } from "lucide-react";
+import { Factory, Plus, Users, CreditCard, CheckCircle, XCircle, Clock, AlertTriangle, Upload, Pencil, Trash2, LogIn, Info } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { extractColorsFromImage } from "@/lib/color-extract";
 import EditFactoryDialog from "@/components/superadmin/EditFactoryDialog";
+import FactoryDetailsDialog from "@/components/superadmin/FactoryDetailsDialog";
 
 interface FactoryRow {
   id: string;
@@ -43,6 +44,7 @@ export default function SuperAdmin() {
   const [showNewFactory, setShowNewFactory] = useState(false);
   const [creating, setCreating] = useState(false);
   const [editingFactory, setEditingFactory] = useState<FactoryRow | null>(null);
+  const [detailsFactory, setDetailsFactory] = useState<FactoryRow | null>(null);
 
   // New factory form
   const [newFactory, setNewFactory] = useState({
@@ -483,8 +485,8 @@ export default function SuperAdmin() {
                       <Button size="sm" variant="outline" className="flex-1" onClick={() => handleMarkPaid(factory.id)}>
                         <CheckCircle className="h-3.5 w-3.5 mr-1" /> Pago
                       </Button>
-                      <Button size="sm" variant="destructive" onClick={() => handleBlock(factory.id)}>
-                        <XCircle className="h-3.5 w-3.5" />
+                      <Button size="sm" variant="secondary" onClick={() => setDetailsFactory(factory)}>
+                        <Info className="h-3.5 w-3.5 mr-1" /> Detalhes
                       </Button>
                     </>
                   )}
@@ -526,6 +528,14 @@ export default function SuperAdmin() {
           onOpenChange={(open) => !open && setEditingFactory(null)}
           factory={editingFactory}
           onSaved={loadFactories}
+        />
+      )}
+
+      {detailsFactory && (
+        <FactoryDetailsDialog
+          open={!!detailsFactory}
+          onOpenChange={(open) => !open && setDetailsFactory(null)}
+          factory={detailsFactory}
         />
       )}
     </div>
