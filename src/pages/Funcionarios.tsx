@@ -15,16 +15,19 @@ import { toast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 
 export default function Funcionarios() {
+  const { factoryId } = useAuth();
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState({ nome: "", tipo_pagamento: "diaria" as string, valor_pagamento: "" });
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [factoryId]);
 
   async function loadData() {
-    const { data } = await (supabase as any).from("funcionarios").select("*").order("nome");
+    let q = (supabase as any).from("funcionarios").select("*").order("nome");
+    if (factoryId) q = q.eq("factory_id", factoryId);
+    const { data } = await q;
     setFuncionarios(data || []);
   }
 
