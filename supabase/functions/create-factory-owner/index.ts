@@ -186,7 +186,7 @@ Deno.serve(async (req) => {
       .insert([
         { nome: "Polpa de Fruta", factory_id: factoryId, unidade: "g", estoque_atual: 0, estoque_minimo: 500 },
         { nome: "Açúcar", factory_id: factoryId, unidade: "g", estoque_atual: 0, estoque_minimo: 1000 },
-        { nome: "Água Filtrada", factory_id: factoryId, unidade: "ml", estoque_atual: 0, estoque_minimo: 5000 },
+        { nome: "Água Filtrada", factory_id: factoryId, unidade: "g", estoque_atual: 0, estoque_minimo: 5000 },
       ]);
 
     if (mpError) {
