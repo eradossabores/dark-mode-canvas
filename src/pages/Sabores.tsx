@@ -60,7 +60,9 @@ export default function Sabores() {
         if (error) throw error;
         toast({ title: "Sabor atualizado!" });
       } else {
-        const { error } = await (supabase as any).from("sabores").insert({ nome: nome.trim() });
+        const payload: any = { nome: nome.trim() };
+        if (factoryId) payload.factory_id = factoryId;
+        const { error } = await (supabase as any).from("sabores").insert(payload);
         if (error) throw error;
         toast({ title: "Sabor cadastrado!" });
       }

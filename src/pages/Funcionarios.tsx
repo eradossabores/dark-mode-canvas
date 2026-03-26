@@ -47,12 +47,13 @@ export default function Funcionarios() {
     if (!form.nome) return toast({ title: "Nome obrigatório", variant: "destructive" });
     if (!form.valor_pagamento) return toast({ title: "Valor obrigatório", variant: "destructive" });
     try {
-      const payload = { nome: form.nome, tipo_pagamento: form.tipo_pagamento, valor_pagamento: Number(form.valor_pagamento) };
+      const payload: any = { nome: form.nome, tipo_pagamento: form.tipo_pagamento, valor_pagamento: Number(form.valor_pagamento) };
       if (editingId) {
         const { error } = await (supabase as any).from("funcionarios").update(payload).eq("id", editingId);
         if (error) throw error;
         toast({ title: "Colaborador atualizado!" });
       } else {
+        if (factoryId) payload.factory_id = factoryId;
         await insertRow("funcionarios", payload);
         toast({ title: "Colaborador cadastrado!" });
       }

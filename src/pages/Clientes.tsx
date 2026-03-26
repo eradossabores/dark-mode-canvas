@@ -99,6 +99,7 @@ export default function Clientes() {
         if (error) throw error;
         toast({ title: "Cliente atualizado!" });
       } else {
+        if (factoryId) payload.factory_id = factoryId;
         await insertRow("clientes", payload);
         toast({ title: "Cliente cadastrado!" });
       }
