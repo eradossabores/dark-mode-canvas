@@ -11,6 +11,7 @@ import { MapPin, Save, X, Users, RefreshCw, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { geocodeClienteAddress, hasAddressForGeocoding } from "@/lib/geocoding";
+import { useAuth } from "@/contexts/AuthContext";
 
 const clienteIcon = createSvgIcon('#2563eb');
 const pendingIcon = createSvgIcon('#dc2626');
