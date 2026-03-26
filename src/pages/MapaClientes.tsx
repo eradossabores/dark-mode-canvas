@@ -273,6 +273,16 @@ export default function MapaClientes() {
         content: <p className="text-xs text-gray-500">Nova posição</p>,
       },
     }] : []),
+    // Factory marker
+    ...(factoryCenter[0] !== DEFAULT_CENTER[0] || factoryCenter[1] !== DEFAULT_CENTER[1] ? [{
+      id: 'factory-marker',
+      position: factoryCenter,
+      icon: createLabeledSvgIcon('#f59e0b', `🏭 ${factoryName || 'Fábrica'}`, 'large'),
+      popup: {
+        title: `🏭 ${factoryName || 'Fábrica'}`,
+        content: <p className="text-xs text-muted-foreground">Localização da fábrica (ponto de referência)</p>,
+      },
+    }] : []),
   ];
 
   return (
