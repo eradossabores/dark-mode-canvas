@@ -65,6 +65,7 @@ const menuGroups = [
   {
     label: "Sistema",
     items: [
+      { path: "/painel/configurar", label: "Configurar Fábrica", icon: Settings },
       { path: "/painel/relatorios", label: "Relatórios", icon: BarChart3 },
       { path: "/painel/importar-planilha", label: "Upload Planilha", icon: FileUp },
       { path: "/painel/auditoria", label: "Auditoria", icon: ClipboardList },
