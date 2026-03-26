@@ -360,6 +360,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   })}
                 </div>
               ))}
+              {/* Super Admin link mobile */}
+              {role === "super_admin" && (
+                <div>
+                  <div className="mx-4 my-1.5 border-t border-white/10" />
+                  <Link
+                    to="/super-admin"
+                    onClick={() => setMobileOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-2 text-sm transition-colors rounded-md mx-2",
+                      location.pathname === "/super-admin"
+                        ? "bg-white/20 text-white font-semibold shadow-md"
+                        : "text-white/80 hover:bg-white/10 hover:text-white"
+                    )}
+                  >
+                    <Crown className="h-4 w-4 shrink-0" />
+                    <span>Super Admin</span>
+                  </Link>
+                </div>
+              )}
             </nav>
             <button
               onClick={handleLogout}
