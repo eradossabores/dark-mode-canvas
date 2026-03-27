@@ -1422,7 +1422,7 @@ export default function PlanoProducaoDiario() {
                     >+</Button>
                   </div>
                   <span className="text-[10px] text-muted-foreground w-12 text-right">
-                    {item.lotes_autorizados * 84}un
+                    {item.lotes_autorizados * gelosPorLoteConfig}un
                   </span>
                 </div>
               );
