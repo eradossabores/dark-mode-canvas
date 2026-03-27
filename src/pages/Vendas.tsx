@@ -854,6 +854,25 @@ export default function Vendas() {
                 </div>
               )}
               <div><Label>Nº Nota Fiscal (NF)</Label><Input value={numeroNf} onChange={(e) => setNumeroNf(e.target.value)} placeholder="Ex: 001234" /></div>
+              {/* Frete */}
+              <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
+                <Label className="text-xs font-medium">🚚 Frete (opcional)</Label>
+                <div className="relative">
+                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
+                  <Input type="number" step="0.01" min="0" className="pl-7" value={valorFrete} onChange={(e) => setValorFrete(e.target.value)} placeholder="0.00" />
+                </div>
+              </div>
+              {/* Brinde */}
+              <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
+                <Label className="text-xs font-medium">🎁 Brinde (opcional)</Label>
+                <div className="flex gap-2">
+                  <Select value={brindeSaborId} onValueChange={setBrindeSaborId}>
+                    <SelectTrigger className="flex-1"><SelectValue placeholder="Sabor do brinde" /></SelectTrigger>
+                    <SelectContent>{sabores.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <Input type="number" min={0} className="w-20" value={brindeQtd} onChange={(e) => setBrindeQtd(e.target.value)} placeholder="Qtd" />
+                </div>
+              </div>
               <div><Label>Observações</Label><Input value={observacoes} onChange={(e) => setObservacoes(e.target.value)} /></div>
               <div className="flex items-center space-x-2">
                 <Checkbox id="ignorar-estoque" checked={ignorarEstoque} onCheckedChange={(v) => setIgnorarEstoque(!!v)} />
