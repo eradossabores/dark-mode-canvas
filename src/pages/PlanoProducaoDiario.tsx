@@ -1146,7 +1146,7 @@ export default function PlanoProducaoDiario() {
                   </div>
 
                   <p className="text-[10px] text-muted-foreground whitespace-nowrap">
-                    {a.lotesCustom * 84} un
+                    {a.lotesCustom * (a.gelosPorLote || gelosPorLoteConfig)} un
                   </p>
                 </div>
 
