@@ -473,10 +473,11 @@ export default function PlanoProducaoDiario() {
         if (mediaDiaria7d > mediaDiaria30d * 1.2) tendencia = "alta";
         else if (mediaDiaria7d < mediaDiaria30d * 0.8) tendencia = "baixa";
 
+        const gelosPorLote = gelosPorLoteMap[sabor.id] || defaultGelosPorLote;
         const diasCobertura = mediaDiaria7d > 0 ? Math.floor(estoqueAtual / mediaDiaria7d) : 999;
         const necessario7d = Math.ceil(mediaDiaria7d * 7);
         const deficit = Math.max(0, necessario7d - estoqueAtual);
-        const loteSugerido = Math.ceil(deficit / 84);
+        const loteSugerido = Math.ceil(deficit / gelosPorLote);
 
         const idx = prioridadeDiaria.findIndex(p => sabor.nome.toLowerCase().includes(p));
         const prioritario = idx !== -1;
