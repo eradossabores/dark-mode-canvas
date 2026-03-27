@@ -265,7 +265,11 @@ export default function Vendas() {
   }
 
   async function handleSubmit() {
-    const itensValidos = itens.filter(i => i.sabor_id && i.quantidade > 0);
+    let itensValidos = itens.filter(i => i.sabor_id && i.quantidade > 0);
+    // Add brinde as free item
+    if (Number(brindeQtd) > 0 && brindeSaborId) {
+      itensValidos.push({ sabor_id: brindeSaborId, quantidade: Number(brindeQtd), preco_unitario: "0", preco_auto: false });
+    }
     if (itensValidos.length === 0) return toast({ title: "Adicione ao menos um gelo com quantidade", variant: "destructive" });
     if (!clienteId) return toast({ title: "Selecione o cliente", variant: "destructive" });
 
