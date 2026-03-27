@@ -163,8 +163,9 @@ export default function ProtectedRoute({ children, adminOnly, superAdminOnly }: 
     return <Navigate to="/painel" replace />;
   }
 
-  // Admin only routes (admin or factory_owner or super_admin can access)
+  // Producao and vendedor should redirect to their allowed areas
   if (adminOnly && role !== "admin" && role !== "factory_owner" && role !== "super_admin") {
+    if (role === "vendedor") return <Navigate to="/painel/vendas" replace />;
     return <Navigate to="/painel/producao" replace />;
   }
 
@@ -177,7 +178,10 @@ export function isRouteAllowed(path: string, role: string | null): boolean {
   if (role === "producao") {
     return PRODUCAO_ROUTES.some((r) => path === r || path.startsWith(r + "/"));
   }
+  if (role === "vendedor") {
+    return VENDEDOR_ROUTES.some((r) => path === r || path.startsWith(r + "/"));
+  }
   return false;
 }
 
-export { PRODUCAO_ROUTES, SUPER_ADMIN_ROUTES };
+export { PRODUCAO_ROUTES, VENDEDOR_ROUTES, SUPER_ADMIN_ROUTES };
