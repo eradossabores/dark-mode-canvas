@@ -75,6 +75,9 @@ export default function Vendas() {
   const [detalhePgto, setDetalhePgto] = useState<"pix" | "especie" | "misto">("especie");
   const [detalhePix, setDetalhePix] = useState("");
   const [detalheEspecie, setDetalheEspecie] = useState("");
+  const [valorFrete, setValorFrete] = useState("");
+  const [brindeQtd, setBrindeQtd] = useState("");
+  const [brindeSaborId, setBrindeSaborId] = useState("");
   const [loading, setLoading] = useState(false);
   const [sendingToProduction, setSendingToProduction] = useState<string | null>(null);
   const [page, setPage] = useState(0);
