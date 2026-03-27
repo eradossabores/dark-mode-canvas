@@ -308,11 +308,13 @@ export default function Vendas() {
       const vencInfo = (formaPagamento === "boleto" || formaPagamento === "parcelado") && dataVencimento
         ? ` | Vencimento: ${format(dataVencimento, "dd/MM/yyyy")}`
         : "";
+      const freteInfo = Number(valorFrete) > 0 ? ` | Frete: R$${Number(valorFrete).toFixed(2)}` : "";
+      const brindeInfo = Number(brindeQtd) > 0 && brindeSaborId ? ` | Brinde: ${brindeQtd}un` : "";
       await realizarVenda({
         p_cliente_id: clienteId, p_operador: "sistema",
         p_observacoes: observacoes
-          ? `[${formaPagamento}]${formaPagamento === "parcelado" && valorTotal ? ` Valor: R$${valorTotal} | Entrada: R$${valorEntrada} | Restante: R$${valorRestante}` : ""}${vencInfo} ${observacoes}`
-          : `[${formaPagamento}]${formaPagamento === "parcelado" && valorTotal ? ` Valor: R$${valorTotal} | Entrada: R$${valorEntrada} | Restante: R$${valorRestante}` : ""}${vencInfo}`,
+          ? `[${formaPagamento}]${formaPagamento === "parcelado" && valorTotal ? ` Valor: R$${valorTotal} | Entrada: R$${valorEntrada} | Restante: R$${valorRestante}` : ""}${vencInfo}${freteInfo}${brindeInfo} ${observacoes}`
+          : `[${formaPagamento}]${formaPagamento === "parcelado" && valorTotal ? ` Valor: R$${valorTotal} | Entrada: R$${valorEntrada} | Restante: R$${valorRestante}` : ""}${vencInfo}${freteInfo}${brindeInfo}`,
         p_itens: itensValidos,
         ...(parcelasData ? { p_parcelas: parcelasData } : {}),
         p_ignorar_estoque: ignorarEstoque,
