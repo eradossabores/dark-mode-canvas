@@ -569,6 +569,7 @@ export default function PlanoProducaoDiario() {
       }
 
       setAnalises(result);
+      setGelosPorLoteConfig(defaultGelosPorLote);
     } catch (e) {
       console.error("Erro ao calcular plano:", e);
       toast({ title: "Erro ao carregar dados", variant: "destructive" });
