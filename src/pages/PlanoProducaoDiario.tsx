@@ -35,6 +35,7 @@ interface SaborAnalise {
   lotesCustom: number;
   prioritario: boolean;
   ordemPrioridade: number;
+  gelosPorLote: number;
   // Learning fields
   loteAprendido: number | null;
   confianca: number; // 0-100
