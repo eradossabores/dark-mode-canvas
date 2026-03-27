@@ -174,7 +174,7 @@ function calcularFeedback(
   const decisoesRecentes = decisoes.filter((d: any) => 
     d.sabor_id === saborId && new Date(d.created_at) >= trintaDias
   );
-  const planejado = decisoesRecentes.reduce((s: number, d: any) => s + d.lotes_autorizados * (gelosPorLoteDefault || 84), 0);
+  const planejado = decisoesRecentes.reduce((s: number, d: any) => s + d.lotes_autorizados * gelosPorLote, 0);
   
   const produzido = producoes
     .filter((p: any) => p.sabor_id === saborId && new Date(p.created_at) >= trintaDias)
