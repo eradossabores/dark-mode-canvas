@@ -649,6 +649,11 @@ export default function Vendas() {
       toast({
         title: tipoPedido === "entrega" ? "🚚 Enviado para Entrega!" : "🧊 Enviado para Retirada!",
         description: `Pedido criado no Monitor de Produção para ${clienteNome}`,
+        action: (
+          <ToastAction altText="Abrir Monitor" onClick={() => navigate("/painel/monitor-producao")}>
+            Abrir Monitor
+          </ToastAction>
+        ),
       });
       setProdDialog(null);
       loadData();
