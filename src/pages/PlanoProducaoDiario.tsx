@@ -1463,7 +1463,7 @@ export default function PlanoProducaoDiario() {
 
             <div className="flex justify-between items-center pt-2 border-t">
               <span className="text-sm font-bold">
-                Total: {editItens.reduce((s, i) => s + i.lotes_autorizados, 0)} lotes · {editItens.reduce((s, i) => s + i.lotes_autorizados * 84, 0)} un
+                Total: {editItens.reduce((s, i) => s + i.lotes_autorizados, 0)} lotes · {editItens.reduce((s, i) => s + i.lotes_autorizados * gelosPorLoteConfig, 0)} un
               </span>
               <Button onClick={handleSaveEdit}>Salvar</Button>
             </div>
