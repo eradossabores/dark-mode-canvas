@@ -235,6 +235,7 @@ export default function PlanoProducaoDiario() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResumo, setAiResumo] = useState<string | null>(null);
   const [aiAtivo, setAiAtivo] = useState(false);
+  const [gelosPorLoteConfig, setGelosPorLoteConfig] = useState(84);
   const [presencas, setPresencas] = useState<any[]>([]);
 
   const hoje = new Date();
