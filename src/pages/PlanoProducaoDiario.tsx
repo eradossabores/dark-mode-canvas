@@ -745,7 +745,7 @@ export default function PlanoProducaoDiario() {
       localStorage.setItem(`${CHECKLIST_KEY}-operador`, nomesFuncionarios || "sistema");
 
       const totalLotesCalc = itens.reduce((s, i) => s + i.lotesCustom, 0);
-      const totalUnidadesCalc = totalLotesCalc * 84;
+      const totalUnidadesCalc = itens.reduce((s, i) => s + i.lotesCustom * (i.gelosPorLote || gelosPorLoteConfig), 0);
       const labelDia = diaOffset > 0 ? `para ${dataAlvo.toLocaleDateString("pt-BR")}` : "de hoje";
       const producaoUrl = `/painel/producao?data=${alvoStr}`;
 
