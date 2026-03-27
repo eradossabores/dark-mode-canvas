@@ -35,6 +35,7 @@ interface SaborAnalise {
   lotesCustom: number;
   prioritario: boolean;
   ordemPrioridade: number;
+  gelosPorLote: number;
   // Learning fields
   loteAprendido: number | null;
   confianca: number; // 0-100
@@ -164,7 +165,8 @@ function calcularFeedback(
   decisoes: any[],
   producoes: any[],
   vendaItens: any[],
-  saborId: string
+  saborId: string,
+  gelosPorLote: number = 84
 ): { feedbackScore: number; feedbackLabel: string } {
   // Last 30 days
   const trintaDias = new Date();
@@ -173,7 +175,7 @@ function calcularFeedback(
   const decisoesRecentes = decisoes.filter((d: any) => 
     d.sabor_id === saborId && new Date(d.created_at) >= trintaDias
   );
-  const planejado = decisoesRecentes.reduce((s: number, d: any) => s + d.lotes_autorizados * 84, 0);
+  const planejado = decisoesRecentes.reduce((s: number, d: any) => s + d.lotes_autorizados * gelosPorLote, 0);
   
   const produzido = producoes
     .filter((p: any) => p.sabor_id === saborId && new Date(p.created_at) >= trintaDias)
@@ -233,6 +235,7 @@ export default function PlanoProducaoDiario() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResumo, setAiResumo] = useState<string | null>(null);
   const [aiAtivo, setAiAtivo] = useState(false);
+  const [gelosPorLoteConfig, setGelosPorLoteConfig] = useState(84);
   const [presencas, setPresencas] = useState<any[]>([]);
 
   const hoje = new Date();
@@ -288,7 +291,7 @@ export default function PlanoProducaoDiario() {
         dia,
         itens,
         totalLotes: itens.reduce((s: number, i: any) => s + i.lotes_autorizados, 0),
-        totalUnidades: itens.reduce((s: number, i: any) => s + i.lotes_autorizados * 84, 0),
+        totalUnidades: itens.reduce((s: number, i: any) => s + i.lotes_autorizados * gelosPorLoteConfig, 0),
         operador: itens[0]?.operador || "sistema",
       }));
 
@@ -380,6 +383,7 @@ export default function PlanoProducaoDiario() {
       let q5 = (supabase as any).from("decisoes_producao").select("*").order("created_at", { ascending: false }).limit(500);
       let q6 = (supabase as any).from("producoes").select("sabor_id, quantidade_total, created_at").gte("created_at", trintaDias.toISOString());
       let q7 = (supabase as any).from("venda_itens").select("sabor_id, quantidade, vendas!inner(created_at, status)").gte("vendas.created_at", trintaDias.toISOString()).neq("vendas.status", "cancelada");
+      let q8 = (supabase as any).from("sabor_receita").select("sabor_id, gelos_por_lote");
       
       if (factoryId) {
         q2 = q2.eq("factory_id", factoryId);
@@ -387,9 +391,15 @@ export default function PlanoProducaoDiario() {
         q4 = q4.eq("factory_id", factoryId);
         q5 = q5.eq("factory_id", factoryId);
         q6 = q6.eq("factory_id", factoryId);
+        q8 = q8.eq("factory_id", factoryId);
       }
 
-      const [vendasRes, gelosRes, saboresRes, funcsRes, decisoesRes, producoesRes, vendaItensRecentesRes] = await Promise.all([q1, q2, q3, q4, q5, q6, q7]);
+      const [vendasRes, gelosRes, saboresRes, funcsRes, decisoesRes, producoesRes, vendaItensRecentesRes, receitasRes] = await Promise.all([q1, q2, q3, q4, q5, q6, q7, q8]);
+
+      // Build map of sabor_id -> gelos_por_lote
+      const gelosPorLoteMap: Record<string, number> = {};
+      (receitasRes.data || []).forEach((r: any) => { gelosPorLoteMap[r.sabor_id] = r.gelos_por_lote; });
+      const defaultGelosPorLote = Object.values(gelosPorLoteMap)[0] || 84;
 
       const funcs = funcsRes.data || [];
       setFuncionarios(funcs);
@@ -465,10 +475,11 @@ export default function PlanoProducaoDiario() {
         if (mediaDiaria7d > mediaDiaria30d * 1.2) tendencia = "alta";
         else if (mediaDiaria7d < mediaDiaria30d * 0.8) tendencia = "baixa";
 
+        const gelosPorLote = gelosPorLoteMap[sabor.id] || defaultGelosPorLote;
         const diasCobertura = mediaDiaria7d > 0 ? Math.floor(estoqueAtual / mediaDiaria7d) : 999;
         const necessario7d = Math.ceil(mediaDiaria7d * 7);
         const deficit = Math.max(0, necessario7d - estoqueAtual);
-        const loteSugerido = Math.ceil(deficit / 84);
+        const loteSugerido = Math.ceil(deficit / gelosPorLote);
 
         const idx = prioridadeDiaria.findIndex(p => sabor.nome.toLowerCase().includes(p));
         const prioritario = idx !== -1;
@@ -477,7 +488,7 @@ export default function PlanoProducaoDiario() {
         const aprendizado = calcularAprendizado(decisoes, sabor.id, diaSemana, loteSugerido);
 
         // Feedback loop
-        const feedback = calcularFeedback(decisoes, producoes, vendaItensRecentes, sabor.id);
+        const feedback = calcularFeedback(decisoes, producoes, vendaItensRecentes, sabor.id, gelosPorLote);
 
         // Only auto-fill when confidence is HIGH (85%+)
         const usarAprendido = modoIA && aprendizado.loteAprendido !== null && aprendizado.nivelConfianca === "alta";
@@ -501,6 +512,7 @@ export default function PlanoProducaoDiario() {
           lotesCustom: loteFinal,
           prioritario,
           ordemPrioridade: prioritario ? idx : 999,
+          gelosPorLote,
           loteAprendido: aprendizado.loteAprendido,
           confianca: aprendizado.confianca,
           historicoAjustes: aprendizado.historicoAjustes,
@@ -557,6 +569,7 @@ export default function PlanoProducaoDiario() {
       }
 
       setAnalises(result);
+      setGelosPorLoteConfig(defaultGelosPorLote);
     } catch (e) {
       console.error("Erro ao calcular plano:", e);
       toast({ title: "Erro ao carregar dados", variant: "destructive" });
@@ -732,7 +745,7 @@ export default function PlanoProducaoDiario() {
       localStorage.setItem(`${CHECKLIST_KEY}-operador`, nomesFuncionarios || "sistema");
 
       const totalLotesCalc = itens.reduce((s, i) => s + i.lotesCustom, 0);
-      const totalUnidadesCalc = totalLotesCalc * 84;
+      const totalUnidadesCalc = itens.reduce((s, i) => s + i.lotesCustom * (i.gelosPorLote || gelosPorLoteConfig), 0);
       const labelDia = diaOffset > 0 ? `para ${dataAlvo.toLocaleDateString("pt-BR")}` : "de hoje";
       const producaoUrl = `/painel/producao?data=${alvoStr}`;
 
@@ -758,7 +771,7 @@ export default function PlanoProducaoDiario() {
 
   const selecionados = analises.filter(a => a.selecionado && a.lotesCustom > 0);
   const totalLotes = selecionados.reduce((s, a) => s + a.lotesCustom, 0);
-  const totalUnidades = totalLotes * 84;
+  const totalUnidades = selecionados.reduce((s, a) => s + a.lotesCustom * (a.gelosPorLote || gelosPorLoteConfig), 0);
   const progressTotal = analises.length > 0 ? Math.round((selecionados.length / analises.length) * 100) : 0;
   const confiancaMedia = analises.length > 0 
     ? Math.round(analises.reduce((s, a) => s + a.confianca, 0) / analises.length) 
@@ -1133,7 +1146,7 @@ export default function PlanoProducaoDiario() {
                   </div>
 
                   <p className="text-[10px] text-muted-foreground whitespace-nowrap">
-                    {a.lotesCustom * 84} un
+                    {a.lotesCustom * (a.gelosPorLote || gelosPorLoteConfig)} un
                   </p>
                 </div>
 
@@ -1273,7 +1286,7 @@ export default function PlanoProducaoDiario() {
                             <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
                             <span className="font-medium">{item.sabor_nome}</span>
                             <span className="font-black">{item.lotes_autorizados}L</span>
-                            <span className="text-muted-foreground">({item.lotes_autorizados * 84}un)</span>
+                            <span className="text-muted-foreground">({item.lotes_autorizados * gelosPorLoteConfig}un)</span>
                           </div>
                         );
                       })}
@@ -1409,7 +1422,7 @@ export default function PlanoProducaoDiario() {
                     >+</Button>
                   </div>
                   <span className="text-[10px] text-muted-foreground w-12 text-right">
-                    {item.lotes_autorizados * 84}un
+                    {item.lotes_autorizados * gelosPorLoteConfig}un
                   </span>
                 </div>
               );
@@ -1450,7 +1463,7 @@ export default function PlanoProducaoDiario() {
 
             <div className="flex justify-between items-center pt-2 border-t">
               <span className="text-sm font-bold">
-                Total: {editItens.reduce((s, i) => s + i.lotes_autorizados, 0)} lotes · {editItens.reduce((s, i) => s + i.lotes_autorizados * 84, 0)} un
+                Total: {editItens.reduce((s, i) => s + i.lotes_autorizados, 0)} lotes · {editItens.reduce((s, i) => s + i.lotes_autorizados * gelosPorLoteConfig, 0)} un
               </span>
               <Button onClick={handleSaveEdit}>Salvar</Button>
             </div>

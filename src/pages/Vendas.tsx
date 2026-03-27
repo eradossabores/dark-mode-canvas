@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useSearchParams } from "react-router-dom";
 import { startOfMonth, endOfMonth, subMonths, startOfWeek, endOfWeek, startOfDay, endOfDay, isAfter, isBefore } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Plus, Trash2, ShoppingCart, Pencil, Eye, CalendarIcon, X, Truck, Package, History, CalendarClock, Receipt } from "lucide-react";
 import ReciboVenda from "@/components/vendas/ReciboVenda";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { ToastAction } from "@/components/ui/toast";
 
 const FORMAS_PAGAMENTO = [
   { value: "amostra", label: "Amostra (Grátis)" },
@@ -44,6 +45,7 @@ function normalizeStr(s: string) {
 
 export default function Vendas() {
   const { factoryId, role } = useAuth();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const clienteFilter = searchParams.get("cliente") || "";
   const [clientes, setClientes] = useState<any[]>([]);
@@ -75,6 +77,9 @@ export default function Vendas() {
   const [detalhePgto, setDetalhePgto] = useState<"pix" | "especie" | "misto">("especie");
   const [detalhePix, setDetalhePix] = useState("");
   const [detalheEspecie, setDetalheEspecie] = useState("");
+  const [valorFrete, setValorFrete] = useState("");
+  const [brindeQtd, setBrindeQtd] = useState("");
+  const [brindeSaborId, setBrindeSaborId] = useState("");
   const [loading, setLoading] = useState(false);
   const [sendingToProduction, setSendingToProduction] = useState<string | null>(null);
   const [page, setPage] = useState(0);
@@ -262,7 +267,11 @@ export default function Vendas() {
   }
 
   async function handleSubmit() {
-    const itensValidos = itens.filter(i => i.sabor_id && i.quantidade > 0);
+    let itensValidos = itens.filter(i => i.sabor_id && i.quantidade > 0);
+    // Add brinde as free item
+    if (Number(brindeQtd) > 0 && brindeSaborId) {
+      itensValidos.push({ sabor_id: brindeSaborId, quantidade: Number(brindeQtd), preco_unitario: "0", preco_auto: false });
+    }
     if (itensValidos.length === 0) return toast({ title: "Adicione ao menos um gelo com quantidade", variant: "destructive" });
     if (!clienteId) return toast({ title: "Selecione o cliente", variant: "destructive" });
 
@@ -301,11 +310,13 @@ export default function Vendas() {
       const vencInfo = (formaPagamento === "boleto" || formaPagamento === "parcelado") && dataVencimento
         ? ` | Vencimento: ${format(dataVencimento, "dd/MM/yyyy")}`
         : "";
+      const freteInfo = Number(valorFrete) > 0 ? ` | Frete: R$${Number(valorFrete).toFixed(2)}` : "";
+      const brindeInfo = Number(brindeQtd) > 0 && brindeSaborId ? ` | Brinde: ${brindeQtd}un` : "";
       await realizarVenda({
         p_cliente_id: clienteId, p_operador: "sistema",
         p_observacoes: observacoes
-          ? `[${formaPagamento}]${formaPagamento === "parcelado" && valorTotal ? ` Valor: R$${valorTotal} | Entrada: R$${valorEntrada} | Restante: R$${valorRestante}` : ""}${vencInfo} ${observacoes}`
-          : `[${formaPagamento}]${formaPagamento === "parcelado" && valorTotal ? ` Valor: R$${valorTotal} | Entrada: R$${valorEntrada} | Restante: R$${valorRestante}` : ""}${vencInfo}`,
+          ? `[${formaPagamento}]${formaPagamento === "parcelado" && valorTotal ? ` Valor: R$${valorTotal} | Entrada: R$${valorEntrada} | Restante: R$${valorRestante}` : ""}${vencInfo}${freteInfo}${brindeInfo} ${observacoes}`
+          : `[${formaPagamento}]${formaPagamento === "parcelado" && valorTotal ? ` Valor: R$${valorTotal} | Entrada: R$${valorEntrada} | Restante: R$${valorRestante}` : ""}${vencInfo}${freteInfo}${brindeInfo}`,
         p_itens: itensValidos,
         ...(parcelasData ? { p_parcelas: parcelasData } : {}),
         p_ignorar_estoque: ignorarEstoque,
@@ -316,7 +327,7 @@ export default function Vendas() {
         .eq("factory_id", factoryId)
         .order("created_at", { ascending: false }).limit(1);
       if (latestVenda?.[0]) {
-        const totalVendaCalc = itensValidos.reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0);
+        const totalVendaCalc = itensValidos.reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0) + (Number(valorFrete) || 0);
         const vPix = detalhePgto === "pix" ? totalVendaCalc : detalhePgto === "misto" ? (parseFloat(detalhePix.replace(",", ".")) || 0) : 0;
         const vEsp = detalhePgto === "especie" ? totalVendaCalc : detalhePgto === "misto" ? (parseFloat(detalheEspecie.replace(",", ".")) || 0) : 0;
         const updateData: any = { forma_pagamento: formaPagamento, status: statusVenda, valor_pix: vPix, valor_especie: vEsp };
@@ -380,7 +391,7 @@ export default function Vendas() {
         }
       }
 
-      setOpen(false); setItens([]); setClienteId(""); setFormaPagamento("dinheiro"); setObservacoes(""); setNumeroNf(""); setDataVenda(new Date()); setValorTotal(""); setValorEntrada(""); setValorRestante(""); setDataVencimento(undefined); setIgnorarEstoque(false); setStatusVenda("pendente"); setDetalhePgto("especie"); setDetalhePix(""); setDetalheEspecie("");
+      setOpen(false); setItens([]); setClienteId(""); setFormaPagamento("dinheiro"); setObservacoes(""); setNumeroNf(""); setDataVenda(new Date()); setValorTotal(""); setValorEntrada(""); setValorRestante(""); setDataVencimento(undefined); setIgnorarEstoque(false); setStatusVenda("pendente"); setDetalhePgto("especie"); setDetalhePix(""); setDetalheEspecie(""); setValorFrete(""); setBrindeQtd(""); setBrindeSaborId("");
       loadData();
     } catch (e: any) {
       toast({ title: "Erro na venda", description: e.message, variant: "destructive" });
@@ -640,6 +651,11 @@ export default function Vendas() {
       toast({
         title: tipoPedido === "entrega" ? "🚚 Enviado para Entrega!" : "🧊 Enviado para Retirada!",
         description: `Pedido criado no Monitor de Produção para ${clienteNome}`,
+        action: (
+          <ToastAction altText="Abrir Monitor" onClick={() => navigate("/painel/monitor-producao")}>
+            Abrir Monitor
+          </ToastAction>
+        ),
       });
       setProdDialog(null);
       loadData();
@@ -735,9 +751,25 @@ export default function Vendas() {
                       <span className="text-lg">{itens.reduce((sum, item) => sum + (item.quantidade || 0), 0)} un.</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span>Total da Venda:</span>
-                      <span className="text-lg">R$ {itens.reduce((sum, item) => sum + (Number(item.preco_unitario) || 0) * (item.quantidade || 0), 0).toFixed(2)}</span>
+                      <span>Subtotal Produtos:</span>
+                      <span>R$ {itens.reduce((sum, item) => sum + (Number(item.preco_unitario) || 0) * (item.quantidade || 0), 0).toFixed(2)}</span>
                     </div>
+                    {Number(valorFrete) > 0 && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span>Frete:</span>
+                        <span>R$ {Number(valorFrete).toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center">
+                      <span>Total da Venda:</span>
+                      <span className="text-lg">R$ {(itens.reduce((sum, item) => sum + (Number(item.preco_unitario) || 0) * (item.quantidade || 0), 0) + (Number(valorFrete) || 0)).toFixed(2)}</span>
+                    </div>
+                    {Number(brindeQtd) > 0 && brindeSaborId && (
+                      <div className="flex justify-between items-center text-sm text-emerald-600">
+                        <span>🎁 Brinde:</span>
+                        <span>+{brindeQtd} un ({sabores.find(s => s.id === brindeSaborId)?.nome || "?"})</span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -835,6 +867,25 @@ export default function Vendas() {
                 </div>
               )}
               <div><Label>Nº Nota Fiscal (NF)</Label><Input value={numeroNf} onChange={(e) => setNumeroNf(e.target.value)} placeholder="Ex: 001234" /></div>
+              {/* Frete */}
+              <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
+                <Label className="text-xs font-medium">🚚 Frete (opcional)</Label>
+                <div className="relative">
+                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
+                  <Input type="number" step="0.01" min="0" className="pl-7" value={valorFrete} onChange={(e) => setValorFrete(e.target.value)} placeholder="0.00" />
+                </div>
+              </div>
+              {/* Brinde */}
+              <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
+                <Label className="text-xs font-medium">🎁 Brinde (opcional)</Label>
+                <div className="flex gap-2">
+                  <Select value={brindeSaborId} onValueChange={setBrindeSaborId}>
+                    <SelectTrigger className="flex-1"><SelectValue placeholder="Sabor do brinde" /></SelectTrigger>
+                    <SelectContent>{sabores.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <Input type="number" min={0} className="w-20" value={brindeQtd} onChange={(e) => setBrindeQtd(e.target.value)} placeholder="Qtd" />
+                </div>
+              </div>
               <div><Label>Observações</Label><Input value={observacoes} onChange={(e) => setObservacoes(e.target.value)} /></div>
               <div className="flex items-center space-x-2">
                 <Checkbox id="ignorar-estoque" checked={ignorarEstoque} onCheckedChange={(v) => setIgnorarEstoque(!!v)} />

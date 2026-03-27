@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSessionTracker } from "@/hooks/useSessionTracker";
 import type { User, Session } from "@supabase/supabase-js";
 
-type AppRole = "super_admin" | "admin" | "factory_owner" | "producao" | null;
+type AppRole = "super_admin" | "admin" | "factory_owner" | "producao" | "vendedor" | null;
 type ApprovalStatus = "pendente" | "aprovado" | "rejeitado" | null;
 
 interface SubscriptionInfo {
