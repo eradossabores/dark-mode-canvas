@@ -13,6 +13,14 @@ const PRODUCAO_ROUTES = [
   "/painel/estoque",
 ];
 
+const VENDEDOR_ROUTES = [
+  "/painel/vendas",
+  "/painel/estoque",
+  "/painel/clientes",
+  "/painel/a-receber",
+  "/painel/monitor-producao",
+];
+
 // Routes only super_admin can access
 const SUPER_ADMIN_ROUTES = [
   "/super-admin",
