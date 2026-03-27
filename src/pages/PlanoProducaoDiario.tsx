@@ -771,7 +771,7 @@ export default function PlanoProducaoDiario() {
 
   const selecionados = analises.filter(a => a.selecionado && a.lotesCustom > 0);
   const totalLotes = selecionados.reduce((s, a) => s + a.lotesCustom, 0);
-  const totalUnidades = totalLotes * 84;
+  const totalUnidades = selecionados.reduce((s, a) => s + a.lotesCustom * (a.gelosPorLote || gelosPorLoteConfig), 0);
   const progressTotal = analises.length > 0 ? Math.round((selecionados.length / analises.length) * 100) : 0;
   const confiancaMedia = analises.length > 0 
     ? Math.round(analises.reduce((s, a) => s + a.confianca, 0) / analises.length) 
