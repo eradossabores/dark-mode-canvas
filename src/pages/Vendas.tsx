@@ -44,6 +44,7 @@ function normalizeStr(s: string) {
 
 export default function Vendas() {
   const { factoryId, role } = useAuth();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const clienteFilter = searchParams.get("cliente") || "";
   const [clientes, setClientes] = useState<any[]>([]);
