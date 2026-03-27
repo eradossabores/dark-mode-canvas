@@ -1286,7 +1286,7 @@ export default function PlanoProducaoDiario() {
                             <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
                             <span className="font-medium">{item.sabor_nome}</span>
                             <span className="font-black">{item.lotes_autorizados}L</span>
-                            <span className="text-muted-foreground">({item.lotes_autorizados * 84}un)</span>
+                            <span className="text-muted-foreground">({item.lotes_autorizados * gelosPorLoteConfig}un)</span>
                           </div>
                         );
                       })}
