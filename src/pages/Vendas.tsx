@@ -738,9 +738,25 @@ export default function Vendas() {
                       <span className="text-lg">{itens.reduce((sum, item) => sum + (item.quantidade || 0), 0)} un.</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span>Total da Venda:</span>
-                      <span className="text-lg">R$ {itens.reduce((sum, item) => sum + (Number(item.preco_unitario) || 0) * (item.quantidade || 0), 0).toFixed(2)}</span>
+                      <span>Subtotal Produtos:</span>
+                      <span>R$ {itens.reduce((sum, item) => sum + (Number(item.preco_unitario) || 0) * (item.quantidade || 0), 0).toFixed(2)}</span>
                     </div>
+                    {Number(valorFrete) > 0 && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span>Frete:</span>
+                        <span>R$ {Number(valorFrete).toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center">
+                      <span>Total da Venda:</span>
+                      <span className="text-lg">R$ {(itens.reduce((sum, item) => sum + (Number(item.preco_unitario) || 0) * (item.quantidade || 0), 0) + (Number(valorFrete) || 0)).toFixed(2)}</span>
+                    </div>
+                    {Number(brindeQtd) > 0 && brindeSaborId && (
+                      <div className="flex justify-between items-center text-sm text-emerald-600">
+                        <span>🎁 Brinde:</span>
+                        <span>+{brindeQtd} un ({sabores.find(s => s.id === brindeSaborId)?.nome || "?"})</span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
