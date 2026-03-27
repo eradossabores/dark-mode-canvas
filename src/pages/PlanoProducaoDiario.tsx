@@ -164,7 +164,8 @@ function calcularFeedback(
   decisoes: any[],
   producoes: any[],
   vendaItens: any[],
-  saborId: string
+  saborId: string,
+  gelosPorLote: number = 84
 ): { feedbackScore: number; feedbackLabel: string } {
   // Last 30 days
   const trintaDias = new Date();
