@@ -511,6 +511,7 @@ export default function PlanoProducaoDiario() {
           lotesCustom: loteFinal,
           prioritario,
           ordemPrioridade: prioritario ? idx : 999,
+          gelosPorLote,
           loteAprendido: aprendizado.loteAprendido,
           confianca: aprendizado.confianca,
           historicoAjustes: aprendizado.historicoAjustes,
