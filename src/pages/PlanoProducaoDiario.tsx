@@ -486,7 +486,7 @@ export default function PlanoProducaoDiario() {
         const aprendizado = calcularAprendizado(decisoes, sabor.id, diaSemana, loteSugerido);
 
         // Feedback loop
-        const feedback = calcularFeedback(decisoes, producoes, vendaItensRecentes, sabor.id);
+        const feedback = calcularFeedback(decisoes, producoes, vendaItensRecentes, sabor.id, gelosPorLote);
 
         // Only auto-fill when confidence is HIGH (85%+)
         const usarAprendido = modoIA && aprendizado.loteAprendido !== null && aprendizado.nivelConfianca === "alta";
