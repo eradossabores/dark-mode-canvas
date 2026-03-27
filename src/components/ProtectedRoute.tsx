@@ -165,7 +165,7 @@ export default function ProtectedRoute({ children, adminOnly, superAdminOnly }: 
 
   // Producao and vendedor should redirect to their allowed areas
   if (adminOnly && role !== "admin" && role !== "factory_owner" && role !== "super_admin") {
-    if (role === "vendedor") return <Navigate to="/painel/vendas" replace />;
+    if ((role as string) === "vendedor") return <Navigate to="/painel/vendas" replace />;
     return <Navigate to="/painel/producao" replace />;
   }
 
