@@ -380,6 +380,7 @@ export default function PlanoProducaoDiario() {
       let q5 = (supabase as any).from("decisoes_producao").select("*").order("created_at", { ascending: false }).limit(500);
       let q6 = (supabase as any).from("producoes").select("sabor_id, quantidade_total, created_at").gte("created_at", trintaDias.toISOString());
       let q7 = (supabase as any).from("venda_itens").select("sabor_id, quantidade, vendas!inner(created_at, status)").gte("vendas.created_at", trintaDias.toISOString()).neq("vendas.status", "cancelada");
+      let q8 = (supabase as any).from("sabor_receita").select("sabor_id, gelos_por_lote");
       
       if (factoryId) {
         q2 = q2.eq("factory_id", factoryId);
@@ -387,9 +388,15 @@ export default function PlanoProducaoDiario() {
         q4 = q4.eq("factory_id", factoryId);
         q5 = q5.eq("factory_id", factoryId);
         q6 = q6.eq("factory_id", factoryId);
+        q8 = q8.eq("factory_id", factoryId);
       }
 
-      const [vendasRes, gelosRes, saboresRes, funcsRes, decisoesRes, producoesRes, vendaItensRecentesRes] = await Promise.all([q1, q2, q3, q4, q5, q6, q7]);
+      const [vendasRes, gelosRes, saboresRes, funcsRes, decisoesRes, producoesRes, vendaItensRecentesRes, receitasRes] = await Promise.all([q1, q2, q3, q4, q5, q6, q7, q8]);
+
+      // Build map of sabor_id -> gelos_por_lote
+      const gelosPorLoteMap: Record<string, number> = {};
+      (receitasRes.data || []).forEach((r: any) => { gelosPorLoteMap[r.sabor_id] = r.gelos_por_lote; });
+      const defaultGelosPorLote = Object.values(gelosPorLoteMap)[0] || 84;
 
       const funcs = funcsRes.data || [];
       setFuncionarios(funcs);
