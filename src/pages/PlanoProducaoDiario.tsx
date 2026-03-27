@@ -291,7 +291,7 @@ export default function PlanoProducaoDiario() {
         dia,
         itens,
         totalLotes: itens.reduce((s: number, i: any) => s + i.lotes_autorizados, 0),
-        totalUnidades: itens.reduce((s: number, i: any) => s + i.lotes_autorizados * (defaultGelosPorLoteHist || 84), 0),
+        totalUnidades: itens.reduce((s: number, i: any) => s + i.lotes_autorizados * gelosPorLoteConfig, 0),
         operador: itens[0]?.operador || "sistema",
       }));
 
