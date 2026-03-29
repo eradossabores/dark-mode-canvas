@@ -374,6 +374,19 @@ export default function Vendas() {
         descricao: `Venda para ${clienteNome} - R$ ${totalVenda.toFixed(2)} (${formaPagamento}) - ${itensValidos.length} item(ns)`,
       });
 
+      // Deduct sacos if selling by package
+      if (factoryUsaSacos && vendaPorPacote && factoryId) {
+        const totalUnidadesVendidas = itensValidos.reduce((s, i) => s + i.quantidade, 0);
+        const sacosConsumidos = Math.ceil(totalUnidadesVendidas / factoryUnidadesPorSaco);
+        const { data: estoqueAtual } = await (supabase as any)
+          .from("estoque_sacos").select("quantidade").eq("factory_id", factoryId).single();
+        if (estoqueAtual) {
+          await (supabase as any).from("estoque_sacos").update({
+            quantidade: Math.max(0, estoqueAtual.quantidade - sacosConsumidos),
+          }).eq("factory_id", factoryId);
+        }
+      }
+
       toast({ title: "Venda registrada com sucesso!" });
 
       // Check if client has phone → offer WhatsApp receipt
