@@ -527,8 +527,9 @@ export default function Estoque() {
       </Dialog>
 
       <Tabs defaultValue="gelos">
-        <TabsList>
+        <TabsList className="flex-wrap">
           <TabsTrigger value="gelos">Gelos Prontos</TabsTrigger>
+          <TabsTrigger value="sacos" className="gap-1">📦 Sacos</TabsTrigger>
           <TabsTrigger value="avarias" className="gap-1"><AlertTriangle className="h-3.5 w-3.5" />Avarias</TabsTrigger>
           <TabsTrigger value="freezers" className="gap-1"><Snowflake className="h-3.5 w-3.5" />Freezers</TabsTrigger>
           <TabsTrigger value="mp">Matéria-Prima</TabsTrigger>
