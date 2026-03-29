@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Settings, Save, Loader2 } from "lucide-react";
+import { Settings, Save, Loader2, Package } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import ConfigVendasSection from "@/components/configurar/ConfigVendasSection";
@@ -30,6 +32,13 @@ export default function ConfigurarFabrica() {
   const [config, setConfig] = useState<ConfigGeral>({ gelos_por_lote: 84, quantidade_insumo_geral: 400, quantidade_insumo_agua_coco: 500 });
   const [loadingRec, setLoadingRec] = useState(true);
   const [savingRec, setSavingRec] = useState(false);
+
+  // Saco config
+  const [usaSacos, setUsaSacos] = useState(false);
+  const [unidadesPorSaco, setUnidadesPorSaco] = useState(50);
+  const [estoqueSacos, setEstoqueSacos] = useState(0);
+  const [savingSacos, setSavingSacos] = useState(false);
+  const [loadingSacos, setLoadingSacos] = useState(true);
 
   useEffect(() => {
     loadReceitas();
