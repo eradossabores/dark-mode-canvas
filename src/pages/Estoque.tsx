@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Plus, Settings2, Trash2, Snowflake, AlertTriangle, Pencil } from "lucide-react";
+import SacosTab from "@/components/estoque/SacosTab";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -527,8 +528,9 @@ export default function Estoque() {
       </Dialog>
 
       <Tabs defaultValue="gelos">
-        <TabsList>
+        <TabsList className="flex-wrap">
           <TabsTrigger value="gelos">Gelos Prontos</TabsTrigger>
+          <TabsTrigger value="sacos" className="gap-1">📦 Sacos</TabsTrigger>
           <TabsTrigger value="avarias" className="gap-1"><AlertTriangle className="h-3.5 w-3.5" />Avarias</TabsTrigger>
           <TabsTrigger value="freezers" className="gap-1"><Snowflake className="h-3.5 w-3.5" />Freezers</TabsTrigger>
           <TabsTrigger value="mp">Matéria-Prima</TabsTrigger>
@@ -575,6 +577,10 @@ export default function Estoque() {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="sacos">
+          <SacosTab factoryId={factoryId} />
         </TabsContent>
 
         <TabsContent value="avarias">

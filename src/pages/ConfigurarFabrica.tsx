@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Settings, Save, Loader2 } from "lucide-react";
+import { Settings, Save, Loader2, Package } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import ConfigVendasSection from "@/components/configurar/ConfigVendasSection";
@@ -31,9 +33,58 @@ export default function ConfigurarFabrica() {
   const [loadingRec, setLoadingRec] = useState(true);
   const [savingRec, setSavingRec] = useState(false);
 
+  // Saco config
+  const [usaSacos, setUsaSacos] = useState(false);
+  const [unidadesPorSaco, setUnidadesPorSaco] = useState(50);
+  const [estoqueSacos, setEstoqueSacos] = useState(0);
+  const [savingSacos, setSavingSacos] = useState(false);
+  const [loadingSacos, setLoadingSacos] = useState(true);
+
   useEffect(() => {
     loadReceitas();
+    loadSacosConfig();
   }, [factoryId]);
+
+  async function loadSacosConfig() {
+    if (!factoryId) { setLoadingSacos(false); return; }
+    setLoadingSacos(true);
+    try {
+      const { data: factory } = await (supabase as any)
+        .from("factories").select("usa_sacos, unidades_por_saco").eq("id", factoryId).single();
+      if (factory) {
+        setUsaSacos(factory.usa_sacos || false);
+        setUnidadesPorSaco(factory.unidades_por_saco || 50);
+      }
+      const { data: estoque } = await (supabase as any)
+        .from("estoque_sacos").select("quantidade").eq("factory_id", factoryId).single();
+      setEstoqueSacos(estoque?.quantidade || 0);
+    } catch { /* ignore */ }
+    setLoadingSacos(false);
+  }
+
+  async function handleSaveSacos() {
+    if (!factoryId) return;
+    setSavingSacos(true);
+    try {
+      await (supabase as any).from("factories").update({
+        usa_sacos: usaSacos,
+        unidades_por_saco: unidadesPorSaco,
+      }).eq("id", factoryId);
+
+      // Upsert estoque_sacos
+      const { data: existing } = await (supabase as any)
+        .from("estoque_sacos").select("id").eq("factory_id", factoryId).single();
+      if (existing) {
+        await (supabase as any).from("estoque_sacos").update({ quantidade: estoqueSacos }).eq("factory_id", factoryId);
+      } else {
+        await (supabase as any).from("estoque_sacos").insert({ factory_id: factoryId, quantidade: estoqueSacos });
+      }
+      toast({ title: "✅ Configuração de sacos salva!" });
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+    setSavingSacos(false);
+  }
 
   async function loadReceitas() {
     if (!factoryId) { setLoadingRec(false); return; }
@@ -101,6 +152,7 @@ export default function ConfigurarFabrica() {
         <TabsList>
           <TabsTrigger value="vendas">💰 Tabela de Preços</TabsTrigger>
           <TabsTrigger value="producao">⚙️ Produção (Receitas)</TabsTrigger>
+          <TabsTrigger value="sacos">📦 Sacos / Pacotes</TabsTrigger>
         </TabsList>
 
         <TabsContent value="vendas">
@@ -213,6 +265,104 @@ export default function ConfigurarFabrica() {
                       <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Salvando...</>
                     ) : (
                       <><Save className="h-4 w-4 mr-2" /> Salvar Configurações</>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="sacos">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Configuração de Sacos para Estoque
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Configure se sua fábrica utiliza sacos para armazenar gelos antes da venda.
+                Se ativado, na hora da venda você poderá escolher vender por pacote (saco) ou por unidade.
+              </p>
+            </CardHeader>
+            <CardContent>
+              {loadingSacos ? (
+                <div className="flex items-center justify-center py-8 gap-2 text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Carregando...
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Toggle usa sacos */}
+                  <div className="flex items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <Label className="text-sm font-medium">Usar sacos para estoque</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Ative se sua fábrica armazena gelos dentro de sacos para venda em pacotes.
+                      </p>
+                    </div>
+                    <Switch checked={usaSacos} onCheckedChange={setUsaSacos} />
+                  </div>
+
+                  {usaSacos && (
+                    <>
+                      {/* Unidades por saco */}
+                      <div className="rounded-lg border p-4 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">📦</span>
+                          <h3 className="font-semibold text-sm">Unidades por Saco</h3>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Quantas unidades de gelo cabem dentro de cada saco.
+                        </p>
+                        <div className="flex items-center gap-3 bg-muted/50 rounded-lg p-3">
+                          <span className="text-sm font-medium whitespace-nowrap">1 Saco =</span>
+                          <Input
+                            type="number"
+                            min={1}
+                            className="h-9 text-center text-sm w-24 font-bold"
+                            value={unidadesPorSaco}
+                            onChange={(e) => setUnidadesPorSaco(Number(e.target.value))}
+                          />
+                          <span className="text-sm text-muted-foreground whitespace-nowrap">unidades</span>
+                        </div>
+                      </div>
+
+                      {/* Estoque atual de sacos */}
+                      <div className="rounded-lg border p-4 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">🧮</span>
+                          <h3 className="font-semibold text-sm">Estoque Atual de Sacos</h3>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Quantidade de sacos disponíveis no estoque.
+                        </p>
+                        <div className="flex items-center gap-3 bg-muted/50 rounded-lg p-3">
+                          <Input
+                            type="number"
+                            min={0}
+                            className="h-9 text-center text-sm w-24 font-bold"
+                            value={estoqueSacos}
+                            onChange={(e) => setEstoqueSacos(Number(e.target.value))}
+                          />
+                          <span className="text-sm text-muted-foreground whitespace-nowrap">sacos</span>
+                        </div>
+                      </div>
+
+                      {/* Resumo */}
+                      <div className="rounded-lg bg-primary/5 border border-primary/20 p-3">
+                        <p className="text-xs text-muted-foreground">
+                          📋 <strong>Resumo:</strong> {estoqueSacos} sacos × {unidadesPorSaco} unidades = <strong>{estoqueSacos * unidadesPorSaco} unidades</strong> em sacos.
+                          Na venda, ao selecionar "Pacote", o sistema descontará 1 saco + {unidadesPorSaco} unidades do estoque.
+                        </p>
+                      </div>
+                    </>
+                  )}
+
+                  <Button className="w-full" onClick={handleSaveSacos} disabled={savingSacos}>
+                    {savingSacos ? (
+                      <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Salvando...</>
+                    ) : (
+                      <><Save className="h-4 w-4 mr-2" /> Salvar Configuração de Sacos</>
                     )}
                   </Button>
                 </div>

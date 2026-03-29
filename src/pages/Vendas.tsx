@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Plus, Trash2, ShoppingCart, Pencil, Eye, CalendarIcon, X, Truck, Package, History, CalendarClock, Receipt } from "lucide-react";
 import ReciboVenda from "@/components/vendas/ReciboVenda";
@@ -82,6 +83,11 @@ export default function Vendas() {
   const [brindeSaborId, setBrindeSaborId] = useState("");
   const [loading, setLoading] = useState(false);
   const [sendingToProduction, setSendingToProduction] = useState<string | null>(null);
+
+  // Saco config from factory
+  const [factoryUsaSacos, setFactoryUsaSacos] = useState(false);
+  const [factoryUnidadesPorSaco, setFactoryUnidadesPorSaco] = useState(50);
+  const [vendaPorPacote, setVendaPorPacote] = useState(false);
   const [page, setPage] = useState(0);
   const [searchCliente, setSearchCliente] = useState("");
   const [filtroData, setFiltroData] = useState("ultimo_mes");
@@ -193,12 +199,22 @@ export default function Vendas() {
     setReciboOpen(true);
   }
 
-  async function loadData() {
+   async function loadData() {
     if (role !== "super_admin" && !factoryId) {
       setClientes([]);
       setSabores([]);
       setVendas([]);
       return;
+    }
+
+    // Load factory saco config
+    if (factoryId) {
+      const { data: fConfig } = await (supabase as any)
+        .from("factories").select("usa_sacos, unidades_por_saco").eq("id", factoryId).single();
+      if (fConfig) {
+        setFactoryUsaSacos(fConfig.usa_sacos || false);
+        setFactoryUnidadesPorSaco(fConfig.unidades_por_saco || 50);
+      }
     }
 
     let cQ = (supabase as any).from("clientes").select("id, nome").eq("status", "ativo").order("nome");
@@ -359,6 +375,19 @@ export default function Vendas() {
         descricao: `Venda para ${clienteNome} - R$ ${totalVenda.toFixed(2)} (${formaPagamento}) - ${itensValidos.length} item(ns)`,
       });
 
+      // Deduct sacos if selling by package
+      if (factoryUsaSacos && vendaPorPacote && factoryId) {
+        const totalUnidadesVendidas = itensValidos.reduce((s, i) => s + i.quantidade, 0);
+        const sacosConsumidos = Math.ceil(totalUnidadesVendidas / factoryUnidadesPorSaco);
+        const { data: estoqueAtual } = await (supabase as any)
+          .from("estoque_sacos").select("quantidade").eq("factory_id", factoryId).single();
+        if (estoqueAtual) {
+          await (supabase as any).from("estoque_sacos").update({
+            quantidade: Math.max(0, estoqueAtual.quantidade - sacosConsumidos),
+          }).eq("factory_id", factoryId);
+        }
+      }
+
       toast({ title: "Venda registrada com sucesso!" });
 
       // Check if client has phone → offer WhatsApp receipt
@@ -391,7 +420,7 @@ export default function Vendas() {
         }
       }
 
-      setOpen(false); setItens([]); setClienteId(""); setFormaPagamento("dinheiro"); setObservacoes(""); setNumeroNf(""); setDataVenda(new Date()); setValorTotal(""); setValorEntrada(""); setValorRestante(""); setDataVencimento(undefined); setIgnorarEstoque(false); setStatusVenda("pendente"); setDetalhePgto("especie"); setDetalhePix(""); setDetalheEspecie(""); setValorFrete(""); setBrindeQtd(""); setBrindeSaborId("");
+      setOpen(false); setItens([]); setClienteId(""); setFormaPagamento("dinheiro"); setObservacoes(""); setNumeroNf(""); setDataVenda(new Date()); setValorTotal(""); setValorEntrada(""); setValorRestante(""); setDataVencimento(undefined); setIgnorarEstoque(false); setStatusVenda("pendente"); setDetalhePgto("especie"); setDetalhePix(""); setDetalheEspecie(""); setValorFrete(""); setBrindeQtd(""); setBrindeSaborId(""); setVendaPorPacote(false);
       loadData();
     } catch (e: any) {
       toast({ title: "Erro na venda", description: e.message, variant: "destructive" });
@@ -893,6 +922,24 @@ export default function Vendas() {
                   <Input type="number" min={0} className="w-20" value={brindeQtd} onChange={(e) => setBrindeQtd(e.target.value)} placeholder="Qtd" />
                 </div>
               </div>
+              {/* Venda por Pacote (Sacos) */}
+              {factoryUsaSacos && (
+                <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-xs font-medium">📦 Venda por Pacote (Saco)</Label>
+                      <p className="text-[10px] text-muted-foreground">1 saco = {factoryUnidadesPorSaco} unidades. Desconta sacos do estoque.</p>
+                    </div>
+                    <Switch checked={vendaPorPacote} onCheckedChange={setVendaPorPacote} />
+                  </div>
+                  {vendaPorPacote && itens.filter(i => i.sabor_id && i.quantidade > 0).length > 0 && (
+                    <div className="text-xs text-muted-foreground bg-primary/5 rounded p-2">
+                      Total: {itens.reduce((s, i) => s + (i.quantidade || 0), 0)} unidades → 
+                      <strong> {Math.ceil(itens.reduce((s, i) => s + (i.quantidade || 0), 0) / factoryUnidadesPorSaco)} saco(s)</strong> serão descontados
+                    </div>
+                  )}
+                </div>
+              )}
               <div><Label>Observações</Label><Input value={observacoes} onChange={(e) => setObservacoes(e.target.value)} /></div>
               <div className="flex items-center space-x-2">
                 <Checkbox id="ignorar-estoque" checked={ignorarEstoque} onCheckedChange={(v) => setIgnorarEstoque(!!v)} />

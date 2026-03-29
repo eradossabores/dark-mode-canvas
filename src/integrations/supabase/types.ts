@@ -644,6 +644,35 @@ export type Database = {
           },
         ]
       }
+      estoque_sacos: {
+        Row: {
+          factory_id: string | null
+          id: string
+          quantidade: number
+          updated_at: string
+        }
+        Insert: {
+          factory_id?: string | null
+          id?: string
+          quantidade?: number
+          updated_at?: string
+        }
+        Update: {
+          factory_id?: string | null
+          id?: string
+          quantidade?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estoque_sacos_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: true
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       factories: {
         Row: {
           created_at: string | null
@@ -655,7 +684,9 @@ export type Database = {
           name: string
           owner_id: string
           theme: Json | null
+          unidades_por_saco: number
           updated_at: string | null
+          usa_sacos: boolean
         }
         Insert: {
           created_at?: string | null
@@ -667,7 +698,9 @@ export type Database = {
           name: string
           owner_id: string
           theme?: Json | null
+          unidades_por_saco?: number
           updated_at?: string | null
+          usa_sacos?: boolean
         }
         Update: {
           created_at?: string | null
@@ -679,7 +712,9 @@ export type Database = {
           name?: string
           owner_id?: string
           theme?: Json | null
+          unidades_por_saco?: number
           updated_at?: string | null
+          usa_sacos?: boolean
         }
         Relationships: []
       }
