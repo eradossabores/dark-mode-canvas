@@ -578,7 +578,10 @@ export default function Estoque() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="avarias">
+        <TabsContent value="sacos">
+          <SacosTab factoryId={factoryId} />
+        </TabsContent>
+
           <div className="flex justify-end mb-4">
             <Dialog open={openAvaria} onOpenChange={setOpenAvaria}>
               <DialogTrigger asChild>
