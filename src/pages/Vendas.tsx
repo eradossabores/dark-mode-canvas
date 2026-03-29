@@ -198,12 +198,22 @@ export default function Vendas() {
     setReciboOpen(true);
   }
 
-  async function loadData() {
+   async function loadData() {
     if (role !== "super_admin" && !factoryId) {
       setClientes([]);
       setSabores([]);
       setVendas([]);
       return;
+    }
+
+    // Load factory saco config
+    if (factoryId) {
+      const { data: fConfig } = await (supabase as any)
+        .from("factories").select("usa_sacos, unidades_por_saco").eq("id", factoryId).single();
+      if (fConfig) {
+        setFactoryUsaSacos(fConfig.usa_sacos || false);
+        setFactoryUnidadesPorSaco(fConfig.unidades_por_saco || 50);
+      }
     }
 
     let cQ = (supabase as any).from("clientes").select("id, nome").eq("status", "ativo").order("nome");
