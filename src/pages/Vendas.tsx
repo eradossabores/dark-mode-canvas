@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Plus, Trash2, ShoppingCart, Pencil, Eye, CalendarIcon, X, Truck, Package, History, CalendarClock, Receipt } from "lucide-react";
 import ReciboVenda from "@/components/vendas/ReciboVenda";
