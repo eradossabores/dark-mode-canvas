@@ -582,6 +582,7 @@ export default function Estoque() {
           <SacosTab factoryId={factoryId} />
         </TabsContent>
 
+        <TabsContent value="avarias">
           <div className="flex justify-end mb-4">
             <Dialog open={openAvaria} onOpenChange={setOpenAvaria}>
               <DialogTrigger asChild>
