@@ -152,6 +152,7 @@ export default function ConfigurarFabrica() {
         <TabsList>
           <TabsTrigger value="vendas">💰 Tabela de Preços</TabsTrigger>
           <TabsTrigger value="producao">⚙️ Produção (Receitas)</TabsTrigger>
+          <TabsTrigger value="sacos">📦 Sacos / Pacotes</TabsTrigger>
         </TabsList>
 
         <TabsContent value="vendas">
