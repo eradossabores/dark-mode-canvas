@@ -42,7 +42,49 @@ export default function ConfigurarFabrica() {
 
   useEffect(() => {
     loadReceitas();
+    loadSacosConfig();
   }, [factoryId]);
+
+  async function loadSacosConfig() {
+    if (!factoryId) { setLoadingSacos(false); return; }
+    setLoadingSacos(true);
+    try {
+      const { data: factory } = await (supabase as any)
+        .from("factories").select("usa_sacos, unidades_por_saco").eq("id", factoryId).single();
+      if (factory) {
+        setUsaSacos(factory.usa_sacos || false);
+        setUnidadesPorSaco(factory.unidades_por_saco || 50);
+      }
+      const { data: estoque } = await (supabase as any)
+        .from("estoque_sacos").select("quantidade").eq("factory_id", factoryId).single();
+      setEstoqueSacos(estoque?.quantidade || 0);
+    } catch { /* ignore */ }
+    setLoadingSacos(false);
+  }
+
+  async function handleSaveSacos() {
+    if (!factoryId) return;
+    setSavingSacos(true);
+    try {
+      await (supabase as any).from("factories").update({
+        usa_sacos: usaSacos,
+        unidades_por_saco: unidadesPorSaco,
+      }).eq("id", factoryId);
+
+      // Upsert estoque_sacos
+      const { data: existing } = await (supabase as any)
+        .from("estoque_sacos").select("id").eq("factory_id", factoryId).single();
+      if (existing) {
+        await (supabase as any).from("estoque_sacos").update({ quantidade: estoqueSacos }).eq("factory_id", factoryId);
+      } else {
+        await (supabase as any).from("estoque_sacos").insert({ factory_id: factoryId, quantidade: estoqueSacos });
+      }
+      toast({ title: "✅ Configuração de sacos salva!" });
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+    setSavingSacos(false);
+  }
 
   async function loadReceitas() {
     if (!factoryId) { setLoadingRec(false); return; }
