@@ -610,9 +610,7 @@ export default function Vendas() {
 
       const embalagemEscolhida = prodDialog ? prodEmbalagem : "1 saco";
 
-      const { data: pedido, error: pedidoErr } = await (supabase as any)
-        .from("pedidos_producao")
-        .insert({
+      const pedidoPayload: any = {
           cliente_id: freshVenda.cliente_id,
           tipo_embalagem: embalagemEscolhida,
           data_entrega: dataEntregaStr,
@@ -621,17 +619,26 @@ export default function Vendas() {
           status_pagamento: freshVenda.status === "paga" ? "pago" : "aguardando_pagamento",
           tipo_pedido: tipoPedido,
           venda_id: venda.id,
-        })
+      };
+      if (factoryId) pedidoPayload.factory_id = factoryId;
+
+      const { data: pedido, error: pedidoErr } = await (supabase as any)
+        .from("pedidos_producao")
+        .insert(pedidoPayload)
         .select()
         .single();
       if (pedidoErr) throw pedidoErr;
 
       // 4. Create pedido items
-      const itensBatch = vendaItens.map((i: any) => ({
-        pedido_id: pedido.id,
-        sabor_id: i.sabor_id,
-        quantidade: i.quantidade,
-      }));
+      const itensBatch = vendaItens.map((i: any) => {
+        const item: any = {
+          pedido_id: pedido.id,
+          sabor_id: i.sabor_id,
+          quantidade: i.quantidade,
+        };
+        if (factoryId) item.factory_id = factoryId;
+        return item;
+      });
       const { error: insertErr } = await (supabase as any).from("pedido_producao_itens").insert(itensBatch);
       if (insertErr) throw insertErr;
 
