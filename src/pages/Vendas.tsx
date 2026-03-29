@@ -82,6 +82,11 @@ export default function Vendas() {
   const [brindeSaborId, setBrindeSaborId] = useState("");
   const [loading, setLoading] = useState(false);
   const [sendingToProduction, setSendingToProduction] = useState<string | null>(null);
+
+  // Saco config from factory
+  const [factoryUsaSacos, setFactoryUsaSacos] = useState(false);
+  const [factoryUnidadesPorSaco, setFactoryUnidadesPorSaco] = useState(50);
+  const [vendaPorPacote, setVendaPorPacote] = useState(false);
   const [page, setPage] = useState(0);
   const [searchCliente, setSearchCliente] = useState("");
   const [filtroData, setFiltroData] = useState("ultimo_mes");
