@@ -24,6 +24,7 @@ interface Fornecedor {
   email: string | null;
   observacoes: string | null;
   ativo: boolean;
+  tipo: string;
 }
 
 interface Compra {
