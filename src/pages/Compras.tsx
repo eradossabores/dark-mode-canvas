@@ -118,6 +118,89 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const [dataCompra, setDataCompra] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [saving, setSaving] = useState(false);
   const [filterTipo, setFilterTipo] = useState("todos");
+  const [useCustomItem, setUseCustomItem] = useState(false);
+
+  // Fetch top items by sales volume
+  const [topInsumos, setTopInsumos] = useState<string[]>([]);
+  const [topEmbalagens, setTopEmbalagens] = useState<string[]>([]);
+  const [allInsumos, setAllInsumos] = useState<string[]>([]);
+  const [allEmbalagens, setAllEmbalagens] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!factoryId) return;
+    const fetchItems = async () => {
+      // Get venda_itens with sabor to rank by sales
+      const { data: vendaItens } = await (supabase as any)
+        .from("venda_itens")
+        .select("sabor_id, quantidade")
+        .eq("factory_id", factoryId);
+
+      // Count sales per sabor
+      const saborSales: Record<string, number> = {};
+      (vendaItens || []).forEach((vi: any) => {
+        saborSales[vi.sabor_id] = (saborSales[vi.sabor_id] || 0) + vi.quantidade;
+      });
+
+      // Get materias_primas (insumos)
+      const { data: mps } = await (supabase as any)
+        .from("materias_primas")
+        .select("id, nome")
+        .eq("factory_id", factoryId)
+        .order("nome");
+
+      // Get embalagens
+      const { data: embs } = await (supabase as any)
+        .from("embalagens")
+        .select("id, nome")
+        .eq("factory_id", factoryId)
+        .order("nome");
+
+      // Get sabor_receita to map materia_prima -> sabor sales
+      const { data: receitas } = await (supabase as any)
+        .from("sabor_receita")
+        .select("sabor_id, materia_prima_id, embalagem_id")
+        .eq("factory_id", factoryId);
+
+      // Rank insumos by linked sabor sales
+      const insumoSales: Record<string, number> = {};
+      const embSales: Record<string, number> = {};
+      (receitas || []).forEach((r: any) => {
+        const sales = saborSales[r.sabor_id] || 0;
+        insumoSales[r.materia_prima_id] = (insumoSales[r.materia_prima_id] || 0) + sales;
+        embSales[r.embalagem_id] = (embSales[r.embalagem_id] || 0) + sales;
+      });
+
+      const mpNames = (mps || []).map((m: any) => m.nome as string);
+      const embNames = (embs || []).map((e: any) => e.nome as string);
+      setAllInsumos(mpNames);
+      setAllEmbalagens(embNames);
+
+      // Top 5 insumos
+      const mpMap: Record<string, string> = {};
+      (mps || []).forEach((m: any) => { mpMap[m.id] = m.nome; });
+      const sortedInsumos = Object.entries(insumoSales)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 5)
+        .map(([id]) => mpMap[id])
+        .filter(Boolean);
+      setTopInsumos(sortedInsumos.length > 0 ? sortedInsumos : mpNames.slice(0, 5));
+
+      // Top 5 embalagens
+      const embMap: Record<string, string> = {};
+      (embs || []).forEach((e: any) => { embMap[e.id] = e.nome; });
+      const sortedEmbs = Object.entries(embSales)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 5)
+        .map(([id]) => embMap[id])
+        .filter(Boolean);
+      setTopEmbalagens(sortedEmbs.length > 0 ? sortedEmbs : embNames.slice(0, 5));
+    };
+    fetchItems();
+  }, [factoryId]);
+
+  const currentSuggestions = tipo === "insumo" ? topInsumos : topEmbalagens;
+  const allItems = tipo === "insumo" ? allInsumos : allEmbalagens;
+  const remainingItems = allItems.filter(i => !currentSuggestions.includes(i));
 
   const qty = parseFloat(quantidade) || 0;
   const valorTotal = parseFloat(valorTotalInput) || 0;
@@ -151,7 +234,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const resetForm = () => {
     setTipo("insumo"); setItemNome(""); setFornecedorId(""); setQuantidade("");
     setValorTotalInput(""); setTemFrete(false); setValorFrete(""); setObs("");
-    setDataCompra(format(new Date(), "yyyy-MM-dd"));
+    setDataCompra(format(new Date(), "yyyy-MM-dd")); setUseCustomItem(false);
   };
 
   const handleDelete = async (id: string) => {
@@ -176,7 +259,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Tipo</Label>
-                  <Select value={tipo} onValueChange={setTipo}>
+                  <Select value={tipo} onValueChange={(v) => { setTipo(v); setItemNome(""); setUseCustomItem(false); }}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="insumo">Insumo</SelectItem>
@@ -191,7 +274,53 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
               </div>
               <div>
                 <Label>Nome do Item *</Label>
-                <Input value={itemNome} onChange={e => setItemNome(e.target.value)} placeholder={tipo === "insumo" ? "Ex: Maçã Verde" : "Ex: Saco plástico 500ml"} />
+                {!useCustomItem ? (
+                  <div className="space-y-2">
+                    <Select value={itemNome} onValueChange={setItemNome}>
+                      <SelectTrigger><SelectValue placeholder="Selecione o item..." /></SelectTrigger>
+                      <SelectContent>
+                        {currentSuggestions.length > 0 && (
+                          <>
+                            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">⭐ Top 5 - Mais vendidos</div>
+                            {currentSuggestions.map(name => (
+                              <SelectItem key={name} value={name}>{name}</SelectItem>
+                            ))}
+                          </>
+                        )}
+                        {remainingItems.length > 0 && (
+                          <>
+                            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t mt-1 pt-1">Outros</div>
+                            {remainingItems.map(name => (
+                              <SelectItem key={name} value={name}>{name}</SelectItem>
+                            ))}
+                          </>
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs text-muted-foreground h-auto p-0"
+                      onClick={() => { setUseCustomItem(true); setItemNome(""); }}
+                    >
+                      + Digitar item personalizado
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Input value={itemNome} onChange={e => setItemNome(e.target.value)} placeholder={tipo === "insumo" ? "Ex: Maçã Verde" : "Ex: Saco plástico 500ml"} />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs text-muted-foreground h-auto p-0"
+                      onClick={() => { setUseCustomItem(false); setItemNome(""); }}
+                    >
+                      ← Voltar para lista
+                    </Button>
+                  </div>
+                )}
               </div>
               <div>
                 <Label>Fornecedor</Label>
@@ -387,28 +516,28 @@ function FornecedoresTab({ factoryId, fornecedores, onRefresh }: {
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-             <TableRow>
-                 <TableHead>Nome</TableHead>
-                 <TableHead>Tipo</TableHead>
-                 <TableHead>Telefone</TableHead>
-                 <TableHead>E-mail</TableHead>
-                 <TableHead>Status</TableHead>
-                 <TableHead>Ações</TableHead>
-               </TableRow>
+              <TableRow>
+                <TableHead>Nome</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Telefone</TableHead>
+                <TableHead>E-mail</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Ações</TableHead>
+              </TableRow>
             </TableHeader>
             <TableBody>
               {fornecedores.length === 0 ? (
-               <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Nenhum fornecedor</TableCell></TableRow>
-             ) : fornecedores.map(f => (
-                 <TableRow key={f.id}>
-                   <TableCell className="font-medium">{f.nome}</TableCell>
-                   <TableCell>
-                     <Badge variant="outline">
-                       {f.tipo === "insumo" ? "Insumos" : f.tipo === "embalagem" ? "Embalagens" : "Ambos"}
-                     </Badge>
-                   </TableCell>
-                   <TableCell>{f.telefone || "—"}</TableCell>
-                   <TableCell>{f.email || "—"}</TableCell>
+                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Nenhum fornecedor</TableCell></TableRow>
+              ) : fornecedores.map(f => (
+                <TableRow key={f.id}>
+                  <TableCell className="font-medium">{f.nome}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">
+                      {f.tipo === "insumo" ? "Insumos" : f.tipo === "embalagem" ? "Embalagens" : "Ambos"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{f.telefone || "—"}</TableCell>
+                  <TableCell>{f.email || "—"}</TableCell>
                   <TableCell>
                     <Badge variant={f.ativo ? "default" : "secondary"}>{f.ativo ? "Ativo" : "Inativo"}</Badge>
                   </TableCell>
@@ -429,8 +558,6 @@ function FornecedoresTab({ factoryId, fornecedores, onRefresh }: {
     </div>
   );
 }
-
-// ─── RELATORIOS TAB ───
 function RelatoriosTab({ compras, fornecedorMap }: { compras: Compra[]; fornecedorMap: Record<string, string> }) {
   const [filtroFornecedor, setFiltroFornecedor] = useState("todos");
   const [dataInicio, setDataInicio] = useState(() => format(startOfMonth(new Date()), "yyyy-MM-dd"));
