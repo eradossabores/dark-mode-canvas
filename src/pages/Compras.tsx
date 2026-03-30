@@ -381,12 +381,17 @@ function FornecedoresTab({ factoryId, fornecedores, onRefresh }: {
             </TableHeader>
             <TableBody>
               {fornecedores.length === 0 ? (
-                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Nenhum fornecedor</TableCell></TableRow>
-              ) : fornecedores.map(f => (
-                <TableRow key={f.id}>
-                  <TableCell className="font-medium">{f.nome}</TableCell>
-                  <TableCell>{f.telefone || "—"}</TableCell>
-                  <TableCell>{f.email || "—"}</TableCell>
+               <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Nenhum fornecedor</TableCell></TableRow>
+             ) : fornecedores.map(f => (
+                 <TableRow key={f.id}>
+                   <TableCell className="font-medium">{f.nome}</TableCell>
+                   <TableCell>
+                     <Badge variant="outline">
+                       {f.tipo === "insumo" ? "Insumos" : f.tipo === "embalagem" ? "Embalagens" : "Ambos"}
+                     </Badge>
+                   </TableCell>
+                   <TableCell>{f.telefone || "—"}</TableCell>
+                   <TableCell>{f.email || "—"}</TableCell>
                   <TableCell>
                     <Badge variant={f.ativo ? "default" : "secondary"}>{f.ativo ? "Ativo" : "Inativo"}</Badge>
                   </TableCell>
