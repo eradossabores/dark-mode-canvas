@@ -345,9 +345,9 @@ export default function GerenciarUsuarios() {
                       <TableCell className="font-medium">{u.nome}</TableCell>
                       <TableCell>{u.email}</TableCell>
                       <TableCell>
-                        <Badge variant={u.role === "admin" ? "default" : "secondary"} className="gap-1">
-                          {u.role === "admin" ? <Shield className="h-3 w-3" /> : <Factory className="h-3 w-3" />}
-                          {u.role === "admin" ? "Administrador" : "Produção"}
+                        <Badge variant={u.role === "admin" ? "default" : u.role === "vendedor" ? "outline" : "secondary"} className="gap-1">
+                          {u.role === "admin" ? <Shield className="h-3 w-3" /> : u.role === "vendedor" ? <ShoppingCart className="h-3 w-3" /> : <Factory className="h-3 w-3" />}
+                          {u.role === "admin" ? "Administrador" : u.role === "vendedor" ? "Vendedor" : u.role === "factory_owner" ? "Dono" : "Colaborador"}
                         </Badge>
                       </TableCell>
                        <TableCell>{new Date(u.created_at).toLocaleDateString("pt-BR")}</TableCell>
