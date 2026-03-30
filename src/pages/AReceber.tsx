@@ -717,12 +717,24 @@ export default function AReceber() {
 
   const hoje = new Date().toISOString().split("T")[0];
   const buscaLower = busca.toLowerCase().trim();
-  const vendasFiltradas = buscaLower
+  const vendasPorBusca = buscaLower
     ? vendas.filter(v =>
         v.clientes?.nome?.toLowerCase().includes(buscaLower) ||
         String(v.numero_nf || "").toLowerCase().includes(buscaLower)
       )
     : vendas;
+  const vendasFiltradas = mesFiltro === "todos"
+    ? vendasPorBusca
+    : vendasPorBusca.filter(v => {
+        const d = new Date(v.created_at);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}` === mesFiltro;
+      });
+
+  // Build unique months for filter
+  const mesesDisponiveis = [...new Set(vendas.map(v => {
+    const d = new Date(v.created_at);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  }))].sort().reverse();
   const totalPendente = vendasFiltradas.reduce((s, v) => s + (Number(v.total) - Number(v.valor_pago || 0)), 0);
   const vencidas = vendasFiltradas.filter(v => v.created_at.split("T")[0] < hoje);
   const totalVencido = vencidas.reduce((s, v) => s + (Number(v.total) - Number(v.valor_pago || 0)), 0);
