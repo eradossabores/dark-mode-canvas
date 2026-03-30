@@ -707,35 +707,53 @@ export default function Estoque() {
             {avarias.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">Nenhuma avaria registrada.</p>
             ) : (
-              <Table>
-                <TableHeader><TableRow>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Sabor</TableHead>
-                  <TableHead>Quantidade</TableHead>
-                  <TableHead>Motivo</TableHead>
-                  <TableHead>Operador</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow></TableHeader>
-                <TableBody>
+              <>
+                <div className="hidden sm:block">
+                  <Table>
+                    <TableHeader><TableRow>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Sabor</TableHead>
+                      <TableHead>Quantidade</TableHead>
+                      <TableHead>Motivo</TableHead>
+                      <TableHead>Operador</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow></TableHeader>
+                    <TableBody>
+                      {avarias.map((a: any) => (
+                        <TableRow key={a.id}>
+                          <TableCell>{new Date(a.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                          <TableCell className="font-medium">{a.sabores?.nome}</TableCell>
+                          <TableCell className="text-destructive font-semibold">-{a.quantidade}</TableCell>
+                          <TableCell className="max-w-[200px] truncate">{a.motivo}</TableCell>
+                          <TableCell>{a.operador}</TableCell>
+                          <TableCell className="text-right space-x-1">
+                            <Button variant="ghost" size="sm" onClick={() => openEditAvaria(a)}><Pencil className="h-3.5 w-3.5" /></Button>
+                            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDeleteAvariaId(a.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <div className="sm:hidden space-y-2">
                   {avarias.map((a: any) => (
-                    <TableRow key={a.id}>
-                      <TableCell>{new Date(a.created_at).toLocaleDateString("pt-BR")}</TableCell>
-                      <TableCell className="font-medium">{a.sabores?.nome}</TableCell>
-                      <TableCell className="text-destructive font-semibold">-{a.quantidade}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{a.motivo}</TableCell>
-                      <TableCell>{a.operador}</TableCell>
-                      <TableCell className="text-right space-x-1">
-                        <Button variant="ghost" size="sm" onClick={() => openEditAvaria(a)}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDeleteAvariaId(a.id)}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+                    <div key={a.id} className="p-3 rounded-lg border bg-card space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm">{a.sabores?.nome}</span>
+                        <span className="text-destructive font-bold text-sm">-{a.quantidade}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">{a.motivo}</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">{new Date(a.created_at).toLocaleDateString("pt-BR")}</span>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditAvaria(a)}><Pencil className="h-3 w-3" /></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteAvariaId(a.id)}><Trash2 className="h-3 w-3" /></Button>
+                        </div>
+                      </div>
+                    </div>
                   ))}
-                </TableBody>
-              </Table>
+                </div>
+              </>
             )}
           </CardContent></Card>
 
