@@ -135,15 +135,15 @@ export default function Compras() {
 }
 
 // ─── COMPRAS TAB ───
+interface ItemQty { nome: string; quantidade: number; }
+
 function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador, onRefresh }: {
   factoryId: string | null; fornecedores: Fornecedor[]; fornecedorMap: Record<string, string>;
   compras: Compra[]; operador: string; onRefresh: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [tipo, setTipo] = useState("insumo");
-  const [itemNome, setItemNome] = useState("");
   const [fornecedorId, setFornecedorId] = useState("");
-  const [quantidade, setQuantidade] = useState("");
   const [valorTotalInput, setValorTotalInput] = useState("");
   const [temFrete, setTemFrete] = useState(false);
   const [valorFrete, setValorFrete] = useState("");
@@ -151,51 +151,38 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const [dataCompra, setDataCompra] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [saving, setSaving] = useState(false);
   const [filterTipo, setFilterTipo] = useState("todos");
-  const [useCustomItem, setUseCustomItem] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editItemNome, setEditItemNome] = useState("");
+  const [editQuantidade, setEditQuantidade] = useState("");
 
-  // Fetch top items by sales volume
-  const [topInsumos, setTopInsumos] = useState<string[]>([]);
-  const [topEmbalagens, setTopEmbalagens] = useState<string[]>([]);
+  // Items with quantities
+  const [itemQuantities, setItemQuantities] = useState<Record<string, number>>({});
+  const [customItems, setCustomItems] = useState<ItemQty[]>([]);
+  const [newCustomItem, setNewCustomItem] = useState("");
+
+  // All items from DB
   const [allInsumos, setAllInsumos] = useState<string[]>([]);
   const [allEmbalagens, setAllEmbalagens] = useState<string[]>([]);
+  const [topInsumos, setTopInsumos] = useState<string[]>([]);
+  const [topEmbalagens, setTopEmbalagens] = useState<string[]>([]);
 
   useEffect(() => {
     if (!factoryId) return;
     const fetchItems = async () => {
-      // Get venda_itens with sabor to rank by sales
       const { data: vendaItens } = await (supabase as any)
-        .from("venda_itens")
-        .select("sabor_id, quantidade")
-        .eq("factory_id", factoryId);
-
-      // Count sales per sabor
+        .from("venda_itens").select("sabor_id, quantidade").eq("factory_id", factoryId);
       const saborSales: Record<string, number> = {};
       (vendaItens || []).forEach((vi: any) => {
         saborSales[vi.sabor_id] = (saborSales[vi.sabor_id] || 0) + vi.quantidade;
       });
 
-      // Get materias_primas (insumos)
       const { data: mps } = await (supabase as any)
-        .from("materias_primas")
-        .select("id, nome")
-        .eq("factory_id", factoryId)
-        .order("nome");
-
-      // Get embalagens
+        .from("materias_primas").select("id, nome").eq("factory_id", factoryId).order("nome");
       const { data: embs } = await (supabase as any)
-        .from("embalagens")
-        .select("id, nome")
-        .eq("factory_id", factoryId)
-        .order("nome");
-
-      // Get sabor_receita to map materia_prima -> sabor sales
+        .from("embalagens").select("id, nome").eq("factory_id", factoryId).order("nome");
       const { data: receitas } = await (supabase as any)
-        .from("sabor_receita")
-        .select("sabor_id, materia_prima_id, embalagem_id")
-        .eq("factory_id", factoryId);
+        .from("sabor_receita").select("sabor_id, materia_prima_id, embalagem_id").eq("factory_id", factoryId);
 
-      // Rank insumos by linked sabor sales
       const insumoSales: Record<string, number> = {};
       const embSales: Record<string, number> = {};
       (receitas || []).forEach((r: any) => {
@@ -209,89 +196,114 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
       setAllInsumos(mpNames);
       setAllEmbalagens(embNames);
 
-      // Top 5 insumos
       const mpMap: Record<string, string> = {};
       (mps || []).forEach((m: any) => { mpMap[m.id] = m.nome; });
       const sortedInsumos = Object.entries(insumoSales)
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, 5)
-        .map(([id]) => mpMap[id])
-        .filter(Boolean);
+        .sort(([, a], [, b]) => b - a).slice(0, 5).map(([id]) => mpMap[id]).filter(Boolean);
       setTopInsumos(sortedInsumos.length > 0 ? sortedInsumos : mpNames.slice(0, 5));
 
-      // Top 5 embalagens
       const embMap: Record<string, string> = {};
       (embs || []).forEach((e: any) => { embMap[e.id] = e.nome; });
       const sortedEmbs = Object.entries(embSales)
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, 5)
-        .map(([id]) => embMap[id])
-        .filter(Boolean);
+        .sort(([, a], [, b]) => b - a).slice(0, 5).map(([id]) => embMap[id]).filter(Boolean);
       setTopEmbalagens(sortedEmbs.length > 0 ? sortedEmbs : embNames.slice(0, 5));
     };
     fetchItems();
   }, [factoryId]);
 
-  const currentSuggestions = tipo === "insumo" ? topInsumos : topEmbalagens;
   const allItems = tipo === "insumo" ? allInsumos : allEmbalagens;
-  const remainingItems = allItems.filter(i => !currentSuggestions.includes(i));
+  const topItems = tipo === "insumo" ? topInsumos : topEmbalagens;
+  const otherItems = allItems.filter(i => !topItems.includes(i));
 
-  const qty = parseFloat(quantidade) || 0;
+  // Sort: top items first, then others
+  const orderedItems = [...topItems, ...otherItems];
+
+  const totalQty = Object.values(itemQuantities).reduce((s, v) => s + v, 0)
+    + customItems.reduce((s, ci) => s + ci.quantidade, 0);
   const valorTotal = parseFloat(valorTotalInput) || 0;
-  const unitPrice = qty > 0 ? valorTotal / qty : 0;
+  const unitPrice = totalQty > 0 ? valorTotal / totalQty : 0;
   const freight = temFrete ? (parseFloat(valorFrete) || 0) : 0;
   const custoTotalComFrete = valorTotal + freight;
-  const custoUnitarioComFrete = qty > 0 ? custoTotalComFrete / qty : 0;
+  const custoUnitarioComFrete = totalQty > 0 ? custoTotalComFrete / totalQty : 0;
+
+  const filledItems = [
+    ...orderedItems.filter(n => (itemQuantities[n] || 0) > 0).map(n => ({ nome: n, quantidade: itemQuantities[n] })),
+    ...customItems.filter(ci => ci.quantidade > 0),
+  ];
 
   const handleSave = async () => {
-    if (!factoryId || !itemNome.trim() || qty <= 0 || valorTotal <= 0) {
-      toast.error("Preencha todos os campos obrigatórios");
+    if (!factoryId || filledItems.length === 0 || valorTotal <= 0) {
+      toast.error("Preencha ao menos um item com quantidade e o valor total");
       return;
     }
     setSaving(true);
-    const payload = {
-      tipo, item_nome: itemNome.trim(), fornecedor_id: fornecedorId || null,
-      quantidade: qty, valor_unitario: unitPrice, valor_total: valorTotal,
-      tem_frete: temFrete, valor_frete: freight,
-      custo_total_com_frete: custoTotalComFrete, custo_unitario_com_frete: custoUnitarioComFrete,
-      observacoes: obs || null,
-      created_at: new Date(dataCompra + "T12:00:00").toISOString(),
-    };
-
-    let error;
-    if (editingId) {
-      ({ error } = await (supabase as any).from("compras").update(payload).eq("id", editingId));
-    } else {
-      ({ error } = await (supabase as any).from("compras").insert({ ...payload, factory_id: factoryId }));
-    }
+    // Save one record per item with proportional cost
+    const rows = filledItems.map(item => {
+      const proportion = item.quantidade / totalQty;
+      return {
+        tipo, item_nome: item.nome, fornecedor_id: fornecedorId || null,
+        quantidade: item.quantidade,
+        valor_unitario: unitPrice,
+        valor_total: +(valorTotal * proportion).toFixed(2),
+        tem_frete: temFrete, valor_frete: +(freight * proportion).toFixed(2),
+        custo_total_com_frete: +(custoTotalComFrete * proportion).toFixed(2),
+        custo_unitario_com_frete: +custoUnitarioComFrete.toFixed(2),
+        observacoes: obs || null, factory_id: factoryId,
+        created_at: new Date(dataCompra + "T12:00:00").toISOString(),
+      };
+    });
+    const { error } = await (supabase as any).from("compras").insert(rows);
     setSaving(false);
     if (error) { toast.error("Erro ao salvar compra"); return; }
-    toast.success(editingId ? "Compra atualizada!" : "Compra registrada!");
+    toast.success(`${rows.length} ite${rows.length > 1 ? "ns registrados" : "m registrado"}!`);
     setOpen(false);
     resetForm();
     onRefresh();
   };
 
+  const handleEditSave = async () => {
+    if (!editingId || !editItemNome.trim() || !editQuantidade || valorTotal <= 0) {
+      toast.error("Preencha todos os campos"); return;
+    }
+    const qty = parseFloat(editQuantidade) || 0;
+    const up = qty > 0 ? valorTotal / qty : 0;
+    const ctf = valorTotal + freight;
+    const cuf = qty > 0 ? ctf / qty : 0;
+    setSaving(true);
+    const { error } = await (supabase as any).from("compras").update({
+      tipo, item_nome: editItemNome.trim(), fornecedor_id: fornecedorId || null,
+      quantidade: qty, valor_unitario: up, valor_total: valorTotal,
+      tem_frete: temFrete, valor_frete: freight,
+      custo_total_com_frete: ctf, custo_unitario_com_frete: cuf,
+      observacoes: obs || null,
+      created_at: new Date(dataCompra + "T12:00:00").toISOString(),
+    }).eq("id", editingId);
+    setSaving(false);
+    if (error) { toast.error("Erro ao salvar"); return; }
+    toast.success("Compra atualizada!");
+    setOpen(false); resetForm(); onRefresh();
+  };
+
   const handleEdit = (c: Compra) => {
     setEditingId(c.id);
     setTipo(c.tipo);
-    setItemNome(c.item_nome);
+    setEditItemNome(c.item_nome);
+    setEditQuantidade(String(c.quantidade));
     setFornecedorId(c.fornecedor_id || "");
-    setQuantidade(String(c.quantidade));
     setValorTotalInput(String(c.valor_total));
     setTemFrete(c.tem_frete);
     setValorFrete(String(c.valor_frete));
     setObs(c.observacoes || "");
     setDataCompra(format(new Date(c.created_at), "yyyy-MM-dd"));
-    setUseCustomItem(!allItems.includes(c.item_nome));
     setOpen(true);
   };
 
   const resetForm = () => {
-    setTipo("insumo"); setItemNome(""); setFornecedorId(""); setQuantidade("");
-    setValorTotalInput(""); setTemFrete(false); setValorFrete(""); setObs("");
-    setDataCompra(format(new Date(), "yyyy-MM-dd")); setUseCustomItem(false);
-    setEditingId(null);
+    setTipo("insumo"); setFornecedorId(""); setValorTotalInput("");
+    setTemFrete(false); setValorFrete(""); setObs("");
+    setDataCompra(format(new Date(), "yyyy-MM-dd"));
+    setItemQuantities({}); setCustomItems([]); setNewCustomItem("");
+    setEditingId(null); setEditItemNome(""); setEditQuantidade("");
   };
 
   const handleDelete = async (id: string) => {
@@ -299,6 +311,12 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     if (error) { toast.error("Erro ao excluir"); return; }
     toast.success("Compra excluída");
     onRefresh();
+  };
+
+  const addCustomItem = () => {
+    if (!newCustomItem.trim()) return;
+    setCustomItems(prev => [...prev, { nome: newCustomItem.trim(), quantidade: 0 }]);
+    setNewCustomItem("");
   };
 
   const filtered = filterTipo === "todos" ? compras : compras.filter(c => c.tipo === filterTipo);
@@ -316,7 +334,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Tipo</Label>
-                  <Select value={tipo} onValueChange={(v) => { setTipo(v); setItemNome(""); setUseCustomItem(false); }}>
+                  <Select value={tipo} onValueChange={(v) => { setTipo(v); setItemQuantities({}); setCustomItems([]); }}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="insumo">Insumo</SelectItem>
@@ -329,56 +347,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                   <Input type="date" value={dataCompra} onChange={e => setDataCompra(e.target.value)} />
                 </div>
               </div>
-              <div>
-                <Label>Nome do Item *</Label>
-                {!useCustomItem ? (
-                  <div className="space-y-2">
-                    <Select value={itemNome} onValueChange={setItemNome}>
-                      <SelectTrigger><SelectValue placeholder="Selecione o item..." /></SelectTrigger>
-                      <SelectContent>
-                        {currentSuggestions.length > 0 && (
-                          <>
-                            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">⭐ Top 5 - Mais vendidos</div>
-                            {currentSuggestions.map(name => (
-                              <SelectItem key={name} value={name}>{name}</SelectItem>
-                            ))}
-                          </>
-                        )}
-                        {remainingItems.length > 0 && (
-                          <>
-                            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t mt-1 pt-1">Outros</div>
-                            {remainingItems.map(name => (
-                              <SelectItem key={name} value={name}>{name}</SelectItem>
-                            ))}
-                          </>
-                        )}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="text-xs text-muted-foreground h-auto p-0"
-                      onClick={() => { setUseCustomItem(true); setItemNome(""); }}
-                    >
-                      + Digitar item personalizado
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Input value={itemNome} onChange={e => setItemNome(e.target.value)} placeholder={tipo === "insumo" ? "Ex: Maçã Verde" : "Ex: Saco plástico 500ml"} />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="text-xs text-muted-foreground h-auto p-0"
-                      onClick={() => { setUseCustomItem(false); setItemNome(""); }}
-                    >
-                      ← Voltar para lista
-                    </Button>
-                  </div>
-                )}
-              </div>
+
               <div>
                 <Label>Fornecedor</Label>
                 <Select value={fornecedorId} onValueChange={setFornecedorId}>
@@ -390,17 +359,96 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Quantidade *</Label>
-                  <Input type="number" min="0" step="0.01" value={quantidade} onChange={e => setQuantidade(e.target.value)} />
+
+              {/* EDIT MODE: single item */}
+              {editingId ? (
+                <div className="space-y-3">
+                  <div>
+                    <Label>Item</Label>
+                    <Input value={editItemNome} onChange={e => setEditItemNome(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label>Quantidade</Label>
+                    <Input type="number" min="0" step="0.01" value={editQuantidade} onChange={e => setEditQuantidade(e.target.value)} />
+                  </div>
                 </div>
-                <div>
-                  <Label>Valor Total (R$) *</Label>
-                  <Input type="number" min="0" step="0.01" value={valorTotalInput} onChange={e => setValorTotalInput(e.target.value)} />
+              ) : (
+                /* NEW MODE: all items listed */
+                <div className="space-y-2">
+                  <Label>Itens e Quantidades</Label>
+                  <div className="rounded-lg border divide-y max-h-60 overflow-y-auto">
+                    {topItems.length > 0 && (
+                      <div className="px-3 py-1.5 bg-muted/50 text-xs font-semibold text-muted-foreground">⭐ Top 5</div>
+                    )}
+                    {topItems.map(name => (
+                      <div key={name} className="flex items-center gap-2 px-3 py-2">
+                        <span className="text-sm flex-1 truncate">{name}</span>
+                        <Input
+                          type="number" min="0" step="1"
+                          className="h-8 w-24 text-center text-sm"
+                          placeholder="0"
+                          value={itemQuantities[name] || ""}
+                          onChange={e => setItemQuantities(prev => ({ ...prev, [name]: parseFloat(e.target.value) || 0 }))}
+                        />
+                      </div>
+                    ))}
+                    {otherItems.length > 0 && (
+                      <div className="px-3 py-1.5 bg-muted/50 text-xs font-semibold text-muted-foreground">Outros</div>
+                    )}
+                    {otherItems.map(name => (
+                      <div key={name} className="flex items-center gap-2 px-3 py-2">
+                        <span className="text-sm flex-1 truncate">{name}</span>
+                        <Input
+                          type="number" min="0" step="1"
+                          className="h-8 w-24 text-center text-sm"
+                          placeholder="0"
+                          value={itemQuantities[name] || ""}
+                          onChange={e => setItemQuantities(prev => ({ ...prev, [name]: parseFloat(e.target.value) || 0 }))}
+                        />
+                      </div>
+                    ))}
+                    {customItems.map((ci, idx) => (
+                      <div key={`custom-${idx}`} className="flex items-center gap-2 px-3 py-2 bg-accent/10">
+                        <span className="text-sm flex-1 truncate">{ci.nome}</span>
+                        <Input
+                          type="number" min="0" step="1"
+                          className="h-8 w-24 text-center text-sm"
+                          placeholder="0"
+                          value={ci.quantidade || ""}
+                          onChange={e => setCustomItems(prev => prev.map((c, i) => i === idx ? { ...c, quantidade: parseFloat(e.target.value) || 0 } : c))}
+                        />
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCustomItems(prev => prev.filter((_, i) => i !== idx))}>
+                          <Trash2 className="h-3 w-3 text-destructive" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Adicionar item..."
+                      value={newCustomItem}
+                      onChange={e => setNewCustomItem(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addCustomItem())}
+                      className="h-8 text-sm"
+                    />
+                    <Button type="button" variant="outline" size="sm" className="h-8" onClick={addCustomItem}>
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  {totalQty > 0 && (
+                    <div className="text-sm font-medium bg-muted/50 rounded-md px-3 py-2">
+                      Quantidade Total: <span className="font-bold text-primary">{totalQty.toLocaleString("pt-BR")}</span>
+                      {" "}({filledItems.length} ite{filledItems.length > 1 ? "ns" : "m"})
+                    </div>
+                  )}
                 </div>
+              )}
+
+              <div>
+                <Label>Valor Total (R$) *</Label>
+                <Input type="number" min="0" step="0.01" value={valorTotalInput} onChange={e => setValorTotalInput(e.target.value)} />
               </div>
-              {qty > 0 && valorTotal > 0 && (
+              {totalQty > 0 && valorTotal > 0 && (
                 <div className="text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
                   Valor Unitário: <span className="font-bold text-foreground">R$ {unitPrice.toFixed(2)}</span>
                 </div>
@@ -423,7 +471,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                 <Label>Observações</Label>
                 <Textarea value={obs} onChange={e => setObs(e.target.value)} placeholder="Notas sobre a compra..." />
               </div>
-              {(qty > 0 && valorTotal > 0) && (
+              {((editingId ? (parseFloat(editQuantidade) || 0) : totalQty) > 0 && valorTotal > 0) && (
                 <Card className="bg-primary/5 border-primary/20">
                   <CardContent className="py-3">
                     <div className="grid grid-cols-2 gap-2 text-sm">
@@ -438,7 +486,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                   </CardContent>
                 </Card>
               )}
-              <Button onClick={handleSave} disabled={saving} className="w-full">
+              <Button onClick={editingId ? handleEditSave : handleSave} disabled={saving} className="w-full">
                 {saving ? "Salvando..." : editingId ? "Salvar Alterações" : "Registrar Compra"}
               </Button>
             </div>
