@@ -173,15 +173,21 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>Registrar Compra</DialogTitle></DialogHeader>
             <div className="space-y-4">
-              <div>
-                <Label>Tipo</Label>
-                <Select value={tipo} onValueChange={setTipo}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="insumo">Insumo</SelectItem>
-                    <SelectItem value="embalagem">Embalagem</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Tipo</Label>
+                  <Select value={tipo} onValueChange={setTipo}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="insumo">Insumo</SelectItem>
+                      <SelectItem value="embalagem">Embalagem</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Data da Compra</Label>
+                  <Input type="date" value={dataCompra} onChange={e => setDataCompra(e.target.value)} />
+                </div>
               </div>
               <div>
                 <Label>Nome do Item *</Label>
