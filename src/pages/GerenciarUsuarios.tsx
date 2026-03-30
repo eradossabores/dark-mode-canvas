@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Shield, Factory, Clock, CheckCircle, XCircle, Bell, LinkIcon, KeyRound, Eye, EyeOff, Trash2, Pencil } from "lucide-react";
+import { Plus, Shield, Factory, Clock, CheckCircle, XCircle, Bell, LinkIcon, KeyRound, Eye, EyeOff, Trash2, Pencil, ShoppingCart } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface UserWithRole {
@@ -141,7 +141,7 @@ export default function GerenciarUsuarios() {
     setChangingPassword(false);
   }
 
-  async function generateInvite(role: "admin" | "producao") {
+  async function generateInvite(role: "admin" | "producao" | "vendedor") {
     setGeneratingInvite(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -154,7 +154,7 @@ export default function GerenciarUsuarios() {
       if (error) throw error;
       const link = `${window.location.origin}/cadastro?token=${data.token}`;
       await navigator.clipboard.writeText(link);
-      const label = role === "admin" ? "Admin" : "Produção";
+      const label = role === "admin" ? "Admin" : role === "vendedor" ? "Vendedor" : "Produção";
       toast({ title: `Link de convite (${label}) copiado!`, description: "Válido por 7 dias." });
     } catch (e: any) {
       toast({ title: "Erro ao gerar convite", description: e.message, variant: "destructive" });
@@ -276,6 +276,14 @@ export default function GerenciarUsuarios() {
             <Factory className="h-4 w-4 mr-2" />
             {generatingInvite ? "Gerando..." : "Convite Colaborador"}
           </Button>
+          <Button
+            variant="outline"
+            disabled={generatingInvite}
+            onClick={() => generateInvite("vendedor")}
+          >
+            <ShoppingCart className="h-4 w-4 mr-2" />
+            {generatingInvite ? "Gerando..." : "Convite Vendedor"}
+          </Button>
           <Button onClick={() => setOpen(true)}><Plus className="h-4 w-4 mr-2" />Novo Usuário</Button>
         </div>
       </div>
@@ -293,7 +301,8 @@ export default function GerenciarUsuarios() {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="admin">Administrador (acesso total)</SelectItem>
-                  <SelectItem value="producao">Produção (acesso limitado)</SelectItem>
+                  <SelectItem value="producao">Colaborador (produção)</SelectItem>
+                  <SelectItem value="vendedor">Vendedor (estoque e vendas)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -336,9 +345,9 @@ export default function GerenciarUsuarios() {
                       <TableCell className="font-medium">{u.nome}</TableCell>
                       <TableCell>{u.email}</TableCell>
                       <TableCell>
-                        <Badge variant={u.role === "admin" ? "default" : "secondary"} className="gap-1">
-                          {u.role === "admin" ? <Shield className="h-3 w-3" /> : <Factory className="h-3 w-3" />}
-                          {u.role === "admin" ? "Administrador" : "Produção"}
+                        <Badge variant={u.role === "admin" ? "default" : u.role === "vendedor" ? "outline" : "secondary"} className="gap-1">
+                          {u.role === "admin" ? <Shield className="h-3 w-3" /> : u.role === "vendedor" ? <ShoppingCart className="h-3 w-3" /> : <Factory className="h-3 w-3" />}
+                          {u.role === "admin" ? "Administrador" : u.role === "vendedor" ? "Vendedor" : u.role === "factory_owner" ? "Dono" : "Colaborador"}
                         </Badge>
                       </TableCell>
                        <TableCell>{new Date(u.created_at).toLocaleDateString("pt-BR")}</TableCell>
@@ -527,7 +536,8 @@ export default function GerenciarUsuarios() {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="admin">Administrador</SelectItem>
-                  <SelectItem value="producao">Produção</SelectItem>
+                  <SelectItem value="producao">Colaborador</SelectItem>
+                  <SelectItem value="vendedor">Vendedor</SelectItem>
                 </SelectContent>
               </Select>
             </div>
