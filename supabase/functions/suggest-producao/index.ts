@@ -8,11 +8,32 @@ serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
 
   try {
+    // ---- AUTH CHECK ----
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Não autorizado" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const callerClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await callerClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: "Não autorizado" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    // ---- END AUTH CHECK ----
+
     const { dia_semana, sabores_analise } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -45,14 +66,12 @@ serve(async (req) => {
     // Build context for AI
     const diasSemana = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
     
-    // Aggregate sales by day of week
     const vendasPorDia: Record<number, number> = {};
     (vendaItens || []).forEach((v: any) => {
       const dia = new Date(v.vendas?.created_at).getDay();
       vendasPorDia[dia] = (vendasPorDia[dia] || 0) + v.quantidade;
     });
 
-    // Build historical decision summary per flavor
     const decisoesPorSabor: Record<string, any[]> = {};
     (decisoes || []).forEach((d: any) => {
       if (!decisoesPorSabor[d.sabor_nome]) decisoesPorSabor[d.sabor_nome] = [];
@@ -67,7 +86,6 @@ serve(async (req) => {
       });
     });
 
-    // Feedback: compare planned vs actual production
     const feedbackPorSabor: Record<string, { planejado: number; produzido: number; vendido: number }> = {};
     (sabores_analise || []).forEach((s: any) => {
       const planejado = (decisoesPorSabor[s.nome] || [])
