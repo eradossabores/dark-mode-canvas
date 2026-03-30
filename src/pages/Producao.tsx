@@ -34,6 +34,7 @@ export default function Producao() {
   const [sabores, setSabores] = useState<any[]>([]);
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
   const [producoes, setProducoes] = useState<any[]>([]);
+  const [receitaMap, setReceitaMap] = useState<Record<string, number>>({});
   const [chartPeriodo, setChartPeriodo] = useState<"dia" | "semana" | "mes">("mes");
   const [chartDate, setChartDate] = useState<Date>(new Date());
   const [chartView, setChartView] = useState<"top5" | "todos">("top5");
