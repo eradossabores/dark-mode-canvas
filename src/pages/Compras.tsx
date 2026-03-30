@@ -347,6 +347,17 @@ function FornecedoresTab({ factoryId, fornecedores, onRefresh }: {
           <DialogHeader><DialogTitle>Cadastrar Fornecedor</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div><Label>Nome *</Label><Input value={nome} onChange={e => setNome(e.target.value)} /></div>
+            <div>
+              <Label>Tipo de Fornecedor</Label>
+              <Select value={tipo} onValueChange={setTipo}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="insumo">Fornecedor de Insumos</SelectItem>
+                  <SelectItem value="embalagem">Fornecedor de Embalagens</SelectItem>
+                  <SelectItem value="ambos">Ambos (Insumos e Embalagens)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div><Label>Telefone</Label><Input value={telefone} onChange={e => setTelefone(e.target.value)} /></div>
             <div><Label>E-mail</Label><Input value={email} onChange={e => setEmail(e.target.value)} /></div>
             <div><Label>Observações</Label><Textarea value={obs} onChange={e => setObs(e.target.value)} /></div>
