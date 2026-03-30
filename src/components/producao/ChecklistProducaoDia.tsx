@@ -318,11 +318,12 @@ export default function ChecklistProducaoDia({ targetDate }: ChecklistProducaoDi
         const operador = localStorage.getItem(`checklist-producao-${hojeStr}-operador`) || "sistema";
         const funcIds: string[] = savedFuncs ? JSON.parse(savedFuncs) : [];
 
+        const gelosPorLote = receitaMap[item.saborId] || 84;
         await realizarProducao({
           p_sabor_id: item.saborId,
           p_modo: "lote",
           p_quantidade_lotes: 1,
-          p_quantidade_total: 84,
+          p_quantidade_total: gelosPorLote,
           p_operador: operador,
           p_observacoes: `Lote ${item.loteNumero}/${item.totalLotes} - Checklist produção diária`,
           p_funcionarios: funcIds.filter(f => f !== "patroes").map(f => ({ funcionario_id: f, quantidade_produzida: 0 })),
