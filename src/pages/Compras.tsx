@@ -488,7 +488,8 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                     <TableCell className="text-right">{c.tem_frete ? `R$ ${Number(c.valor_frete).toFixed(2)}` : "—"}</TableCell>
                     <TableCell className="text-right font-medium">{Number(c.custo_total_com_frete).toFixed(2)}</TableCell>
                     <TableCell className="text-right font-medium text-primary">{Number(c.custo_unitario_com_frete).toFixed(2)}</TableCell>
-                    <TableCell>
+                    <TableCell className="flex gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => handleEdit(c)}><Edit className="h-4 w-4" /></Button>
                       <Button variant="ghost" size="icon" onClick={() => handleDelete(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                     </TableCell>
                   </TableRow>
