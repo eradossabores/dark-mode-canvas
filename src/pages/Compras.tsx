@@ -127,7 +127,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const custoUnitarioComFrete = qty > 0 ? custoTotalComFrete / qty : 0;
 
   const handleSave = async () => {
-    if (!factoryId || !itemNome.trim() || qty <= 0 || unitPrice <= 0) {
+    if (!factoryId || !itemNome.trim() || qty <= 0 || valorTotal <= 0) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
     }
