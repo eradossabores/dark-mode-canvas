@@ -111,7 +111,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const [itemNome, setItemNome] = useState("");
   const [fornecedorId, setFornecedorId] = useState("");
   const [quantidade, setQuantidade] = useState("");
-  const [valorUnitario, setValorUnitario] = useState("");
+  const [valorTotalInput, setValorTotalInput] = useState("");
   const [temFrete, setTemFrete] = useState(false);
   const [valorFrete, setValorFrete] = useState("");
   const [obs, setObs] = useState("");
@@ -120,14 +120,14 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const [filterTipo, setFilterTipo] = useState("todos");
 
   const qty = parseFloat(quantidade) || 0;
-  const unitPrice = parseFloat(valorUnitario) || 0;
+  const valorTotal = parseFloat(valorTotalInput) || 0;
+  const unitPrice = qty > 0 ? valorTotal / qty : 0;
   const freight = temFrete ? (parseFloat(valorFrete) || 0) : 0;
-  const valorTotal = qty * unitPrice;
   const custoTotalComFrete = valorTotal + freight;
   const custoUnitarioComFrete = qty > 0 ? custoTotalComFrete / qty : 0;
 
   const handleSave = async () => {
-    if (!factoryId || !itemNome.trim() || qty <= 0 || unitPrice <= 0) {
+    if (!factoryId || !itemNome.trim() || qty <= 0 || valorTotal <= 0) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
     }
@@ -150,7 +150,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
 
   const resetForm = () => {
     setTipo("insumo"); setItemNome(""); setFornecedorId(""); setQuantidade("");
-    setValorUnitario(""); setTemFrete(false); setValorFrete(""); setObs("");
+    setValorTotalInput(""); setTemFrete(false); setValorFrete(""); setObs("");
     setDataCompra(format(new Date(), "yyyy-MM-dd"));
   };
 
@@ -210,10 +210,15 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                   <Input type="number" min="0" step="0.01" value={quantidade} onChange={e => setQuantidade(e.target.value)} />
                 </div>
                 <div>
-                  <Label>Valor Unitário (R$) *</Label>
-                  <Input type="number" min="0" step="0.01" value={valorUnitario} onChange={e => setValorUnitario(e.target.value)} />
+                  <Label>Valor Total (R$) *</Label>
+                  <Input type="number" min="0" step="0.01" value={valorTotalInput} onChange={e => setValorTotalInput(e.target.value)} />
                 </div>
               </div>
+              {qty > 0 && valorTotal > 0 && (
+                <div className="text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
+                  Valor Unitário: <span className="font-bold text-foreground">R$ {unitPrice.toFixed(2)}</span>
+                </div>
+              )}
               <Card className="bg-muted/50">
                 <CardContent className="py-3 space-y-2">
                   <div className="flex items-center justify-between">
@@ -228,22 +233,25 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                   )}
                 </CardContent>
               </Card>
-              <Card className="bg-primary/5 border-primary/20">
-                <CardContent className="py-3">
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>Valor Total:</div><div className="font-bold text-right">R$ {valorTotal.toFixed(2)}</div>
-                    {temFrete && <>
-                      <div>Frete:</div><div className="font-bold text-right">R$ {freight.toFixed(2)}</div>
-                    </>}
-                    <div>Custo Total c/ Frete:</div><div className="font-bold text-right text-primary">R$ {custoTotalComFrete.toFixed(2)}</div>
-                    <div>Custo Unit. c/ Frete:</div><div className="font-bold text-right text-primary">R$ {custoUnitarioComFrete.toFixed(2)}</div>
-                  </div>
-                </CardContent>
-              </Card>
               <div>
                 <Label>Observações</Label>
                 <Textarea value={obs} onChange={e => setObs(e.target.value)} placeholder="Notas sobre a compra..." />
               </div>
+              {(qty > 0 && valorTotal > 0) && (
+                <Card className="bg-primary/5 border-primary/20">
+                  <CardContent className="py-3">
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>Valor Total (s/ frete):</div><div className="font-bold text-right">R$ {valorTotal.toFixed(2)}</div>
+                      <div>Valor Unitário:</div><div className="font-bold text-right">R$ {unitPrice.toFixed(2)}</div>
+                      {temFrete && <>
+                        <div>Frete:</div><div className="font-bold text-right">R$ {freight.toFixed(2)}</div>
+                      </>}
+                      <div className="font-semibold">Custo Total c/ Frete:</div><div className="font-bold text-right text-primary">R$ {custoTotalComFrete.toFixed(2)}</div>
+                      <div className="font-semibold">Custo Unit. c/ Frete:</div><div className="font-bold text-right text-primary">R$ {custoUnitarioComFrete.toFixed(2)}</div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
               <Button onClick={handleSave} disabled={saving} className="w-full">
                 {saving ? "Salvando..." : "Registrar Compra"}
               </Button>
