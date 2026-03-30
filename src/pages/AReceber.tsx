@@ -53,6 +53,7 @@ export default function AReceber() {
   const [abatimentoLoteValor, setAbatimentoLoteValor] = useState("");
   const [processandoLote, setProcessandoLote] = useState(false);
   const [confirmarQuitarId, setConfirmarQuitarId] = useState<string | null>(null);
+  const [mesFiltro, setMesFiltro] = useState<string>("todos");
 
   // Payment method states
   const [formaPgtoAbater, setFormaPgtoAbater] = useState<"pix" | "especie" | "misto">("especie");
