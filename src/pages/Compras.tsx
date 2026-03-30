@@ -43,7 +43,7 @@ interface Compra {
 }
 
 export default function Compras() {
-  const { factoryId, nome } = useAuth();
+  const { factoryId, user } = useAuth();
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [compras, setCompras] = useState<Compra[]>([]);
   const [loading, setLoading] = useState(true);
