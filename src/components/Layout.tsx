@@ -43,6 +43,7 @@ const menuGroups = [
       { path: "/painel/vendas", label: "Vendas", icon: ShoppingCart },
       { path: "/painel/a-receber", label: "A Receber", icon: DollarSign },
       { path: "/painel/contas-a-pagar", label: "Contas a Pagar", icon: ClipboardList },
+      { path: "/painel/compras", label: "Compras", icon: ShoppingBag },
       { path: "/painel/prospeccao", label: "Prospecção", icon: Target },
     ],
   },
