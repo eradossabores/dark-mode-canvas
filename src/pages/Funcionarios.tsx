@@ -148,6 +148,26 @@ export default function Funcionarios() {
         </AlertDialogContent>
       </AlertDialog>
 
+      <AlertDialog open={showAccessPrompt} onOpenChange={setShowAccessPrompt}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5 text-primary" />
+              Criar acesso ao sistema?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              O colaborador <strong>{lastCreatedName}</strong> foi cadastrado com sucesso. Deseja criar um login de acesso ao sistema para ele agora?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Não, apenas cadastrar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setShowAccessPrompt(false); navigate("/gerenciar-usuarios"); }}>
+              Sim, criar acesso
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Card>
         <CardContent className="pt-6">
           <Table>
