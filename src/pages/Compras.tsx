@@ -151,6 +151,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const resetForm = () => {
     setTipo("insumo"); setItemNome(""); setFornecedorId(""); setQuantidade("");
     setValorUnitario(""); setTemFrete(false); setValorFrete(""); setObs("");
+    setDataCompra(format(new Date(), "yyyy-MM-dd"));
   };
 
   const handleDelete = async (id: string) => {
