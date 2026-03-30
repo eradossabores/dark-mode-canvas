@@ -146,6 +146,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const [fornecedorId, setFornecedorId] = useState("");
   const [valorTotalInput, setValorTotalInput] = useState("");
   const [temFrete, setTemFrete] = useState(false);
+  const [tipoFrete, setTipoFrete] = useState("sedex");
   const [valorFrete, setValorFrete] = useState("");
   const [obs, setObs] = useState("");
   const [dataCompra, setDataCompra] = useState(() => format(new Date(), "yyyy-MM-dd"));
