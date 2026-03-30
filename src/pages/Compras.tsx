@@ -320,7 +320,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
 
   const addCustomItem = () => {
     if (!newCustomItem.trim()) return;
-    setCustomItems(prev => [...prev, { nome: newCustomItem.trim(), quantidade: 0 }]);
+    setCustomItems(prev => [...prev, { nome: newCustomItem.trim(), quantidade: 0, tipo: tipo === "misto" ? "insumo" : tipo }]);
     setNewCustomItem("");
   };
 
