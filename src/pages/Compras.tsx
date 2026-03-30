@@ -370,13 +370,14 @@ function FornecedoresTab({ factoryId, fornecedores, onRefresh }: {
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Telefone</TableHead>
-                <TableHead>E-mail</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
+             <TableRow>
+                 <TableHead>Nome</TableHead>
+                 <TableHead>Tipo</TableHead>
+                 <TableHead>Telefone</TableHead>
+                 <TableHead>E-mail</TableHead>
+                 <TableHead>Status</TableHead>
+                 <TableHead>Ações</TableHead>
+               </TableRow>
             </TableHeader>
             <TableBody>
               {fornecedores.length === 0 ? (
