@@ -1141,37 +1141,49 @@ export default function Estoque() {
               {freezers.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">Nenhum item nos freezers. Adicione usando o botão acima.</p>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead>Sabor</TableHead>
-                      <TableHead>Quantidade</TableHead>
-                      <TableHead>Atualizado</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <>
+                  <div className="hidden sm:block">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Cliente</TableHead>
+                          <TableHead>Sabor</TableHead>
+                          <TableHead>Quantidade</TableHead>
+                          <TableHead>Atualizado</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {freezers.map((f) => (
+                          <TableRow key={f.id}>
+                            <TableCell className="font-medium">{f.clientes?.nome}</TableCell>
+                            <TableCell>{f.sabores?.nome}</TableCell>
+                            <TableCell>{f.quantidade} un.</TableCell>
+                            <TableCell>{new Date(f.updated_at).toLocaleDateString("pt-BR")}</TableCell>
+                            <TableCell className="text-right">
+                              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => removeFreezerItem(f.id)}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  <div className="sm:hidden space-y-2">
                     {freezers.map((f) => (
-                      <TableRow key={f.id}>
-                        <TableCell className="font-medium">{f.clientes?.nome}</TableCell>
-                        <TableCell>{f.sabores?.nome}</TableCell>
-                        <TableCell>{f.quantidade} un.</TableCell>
-                        <TableCell>{new Date(f.updated_at).toLocaleDateString("pt-BR")}</TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => removeFreezerItem(f.id)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
+                      <div key={f.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
+                        <div>
+                          <p className="font-medium text-sm">{f.clientes?.nome}</p>
+                          <p className="text-xs text-muted-foreground">{f.sabores?.nome} • {f.quantidade} un.</p>
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeFreezerItem(f.id)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>
