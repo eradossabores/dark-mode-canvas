@@ -830,6 +830,7 @@ export type Database = {
           factory_id: string | null
           id: string
           nome: string
+          setor: string
           tipo_pagamento: Database["public"]["Enums"]["tipo_pagamento_funcionario"]
           updated_at: string
           valor_pagamento: number
@@ -840,6 +841,7 @@ export type Database = {
           factory_id?: string | null
           id?: string
           nome: string
+          setor?: string
           tipo_pagamento?: Database["public"]["Enums"]["tipo_pagamento_funcionario"]
           updated_at?: string
           valor_pagamento?: number
@@ -850,6 +852,7 @@ export type Database = {
           factory_id?: string | null
           id?: string
           nome?: string
+          setor?: string
           tipo_pagamento?: Database["public"]["Enums"]["tipo_pagamento_funcionario"]
           updated_at?: string
           valor_pagamento?: number
