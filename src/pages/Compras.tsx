@@ -358,7 +358,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>{editingId ? "Editar Compra" : "Registrar Compra"}</DialogTitle></DialogHeader>
             <div className="space-y-4">
-              <div className={`grid gap-3 ${tipo === "insumo" ? "grid-cols-3" : "grid-cols-2"}`}>
+              <div className="grid gap-3 grid-cols-2">
                 <div>
                   <Label>Tipo</Label>
                   <Select value={tipo} onValueChange={(v) => { setTipo(v); setItemQuantities({}); setCustomItems([]); }}>
@@ -366,26 +366,27 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                     <SelectContent>
                       <SelectItem value="insumo">Insumo</SelectItem>
                       <SelectItem value="embalagem">Embalagem</SelectItem>
+                      <SelectItem value="misto">Misto (Insumo + Embalagem)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                {tipo === "insumo" && (
-                  <div>
-                    <Label>Unidade</Label>
-                    <Select value={unidadeInsumo} onValueChange={setUnidadeInsumo}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="g">Gramas (g)</SelectItem>
-                        <SelectItem value="kg">Quilos (kg)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
                 <div>
                   <Label>Data da Compra</Label>
                   <Input type="date" value={dataCompra} onChange={e => setDataCompra(e.target.value)} />
                 </div>
               </div>
+              {showInsumos && !showEmbalagens && (
+                <div>
+                  <Label>Unidade (Insumos)</Label>
+                  <Select value={unidadeInsumo} onValueChange={setUnidadeInsumo}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="g">Gramas (g)</SelectItem>
+                      <SelectItem value="kg">Quilos (kg)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )
 
               <div>
                 <Label>Fornecedor</Label>
