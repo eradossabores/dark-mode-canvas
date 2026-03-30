@@ -115,6 +115,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const [temFrete, setTemFrete] = useState(false);
   const [valorFrete, setValorFrete] = useState("");
   const [obs, setObs] = useState("");
+  const [dataCompra, setDataCompra] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [saving, setSaving] = useState(false);
   const [filterTipo, setFilterTipo] = useState("todos");
 
