@@ -148,6 +148,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const [temFrete, setTemFrete] = useState(false);
   const [tipoFrete, setTipoFrete] = useState("sedex");
   const [valorFrete, setValorFrete] = useState("");
+  const [unidadeInsumo, setUnidadeInsumo] = useState("g");
   const [obs, setObs] = useState("");
   const [dataCompra, setDataCompra] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [saving, setSaving] = useState(false);
@@ -301,7 +302,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
 
   const resetForm = () => {
     setTipo("insumo"); setFornecedorId(""); setValorTotalInput("");
-    setTemFrete(false); setTipoFrete("sedex"); setValorFrete(""); setObs("");
+    setTemFrete(false); setTipoFrete("sedex"); setValorFrete(""); setUnidadeInsumo("g"); setObs("");
     setDataCompra(format(new Date(), "yyyy-MM-dd"));
     setItemQuantities({}); setCustomItems([]); setNewCustomItem("");
     setEditingId(null); setEditItemNome(""); setEditQuantidade("");
@@ -354,7 +355,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>{editingId ? "Editar Compra" : "Registrar Compra"}</DialogTitle></DialogHeader>
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className={`grid gap-3 ${tipo === "insumo" ? "grid-cols-3" : "grid-cols-2"}`}>
                 <div>
                   <Label>Tipo</Label>
                   <Select value={tipo} onValueChange={(v) => { setTipo(v); setItemQuantities({}); setCustomItems([]); }}>
@@ -365,6 +366,18 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                     </SelectContent>
                   </Select>
                 </div>
+                {tipo === "insumo" && (
+                  <div>
+                    <Label>Unidade</Label>
+                    <Select value={unidadeInsumo} onValueChange={setUnidadeInsumo}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="g">Gramas (g)</SelectItem>
+                        <SelectItem value="kg">Quilos (kg)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div>
                   <Label>Data da Compra</Label>
                   <Input type="date" value={dataCompra} onChange={e => setDataCompra(e.target.value)} />
@@ -460,7 +473,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                   </div>
                   {totalQty > 0 && (
                     <div className="text-sm font-medium bg-muted/50 rounded-md px-3 py-2">
-                      Quantidade Total: <span className="font-bold text-primary">{totalQty.toLocaleString("pt-BR")}</span>
+                      Quantidade Total: <span className="font-bold text-primary">{totalQty.toLocaleString("pt-BR")} {tipo === "insumo" ? unidadeInsumo : "un"}</span>
                       {" "}({filledItems.length} ite{filledItems.length > 1 ? "ns" : "m"})
                     </div>
                   )}
