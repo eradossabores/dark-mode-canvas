@@ -861,34 +861,45 @@ export default function Estoque() {
           </div>
           <Card>
             <CardContent className="pt-6">
-              <Table>
-                <TableHeader>
-                   <TableRow>
-                     <TableHead>Nome</TableHead>
-                     <TableHead>Estoque</TableHead>
-                     <TableHead>Unidade</TableHead>
-                     <TableHead className="text-right">Ações</TableHead>
-                   </TableRow>
-                 </TableHeader>
-                <TableBody>
-                  {materias.map((m) => (
-                    <TableRow key={m.id}>
-                      <TableCell>{m.nome}</TableCell>
-                      <TableCell>{Number(m.estoque_atual).toLocaleString()}</TableCell>
-                      <TableCell>{m.unidade}</TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openAjusteDialog("mp", m.id, m.estoque_atual)}
-                        >
-                          <Settings2 className="h-3 w-3 mr-1" /> Ajustar
-                        </Button>
-                      </TableCell>
+              <div className="hidden sm:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Estoque</TableHead>
+                      <TableHead>Unidade</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {materias.map((m) => (
+                      <TableRow key={m.id}>
+                        <TableCell>{m.nome}</TableCell>
+                        <TableCell>{Number(m.estoque_atual).toLocaleString()}</TableCell>
+                        <TableCell>{m.unidade}</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="outline" size="sm" onClick={() => openAjusteDialog("mp", m.id, m.estoque_atual)}>
+                            <Settings2 className="h-3 w-3 mr-1" /> Ajustar
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className="sm:hidden space-y-2">
+                {materias.map((m) => (
+                  <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
+                    <div>
+                      <p className="font-medium text-sm">{m.nome}</p>
+                      <p className="text-xs text-muted-foreground">{Number(m.estoque_atual).toLocaleString()} {m.unidade}</p>
+                    </div>
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => openAjusteDialog("mp", m.id, m.estoque_atual)}>
+                      <Settings2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
