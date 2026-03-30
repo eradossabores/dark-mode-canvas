@@ -17,10 +17,13 @@ import { useNavigate } from "react-router-dom";
 
 export default function Funcionarios() {
   const { factoryId } = useAuth();
+  const navigate = useNavigate();
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [showAccessPrompt, setShowAccessPrompt] = useState(false);
+  const [lastCreatedName, setLastCreatedName] = useState("");
   const [form, setForm] = useState({ nome: "", tipo_pagamento: "diaria" as string, valor_pagamento: "", setor: "producao" as string });
 
   useEffect(() => { loadData(); }, [factoryId]);
