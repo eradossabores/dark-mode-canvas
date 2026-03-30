@@ -39,7 +39,7 @@ export default function Funcionarios() {
 
   function openEdit(f: any) {
     setEditingId(f.id);
-    setForm({ nome: f.nome, tipo_pagamento: f.tipo_pagamento, valor_pagamento: String(f.valor_pagamento) });
+    setForm({ nome: f.nome, tipo_pagamento: f.tipo_pagamento, valor_pagamento: String(f.valor_pagamento), setor: f.setor || "producao" });
     setOpen(true);
   }
 
