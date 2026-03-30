@@ -6,20 +6,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { insertRow } from "@/lib/supabase-helpers";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, UserPlus, Info } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function Funcionarios() {
   const { factoryId } = useAuth();
+  const navigate = useNavigate();
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [showAccessPrompt, setShowAccessPrompt] = useState(false);
+  const [lastCreatedName, setLastCreatedName] = useState("");
   const [form, setForm] = useState({ nome: "", tipo_pagamento: "diaria" as string, valor_pagamento: "", setor: "producao" as string });
 
   useEffect(() => { loadData(); }, [factoryId]);
@@ -56,6 +60,8 @@ export default function Funcionarios() {
         if (factoryId) payload.factory_id = factoryId;
         await insertRow("funcionarios", payload);
         toast({ title: "Colaborador cadastrado!" });
+        setLastCreatedName(form.nome);
+        setShowAccessPrompt(true);
       }
       setOpen(false);
       setEditingId(null);
@@ -138,6 +144,26 @@ export default function Funcionarios() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete}>Desativar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showAccessPrompt} onOpenChange={setShowAccessPrompt}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5 text-primary" />
+              Criar acesso ao sistema?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              O colaborador <strong>{lastCreatedName}</strong> foi cadastrado com sucesso. Deseja criar um login de acesso ao sistema para ele agora?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Não, apenas cadastrar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setShowAccessPrompt(false); navigate("/gerenciar-usuarios"); }}>
+              Sim, criar acesso
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
