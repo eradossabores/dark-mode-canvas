@@ -246,7 +246,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     const rows = filledItems.map(item => {
       const proportion = item.quantidade / totalQty;
       return {
-        tipo, item_nome: item.nome, fornecedor_id: fornecedorId || null,
+        tipo: item.tipo, item_nome: item.nome, fornecedor_id: fornecedorId || null,
         quantidade: item.quantidade,
         valor_unitario: unitPrice,
         valor_total: +(valorTotal * proportion).toFixed(2),
