@@ -301,7 +301,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
 
   const resetForm = () => {
     setTipo("insumo"); setFornecedorId(""); setValorTotalInput("");
-    setTemFrete(false); setValorFrete(""); setObs("");
+    setTemFrete(false); setTipoFrete("sedex"); setValorFrete(""); setObs("");
     setDataCompra(format(new Date(), "yyyy-MM-dd"));
     setItemQuantities({}); setCustomItems([]); setNewCustomItem("");
     setEditingId(null); setEditItemNome(""); setEditQuantidade("");
