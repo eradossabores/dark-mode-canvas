@@ -543,40 +543,53 @@ export default function Estoque() {
         <TabsContent value="gelos">
           <Card>
             <CardContent className="pt-6">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Sabor</TableHead>
-                    <TableHead>Quantidade</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {gelos.map((g) => (
-                    <TableRow key={g.id}>
-                      <TableCell>{g.sabores?.nome}</TableCell>
-                      <TableCell>{g.quantidade} un.</TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openAjusteDialog("gelo", g.id, g.quantidade)}
-                        >
-                          <Settings2 className="h-3 w-3 mr-1" /> Ajustar
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive ml-1"
-                          onClick={() => { setAvariaSaborId(g.sabor_id); setOpenAvaria(true); }}
-                        >
-                          <AlertTriangle className="h-3 w-3 mr-1" /> Avaria
-                        </Button>
-                      </TableCell>
+              {/* Desktop table */}
+              <div className="hidden sm:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Sabor</TableHead>
+                      <TableHead>Quantidade</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {gelos.map((g) => (
+                      <TableRow key={g.id}>
+                        <TableCell>{g.sabores?.nome}</TableCell>
+                        <TableCell>{g.quantidade} un.</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="outline" size="sm" onClick={() => openAjusteDialog("gelo", g.id, g.quantidade)}>
+                            <Settings2 className="h-3 w-3 mr-1" /> Ajustar
+                          </Button>
+                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive ml-1" onClick={() => { setAvariaSaborId(g.sabor_id); setOpenAvaria(true); }}>
+                            <AlertTriangle className="h-3 w-3 mr-1" /> Avaria
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              {/* Mobile cards */}
+              <div className="sm:hidden space-y-2">
+                {gelos.map((g) => (
+                  <div key={g.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
+                    <div>
+                      <p className="font-medium text-sm">{g.sabores?.nome}</p>
+                      <p className="text-xs text-muted-foreground">{g.quantidade} un.</p>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => openAjusteDialog("gelo", g.id, g.quantidade)}>
+                        <Settings2 className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { setAvariaSaborId(g.sabor_id); setOpenAvaria(true); }}>
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
