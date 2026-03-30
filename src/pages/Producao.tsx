@@ -110,12 +110,18 @@ export default function Producao() {
     let sQ = (supabase as any).from("sabores").select("*").eq("ativo", true).order("nome");
     let fQ = (supabase as any).from("funcionarios").select("*").eq("ativo", true).order("nome");
     let pQ = (supabase as any).from("producoes").select("*, sabores(nome)").order("created_at", { ascending: false }).limit(500);
-    if (factoryId) { sQ = sQ.eq("factory_id", factoryId); fQ = fQ.eq("factory_id", factoryId); pQ = pQ.eq("factory_id", factoryId); }
-    const [s, f, p] = await Promise.all([sQ, fQ, pQ]);
+    let rQ = (supabase as any).from("sabor_receita").select("sabor_id, gelos_por_lote");
+    if (factoryId) { sQ = sQ.eq("factory_id", factoryId); fQ = fQ.eq("factory_id", factoryId); pQ = pQ.eq("factory_id", factoryId); rQ = rQ.eq("factory_id", factoryId); }
+    const [s, f, p, r] = await Promise.all([sQ, fQ, pQ, rQ]);
     setSabores(s.data || []);
     setFuncionarios(f.data || []);
     setProducoes(p.data || []);
-
+    // Build map: sabor_id -> gelos_por_lote (use first recipe row per sabor)
+    const map: Record<string, number> = {};
+    (r.data || []).forEach((rec: any) => {
+      if (!map[rec.sabor_id]) map[rec.sabor_id] = rec.gelos_por_lote;
+    });
+    setReceitaMap(map);
   }
 
   // Helper: semanas do mês começando no dia 1
