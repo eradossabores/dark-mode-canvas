@@ -111,7 +111,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const [itemNome, setItemNome] = useState("");
   const [fornecedorId, setFornecedorId] = useState("");
   const [quantidade, setQuantidade] = useState("");
-  const [valorUnitario, setValorUnitario] = useState("");
+  const [valorTotalInput, setValorTotalInput] = useState("");
   const [temFrete, setTemFrete] = useState(false);
   const [valorFrete, setValorFrete] = useState("");
   const [obs, setObs] = useState("");
@@ -120,9 +120,9 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const [filterTipo, setFilterTipo] = useState("todos");
 
   const qty = parseFloat(quantidade) || 0;
-  const unitPrice = parseFloat(valorUnitario) || 0;
+  const valorTotal = parseFloat(valorTotalInput) || 0;
+  const unitPrice = qty > 0 ? valorTotal / qty : 0;
   const freight = temFrete ? (parseFloat(valorFrete) || 0) : 0;
-  const valorTotal = qty * unitPrice;
   const custoTotalComFrete = valorTotal + freight;
   const custoUnitarioComFrete = qty > 0 ? custoTotalComFrete / qty : 0;
 
