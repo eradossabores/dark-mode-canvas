@@ -42,6 +42,7 @@ import SuperAdmin from "@/pages/SuperAdmin";
 import Suporte from "@/pages/Suporte";
 import ConfigurarFabrica from "@/pages/ConfigurarFabrica";
 import NotFound from "@/pages/NotFound";
+import Compras from "@/pages/Compras";
 
 const queryClient = new QueryClient();
 
