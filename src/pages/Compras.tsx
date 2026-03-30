@@ -135,7 +135,7 @@ export default function Compras() {
 }
 
 // ─── COMPRAS TAB ───
-interface ItemQty { nome: string; quantidade: number; }
+interface ItemQty { nome: string; quantidade: number; tipo: string; }
 
 function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador, onRefresh }: {
   factoryId: string | null; fornecedores: Fornecedor[]; fornecedorMap: Record<string, string>;
@@ -213,12 +213,14 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     fetchItems();
   }, [factoryId]);
 
-  const allItems = tipo === "insumo" ? allInsumos : allEmbalagens;
-  const topItems = tipo === "insumo" ? topInsumos : topEmbalagens;
-  const otherItems = allItems.filter(i => !topItems.includes(i));
+  // Build item lists based on tipo
+  const showInsumos = tipo === "insumo" || tipo === "misto";
+  const showEmbalagens = tipo === "embalagem" || tipo === "misto";
 
-  // Sort: top items first, then others
-  const orderedItems = [...topItems, ...otherItems];
+  const insumoTopItems = showInsumos ? topInsumos : [];
+  const insumoOtherItems = showInsumos ? allInsumos.filter(i => !topInsumos.includes(i)) : [];
+  const embTopItems = showEmbalagens ? topEmbalagens : [];
+  const embOtherItems = showEmbalagens ? allEmbalagens.filter(i => !topEmbalagens.includes(i)) : [];
 
   const totalQty = Object.values(itemQuantities).reduce((s, v) => s + v, 0)
     + customItems.reduce((s, ci) => s + ci.quantidade, 0);
@@ -229,7 +231,8 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const custoUnitarioComFrete = totalQty > 0 ? custoTotalComFrete / totalQty : 0;
 
   const filledItems = [
-    ...orderedItems.filter(n => (itemQuantities[n] || 0) > 0).map(n => ({ nome: n, quantidade: itemQuantities[n] })),
+    ...(showInsumos ? [...insumoTopItems, ...insumoOtherItems].filter(n => (itemQuantities[`insumo:${n}`] || 0) > 0).map(n => ({ nome: n, quantidade: itemQuantities[`insumo:${n}`], tipo: "insumo" })) : []),
+    ...(showEmbalagens ? [...embTopItems, ...embOtherItems].filter(n => (itemQuantities[`embalagem:${n}`] || 0) > 0).map(n => ({ nome: n, quantidade: itemQuantities[`embalagem:${n}`], tipo: "embalagem" })) : []),
     ...customItems.filter(ci => ci.quantidade > 0),
   ];
 
@@ -243,7 +246,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     const rows = filledItems.map(item => {
       const proportion = item.quantidade / totalQty;
       return {
-        tipo, item_nome: item.nome, fornecedor_id: fornecedorId || null,
+        tipo: item.tipo, item_nome: item.nome, fornecedor_id: fornecedorId || null,
         quantidade: item.quantidade,
         valor_unitario: unitPrice,
         valor_total: +(valorTotal * proportion).toFixed(2),
@@ -317,7 +320,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
 
   const addCustomItem = () => {
     if (!newCustomItem.trim()) return;
-    setCustomItems(prev => [...prev, { nome: newCustomItem.trim(), quantidade: 0 }]);
+    setCustomItems(prev => [...prev, { nome: newCustomItem.trim(), quantidade: 0, tipo: tipo === "misto" ? "insumo" : tipo }]);
     setNewCustomItem("");
   };
 
@@ -355,7 +358,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>{editingId ? "Editar Compra" : "Registrar Compra"}</DialogTitle></DialogHeader>
             <div className="space-y-4">
-              <div className={`grid gap-3 ${tipo === "insumo" ? "grid-cols-3" : "grid-cols-2"}`}>
+              <div className="grid gap-3 grid-cols-2">
                 <div>
                   <Label>Tipo</Label>
                   <Select value={tipo} onValueChange={(v) => { setTipo(v); setItemQuantities({}); setCustomItems([]); }}>
@@ -363,26 +366,27 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                     <SelectContent>
                       <SelectItem value="insumo">Insumo</SelectItem>
                       <SelectItem value="embalagem">Embalagem</SelectItem>
+                      <SelectItem value="misto">Misto (Insumo + Embalagem)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                {tipo === "insumo" && (
-                  <div>
-                    <Label>Unidade</Label>
-                    <Select value={unidadeInsumo} onValueChange={setUnidadeInsumo}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="g">Gramas (g)</SelectItem>
-                        <SelectItem value="kg">Quilos (kg)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
                 <div>
                   <Label>Data da Compra</Label>
                   <Input type="date" value={dataCompra} onChange={e => setDataCompra(e.target.value)} />
                 </div>
               </div>
+              {showInsumos && !showEmbalagens && (
+                <div>
+                  <Label>Unidade (Insumos)</Label>
+                  <Select value={unidadeInsumo} onValueChange={setUnidadeInsumo}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="g">Gramas (g)</SelectItem>
+                      <SelectItem value="kg">Quilos (kg)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <div>
                 <Label>Fornecedor</Label>
@@ -413,36 +417,76 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                 <div className="space-y-2">
                   <Label>Itens e Quantidades</Label>
                   <div className="rounded-lg border divide-y max-h-60 overflow-y-auto">
-                    {topItems.length > 0 && (
-                      <div className="px-3 py-1.5 bg-muted/50 text-xs font-semibold text-muted-foreground">⭐ Top 5</div>
+                    {showInsumos && (
+                      <>
+                        <div className="px-3 py-1.5 bg-primary/10 text-xs font-bold text-primary">💧 Insumos</div>
+                        {insumoTopItems.length > 0 && (
+                          <div className="px-3 py-1 bg-muted/50 text-xs font-semibold text-muted-foreground">⭐ Top 5</div>
+                        )}
+                        {insumoTopItems.map(name => (
+                          <div key={`i-${name}`} className="flex items-center gap-2 px-3 py-2">
+                            <span className="text-sm flex-1 truncate">{name}</span>
+                            <Input
+                              type="number" min="0" step="0.01"
+                              className="h-8 w-24 text-center text-sm"
+                              placeholder="0"
+                              value={itemQuantities[`insumo:${name}`] || ""}
+                              onChange={e => setItemQuantities(prev => ({ ...prev, [`insumo:${name}`]: parseFloat(e.target.value) || 0 }))}
+                            />
+                          </div>
+                        ))}
+                        {insumoOtherItems.length > 0 && (
+                          <div className="px-3 py-1 bg-muted/50 text-xs font-semibold text-muted-foreground">Outros</div>
+                        )}
+                        {insumoOtherItems.map(name => (
+                          <div key={`i-${name}`} className="flex items-center gap-2 px-3 py-2">
+                            <span className="text-sm flex-1 truncate">{name}</span>
+                            <Input
+                              type="number" min="0" step="0.01"
+                              className="h-8 w-24 text-center text-sm"
+                              placeholder="0"
+                              value={itemQuantities[`insumo:${name}`] || ""}
+                              onChange={e => setItemQuantities(prev => ({ ...prev, [`insumo:${name}`]: parseFloat(e.target.value) || 0 }))}
+                            />
+                          </div>
+                        ))}
+                      </>
                     )}
-                    {topItems.map(name => (
-                      <div key={name} className="flex items-center gap-2 px-3 py-2">
-                        <span className="text-sm flex-1 truncate">{name}</span>
-                        <Input
-                          type="number" min="0" step="1"
-                          className="h-8 w-24 text-center text-sm"
-                          placeholder="0"
-                          value={itemQuantities[name] || ""}
-                          onChange={e => setItemQuantities(prev => ({ ...prev, [name]: parseFloat(e.target.value) || 0 }))}
-                        />
-                      </div>
-                    ))}
-                    {otherItems.length > 0 && (
-                      <div className="px-3 py-1.5 bg-muted/50 text-xs font-semibold text-muted-foreground">Outros</div>
+                    {showEmbalagens && (
+                      <>
+                        <div className="px-3 py-1.5 bg-secondary/50 text-xs font-bold">📦 Embalagens</div>
+                        {embTopItems.length > 0 && (
+                          <div className="px-3 py-1 bg-muted/50 text-xs font-semibold text-muted-foreground">⭐ Top 5</div>
+                        )}
+                        {embTopItems.map(name => (
+                          <div key={`e-${name}`} className="flex items-center gap-2 px-3 py-2">
+                            <span className="text-sm flex-1 truncate">{name}</span>
+                            <Input
+                              type="number" min="0" step="1"
+                              className="h-8 w-24 text-center text-sm"
+                              placeholder="0"
+                              value={itemQuantities[`embalagem:${name}`] || ""}
+                              onChange={e => setItemQuantities(prev => ({ ...prev, [`embalagem:${name}`]: parseFloat(e.target.value) || 0 }))}
+                            />
+                          </div>
+                        ))}
+                        {embOtherItems.length > 0 && (
+                          <div className="px-3 py-1 bg-muted/50 text-xs font-semibold text-muted-foreground">Outros</div>
+                        )}
+                        {embOtherItems.map(name => (
+                          <div key={`e-${name}`} className="flex items-center gap-2 px-3 py-2">
+                            <span className="text-sm flex-1 truncate">{name}</span>
+                            <Input
+                              type="number" min="0" step="1"
+                              className="h-8 w-24 text-center text-sm"
+                              placeholder="0"
+                              value={itemQuantities[`embalagem:${name}`] || ""}
+                              onChange={e => setItemQuantities(prev => ({ ...prev, [`embalagem:${name}`]: parseFloat(e.target.value) || 0 }))}
+                            />
+                          </div>
+                        ))}
+                      </>
                     )}
-                    {otherItems.map(name => (
-                      <div key={name} className="flex items-center gap-2 px-3 py-2">
-                        <span className="text-sm flex-1 truncate">{name}</span>
-                        <Input
-                          type="number" min="0" step="1"
-                          className="h-8 w-24 text-center text-sm"
-                          placeholder="0"
-                          value={itemQuantities[name] || ""}
-                          onChange={e => setItemQuantities(prev => ({ ...prev, [name]: parseFloat(e.target.value) || 0 }))}
-                        />
-                      </div>
-                    ))}
                     {customItems.map((ci, idx) => (
                       <div key={`custom-${idx}`} className="flex items-center gap-2 px-3 py-2 bg-accent/10">
                         <span className="text-sm flex-1 truncate">{ci.nome}</span>
@@ -473,7 +517,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                   </div>
                   {totalQty > 0 && (
                     <div className="text-sm font-medium bg-muted/50 rounded-md px-3 py-2">
-                      Quantidade Total: <span className="font-bold text-primary">{totalQty.toLocaleString("pt-BR")} {tipo === "insumo" ? unidadeInsumo : "un"}</span>
+                      Quantidade Total: <span className="font-bold text-primary">{totalQty.toLocaleString("pt-BR")}</span>
                       {" "}({filledItems.length} ite{filledItems.length > 1 ? "ns" : "m"})
                     </div>
                   )}
