@@ -386,7 +386,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                     </SelectContent>
                   </Select>
                 </div>
-              )
+              )}
 
               <div>
                 <Label>Fornecedor</Label>
