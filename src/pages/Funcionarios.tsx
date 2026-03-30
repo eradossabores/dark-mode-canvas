@@ -101,6 +101,16 @@ export default function Funcionarios() {
           <div className="space-y-4">
             <div><Label>Nome *</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
             <div>
+              <Label>Setor</Label>
+              <Select value={form.setor} onValueChange={(v) => setForm({ ...form, setor: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="producao">🏭 Produção</SelectItem>
+                  <SelectItem value="vendas">🛒 Vendas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
               <Label>Forma de Pagamento</Label>
               <Select value={form.tipo_pagamento} onValueChange={(v) => setForm({ ...form, tipo_pagamento: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
