@@ -188,8 +188,8 @@ export default function ChecklistProducaoDia({ targetDate }: ChecklistProducaoDi
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCelebration, setShowCelebration] = useState(false);
-  // Track which items have already been registered in the DB to prevent duplicates
   const [registrados, setRegistrados] = useState<Set<string>>(new Set());
+  const [receitaMap, setReceitaMap] = useState<Record<string, number>>({});
 
   function saveRegistrados(newSet: Set<string>) {
     setRegistrados(newSet);
