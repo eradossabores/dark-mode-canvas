@@ -417,36 +417,76 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                 <div className="space-y-2">
                   <Label>Itens e Quantidades</Label>
                   <div className="rounded-lg border divide-y max-h-60 overflow-y-auto">
-                    {topItems.length > 0 && (
-                      <div className="px-3 py-1.5 bg-muted/50 text-xs font-semibold text-muted-foreground">⭐ Top 5</div>
+                    {showInsumos && (
+                      <>
+                        <div className="px-3 py-1.5 bg-primary/10 text-xs font-bold text-primary">💧 Insumos</div>
+                        {insumoTopItems.length > 0 && (
+                          <div className="px-3 py-1 bg-muted/50 text-xs font-semibold text-muted-foreground">⭐ Top 5</div>
+                        )}
+                        {insumoTopItems.map(name => (
+                          <div key={`i-${name}`} className="flex items-center gap-2 px-3 py-2">
+                            <span className="text-sm flex-1 truncate">{name}</span>
+                            <Input
+                              type="number" min="0" step="0.01"
+                              className="h-8 w-24 text-center text-sm"
+                              placeholder="0"
+                              value={itemQuantities[`insumo:${name}`] || ""}
+                              onChange={e => setItemQuantities(prev => ({ ...prev, [`insumo:${name}`]: parseFloat(e.target.value) || 0 }))}
+                            />
+                          </div>
+                        ))}
+                        {insumoOtherItems.length > 0 && (
+                          <div className="px-3 py-1 bg-muted/50 text-xs font-semibold text-muted-foreground">Outros</div>
+                        )}
+                        {insumoOtherItems.map(name => (
+                          <div key={`i-${name}`} className="flex items-center gap-2 px-3 py-2">
+                            <span className="text-sm flex-1 truncate">{name}</span>
+                            <Input
+                              type="number" min="0" step="0.01"
+                              className="h-8 w-24 text-center text-sm"
+                              placeholder="0"
+                              value={itemQuantities[`insumo:${name}`] || ""}
+                              onChange={e => setItemQuantities(prev => ({ ...prev, [`insumo:${name}`]: parseFloat(e.target.value) || 0 }))}
+                            />
+                          </div>
+                        ))}
+                      </>
                     )}
-                    {topItems.map(name => (
-                      <div key={name} className="flex items-center gap-2 px-3 py-2">
-                        <span className="text-sm flex-1 truncate">{name}</span>
-                        <Input
-                          type="number" min="0" step="1"
-                          className="h-8 w-24 text-center text-sm"
-                          placeholder="0"
-                          value={itemQuantities[name] || ""}
-                          onChange={e => setItemQuantities(prev => ({ ...prev, [name]: parseFloat(e.target.value) || 0 }))}
-                        />
-                      </div>
-                    ))}
-                    {otherItems.length > 0 && (
-                      <div className="px-3 py-1.5 bg-muted/50 text-xs font-semibold text-muted-foreground">Outros</div>
+                    {showEmbalagens && (
+                      <>
+                        <div className="px-3 py-1.5 bg-secondary/50 text-xs font-bold">📦 Embalagens</div>
+                        {embTopItems.length > 0 && (
+                          <div className="px-3 py-1 bg-muted/50 text-xs font-semibold text-muted-foreground">⭐ Top 5</div>
+                        )}
+                        {embTopItems.map(name => (
+                          <div key={`e-${name}`} className="flex items-center gap-2 px-3 py-2">
+                            <span className="text-sm flex-1 truncate">{name}</span>
+                            <Input
+                              type="number" min="0" step="1"
+                              className="h-8 w-24 text-center text-sm"
+                              placeholder="0"
+                              value={itemQuantities[`embalagem:${name}`] || ""}
+                              onChange={e => setItemQuantities(prev => ({ ...prev, [`embalagem:${name}`]: parseFloat(e.target.value) || 0 }))}
+                            />
+                          </div>
+                        ))}
+                        {embOtherItems.length > 0 && (
+                          <div className="px-3 py-1 bg-muted/50 text-xs font-semibold text-muted-foreground">Outros</div>
+                        )}
+                        {embOtherItems.map(name => (
+                          <div key={`e-${name}`} className="flex items-center gap-2 px-3 py-2">
+                            <span className="text-sm flex-1 truncate">{name}</span>
+                            <Input
+                              type="number" min="0" step="1"
+                              className="h-8 w-24 text-center text-sm"
+                              placeholder="0"
+                              value={itemQuantities[`embalagem:${name}`] || ""}
+                              onChange={e => setItemQuantities(prev => ({ ...prev, [`embalagem:${name}`]: parseFloat(e.target.value) || 0 }))}
+                            />
+                          </div>
+                        ))}
+                      </>
                     )}
-                    {otherItems.map(name => (
-                      <div key={name} className="flex items-center gap-2 px-3 py-2">
-                        <span className="text-sm flex-1 truncate">{name}</span>
-                        <Input
-                          type="number" min="0" step="1"
-                          className="h-8 w-24 text-center text-sm"
-                          placeholder="0"
-                          value={itemQuantities[name] || ""}
-                          onChange={e => setItemQuantities(prev => ({ ...prev, [name]: parseFloat(e.target.value) || 0 }))}
-                        />
-                      </div>
-                    ))}
                     {customItems.map((ci, idx) => (
                       <div key={`custom-${idx}`} className="flex items-center gap-2 px-3 py-2 bg-accent/10">
                         <span className="text-sm flex-1 truncate">{ci.nome}</span>
@@ -477,7 +517,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                   </div>
                   {totalQty > 0 && (
                     <div className="text-sm font-medium bg-muted/50 rounded-md px-3 py-2">
-                      Quantidade Total: <span className="font-bold text-primary">{totalQty.toLocaleString("pt-BR")} {tipo === "insumo" ? unidadeInsumo : "un"}</span>
+                      Quantidade Total: <span className="font-bold text-primary">{totalQty.toLocaleString("pt-BR")}</span>
                       {" "}({filledItems.length} ite{filledItems.length > 1 ? "ns" : "m"})
                     </div>
                   )}
