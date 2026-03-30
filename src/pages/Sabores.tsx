@@ -4,22 +4,29 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, ImagePlus, X, Upload } from "lucide-react";
+import { Plus, Pencil, Trash2, ImagePlus, X, Upload, FlaskConical } from "lucide-react";
 
 export default function Sabores() {
   const { factoryId } = useAuth();
   const [sabores, setSabores] = useState<any[]>([]);
   const [receitas, setReceitas] = useState<any[]>([]);
+  const [materiasPrimas, setMateriasPrimas] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [nome, setNome] = useState("");
+
+  // Multi-ingredient dialog
+  const [ingredientDialog, setIngredientDialog] = useState<any>(null);
+  const [selectedMpId, setSelectedMpId] = useState("");
+  const [selectedGrams, setSelectedGrams] = useState("100");
 
   // Image management
   const [imageDialog, setImageDialog] = useState<any>(null);
@@ -30,14 +37,16 @@ export default function Sabores() {
   async function loadData() {
     let sQ = (supabase as any).from("sabores").select("*").order("nome");
     let rQ = (supabase as any).from("sabor_receita").select("*, materias_primas(nome), embalagens(nome)");
-    if (factoryId) { sQ = sQ.eq("factory_id", factoryId); rQ = rQ.eq("factory_id", factoryId); }
-    const [s, r] = await Promise.all([sQ, rQ]);
+    let mpQ = (supabase as any).from("materias_primas").select("id, nome").order("nome");
+    if (factoryId) { sQ = sQ.eq("factory_id", factoryId); rQ = rQ.eq("factory_id", factoryId); mpQ = mpQ.eq("factory_id", factoryId); }
+    const [s, r, mp] = await Promise.all([sQ, rQ, mpQ]);
     setSabores(s.data || []);
     setReceitas(r.data || []);
+    setMateriasPrimas(mp.data || []);
   }
 
-  function getReceita(saborId: string) {
-    return receitas.find((r) => r.sabor_id === saborId);
+  function getReceitas(saborId: string) {
+    return receitas.filter((r) => r.sabor_id === saborId);
   }
 
   function openNew() {
@@ -56,13 +65,13 @@ export default function Sabores() {
     if (!nome.trim()) return toast({ title: "Nome obrigatório", variant: "destructive" });
     try {
       if (editingId) {
-        // Update sabor name
         const { error } = await (supabase as any).from("sabores").update({ nome: nome.trim() }).eq("id", editingId);
         if (error) throw error;
 
-        // Also update linked matéria-prima and embalagem names
-        const receita = getReceita(editingId);
-        if (receita) {
+        // Update linked matéria-prima and embalagem names only for single-ingredient recipes
+        const receitasList = getReceitas(editingId);
+        if (receitasList.length === 1) {
+          const receita = receitasList[0];
           await Promise.all([
             (supabase as any).from("materias_primas").update({ nome: `Insumo ${nome.trim()}` }).eq("id", receita.materia_prima_id),
             (supabase as any).from("embalagens").update({ nome: `Embalagem ${nome.trim()}` }).eq("id", receita.embalagem_id),
@@ -77,19 +86,19 @@ export default function Sabores() {
         const { data: newSabor, error } = await (supabase as any).from("sabores").insert(payload).select().single();
         if (error) throw error;
 
-        // Auto-create matéria-prima for this sabor
+        // Auto-create matéria-prima
         const mpPayload: any = { nome: `Insumo ${saborNome}`, unidade: "g", estoque_atual: 0, estoque_minimo: 500 };
         if (factoryId) mpPayload.factory_id = factoryId;
         const { data: newMP, error: mpErr } = await (supabase as any).from("materias_primas").insert(mpPayload).select().single();
         if (mpErr) throw mpErr;
 
-        // Auto-create embalagem for this sabor
+        // Auto-create embalagem
         const embPayload: any = { nome: `Embalagem ${saborNome}`, estoque_atual: 0, estoque_minimo: 100 };
         if (factoryId) embPayload.factory_id = factoryId;
         const { data: newEmb, error: embErr } = await (supabase as any).from("embalagens").insert(embPayload).select().single();
         if (embErr) throw embErr;
 
-        // Auto-create receita linking sabor → matéria-prima → embalagem
+        // Auto-create receita
         const receitaPayload: any = {
           sabor_id: newSabor.id,
           materia_prima_id: newMP.id,
@@ -102,7 +111,7 @@ export default function Sabores() {
         const { error: recErr } = await (supabase as any).from("sabor_receita").insert(receitaPayload);
         if (recErr) throw recErr;
 
-        // Auto-create estoque_gelos entry for this sabor
+        // Auto-create estoque_gelos
         const estoquePayload: any = { sabor_id: newSabor.id, quantidade: 0 };
         if (factoryId) estoquePayload.factory_id = factoryId;
         await (supabase as any).from("estoque_gelos").insert(estoquePayload);
@@ -141,6 +150,53 @@ export default function Sabores() {
     }
   }
 
+  // --- Multi-ingredient management ---
+  async function handleAddIngredient() {
+    if (!ingredientDialog || !selectedMpId || !selectedGrams) return;
+    try {
+      // Get the first receita for embalagem info
+      const existingReceitas = getReceitas(ingredientDialog.id);
+      const firstReceita = existingReceitas[0];
+      if (!firstReceita) return toast({ title: "Receita base não encontrada", variant: "destructive" });
+
+      const payload: any = {
+        sabor_id: ingredientDialog.id,
+        materia_prima_id: selectedMpId,
+        embalagem_id: firstReceita.embalagem_id,
+        quantidade_insumo_por_lote: Number(selectedGrams),
+        gelos_por_lote: firstReceita.gelos_por_lote,
+        embalagens_por_lote: firstReceita.embalagens_por_lote,
+      };
+      if (factoryId) payload.factory_id = factoryId;
+
+      const { error } = await (supabase as any).from("sabor_receita").insert(payload);
+      if (error) throw error;
+
+      toast({ title: "Ingrediente adicionado!" });
+      setSelectedMpId("");
+      setSelectedGrams("100");
+      loadData();
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+  }
+
+  async function handleRemoveIngredient(receitaId: string, saborId: string) {
+    const saborReceitas = getReceitas(saborId);
+    if (saborReceitas.length <= 1) {
+      return toast({ title: "Mínimo 1 ingrediente", description: "Cada sabor precisa de pelo menos 1 ingrediente.", variant: "destructive" });
+    }
+    try {
+      const { error } = await (supabase as any).from("sabor_receita").delete().eq("id", receitaId);
+      if (error) throw error;
+      toast({ title: "Ingrediente removido!" });
+      loadData();
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+  }
+
+  // --- Image management ---
   async function handleImageUpload(file: File, saborId: string) {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
@@ -154,8 +210,6 @@ export default function Sabores() {
     try {
       const ext = file.name.split(".").pop() || "jpg";
       const path = `${saborId}.${ext}`;
-
-      // Remove old image if exists
       await supabase.storage.from("sabor-images").remove([path]);
 
       const { error: uploadError } = await supabase.storage
@@ -167,7 +221,6 @@ export default function Sabores() {
         .from("sabor-images")
         .getPublicUrl(path);
 
-      // Add cache buster
       const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
 
       const { error: updateError } = await (supabase as any)
@@ -188,7 +241,6 @@ export default function Sabores() {
 
   async function handleRemoveImage(saborId: string) {
     try {
-      // Try to remove all possible extensions
       const extensions = ["jpg", "jpeg", "png", "webp", "gif"];
       const paths = extensions.map((ext) => `${saborId}.${ext}`);
       await supabase.storage.from("sabor-images").remove(paths);
@@ -204,6 +256,12 @@ export default function Sabores() {
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
     }
+  }
+
+  // Get available materias primas that are not yet in this sabor's receita
+  function getAvailableMPs(saborId: string) {
+    const usedIds = getReceitas(saborId).map((r) => r.materia_prima_id);
+    return materiasPrimas.filter((mp) => !usedIds.includes(mp.id));
   }
 
   return (
@@ -224,6 +282,74 @@ export default function Sabores() {
         </DialogContent>
       </Dialog>
 
+      {/* Dialog Ingredientes */}
+      <Dialog open={!!ingredientDialog} onOpenChange={(v) => !v && setIngredientDialog(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FlaskConical className="h-5 w-5 text-primary" />
+              Ingredientes — {ingredientDialog?.nome}
+            </DialogTitle>
+          </DialogHeader>
+          {ingredientDialog && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Configure os insumos utilizados na receita deste sabor. Cada ingrediente será descontado automaticamente do estoque ao produzir.
+              </p>
+
+              {/* Current ingredients */}
+              <div className="space-y-2">
+                {getReceitas(ingredientDialog.id).map((r) => (
+                  <div key={r.id} className="flex items-center justify-between rounded-lg border p-3 bg-card">
+                    <div>
+                      <span className="font-medium text-sm">{r.materias_primas?.nome || "?"}</span>
+                      <span className="text-xs text-muted-foreground ml-2">{r.quantidade_insumo_por_lote}g/lote</span>
+                    </div>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-destructive"
+                      onClick={() => handleRemoveIngredient(r.id, ingredientDialog.id)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Add new ingredient */}
+              {getAvailableMPs(ingredientDialog.id).length > 0 && (
+                <div className="border-t pt-4 space-y-3">
+                  <Label className="text-sm font-medium">Adicionar Ingrediente</Label>
+                  <Select value={selectedMpId} onValueChange={setSelectedMpId}>
+                    <SelectTrigger><SelectValue placeholder="Selecione o insumo" /></SelectTrigger>
+                    <SelectContent>
+                      {getAvailableMPs(ingredientDialog.id).map((mp) => (
+                        <SelectItem key={mp.id} value={mp.id}>{mp.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="flex gap-2 items-end">
+                    <div className="flex-1">
+                      <Label className="text-xs">Gramas por lote</Label>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={selectedGrams}
+                        onChange={(e) => setSelectedGrams(e.target.value)}
+                      />
+                    </div>
+                    <Button onClick={handleAddIngredient} disabled={!selectedMpId}>
+                      <Plus className="h-4 w-4 mr-1" /> Adicionar
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Dialog Imagem */}
       <Dialog open={!!imageDialog} onOpenChange={(v) => !v && setImageDialog(null)}>
         <DialogContent className="max-w-sm">
@@ -232,7 +358,6 @@ export default function Sabores() {
           </DialogHeader>
           {imageDialog && (
             <div className="space-y-4">
-              {/* Preview */}
               {imageDialog.imagem_url ? (
                 <div className="relative">
                   <img
@@ -255,8 +380,6 @@ export default function Sabores() {
                   <p className="text-sm">Nenhuma imagem</p>
                 </div>
               )}
-
-              {/* Upload */}
               <div>
                 <Label className="cursor-pointer">
                   <div className={`flex items-center justify-center gap-2 rounded-xl border border-border bg-muted/50 p-3 hover:bg-muted transition-colors ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
@@ -306,9 +429,8 @@ export default function Sabores() {
               <TableRow>
                 <TableHead className="w-16">Foto</TableHead>
                 <TableHead>Sabor</TableHead>
-                <TableHead>Insumo</TableHead>
+                <TableHead>Insumos</TableHead>
                 <TableHead>g/lote</TableHead>
-                <TableHead>Embalagem</TableHead>
                 <TableHead>Gelos/Lote</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
@@ -316,7 +438,7 @@ export default function Sabores() {
             </TableHeader>
             <TableBody>
               {sabores.map((s) => {
-                const r = getReceita(s.id);
+                const rList = getReceitas(s.id);
                 return (
                   <TableRow key={s.id}>
                     <TableCell>
@@ -332,10 +454,27 @@ export default function Sabores() {
                       </button>
                     </TableCell>
                     <TableCell className="font-medium">{s.nome}</TableCell>
-                    <TableCell>{r?.materias_primas?.nome || "-"}</TableCell>
-                    <TableCell>{r?.quantidade_insumo_por_lote || "-"}</TableCell>
-                    <TableCell>{r?.embalagens?.nome || "-"}</TableCell>
-                    <TableCell>{r?.gelos_por_lote || "-"}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {rList.length > 0 ? rList.map((r, i) => (
+                          <Badge key={r.id} variant="outline" className="text-[11px]">
+                            {r.materias_primas?.nome?.replace("Insumo ", "") || "?"}
+                          </Badge>
+                        )) : (
+                          <span className="text-muted-foreground text-xs">-</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {rList.length > 0 ? (
+                        <div className="text-xs space-y-0.5">
+                          {rList.map((r) => (
+                            <div key={r.id}>{r.quantidade_insumo_por_lote}g</div>
+                          ))}
+                        </div>
+                      ) : "-"}
+                    </TableCell>
+                    <TableCell>{rList[0]?.gelos_por_lote || "-"}</TableCell>
                     <TableCell>
                       <Badge
                         variant={s.ativo ? "default" : "destructive"}
@@ -344,6 +483,9 @@ export default function Sabores() {
                       >{s.ativo ? "Ativo" : "Inativo"}</Badge>
                     </TableCell>
                     <TableCell className="text-right space-x-1">
+                      <Button size="icon" variant="ghost" onClick={() => { setIngredientDialog(s); setSelectedMpId(""); setSelectedGrams("100"); }} title="Gerenciar ingredientes">
+                        <FlaskConical className="h-4 w-4 text-primary" />
+                      </Button>
                       <Button size="icon" variant="ghost" onClick={() => openEdit(s)}><Pencil className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" onClick={() => setDeleteId(s.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                     </TableCell>
