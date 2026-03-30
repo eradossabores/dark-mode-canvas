@@ -249,26 +249,49 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
       return;
     }
     setSaving(true);
-    const { error } = await (supabase as any).from("compras").insert({
+    const payload = {
       tipo, item_nome: itemNome.trim(), fornecedor_id: fornecedorId || null,
       quantidade: qty, valor_unitario: unitPrice, valor_total: valorTotal,
       tem_frete: temFrete, valor_frete: freight,
       custo_total_com_frete: custoTotalComFrete, custo_unitario_com_frete: custoUnitarioComFrete,
-      observacoes: obs || null, factory_id: factoryId,
+      observacoes: obs || null,
       created_at: new Date(dataCompra + "T12:00:00").toISOString(),
-    });
+    };
+
+    let error;
+    if (editingId) {
+      ({ error } = await (supabase as any).from("compras").update(payload).eq("id", editingId));
+    } else {
+      ({ error } = await (supabase as any).from("compras").insert({ ...payload, factory_id: factoryId }));
+    }
     setSaving(false);
     if (error) { toast.error("Erro ao salvar compra"); return; }
-    toast.success("Compra registrada!");
+    toast.success(editingId ? "Compra atualizada!" : "Compra registrada!");
     setOpen(false);
     resetForm();
     onRefresh();
+  };
+
+  const handleEdit = (c: Compra) => {
+    setEditingId(c.id);
+    setTipo(c.tipo);
+    setItemNome(c.item_nome);
+    setFornecedorId(c.fornecedor_id || "");
+    setQuantidade(String(c.quantidade));
+    setValorTotalInput(String(c.valor_total));
+    setTemFrete(c.tem_frete);
+    setValorFrete(String(c.valor_frete));
+    setObs(c.observacoes || "");
+    setDataCompra(format(new Date(c.created_at), "yyyy-MM-dd"));
+    setUseCustomItem(!allItems.includes(c.item_nome));
+    setOpen(true);
   };
 
   const resetForm = () => {
     setTipo("insumo"); setItemNome(""); setFornecedorId(""); setQuantidade("");
     setValorTotalInput(""); setTemFrete(false); setValorFrete(""); setObs("");
     setDataCompra(format(new Date(), "yyyy-MM-dd")); setUseCustomItem(false);
+    setEditingId(null);
   };
 
   const handleDelete = async (id: string) => {
