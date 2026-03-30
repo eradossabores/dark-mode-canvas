@@ -85,7 +85,7 @@ export default function Compras() {
             fornecedores={fornecedores}
             fornecedorMap={fornecedorMap}
             compras={compras}
-            operador={nome || ""}
+            operador={user?.email || ""}
             onRefresh={fetchData}
           />
         </TabsContent>
