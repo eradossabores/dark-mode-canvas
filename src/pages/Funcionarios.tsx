@@ -20,7 +20,7 @@ export default function Funcionarios() {
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [form, setForm] = useState({ nome: "", tipo_pagamento: "diaria" as string, valor_pagamento: "" });
+  const [form, setForm] = useState({ nome: "", tipo_pagamento: "diaria" as string, valor_pagamento: "", setor: "producao" as string });
 
   useEffect(() => { loadData(); }, [factoryId]);
 
