@@ -468,7 +468,7 @@ export default function Producao() {
                         <>
                           <Label className="text-xs">Qtd. Lotes</Label>
                           <Input type="number" min={1} value={qtdLotes} onChange={(e) => setQtdLotes(Number(e.target.value))} />
-                          <p className="text-xs text-muted-foreground mt-1">= {qtdLotes * 84} gelos</p>
+                          <p className="text-xs text-muted-foreground mt-1">= {qtdLotes * getGelosPorLote(saborId)} gelos</p>
                         </>
                       ) : (
                         <>
