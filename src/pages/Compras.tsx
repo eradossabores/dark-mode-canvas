@@ -138,6 +138,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
       tem_frete: temFrete, valor_frete: freight,
       custo_total_com_frete: custoTotalComFrete, custo_unitario_com_frete: custoUnitarioComFrete,
       observacoes: obs || null, factory_id: factoryId,
+      created_at: new Date(dataCompra + "T12:00:00").toISOString(),
     });
     setSaving(false);
     if (error) { toast.error("Erro ao salvar compra"); return; }
