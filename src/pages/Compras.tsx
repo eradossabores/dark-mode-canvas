@@ -152,6 +152,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const [saving, setSaving] = useState(false);
   const [filterTipo, setFilterTipo] = useState("todos");
   const [useCustomItem, setUseCustomItem] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // Fetch top items by sales volume
   const [topInsumos, setTopInsumos] = useState<string[]>([]);
