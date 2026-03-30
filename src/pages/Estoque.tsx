@@ -957,32 +957,43 @@ export default function Estoque() {
           </div>
           <Card>
             <CardContent className="pt-6">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Estoque</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {embalagens.map((e) => (
-                    <TableRow key={e.id}>
-                      <TableCell>{e.nome}</TableCell>
-                      <TableCell>{e.estoque_atual} un.</TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openAjusteDialog("emb", e.id, e.estoque_atual)}
-                        >
-                          <Settings2 className="h-3 w-3 mr-1" /> Ajustar
-                        </Button>
-                      </TableCell>
+              <div className="hidden sm:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Estoque</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {embalagens.map((e) => (
+                      <TableRow key={e.id}>
+                        <TableCell>{e.nome}</TableCell>
+                        <TableCell>{e.estoque_atual} un.</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="outline" size="sm" onClick={() => openAjusteDialog("emb", e.id, e.estoque_atual)}>
+                            <Settings2 className="h-3 w-3 mr-1" /> Ajustar
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className="sm:hidden space-y-2">
+                {embalagens.map((e) => (
+                  <div key={e.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
+                    <div>
+                      <p className="font-medium text-sm">{e.nome}</p>
+                      <p className="text-xs text-muted-foreground">{e.estoque_atual} un.</p>
+                    </div>
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => openAjusteDialog("emb", e.id, e.estoque_atual)}>
+                      <Settings2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
