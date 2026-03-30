@@ -34,6 +34,7 @@ export default function Producao() {
   const [sabores, setSabores] = useState<any[]>([]);
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
   const [producoes, setProducoes] = useState<any[]>([]);
+  const [receitaMap, setReceitaMap] = useState<Record<string, number>>({});
   const [chartPeriodo, setChartPeriodo] = useState<"dia" | "semana" | "mes">("mes");
   const [chartDate, setChartDate] = useState<Date>(new Date());
   const [chartView, setChartView] = useState<"top5" | "todos">("top5");
@@ -57,7 +58,7 @@ export default function Producao() {
   const [saborId, setSaborId] = useState("");
   const [modo, setModo] = useState<"lote" | "unidade">("lote");
   const [qtdLotes, setQtdLotes] = useState(6);
-  const [qtdTotal, setQtdTotal] = useState(504);
+  const [qtdTotal, setQtdTotal] = useState(0);
   const [observacoes, setObservacoes] = useState("");
   const [ignorarEstoque, setIgnorarEstoque] = useState(false);
   const [dataProducao, setDataProducao] = useState<Date>(new Date());
@@ -101,20 +102,33 @@ export default function Producao() {
     }
   }, [dataParam, producoes]);
 
+  function getGelosPorLote(sId?: string): number {
+    if (sId && receitaMap[sId]) return receitaMap[sId];
+    // Fallback: use the first available value or default 84
+    const values = Object.values(receitaMap);
+    return values.length > 0 ? values[0] : 84;
+  }
+
   useEffect(() => {
-    if (modo === "lote") setQtdTotal(qtdLotes * 84);
-  }, [qtdLotes, modo]);
+    if (modo === "lote") setQtdTotal(qtdLotes * getGelosPorLote(saborId));
+  }, [qtdLotes, modo, saborId, receitaMap]);
 
   async function loadData() {
     let sQ = (supabase as any).from("sabores").select("*").eq("ativo", true).order("nome");
     let fQ = (supabase as any).from("funcionarios").select("*").eq("ativo", true).order("nome");
     let pQ = (supabase as any).from("producoes").select("*, sabores(nome)").order("created_at", { ascending: false }).limit(500);
-    if (factoryId) { sQ = sQ.eq("factory_id", factoryId); fQ = fQ.eq("factory_id", factoryId); pQ = pQ.eq("factory_id", factoryId); }
-    const [s, f, p] = await Promise.all([sQ, fQ, pQ]);
+    let rQ = (supabase as any).from("sabor_receita").select("sabor_id, gelos_por_lote");
+    if (factoryId) { sQ = sQ.eq("factory_id", factoryId); fQ = fQ.eq("factory_id", factoryId); pQ = pQ.eq("factory_id", factoryId); rQ = rQ.eq("factory_id", factoryId); }
+    const [s, f, p, r] = await Promise.all([sQ, fQ, pQ, rQ]);
     setSabores(s.data || []);
     setFuncionarios(f.data || []);
     setProducoes(p.data || []);
-
+    // Build map: sabor_id -> gelos_por_lote (use first recipe row per sabor)
+    const map: Record<string, number> = {};
+    (r.data || []).forEach((rec: any) => {
+      if (!map[rec.sabor_id]) map[rec.sabor_id] = rec.gelos_por_lote;
+    });
+    setReceitaMap(map);
   }
 
   // Helper: semanas do mês começando no dia 1
@@ -200,7 +214,7 @@ export default function Producao() {
   function updateFunc(i: number, val: string) { const list = [...funcList]; list[i] = val; setFuncList(list); }
 
   function resetForm() {
-    setSaborId(""); setModo("lote"); setQtdLotes(6); setQtdTotal(504); setObservacoes(""); setFuncList([""]); setDataProducao(new Date()); setProdItens([]); setIgnorarEstoque(false);
+    setSaborId(""); setModo("lote"); setQtdLotes(6); setQtdTotal(6 * getGelosPorLote()); setObservacoes(""); setFuncList([""]); setDataProducao(new Date()); setProdItens([]); setIgnorarEstoque(false);
   }
 
   function addProdItem() {
@@ -208,9 +222,10 @@ export default function Producao() {
     if (prodItens.some(i => i.sabor_id === saborId)) return toast({ title: "Sabor já adicionado", variant: "destructive" });
     const sabor = sabores.find(s => s.id === saborId);
     if (!sabor) return;
-    const total = modo === "lote" ? qtdLotes * 84 : qtdTotal;
+    const gpl = getGelosPorLote(saborId);
+    const total = modo === "lote" ? qtdLotes * gpl : qtdTotal;
     setProdItens([...prodItens, { sabor_id: saborId, sabor_nome: sabor.nome, modo, qtdLotes, qtdTotal: total }]);
-    setSaborId(""); setModo("lote"); setQtdLotes(1); setQtdTotal(84);
+    setSaborId(""); setModo("lote"); setQtdLotes(1); setQtdTotal(gpl);
   }
 
   function removeProdItem(idx: number) {
@@ -282,7 +297,7 @@ export default function Producao() {
     if (validFuncs.length === 0) return toast({ title: "Adicione ao menos um responsável", variant: "destructive" });
 
     const nomesFuncionarios = validFuncs.map(f => funcionarios.find(fn => fn.id === f)?.nome).filter(Boolean).join(", ");
-    const finalQtdTotal = editModo === "lote" ? editQtdLotes * 84 : editQtdTotal;
+    const finalQtdTotal = editModo === "lote" ? editQtdLotes * getGelosPorLote(editSaborId) : editQtdTotal;
 
     setEditLoading(true);
     try {
@@ -443,7 +458,7 @@ export default function Producao() {
                       <Select value={modo} onValueChange={(v) => setModo(v as any)}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="lote">Lote (84 un.)</SelectItem>
+                          <SelectItem value="lote">Lote ({getGelosPorLote(saborId)} un.)</SelectItem>
                           <SelectItem value="unidade">Unidade</SelectItem>
                         </SelectContent>
                       </Select>
@@ -453,7 +468,7 @@ export default function Producao() {
                         <>
                           <Label className="text-xs">Qtd. Lotes</Label>
                           <Input type="number" min={1} value={qtdLotes} onChange={(e) => setQtdLotes(Number(e.target.value))} />
-                          <p className="text-xs text-muted-foreground mt-1">= {qtdLotes * 84} gelos</p>
+                          <p className="text-xs text-muted-foreground mt-1">= {qtdLotes * getGelosPorLote(saborId)} gelos</p>
                         </>
                       ) : (
                         <>
@@ -558,7 +573,7 @@ export default function Producao() {
               <Select value={editModo} onValueChange={(v) => setEditModo(v as any)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="lote">Lote (84 un.)</SelectItem>
+                  <SelectItem value="lote">Lote ({getGelosPorLote(editSaborId)} un.)</SelectItem>
                   <SelectItem value="unidade">Unidade</SelectItem>
                 </SelectContent>
               </Select>
@@ -567,7 +582,7 @@ export default function Producao() {
               <div>
                 <Label>Qtd. Lotes</Label>
                 <Input type="number" min={1} value={editQtdLotes} onChange={(e) => setEditQtdLotes(Number(e.target.value))} />
-                <p className="text-xs text-muted-foreground mt-1">Total: {editQtdLotes * 84} gelos</p>
+                <p className="text-xs text-muted-foreground mt-1">Total: {editQtdLotes * getGelosPorLote(editSaborId)} gelos</p>
               </div>
             ) : (
               <div>

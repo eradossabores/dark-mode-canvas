@@ -188,15 +188,24 @@ export default function ChecklistProducaoDia({ targetDate }: ChecklistProducaoDi
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCelebration, setShowCelebration] = useState(false);
-  // Track which items have already been registered in the DB to prevent duplicates
   const [registrados, setRegistrados] = useState<Set<string>>(new Set());
+  const [receitaMap, setReceitaMap] = useState<Record<string, number>>({});
 
   function saveRegistrados(newSet: Set<string>) {
     setRegistrados(newSet);
     localStorage.setItem(REGISTRADOS_KEY, JSON.stringify([...newSet]));
   }
 
-  useEffect(() => { fetchDecisoes(); }, [hojeStr]);
+  useEffect(() => { fetchDecisoes(); loadReceitaMap(); }, [hojeStr, factoryId]);
+
+  async function loadReceitaMap() {
+    let rQ = (supabase as any).from("sabor_receita").select("sabor_id, gelos_por_lote");
+    if (factoryId) rQ = rQ.eq("factory_id", factoryId);
+    const { data } = await rQ;
+    const map: Record<string, number> = {};
+    (data || []).forEach((r: any) => { if (!map[r.sabor_id]) map[r.sabor_id] = r.gelos_por_lote; });
+    setReceitaMap(map);
+  }
 
   // Load registered items from localStorage as initial fallback
   useEffect(() => {
@@ -309,11 +318,12 @@ export default function ChecklistProducaoDia({ targetDate }: ChecklistProducaoDi
         const operador = localStorage.getItem(`checklist-producao-${hojeStr}-operador`) || "sistema";
         const funcIds: string[] = savedFuncs ? JSON.parse(savedFuncs) : [];
 
+        const gelosPorLote = receitaMap[item.saborId] || 84;
         await realizarProducao({
           p_sabor_id: item.saborId,
           p_modo: "lote",
           p_quantidade_lotes: 1,
-          p_quantidade_total: 84,
+          p_quantidade_total: gelosPorLote,
           p_operador: operador,
           p_observacoes: `Lote ${item.loteNumero}/${item.totalLotes} - Checklist produção diária`,
           p_funcionarios: funcIds.filter(f => f !== "patroes").map(f => ({ funcionario_id: f, quantidade_produzida: 0 })),
