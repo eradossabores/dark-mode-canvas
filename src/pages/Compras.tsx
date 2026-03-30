@@ -69,11 +69,44 @@ export default function Compras() {
     return m;
   }, [fornecedores]);
 
+  const resumo = useMemo(() => {
+    let totalInsumos = 0, totalEmbalagens = 0, totalGeral = 0;
+    compras.forEach(c => {
+      const custo = Number(c.custo_total_com_frete);
+      if (c.tipo === "insumo") totalInsumos += custo;
+      else totalEmbalagens += custo;
+      totalGeral += custo;
+    });
+    return { totalInsumos, totalEmbalagens, totalGeral };
+  }, [compras]);
+
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
         <ShoppingCart className="h-6 w-6" /> Setor de Compras
       </h1>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <Card className="bg-primary/10 border-primary/20">
+          <CardContent className="py-4">
+            <p className="text-xs text-muted-foreground font-medium">💧 Total Insumos</p>
+            <p className="text-xl font-bold text-primary">R$ {resumo.totalInsumos.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-secondary/50 border-secondary/30">
+          <CardContent className="py-4">
+            <p className="text-xs text-muted-foreground font-medium">📦 Total Embalagens</p>
+            <p className="text-xl font-bold">R$ {resumo.totalEmbalagens.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-accent/30 border-accent/20">
+          <CardContent className="py-4">
+            <p className="text-xs text-muted-foreground font-medium">🧾 Total Geral</p>
+            <p className="text-xl font-bold">R$ {resumo.totalGeral.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+          </CardContent>
+        </Card>
+      </div>
+
       <Tabs defaultValue="compras">
         <TabsList className="mb-4 flex-wrap">
           <TabsTrigger value="compras" className="gap-2"><Package className="h-4 w-4" /> Compras</TabsTrigger>
