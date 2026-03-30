@@ -349,6 +349,78 @@ export type Database = {
           },
         ]
       }
+      compras: {
+        Row: {
+          created_at: string
+          custo_total_com_frete: number
+          custo_unitario_com_frete: number
+          factory_id: string | null
+          fornecedor_id: string | null
+          id: string
+          item_id: string | null
+          item_nome: string
+          observacoes: string | null
+          quantidade: number
+          tem_frete: boolean
+          tipo: string
+          updated_at: string
+          valor_frete: number
+          valor_total: number
+          valor_unitario: number
+        }
+        Insert: {
+          created_at?: string
+          custo_total_com_frete?: number
+          custo_unitario_com_frete?: number
+          factory_id?: string | null
+          fornecedor_id?: string | null
+          id?: string
+          item_id?: string | null
+          item_nome: string
+          observacoes?: string | null
+          quantidade?: number
+          tem_frete?: boolean
+          tipo?: string
+          updated_at?: string
+          valor_frete?: number
+          valor_total?: number
+          valor_unitario?: number
+        }
+        Update: {
+          created_at?: string
+          custo_total_com_frete?: number
+          custo_unitario_com_frete?: number
+          factory_id?: string | null
+          fornecedor_id?: string | null
+          id?: string
+          item_id?: string | null
+          item_nome?: string
+          observacoes?: string | null
+          quantidade?: number
+          tem_frete?: boolean
+          tipo?: string
+          updated_at?: string
+          valor_frete?: number
+          valor_total?: number
+          valor_unitario?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compras_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compras_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contas_a_pagar: {
         Row: {
           ativa: boolean
@@ -819,6 +891,50 @@ export type Database = {
             columns: ["visita_id"]
             isOneToOne: false
             referencedRelation: "prospecto_visitas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fornecedores: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          email: string | null
+          factory_id: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          telefone: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          email?: string | null
+          factory_id?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          telefone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          email?: string | null
+          factory_id?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          telefone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fornecedores_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
             referencedColumns: ["id"]
           },
         ]
