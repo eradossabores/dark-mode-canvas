@@ -148,6 +148,7 @@ export default function Funcionarios() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
+                <TableHead>Setor</TableHead>
                 <TableHead>Pagamento</TableHead>
                 <TableHead>Valor</TableHead>
                 <TableHead>Status</TableHead>
@@ -158,6 +159,11 @@ export default function Funcionarios() {
               {funcionarios.map((f) => (
                 <TableRow key={f.id}>
                   <TableCell className="font-medium">{f.nome}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-xs">
+                      {f.setor === "vendas" ? "🛒 Vendas" : "🏭 Produção"}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="capitalize">{f.tipo_pagamento === "diaria" ? "Diária" : "Fixo"}</TableCell>
                   <TableCell>R$ {Number(f.valor_pagamento).toFixed(2)}</TableCell>
                   <TableCell>
