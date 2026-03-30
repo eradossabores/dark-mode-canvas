@@ -196,7 +196,16 @@ export default function ChecklistProducaoDia({ targetDate }: ChecklistProducaoDi
     localStorage.setItem(REGISTRADOS_KEY, JSON.stringify([...newSet]));
   }
 
-  useEffect(() => { fetchDecisoes(); }, [hojeStr]);
+  useEffect(() => { fetchDecisoes(); loadReceitaMap(); }, [hojeStr, factoryId]);
+
+  async function loadReceitaMap() {
+    let rQ = (supabase as any).from("sabor_receita").select("sabor_id, gelos_por_lote");
+    if (factoryId) rQ = rQ.eq("factory_id", factoryId);
+    const { data } = await rQ;
+    const map: Record<string, number> = {};
+    (data || []).forEach((r: any) => { if (!map[r.sabor_id]) map[r.sabor_id] = r.gelos_por_lote; });
+    setReceitaMap(map);
+  }
 
   // Load registered items from localStorage as initial fallback
   useEffect(() => {
