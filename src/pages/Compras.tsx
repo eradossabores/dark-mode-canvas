@@ -213,12 +213,14 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     fetchItems();
   }, [factoryId]);
 
-  const allItems = tipo === "insumo" ? allInsumos : allEmbalagens;
-  const topItems = tipo === "insumo" ? topInsumos : topEmbalagens;
-  const otherItems = allItems.filter(i => !topItems.includes(i));
+  // Build item lists based on tipo
+  const showInsumos = tipo === "insumo" || tipo === "misto";
+  const showEmbalagens = tipo === "embalagem" || tipo === "misto";
 
-  // Sort: top items first, then others
-  const orderedItems = [...topItems, ...otherItems];
+  const insumoTopItems = showInsumos ? topInsumos : [];
+  const insumoOtherItems = showInsumos ? allInsumos.filter(i => !topInsumos.includes(i)) : [];
+  const embTopItems = showEmbalagens ? topEmbalagens : [];
+  const embOtherItems = showEmbalagens ? allEmbalagens.filter(i => !topEmbalagens.includes(i)) : [];
 
   const totalQty = Object.values(itemQuantities).reduce((s, v) => s + v, 0)
     + customItems.reduce((s, ci) => s + ci.quantidade, 0);
@@ -229,7 +231,8 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const custoUnitarioComFrete = totalQty > 0 ? custoTotalComFrete / totalQty : 0;
 
   const filledItems = [
-    ...orderedItems.filter(n => (itemQuantities[n] || 0) > 0).map(n => ({ nome: n, quantidade: itemQuantities[n] })),
+    ...(showInsumos ? [...insumoTopItems, ...insumoOtherItems].filter(n => (itemQuantities[`insumo:${n}`] || 0) > 0).map(n => ({ nome: n, quantidade: itemQuantities[`insumo:${n}`], tipo: "insumo" })) : []),
+    ...(showEmbalagens ? [...embTopItems, ...embOtherItems].filter(n => (itemQuantities[`embalagem:${n}`] || 0) > 0).map(n => ({ nome: n, quantidade: itemQuantities[`embalagem:${n}`], tipo: "embalagem" })) : []),
     ...customItems.filter(ci => ci.quantidade > 0),
   ];
 
