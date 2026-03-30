@@ -276,6 +276,14 @@ export default function GerenciarUsuarios() {
             <Factory className="h-4 w-4 mr-2" />
             {generatingInvite ? "Gerando..." : "Convite Colaborador"}
           </Button>
+          <Button
+            variant="outline"
+            disabled={generatingInvite}
+            onClick={() => generateInvite("vendedor")}
+          >
+            <ShoppingCart className="h-4 w-4 mr-2" />
+            {generatingInvite ? "Gerando..." : "Convite Vendedor"}
+          </Button>
           <Button onClick={() => setOpen(true)}><Plus className="h-4 w-4 mr-2" />Novo Usuário</Button>
         </div>
       </div>
