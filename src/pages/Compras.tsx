@@ -321,7 +321,7 @@ function FornecedoresTab({ factoryId, fornecedores, onRefresh }: {
     setSaving(false);
     if (error) { toast.error("Erro ao salvar"); return; }
     toast.success("Fornecedor cadastrado!");
-    setOpen(false); setNome(""); setTelefone(""); setEmail(""); setObs("");
+    setOpen(false); setNome(""); setTipo("insumo"); setTelefone(""); setEmail(""); setObs("");
     onRefresh();
   };
 
