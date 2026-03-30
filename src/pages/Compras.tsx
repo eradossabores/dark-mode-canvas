@@ -311,7 +311,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
             <Button className="gap-2"><Plus className="h-4 w-4" /> Nova Compra</Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>Registrar Compra</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{editingId ? "Editar Compra" : "Registrar Compra"}</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
