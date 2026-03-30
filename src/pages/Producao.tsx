@@ -102,9 +102,16 @@ export default function Producao() {
     }
   }, [dataParam, producoes]);
 
+  function getGelosPorLote(sId?: string): number {
+    if (sId && receitaMap[sId]) return receitaMap[sId];
+    // Fallback: use the first available value or default 84
+    const values = Object.values(receitaMap);
+    return values.length > 0 ? values[0] : 84;
+  }
+
   useEffect(() => {
-    if (modo === "lote") setQtdTotal(qtdLotes * 84);
-  }, [qtdLotes, modo]);
+    if (modo === "lote") setQtdTotal(qtdLotes * getGelosPorLote(saborId));
+  }, [qtdLotes, modo, saborId, receitaMap]);
 
   async function loadData() {
     let sQ = (supabase as any).from("sabores").select("*").eq("ativo", true).order("nome");
