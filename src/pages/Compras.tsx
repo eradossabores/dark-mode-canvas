@@ -135,7 +135,7 @@ export default function Compras() {
 }
 
 // ─── COMPRAS TAB ───
-interface ItemQty { nome: string; quantidade: number; }
+interface ItemQty { nome: string; quantidade: number; tipo: string; }
 
 function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador, onRefresh }: {
   factoryId: string | null; fornecedores: Fornecedor[]; fornecedorMap: Record<string, string>;
