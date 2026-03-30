@@ -222,9 +222,10 @@ export default function Producao() {
     if (prodItens.some(i => i.sabor_id === saborId)) return toast({ title: "Sabor já adicionado", variant: "destructive" });
     const sabor = sabores.find(s => s.id === saborId);
     if (!sabor) return;
-    const total = modo === "lote" ? qtdLotes * 84 : qtdTotal;
+    const gpl = getGelosPorLote(saborId);
+    const total = modo === "lote" ? qtdLotes * gpl : qtdTotal;
     setProdItens([...prodItens, { sabor_id: saborId, sabor_nome: sabor.nome, modo, qtdLotes, qtdTotal: total }]);
-    setSaborId(""); setModo("lote"); setQtdLotes(1); setQtdTotal(84);
+    setSaborId(""); setModo("lote"); setQtdLotes(1); setQtdTotal(gpl);
   }
 
   function removeProdItem(idx: number) {
