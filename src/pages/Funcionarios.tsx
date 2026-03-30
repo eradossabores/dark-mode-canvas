@@ -33,7 +33,7 @@ export default function Funcionarios() {
 
   function openNew() {
     setEditingId(null);
-    setForm({ nome: "", tipo_pagamento: "diaria", valor_pagamento: "" });
+    setForm({ nome: "", tipo_pagamento: "diaria", valor_pagamento: "", setor: "producao" });
     setOpen(true);
   }
 
