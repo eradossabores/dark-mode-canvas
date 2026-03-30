@@ -115,6 +115,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const [temFrete, setTemFrete] = useState(false);
   const [valorFrete, setValorFrete] = useState("");
   const [obs, setObs] = useState("");
+  const [dataCompra, setDataCompra] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [saving, setSaving] = useState(false);
   const [filterTipo, setFilterTipo] = useState("todos");
 
@@ -137,6 +138,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
       tem_frete: temFrete, valor_frete: freight,
       custo_total_com_frete: custoTotalComFrete, custo_unitario_com_frete: custoUnitarioComFrete,
       observacoes: obs || null, factory_id: factoryId,
+      created_at: new Date(dataCompra + "T12:00:00").toISOString(),
     });
     setSaving(false);
     if (error) { toast.error("Erro ao salvar compra"); return; }
@@ -149,6 +151,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const resetForm = () => {
     setTipo("insumo"); setItemNome(""); setFornecedorId(""); setQuantidade("");
     setValorUnitario(""); setTemFrete(false); setValorFrete(""); setObs("");
+    setDataCompra(format(new Date(), "yyyy-MM-dd"));
   };
 
   const handleDelete = async (id: string) => {
@@ -170,15 +173,21 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>Registrar Compra</DialogTitle></DialogHeader>
             <div className="space-y-4">
-              <div>
-                <Label>Tipo</Label>
-                <Select value={tipo} onValueChange={setTipo}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="insumo">Insumo</SelectItem>
-                    <SelectItem value="embalagem">Embalagem</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Tipo</Label>
+                  <Select value={tipo} onValueChange={setTipo}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="insumo">Insumo</SelectItem>
+                      <SelectItem value="embalagem">Embalagem</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Data da Compra</Label>
+                  <Input type="date" value={dataCompra} onChange={e => setDataCompra(e.target.value)} />
+                </div>
               </div>
               <div>
                 <Label>Nome do Item *</Label>
