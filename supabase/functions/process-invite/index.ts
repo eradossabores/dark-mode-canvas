@@ -36,10 +36,19 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Assign role
+    // Get factory_id from the invite creator
+    const { data: creatorRole } = await adminClient
+      .from("user_roles")
+      .select("factory_id")
+      .eq("user_id", invite.created_by)
+      .maybeSingle();
+
+    const factoryId = creatorRole?.factory_id || null;
+
+    // Assign role WITH factory_id
     const { error: roleError } = await adminClient
       .from("user_roles")
-      .insert({ user_id, role: invite.role });
+      .insert({ user_id, role: invite.role, factory_id: factoryId });
 
     if (roleError) {
       console.error("Role insert error:", roleError);
@@ -48,6 +57,12 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Update profile with factory_id
+    await adminClient
+      .from("profiles")
+      .update({ factory_id: factoryId })
+      .eq("id", user_id);
 
     // Mark invite as used
     await adminClient
