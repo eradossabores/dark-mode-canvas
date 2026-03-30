@@ -108,7 +108,7 @@ export default function Producao() {
   async function loadData() {
     let sQ = (supabase as any).from("sabores").select("*").eq("ativo", true).order("nome");
     let fQ = (supabase as any).from("funcionarios").select("*").eq("ativo", true).order("nome");
-    let pQ = (supabase as any).from("producoes").select("*, sabores(nome)").order("created_at", { ascending: false }).limit(100);
+    let pQ = (supabase as any).from("producoes").select("*, sabores(nome)").order("created_at", { ascending: false }).limit(500);
     if (factoryId) { sQ = sQ.eq("factory_id", factoryId); fQ = fQ.eq("factory_id", factoryId); pQ = pQ.eq("factory_id", factoryId); }
     const [s, f, p] = await Promise.all([sQ, fQ, pQ]);
     setSabores(s.data || []);
@@ -248,7 +248,7 @@ export default function Producao() {
         }
       }
       toast({ title: `${prodItens.length} produção(ões) registrada(s) com sucesso!` });
-      setOpen(false); resetForm(); loadData();
+      setOpen(false); resetForm(); await loadData();
     } catch (e: any) {
       toast({ title: "Erro na produção", description: e.message, variant: "destructive" });
     } finally {
