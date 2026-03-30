@@ -321,6 +321,28 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
 
   const filtered = filterTipo === "todos" ? compras : compras.filter(c => c.tipo === filterTipo);
 
+  // Group compras by created_at (same timestamp = same comanda)
+  const grouped = useMemo(() => {
+    const groups: Record<string, Compra[]> = {};
+    filtered.forEach(c => {
+      const key = c.created_at;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(c);
+    });
+    return Object.entries(groups).sort(([a], [b]) => b.localeCompare(a));
+  }, [filtered]);
+
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const toggleGroup = (key: string) => setExpandedGroups(prev => ({ ...prev, [key]: !prev[key] }));
+
+  const handleDeleteGroup = async (items: Compra[]) => {
+    const ids = items.map(c => c.id);
+    const { error } = await (supabase as any).from("compras").delete().in("id", ids);
+    if (error) { toast.error("Erro ao excluir"); return; }
+    toast.success("Comanda excluída");
+    onRefresh();
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
@@ -508,40 +530,76 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-8"></TableHead>
                   <TableHead>Data</TableHead>
                   <TableHead>Tipo</TableHead>
-                  <TableHead>Item</TableHead>
+                  <TableHead>Itens</TableHead>
                   <TableHead>Fornecedor</TableHead>
-                  <TableHead className="text-right">Qtd</TableHead>
-                  <TableHead className="text-right">Unit. (R$)</TableHead>
+                  <TableHead className="text-right">Qtd Total</TableHead>
                   <TableHead className="text-right">Total (R$)</TableHead>
                   <TableHead className="text-right">Frete</TableHead>
                   <TableHead className="text-right">Custo c/ Frete</TableHead>
-                  <TableHead className="text-right">Unit. c/ Frete</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground py-8">Nenhuma compra registrada</TableCell></TableRow>
-                ) : filtered.map(c => (
-                  <TableRow key={c.id}>
-                    <TableCell className="whitespace-nowrap">{format(new Date(c.created_at), "dd/MM/yy")}</TableCell>
-                    <TableCell><Badge variant={c.tipo === "insumo" ? "default" : "secondary"}>{c.tipo === "insumo" ? "Insumo" : "Embalagem"}</Badge></TableCell>
-                    <TableCell className="font-medium">{c.item_nome}</TableCell>
-                    <TableCell>{c.fornecedor_id ? fornecedorMap[c.fornecedor_id] || "—" : "—"}</TableCell>
-                    <TableCell className="text-right">{Number(c.quantidade).toLocaleString("pt-BR")}</TableCell>
-                    <TableCell className="text-right">{Number(c.valor_unitario).toFixed(2)}</TableCell>
-                    <TableCell className="text-right">{Number(c.valor_total).toFixed(2)}</TableCell>
-                    <TableCell className="text-right">{c.tem_frete ? `R$ ${Number(c.valor_frete).toFixed(2)}` : "—"}</TableCell>
-                    <TableCell className="text-right font-medium">{Number(c.custo_total_com_frete).toFixed(2)}</TableCell>
-                    <TableCell className="text-right font-medium text-primary">{Number(c.custo_unitario_com_frete).toFixed(2)}</TableCell>
-                    <TableCell className="flex gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => handleEdit(c)}><Edit className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {grouped.length === 0 ? (
+                  <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">Nenhuma compra registrada</TableCell></TableRow>
+                ) : grouped.map(([key, items]) => {
+                  const isExpanded = expandedGroups[key];
+                  const first = items[0];
+                  const totalQtyGroup = items.reduce((s, c) => s + Number(c.quantidade), 0);
+                  const totalValorGroup = items.reduce((s, c) => s + Number(c.valor_total), 0);
+                  const totalFreteGroup = items.reduce((s, c) => s + Number(c.valor_frete), 0);
+                  const totalCustoGroup = items.reduce((s, c) => s + Number(c.custo_total_com_frete), 0);
+                  const isSingle = items.length === 1;
+                  const itemNames = items.map(c => c.item_nome).join(", ");
+
+                  return (
+                    <>
+                      <TableRow key={key} className="cursor-pointer hover:bg-muted/50" onClick={() => !isSingle && toggleGroup(key)}>
+                        <TableCell className="w-8 px-2">
+                          {!isSingle && (isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />)}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">{format(new Date(first.created_at), "dd/MM/yy")}</TableCell>
+                        <TableCell><Badge variant={first.tipo === "insumo" ? "default" : "secondary"}>{first.tipo === "insumo" ? "Insumo" : "Embalagem"}</Badge></TableCell>
+                        <TableCell className="font-medium max-w-[200px] truncate" title={itemNames}>
+                          {isSingle ? first.item_nome : `${items.length} itens`}
+                        </TableCell>
+                        <TableCell>{first.fornecedor_id ? fornecedorMap[first.fornecedor_id] || "—" : "—"}</TableCell>
+                        <TableCell className="text-right font-medium">{totalQtyGroup.toLocaleString("pt-BR")}</TableCell>
+                        <TableCell className="text-right">{totalValorGroup.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">{first.tem_frete ? `R$ ${totalFreteGroup.toFixed(2)}` : "—"}</TableCell>
+                        <TableCell className="text-right font-bold text-primary">{totalCustoGroup.toFixed(2)}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                            {isSingle && <Button variant="ghost" size="icon" onClick={() => handleEdit(first)}><Edit className="h-4 w-4" /></Button>}
+                            <Button variant="ghost" size="icon" onClick={() => isSingle ? handleDelete(first.id) : handleDeleteGroup(items)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                      {isExpanded && items.map(c => (
+                        <TableRow key={c.id} className="bg-muted/30">
+                          <TableCell></TableCell>
+                          <TableCell></TableCell>
+                          <TableCell></TableCell>
+                          <TableCell className="text-sm pl-6">↳ {c.item_nome}</TableCell>
+                          <TableCell></TableCell>
+                          <TableCell className="text-right text-sm">{Number(c.quantidade).toLocaleString("pt-BR")}</TableCell>
+                          <TableCell className="text-right text-sm">{Number(c.valor_total).toFixed(2)}</TableCell>
+                          <TableCell className="text-right text-sm">{c.tem_frete ? Number(c.valor_frete).toFixed(2) : "—"}</TableCell>
+                          <TableCell className="text-right text-sm">{Number(c.custo_total_com_frete).toFixed(2)}</TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(c)}><Edit className="h-3 w-3" /></Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDelete(c.id)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
