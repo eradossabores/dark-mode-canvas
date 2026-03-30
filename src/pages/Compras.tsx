@@ -305,6 +305,7 @@ function FornecedoresTab({ factoryId, fornecedores, onRefresh }: {
 }) {
   const [open, setOpen] = useState(false);
   const [nome, setNome] = useState("");
+  const [tipo, setTipo] = useState("insumo");
   const [telefone, setTelefone] = useState("");
   const [email, setEmail] = useState("");
   const [obs, setObs] = useState("");
