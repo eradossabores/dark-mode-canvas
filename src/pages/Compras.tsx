@@ -152,6 +152,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const [saving, setSaving] = useState(false);
   const [filterTipo, setFilterTipo] = useState("todos");
   const [useCustomItem, setUseCustomItem] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // Fetch top items by sales volume
   const [topInsumos, setTopInsumos] = useState<string[]>([]);
@@ -248,26 +249,49 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
       return;
     }
     setSaving(true);
-    const { error } = await (supabase as any).from("compras").insert({
+    const payload = {
       tipo, item_nome: itemNome.trim(), fornecedor_id: fornecedorId || null,
       quantidade: qty, valor_unitario: unitPrice, valor_total: valorTotal,
       tem_frete: temFrete, valor_frete: freight,
       custo_total_com_frete: custoTotalComFrete, custo_unitario_com_frete: custoUnitarioComFrete,
-      observacoes: obs || null, factory_id: factoryId,
+      observacoes: obs || null,
       created_at: new Date(dataCompra + "T12:00:00").toISOString(),
-    });
+    };
+
+    let error;
+    if (editingId) {
+      ({ error } = await (supabase as any).from("compras").update(payload).eq("id", editingId));
+    } else {
+      ({ error } = await (supabase as any).from("compras").insert({ ...payload, factory_id: factoryId }));
+    }
     setSaving(false);
     if (error) { toast.error("Erro ao salvar compra"); return; }
-    toast.success("Compra registrada!");
+    toast.success(editingId ? "Compra atualizada!" : "Compra registrada!");
     setOpen(false);
     resetForm();
     onRefresh();
+  };
+
+  const handleEdit = (c: Compra) => {
+    setEditingId(c.id);
+    setTipo(c.tipo);
+    setItemNome(c.item_nome);
+    setFornecedorId(c.fornecedor_id || "");
+    setQuantidade(String(c.quantidade));
+    setValorTotalInput(String(c.valor_total));
+    setTemFrete(c.tem_frete);
+    setValorFrete(String(c.valor_frete));
+    setObs(c.observacoes || "");
+    setDataCompra(format(new Date(c.created_at), "yyyy-MM-dd"));
+    setUseCustomItem(!allItems.includes(c.item_nome));
+    setOpen(true);
   };
 
   const resetForm = () => {
     setTipo("insumo"); setItemNome(""); setFornecedorId(""); setQuantidade("");
     setValorTotalInput(""); setTemFrete(false); setValorFrete(""); setObs("");
     setDataCompra(format(new Date(), "yyyy-MM-dd")); setUseCustomItem(false);
+    setEditingId(null);
   };
 
   const handleDelete = async (id: string) => {
@@ -287,7 +311,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
             <Button className="gap-2"><Plus className="h-4 w-4" /> Nova Compra</Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>Registrar Compra</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{editingId ? "Editar Compra" : "Registrar Compra"}</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -415,7 +439,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                 </Card>
               )}
               <Button onClick={handleSave} disabled={saving} className="w-full">
-                {saving ? "Salvando..." : "Registrar Compra"}
+                {saving ? "Salvando..." : editingId ? "Salvar Alterações" : "Registrar Compra"}
               </Button>
             </div>
           </DialogContent>
@@ -464,7 +488,8 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                     <TableCell className="text-right">{c.tem_frete ? `R$ ${Number(c.valor_frete).toFixed(2)}` : "—"}</TableCell>
                     <TableCell className="text-right font-medium">{Number(c.custo_total_com_frete).toFixed(2)}</TableCell>
                     <TableCell className="text-right font-medium text-primary">{Number(c.custo_unitario_com_frete).toFixed(2)}</TableCell>
-                    <TableCell>
+                    <TableCell className="flex gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => handleEdit(c)}><Edit className="h-4 w-4" /></Button>
                       <Button variant="ghost" size="icon" onClick={() => handleDelete(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                     </TableCell>
                   </TableRow>
