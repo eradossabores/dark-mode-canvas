@@ -31,11 +31,13 @@ Deno.serve(async (req) => {
     }
 
     const adminClient = createClient(supabaseUrl, serviceKey);
+
+    // Check caller is admin and get their factory_id
     const { data: roleData } = await adminClient
       .from("user_roles")
-      .select("role")
+      .select("role, factory_id")
       .eq("user_id", caller.id)
-      .eq("role", "admin")
+      .in("role", ["admin", "factory_owner"])
       .maybeSingle();
 
     if (!roleData) {
@@ -44,6 +46,8 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const callerFactoryId = roleData.factory_id;
 
     const { email, password, nome, role } = await req.json();
 
@@ -68,9 +72,10 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Insert role WITH factory_id from the caller
     const { error: roleError } = await adminClient
       .from("user_roles")
-      .insert({ user_id: newUser.user.id, role });
+      .insert({ user_id: newUser.user.id, role, factory_id: callerFactoryId });
 
     if (roleError) {
       return new Response(JSON.stringify({ error: roleError.message }), {
@@ -78,6 +83,12 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Also update the profile with factory_id
+    await adminClient
+      .from("profiles")
+      .update({ factory_id: callerFactoryId })
+      .eq("id", newUser.user.id);
 
     return new Response(JSON.stringify({ success: true, user_id: newUser.user.id }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
