@@ -528,53 +528,68 @@ export default function Estoque() {
       </Dialog>
 
       <Tabs defaultValue="gelos">
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="gelos">Gelos Prontos</TabsTrigger>
-          <TabsTrigger value="sacos" className="gap-1">📦 Sacos</TabsTrigger>
-          <TabsTrigger value="avarias" className="gap-1"><AlertTriangle className="h-3.5 w-3.5" />Avarias</TabsTrigger>
-          <TabsTrigger value="freezers" className="gap-1"><Snowflake className="h-3.5 w-3.5" />Freezers</TabsTrigger>
-          <TabsTrigger value="mp">Matéria-Prima</TabsTrigger>
-          <TabsTrigger value="emb">Embalagens</TabsTrigger>
-          <TabsTrigger value="mov">Movimentações</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-1 px-1 pb-1">
+          <TabsList className="flex w-max min-w-full sm:w-auto sm:flex-wrap gap-0.5">
+            <TabsTrigger value="gelos" className="text-xs sm:text-sm px-2 sm:px-3">Gelos</TabsTrigger>
+            <TabsTrigger value="sacos" className="text-xs sm:text-sm px-2 sm:px-3 gap-1">📦 Sacos</TabsTrigger>
+            <TabsTrigger value="avarias" className="text-xs sm:text-sm px-2 sm:px-3 gap-1"><AlertTriangle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />Avarias</TabsTrigger>
+            <TabsTrigger value="freezers" className="text-xs sm:text-sm px-2 sm:px-3 gap-1"><Snowflake className="h-3 w-3 sm:h-3.5 sm:w-3.5" />Freezers</TabsTrigger>
+            <TabsTrigger value="mp" className="text-xs sm:text-sm px-2 sm:px-3">MP</TabsTrigger>
+            <TabsTrigger value="emb" className="text-xs sm:text-sm px-2 sm:px-3">Embalagens</TabsTrigger>
+            <TabsTrigger value="mov" className="text-xs sm:text-sm px-2 sm:px-3">Movimentações</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="gelos">
           <Card>
             <CardContent className="pt-6">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Sabor</TableHead>
-                    <TableHead>Quantidade</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {gelos.map((g) => (
-                    <TableRow key={g.id}>
-                      <TableCell>{g.sabores?.nome}</TableCell>
-                      <TableCell>{g.quantidade} un.</TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openAjusteDialog("gelo", g.id, g.quantidade)}
-                        >
-                          <Settings2 className="h-3 w-3 mr-1" /> Ajustar
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive ml-1"
-                          onClick={() => { setAvariaSaborId(g.sabor_id); setOpenAvaria(true); }}
-                        >
-                          <AlertTriangle className="h-3 w-3 mr-1" /> Avaria
-                        </Button>
-                      </TableCell>
+              {/* Desktop table */}
+              <div className="hidden sm:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Sabor</TableHead>
+                      <TableHead>Quantidade</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {gelos.map((g) => (
+                      <TableRow key={g.id}>
+                        <TableCell>{g.sabores?.nome}</TableCell>
+                        <TableCell>{g.quantidade} un.</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="outline" size="sm" onClick={() => openAjusteDialog("gelo", g.id, g.quantidade)}>
+                            <Settings2 className="h-3 w-3 mr-1" /> Ajustar
+                          </Button>
+                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive ml-1" onClick={() => { setAvariaSaborId(g.sabor_id); setOpenAvaria(true); }}>
+                            <AlertTriangle className="h-3 w-3 mr-1" /> Avaria
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              {/* Mobile cards */}
+              <div className="sm:hidden space-y-2">
+                {gelos.map((g) => (
+                  <div key={g.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
+                    <div>
+                      <p className="font-medium text-sm">{g.sabores?.nome}</p>
+                      <p className="text-xs text-muted-foreground">{g.quantidade} un.</p>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => openAjusteDialog("gelo", g.id, g.quantidade)}>
+                        <Settings2 className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { setAvariaSaborId(g.sabor_id); setOpenAvaria(true); }}>
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -692,35 +707,53 @@ export default function Estoque() {
             {avarias.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">Nenhuma avaria registrada.</p>
             ) : (
-              <Table>
-                <TableHeader><TableRow>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Sabor</TableHead>
-                  <TableHead>Quantidade</TableHead>
-                  <TableHead>Motivo</TableHead>
-                  <TableHead>Operador</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow></TableHeader>
-                <TableBody>
+              <>
+                <div className="hidden sm:block">
+                  <Table>
+                    <TableHeader><TableRow>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Sabor</TableHead>
+                      <TableHead>Quantidade</TableHead>
+                      <TableHead>Motivo</TableHead>
+                      <TableHead>Operador</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow></TableHeader>
+                    <TableBody>
+                      {avarias.map((a: any) => (
+                        <TableRow key={a.id}>
+                          <TableCell>{new Date(a.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                          <TableCell className="font-medium">{a.sabores?.nome}</TableCell>
+                          <TableCell className="text-destructive font-semibold">-{a.quantidade}</TableCell>
+                          <TableCell className="max-w-[200px] truncate">{a.motivo}</TableCell>
+                          <TableCell>{a.operador}</TableCell>
+                          <TableCell className="text-right space-x-1">
+                            <Button variant="ghost" size="sm" onClick={() => openEditAvaria(a)}><Pencil className="h-3.5 w-3.5" /></Button>
+                            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDeleteAvariaId(a.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <div className="sm:hidden space-y-2">
                   {avarias.map((a: any) => (
-                    <TableRow key={a.id}>
-                      <TableCell>{new Date(a.created_at).toLocaleDateString("pt-BR")}</TableCell>
-                      <TableCell className="font-medium">{a.sabores?.nome}</TableCell>
-                      <TableCell className="text-destructive font-semibold">-{a.quantidade}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{a.motivo}</TableCell>
-                      <TableCell>{a.operador}</TableCell>
-                      <TableCell className="text-right space-x-1">
-                        <Button variant="ghost" size="sm" onClick={() => openEditAvaria(a)}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDeleteAvariaId(a.id)}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+                    <div key={a.id} className="p-3 rounded-lg border bg-card space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm">{a.sabores?.nome}</span>
+                        <span className="text-destructive font-bold text-sm">-{a.quantidade}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">{a.motivo}</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">{new Date(a.created_at).toLocaleDateString("pt-BR")}</span>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditAvaria(a)}><Pencil className="h-3 w-3" /></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteAvariaId(a.id)}><Trash2 className="h-3 w-3" /></Button>
+                        </div>
+                      </div>
+                    </div>
                   ))}
-                </TableBody>
-              </Table>
+                </div>
+              </>
             )}
           </CardContent></Card>
 
@@ -828,34 +861,45 @@ export default function Estoque() {
           </div>
           <Card>
             <CardContent className="pt-6">
-              <Table>
-                <TableHeader>
-                   <TableRow>
-                     <TableHead>Nome</TableHead>
-                     <TableHead>Estoque</TableHead>
-                     <TableHead>Unidade</TableHead>
-                     <TableHead className="text-right">Ações</TableHead>
-                   </TableRow>
-                 </TableHeader>
-                <TableBody>
-                  {materias.map((m) => (
-                    <TableRow key={m.id}>
-                      <TableCell>{m.nome}</TableCell>
-                      <TableCell>{Number(m.estoque_atual).toLocaleString()}</TableCell>
-                      <TableCell>{m.unidade}</TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openAjusteDialog("mp", m.id, m.estoque_atual)}
-                        >
-                          <Settings2 className="h-3 w-3 mr-1" /> Ajustar
-                        </Button>
-                      </TableCell>
+              <div className="hidden sm:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Estoque</TableHead>
+                      <TableHead>Unidade</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {materias.map((m) => (
+                      <TableRow key={m.id}>
+                        <TableCell>{m.nome}</TableCell>
+                        <TableCell>{Number(m.estoque_atual).toLocaleString()}</TableCell>
+                        <TableCell>{m.unidade}</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="outline" size="sm" onClick={() => openAjusteDialog("mp", m.id, m.estoque_atual)}>
+                            <Settings2 className="h-3 w-3 mr-1" /> Ajustar
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className="sm:hidden space-y-2">
+                {materias.map((m) => (
+                  <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
+                    <div>
+                      <p className="font-medium text-sm">{m.nome}</p>
+                      <p className="text-xs text-muted-foreground">{Number(m.estoque_atual).toLocaleString()} {m.unidade}</p>
+                    </div>
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => openAjusteDialog("mp", m.id, m.estoque_atual)}>
+                      <Settings2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -913,32 +957,43 @@ export default function Estoque() {
           </div>
           <Card>
             <CardContent className="pt-6">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Estoque</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {embalagens.map((e) => (
-                    <TableRow key={e.id}>
-                      <TableCell>{e.nome}</TableCell>
-                      <TableCell>{e.estoque_atual} un.</TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openAjusteDialog("emb", e.id, e.estoque_atual)}
-                        >
-                          <Settings2 className="h-3 w-3 mr-1" /> Ajustar
-                        </Button>
-                      </TableCell>
+              <div className="hidden sm:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Estoque</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {embalagens.map((e) => (
+                      <TableRow key={e.id}>
+                        <TableCell>{e.nome}</TableCell>
+                        <TableCell>{e.estoque_atual} un.</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="outline" size="sm" onClick={() => openAjusteDialog("emb", e.id, e.estoque_atual)}>
+                            <Settings2 className="h-3 w-3 mr-1" /> Ajustar
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className="sm:hidden space-y-2">
+                {embalagens.map((e) => (
+                  <div key={e.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
+                    <div>
+                      <p className="font-medium text-sm">{e.nome}</p>
+                      <p className="text-xs text-muted-foreground">{e.estoque_atual} un.</p>
+                    </div>
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => openAjusteDialog("emb", e.id, e.estoque_atual)}>
+                      <Settings2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -966,32 +1021,48 @@ export default function Estoque() {
           )}
           <Card>
             <CardContent className="pt-6">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Mov.</TableHead>
-                    <TableHead>Qtd</TableHead>
-                    <TableHead>Ref.</TableHead>
-                    <TableHead>Operador</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {movimentacoes.map((m) => (
-                    <TableRow key={m.id}>
-                      <TableCell>{new Date(m.created_at).toLocaleDateString("pt-BR")}</TableCell>
-                      <TableCell className="capitalize">{m.tipo_item?.replace("_", " ")}</TableCell>
-                      <TableCell className={m.tipo_movimentacao === "entrada" ? "text-emerald-600" : "text-destructive"}>
-                        {m.tipo_movimentacao === "entrada" ? "+" : "-"}
-                      </TableCell>
-                      <TableCell>{Number(m.quantidade).toLocaleString()}</TableCell>
-                      <TableCell>{m.referencia}</TableCell>
-                      <TableCell>{m.operador}</TableCell>
+              <div className="hidden sm:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Mov.</TableHead>
+                      <TableHead>Qtd</TableHead>
+                      <TableHead>Ref.</TableHead>
+                      <TableHead>Operador</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {movimentacoes.map((m) => (
+                      <TableRow key={m.id}>
+                        <TableCell>{new Date(m.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                        <TableCell className="capitalize">{m.tipo_item?.replace("_", " ")}</TableCell>
+                        <TableCell className={m.tipo_movimentacao === "entrada" ? "text-emerald-600" : "text-destructive"}>
+                          {m.tipo_movimentacao === "entrada" ? "+" : "-"}
+                        </TableCell>
+                        <TableCell>{Number(m.quantidade).toLocaleString()}</TableCell>
+                        <TableCell>{m.referencia}</TableCell>
+                        <TableCell>{m.operador}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className="sm:hidden space-y-2">
+                {movimentacoes.map((m) => (
+                  <div key={m.id} className="p-3 rounded-lg border bg-card">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleDateString("pt-BR")}</span>
+                      <span className={`text-sm font-bold ${m.tipo_movimentacao === "entrada" ? "text-emerald-600" : "text-destructive"}`}>
+                        {m.tipo_movimentacao === "entrada" ? "+" : "-"}{Number(m.quantidade).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium capitalize">{m.tipo_item?.replace("_", " ")}</p>
+                    <p className="text-xs text-muted-foreground">{m.referencia} • {m.operador}</p>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -1070,37 +1141,49 @@ export default function Estoque() {
               {freezers.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">Nenhum item nos freezers. Adicione usando o botão acima.</p>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead>Sabor</TableHead>
-                      <TableHead>Quantidade</TableHead>
-                      <TableHead>Atualizado</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <>
+                  <div className="hidden sm:block">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Cliente</TableHead>
+                          <TableHead>Sabor</TableHead>
+                          <TableHead>Quantidade</TableHead>
+                          <TableHead>Atualizado</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {freezers.map((f) => (
+                          <TableRow key={f.id}>
+                            <TableCell className="font-medium">{f.clientes?.nome}</TableCell>
+                            <TableCell>{f.sabores?.nome}</TableCell>
+                            <TableCell>{f.quantidade} un.</TableCell>
+                            <TableCell>{new Date(f.updated_at).toLocaleDateString("pt-BR")}</TableCell>
+                            <TableCell className="text-right">
+                              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => removeFreezerItem(f.id)}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  <div className="sm:hidden space-y-2">
                     {freezers.map((f) => (
-                      <TableRow key={f.id}>
-                        <TableCell className="font-medium">{f.clientes?.nome}</TableCell>
-                        <TableCell>{f.sabores?.nome}</TableCell>
-                        <TableCell>{f.quantidade} un.</TableCell>
-                        <TableCell>{new Date(f.updated_at).toLocaleDateString("pt-BR")}</TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => removeFreezerItem(f.id)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
+                      <div key={f.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
+                        <div>
+                          <p className="font-medium text-sm">{f.clientes?.nome}</p>
+                          <p className="text-xs text-muted-foreground">{f.sabores?.nome} • {f.quantidade} un.</p>
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeFreezerItem(f.id)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>
