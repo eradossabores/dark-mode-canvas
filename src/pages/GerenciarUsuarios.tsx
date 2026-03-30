@@ -141,7 +141,7 @@ export default function GerenciarUsuarios() {
     setChangingPassword(false);
   }
 
-  async function generateInvite(role: "admin" | "producao") {
+  async function generateInvite(role: "admin" | "producao" | "vendedor") {
     setGeneratingInvite(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -154,7 +154,7 @@ export default function GerenciarUsuarios() {
       if (error) throw error;
       const link = `${window.location.origin}/cadastro?token=${data.token}`;
       await navigator.clipboard.writeText(link);
-      const label = role === "admin" ? "Admin" : "Produção";
+      const label = role === "admin" ? "Admin" : role === "vendedor" ? "Vendedor" : "Produção";
       toast({ title: `Link de convite (${label}) copiado!`, description: "Válido por 7 dias." });
     } catch (e: any) {
       toast({ title: "Erro ao gerar convite", description: e.message, variant: "destructive" });
