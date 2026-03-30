@@ -20,7 +20,7 @@ export default function Funcionarios() {
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [form, setForm] = useState({ nome: "", tipo_pagamento: "diaria" as string, valor_pagamento: "" });
+  const [form, setForm] = useState({ nome: "", tipo_pagamento: "diaria" as string, valor_pagamento: "", setor: "producao" as string });
 
   useEffect(() => { loadData(); }, [factoryId]);
 
@@ -33,13 +33,13 @@ export default function Funcionarios() {
 
   function openNew() {
     setEditingId(null);
-    setForm({ nome: "", tipo_pagamento: "diaria", valor_pagamento: "" });
+    setForm({ nome: "", tipo_pagamento: "diaria", valor_pagamento: "", setor: "producao" });
     setOpen(true);
   }
 
   function openEdit(f: any) {
     setEditingId(f.id);
-    setForm({ nome: f.nome, tipo_pagamento: f.tipo_pagamento, valor_pagamento: String(f.valor_pagamento) });
+    setForm({ nome: f.nome, tipo_pagamento: f.tipo_pagamento, valor_pagamento: String(f.valor_pagamento), setor: f.setor || "producao" });
     setOpen(true);
   }
 
@@ -47,7 +47,7 @@ export default function Funcionarios() {
     if (!form.nome) return toast({ title: "Nome obrigatório", variant: "destructive" });
     if (!form.valor_pagamento) return toast({ title: "Valor obrigatório", variant: "destructive" });
     try {
-      const payload: any = { nome: form.nome, tipo_pagamento: form.tipo_pagamento, valor_pagamento: Number(form.valor_pagamento) };
+      const payload: any = { nome: form.nome, tipo_pagamento: form.tipo_pagamento, valor_pagamento: Number(form.valor_pagamento), setor: form.setor };
       if (editingId) {
         const { error } = await (supabase as any).from("funcionarios").update(payload).eq("id", editingId);
         if (error) throw error;
@@ -101,6 +101,16 @@ export default function Funcionarios() {
           <div className="space-y-4">
             <div><Label>Nome *</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
             <div>
+              <Label>Setor</Label>
+              <Select value={form.setor} onValueChange={(v) => setForm({ ...form, setor: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="producao">🏭 Produção</SelectItem>
+                  <SelectItem value="vendas">🛒 Vendas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
               <Label>Forma de Pagamento</Label>
               <Select value={form.tipo_pagamento} onValueChange={(v) => setForm({ ...form, tipo_pagamento: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -138,6 +148,7 @@ export default function Funcionarios() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
+                <TableHead>Setor</TableHead>
                 <TableHead>Pagamento</TableHead>
                 <TableHead>Valor</TableHead>
                 <TableHead>Status</TableHead>
@@ -148,6 +159,11 @@ export default function Funcionarios() {
               {funcionarios.map((f) => (
                 <TableRow key={f.id}>
                   <TableCell className="font-medium">{f.nome}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-xs">
+                      {f.setor === "vendas" ? "🛒 Vendas" : "🏭 Produção"}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="capitalize">{f.tipo_pagamento === "diaria" ? "Diária" : "Fixo"}</TableCell>
                   <TableCell>R$ {Number(f.valor_pagamento).toFixed(2)}</TableCell>
                   <TableCell>
@@ -164,7 +180,7 @@ export default function Funcionarios() {
                 </TableRow>
               ))}
               {funcionarios.length === 0 && (
-                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">Nenhum colaborador.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Nenhum colaborador.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
