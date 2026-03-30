@@ -473,7 +473,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                   </div>
                   {totalQty > 0 && (
                     <div className="text-sm font-medium bg-muted/50 rounded-md px-3 py-2">
-                      Quantidade Total: <span className="font-bold text-primary">{totalQty.toLocaleString("pt-BR")}</span>
+                      Quantidade Total: <span className="font-bold text-primary">{totalQty.toLocaleString("pt-BR")} {tipo === "insumo" ? unidadeInsumo : "un"}</span>
                       {" "}({filledItems.length} ite{filledItems.length > 1 ? "ns" : "m"})
                     </div>
                   )}
