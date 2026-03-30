@@ -477,15 +477,28 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                 </div>
               )}
               <Card className="bg-muted/50">
-                <CardContent className="py-3 space-y-2">
+                <CardContent className="py-3 space-y-3">
                   <div className="flex items-center justify-between">
                     <Label className="text-sm">Possui frete?</Label>
                     <Switch checked={temFrete} onCheckedChange={setTemFrete} />
                   </div>
                   {temFrete && (
-                    <div>
-                      <Label>Valor do Frete (R$)</Label>
-                      <Input type="number" min="0" step="0.01" value={valorFrete} onChange={e => setValorFrete(e.target.value)} />
+                    <div className="space-y-3">
+                      <div>
+                        <Label>Tipo de Frete</Label>
+                        <Select value={tipoFrete} onValueChange={setTipoFrete}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="sedex">SEDEX</SelectItem>
+                            <SelectItem value="pac">PAC</SelectItem>
+                            <SelectItem value="transportadora">Transportadora</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>Valor do Frete (R$)</Label>
+                        <Input type="number" min="0" step="0.01" value={valorFrete} onChange={e => setValorFrete(e.target.value)} />
+                      </div>
                     </div>
                   )}
                 </CardContent>
