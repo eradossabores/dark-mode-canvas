@@ -1021,32 +1021,48 @@ export default function Estoque() {
           )}
           <Card>
             <CardContent className="pt-6">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Mov.</TableHead>
-                    <TableHead>Qtd</TableHead>
-                    <TableHead>Ref.</TableHead>
-                    <TableHead>Operador</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {movimentacoes.map((m) => (
-                    <TableRow key={m.id}>
-                      <TableCell>{new Date(m.created_at).toLocaleDateString("pt-BR")}</TableCell>
-                      <TableCell className="capitalize">{m.tipo_item?.replace("_", " ")}</TableCell>
-                      <TableCell className={m.tipo_movimentacao === "entrada" ? "text-emerald-600" : "text-destructive"}>
-                        {m.tipo_movimentacao === "entrada" ? "+" : "-"}
-                      </TableCell>
-                      <TableCell>{Number(m.quantidade).toLocaleString()}</TableCell>
-                      <TableCell>{m.referencia}</TableCell>
-                      <TableCell>{m.operador}</TableCell>
+              <div className="hidden sm:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Mov.</TableHead>
+                      <TableHead>Qtd</TableHead>
+                      <TableHead>Ref.</TableHead>
+                      <TableHead>Operador</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {movimentacoes.map((m) => (
+                      <TableRow key={m.id}>
+                        <TableCell>{new Date(m.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                        <TableCell className="capitalize">{m.tipo_item?.replace("_", " ")}</TableCell>
+                        <TableCell className={m.tipo_movimentacao === "entrada" ? "text-emerald-600" : "text-destructive"}>
+                          {m.tipo_movimentacao === "entrada" ? "+" : "-"}
+                        </TableCell>
+                        <TableCell>{Number(m.quantidade).toLocaleString()}</TableCell>
+                        <TableCell>{m.referencia}</TableCell>
+                        <TableCell>{m.operador}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className="sm:hidden space-y-2">
+                {movimentacoes.map((m) => (
+                  <div key={m.id} className="p-3 rounded-lg border bg-card">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleDateString("pt-BR")}</span>
+                      <span className={`text-sm font-bold ${m.tipo_movimentacao === "entrada" ? "text-emerald-600" : "text-destructive"}`}>
+                        {m.tipo_movimentacao === "entrada" ? "+" : "-"}{Number(m.quantidade).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium capitalize">{m.tipo_item?.replace("_", " ")}</p>
+                    <p className="text-xs text-muted-foreground">{m.referencia} • {m.operador}</p>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
