@@ -214,7 +214,7 @@ export default function Producao() {
   function updateFunc(i: number, val: string) { const list = [...funcList]; list[i] = val; setFuncList(list); }
 
   function resetForm() {
-    setSaborId(""); setModo("lote"); setQtdLotes(6); setQtdTotal(504); setObservacoes(""); setFuncList([""]); setDataProducao(new Date()); setProdItens([]); setIgnorarEstoque(false);
+    setSaborId(""); setModo("lote"); setQtdLotes(6); setQtdTotal(6 * getGelosPorLote()); setObservacoes(""); setFuncList([""]); setDataProducao(new Date()); setProdItens([]); setIgnorarEstoque(false);
   }
 
   function addProdItem() {
