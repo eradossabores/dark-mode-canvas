@@ -315,7 +315,7 @@ function FornecedoresTab({ factoryId, fornecedores, onRefresh }: {
     if (!factoryId || !nome.trim()) { toast.error("Informe o nome"); return; }
     setSaving(true);
     const { error } = await (supabase as any).from("fornecedores").insert({
-      nome: nome.trim(), telefone: telefone || null, email: email || null,
+      nome: nome.trim(), tipo, telefone: telefone || null, email: email || null,
       observacoes: obs || null, factory_id: factoryId,
     });
     setSaving(false);
