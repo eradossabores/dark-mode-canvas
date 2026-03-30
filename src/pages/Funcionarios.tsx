@@ -60,6 +60,8 @@ export default function Funcionarios() {
         if (factoryId) payload.factory_id = factoryId;
         await insertRow("funcionarios", payload);
         toast({ title: "Colaborador cadastrado!" });
+        setLastCreatedName(form.nome);
+        setShowAccessPrompt(true);
       }
       setOpen(false);
       setEditingId(null);
