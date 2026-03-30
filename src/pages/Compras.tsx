@@ -210,10 +210,15 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                   <Input type="number" min="0" step="0.01" value={quantidade} onChange={e => setQuantidade(e.target.value)} />
                 </div>
                 <div>
-                  <Label>Valor Unitário (R$) *</Label>
-                  <Input type="number" min="0" step="0.01" value={valorUnitario} onChange={e => setValorUnitario(e.target.value)} />
+                  <Label>Valor Total (R$) *</Label>
+                  <Input type="number" min="0" step="0.01" value={valorTotalInput} onChange={e => setValorTotalInput(e.target.value)} />
                 </div>
               </div>
+              {qty > 0 && valorTotal > 0 && (
+                <div className="text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
+                  Valor Unitário: <span className="font-bold text-foreground">R$ {unitPrice.toFixed(2)}</span>
+                </div>
+              )}
               <Card className="bg-muted/50">
                 <CardContent className="py-3 space-y-2">
                   <div className="flex items-center justify-between">
@@ -228,22 +233,25 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                   )}
                 </CardContent>
               </Card>
-              <Card className="bg-primary/5 border-primary/20">
-                <CardContent className="py-3">
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>Valor Total:</div><div className="font-bold text-right">R$ {valorTotal.toFixed(2)}</div>
-                    {temFrete && <>
-                      <div>Frete:</div><div className="font-bold text-right">R$ {freight.toFixed(2)}</div>
-                    </>}
-                    <div>Custo Total c/ Frete:</div><div className="font-bold text-right text-primary">R$ {custoTotalComFrete.toFixed(2)}</div>
-                    <div>Custo Unit. c/ Frete:</div><div className="font-bold text-right text-primary">R$ {custoUnitarioComFrete.toFixed(2)}</div>
-                  </div>
-                </CardContent>
-              </Card>
               <div>
                 <Label>Observações</Label>
                 <Textarea value={obs} onChange={e => setObs(e.target.value)} placeholder="Notas sobre a compra..." />
               </div>
+              {(qty > 0 && valorTotal > 0) && (
+                <Card className="bg-primary/5 border-primary/20">
+                  <CardContent className="py-3">
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>Valor Total (s/ frete):</div><div className="font-bold text-right">R$ {valorTotal.toFixed(2)}</div>
+                      <div>Valor Unitário:</div><div className="font-bold text-right">R$ {unitPrice.toFixed(2)}</div>
+                      {temFrete && <>
+                        <div>Frete:</div><div className="font-bold text-right">R$ {freight.toFixed(2)}</div>
+                      </>}
+                      <div className="font-semibold">Custo Total c/ Frete:</div><div className="font-bold text-right text-primary">R$ {custoTotalComFrete.toFixed(2)}</div>
+                      <div className="font-semibold">Custo Unit. c/ Frete:</div><div className="font-bold text-right text-primary">R$ {custoUnitarioComFrete.toFixed(2)}</div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
               <Button onClick={handleSave} disabled={saving} className="w-full">
                 {saving ? "Salvando..." : "Registrar Compra"}
               </Button>
