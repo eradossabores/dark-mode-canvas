@@ -573,7 +573,7 @@ export default function Producao() {
               <Select value={editModo} onValueChange={(v) => setEditModo(v as any)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="lote">Lote (84 un.)</SelectItem>
+                  <SelectItem value="lote">Lote ({getGelosPorLote(editSaborId)} un.)</SelectItem>
                   <SelectItem value="unidade">Unidade</SelectItem>
                 </SelectContent>
               </Select>
