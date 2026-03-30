@@ -248,7 +248,7 @@ export default function Producao() {
         }
       }
       toast({ title: `${prodItens.length} produção(ões) registrada(s) com sucesso!` });
-      setOpen(false); resetForm(); loadData();
+      setOpen(false); resetForm(); await loadData();
     } catch (e: any) {
       toast({ title: "Erro na produção", description: e.message, variant: "destructive" });
     } finally {
