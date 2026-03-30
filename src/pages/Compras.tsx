@@ -24,6 +24,7 @@ interface Fornecedor {
   email: string | null;
   observacoes: string | null;
   ativo: boolean;
+  tipo: string;
 }
 
 interface Compra {
@@ -304,6 +305,7 @@ function FornecedoresTab({ factoryId, fornecedores, onRefresh }: {
 }) {
   const [open, setOpen] = useState(false);
   const [nome, setNome] = useState("");
+  const [tipo, setTipo] = useState("insumo");
   const [telefone, setTelefone] = useState("");
   const [email, setEmail] = useState("");
   const [obs, setObs] = useState("");
@@ -313,13 +315,13 @@ function FornecedoresTab({ factoryId, fornecedores, onRefresh }: {
     if (!factoryId || !nome.trim()) { toast.error("Informe o nome"); return; }
     setSaving(true);
     const { error } = await (supabase as any).from("fornecedores").insert({
-      nome: nome.trim(), telefone: telefone || null, email: email || null,
+      nome: nome.trim(), tipo, telefone: telefone || null, email: email || null,
       observacoes: obs || null, factory_id: factoryId,
     });
     setSaving(false);
     if (error) { toast.error("Erro ao salvar"); return; }
     toast.success("Fornecedor cadastrado!");
-    setOpen(false); setNome(""); setTelefone(""); setEmail(""); setObs("");
+    setOpen(false); setNome(""); setTipo("insumo"); setTelefone(""); setEmail(""); setObs("");
     onRefresh();
   };
 
@@ -345,6 +347,17 @@ function FornecedoresTab({ factoryId, fornecedores, onRefresh }: {
           <DialogHeader><DialogTitle>Cadastrar Fornecedor</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div><Label>Nome *</Label><Input value={nome} onChange={e => setNome(e.target.value)} /></div>
+            <div>
+              <Label>Tipo de Fornecedor</Label>
+              <Select value={tipo} onValueChange={setTipo}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="insumo">Fornecedor de Insumos</SelectItem>
+                  <SelectItem value="embalagem">Fornecedor de Embalagens</SelectItem>
+                  <SelectItem value="ambos">Ambos (Insumos e Embalagens)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div><Label>Telefone</Label><Input value={telefone} onChange={e => setTelefone(e.target.value)} /></div>
             <div><Label>E-mail</Label><Input value={email} onChange={e => setEmail(e.target.value)} /></div>
             <div><Label>Observações</Label><Textarea value={obs} onChange={e => setObs(e.target.value)} /></div>
@@ -357,22 +370,28 @@ function FornecedoresTab({ factoryId, fornecedores, onRefresh }: {
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Telefone</TableHead>
-                <TableHead>E-mail</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
+             <TableRow>
+                 <TableHead>Nome</TableHead>
+                 <TableHead>Tipo</TableHead>
+                 <TableHead>Telefone</TableHead>
+                 <TableHead>E-mail</TableHead>
+                 <TableHead>Status</TableHead>
+                 <TableHead>Ações</TableHead>
+               </TableRow>
             </TableHeader>
             <TableBody>
               {fornecedores.length === 0 ? (
-                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Nenhum fornecedor</TableCell></TableRow>
-              ) : fornecedores.map(f => (
-                <TableRow key={f.id}>
-                  <TableCell className="font-medium">{f.nome}</TableCell>
-                  <TableCell>{f.telefone || "—"}</TableCell>
-                  <TableCell>{f.email || "—"}</TableCell>
+               <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Nenhum fornecedor</TableCell></TableRow>
+             ) : fornecedores.map(f => (
+                 <TableRow key={f.id}>
+                   <TableCell className="font-medium">{f.nome}</TableCell>
+                   <TableCell>
+                     <Badge variant="outline">
+                       {f.tipo === "insumo" ? "Insumos" : f.tipo === "embalagem" ? "Embalagens" : "Ambos"}
+                     </Badge>
+                   </TableCell>
+                   <TableCell>{f.telefone || "—"}</TableCell>
+                   <TableCell>{f.email || "—"}</TableCell>
                   <TableCell>
                     <Badge variant={f.ativo ? "default" : "secondary"}>{f.ativo ? "Ativo" : "Inativo"}</Badge>
                   </TableCell>
