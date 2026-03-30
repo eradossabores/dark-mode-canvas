@@ -439,7 +439,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                 </Card>
               )}
               <Button onClick={handleSave} disabled={saving} className="w-full">
-                {saving ? "Salvando..." : "Registrar Compra"}
+                {saving ? "Salvando..." : editingId ? "Salvar Alterações" : "Registrar Compra"}
               </Button>
             </div>
           </DialogContent>
