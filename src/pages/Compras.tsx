@@ -387,32 +387,157 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
             </div>
           </DialogContent>
         </Dialog>
+        <Select value={filterTipo} onValueChange={setFilterTipo}>
+          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos</SelectItem>
+            <SelectItem value="insumo">Insumos</SelectItem>
+            <SelectItem value="embalagem">Embalagens</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Item</TableHead>
+                  <TableHead>Fornecedor</TableHead>
+                  <TableHead className="text-right">Qtd</TableHead>
+                  <TableHead className="text-right">Unit. (R$)</TableHead>
+                  <TableHead className="text-right">Total (R$)</TableHead>
+                  <TableHead className="text-right">Frete</TableHead>
+                  <TableHead className="text-right">Custo c/ Frete</TableHead>
+                  <TableHead className="text-right">Unit. c/ Frete</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.length === 0 ? (
+                  <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground py-8">Nenhuma compra registrada</TableCell></TableRow>
+                ) : filtered.map(c => (
+                  <TableRow key={c.id}>
+                    <TableCell className="whitespace-nowrap">{format(new Date(c.created_at), "dd/MM/yy")}</TableCell>
+                    <TableCell><Badge variant={c.tipo === "insumo" ? "default" : "secondary"}>{c.tipo === "insumo" ? "Insumo" : "Embalagem"}</Badge></TableCell>
+                    <TableCell className="font-medium">{c.item_nome}</TableCell>
+                    <TableCell>{c.fornecedor_id ? fornecedorMap[c.fornecedor_id] || "—" : "—"}</TableCell>
+                    <TableCell className="text-right">{Number(c.quantidade).toLocaleString("pt-BR")}</TableCell>
+                    <TableCell className="text-right">{Number(c.valor_unitario).toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{Number(c.valor_total).toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{c.tem_frete ? `R$ ${Number(c.valor_frete).toFixed(2)}` : "—"}</TableCell>
+                    <TableCell className="text-right font-medium">{Number(c.custo_total_com_frete).toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-medium text-primary">{Number(c.custo_unitario_com_frete).toFixed(2)}</TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ─── FORNECEDORES TAB ───
+function FornecedoresTab({ factoryId, fornecedores, onRefresh }: {
+  factoryId: string | null; fornecedores: Fornecedor[]; onRefresh: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [nome, setNome] = useState("");
+  const [tipo, setTipo] = useState("insumo");
+  const [telefone, setTelefone] = useState("");
+  const [email, setEmail] = useState("");
+  const [obs, setObs] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!factoryId || !nome.trim()) { toast.error("Informe o nome"); return; }
+    setSaving(true);
+    const { error } = await (supabase as any).from("fornecedores").insert({
+      nome: nome.trim(), tipo, telefone: telefone || null, email: email || null,
+      observacoes: obs || null, factory_id: factoryId,
+    });
+    setSaving(false);
+    if (error) { toast.error("Erro ao salvar"); return; }
+    toast.success("Fornecedor cadastrado!");
+    setOpen(false); setNome(""); setTipo("insumo"); setTelefone(""); setEmail(""); setObs("");
+    onRefresh();
+  };
+
+  const toggleAtivo = async (f: Fornecedor) => {
+    await (supabase as any).from("fornecedores").update({ ativo: !f.ativo }).eq("id", f.id);
+    onRefresh();
+  };
+
+  const handleDelete = async (id: string) => {
+    const { error } = await (supabase as any).from("fornecedores").delete().eq("id", id);
+    if (error) { toast.error("Erro ao excluir. Verifique se não há compras vinculadas."); return; }
+    toast.success("Fornecedor excluído");
+    onRefresh();
+  };
+
+  return (
+    <div className="space-y-4">
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <Button className="gap-2"><Plus className="h-4 w-4" /> Novo Fornecedor</Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Cadastrar Fornecedor</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div><Label>Nome *</Label><Input value={nome} onChange={e => setNome(e.target.value)} /></div>
+            <div>
+              <Label>Tipo de Fornecedor</Label>
+              <Select value={tipo} onValueChange={setTipo}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="insumo">Fornecedor de Insumos</SelectItem>
+                  <SelectItem value="embalagem">Fornecedor de Embalagens</SelectItem>
+                  <SelectItem value="ambos">Ambos (Insumos e Embalagens)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div><Label>Telefone</Label><Input value={telefone} onChange={e => setTelefone(e.target.value)} /></div>
+            <div><Label>E-mail</Label><Input value={email} onChange={e => setEmail(e.target.value)} /></div>
+            <div><Label>Observações</Label><Textarea value={obs} onChange={e => setObs(e.target.value)} /></div>
+            <Button onClick={handleSave} disabled={saving} className="w-full">{saving ? "Salvando..." : "Cadastrar"}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Card>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-             <TableRow>
-                 <TableHead>Nome</TableHead>
-                 <TableHead>Tipo</TableHead>
-                 <TableHead>Telefone</TableHead>
-                 <TableHead>E-mail</TableHead>
-                 <TableHead>Status</TableHead>
-                 <TableHead>Ações</TableHead>
-               </TableRow>
+              <TableRow>
+                <TableHead>Nome</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Telefone</TableHead>
+                <TableHead>E-mail</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Ações</TableHead>
+              </TableRow>
             </TableHeader>
             <TableBody>
               {fornecedores.length === 0 ? (
-               <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Nenhum fornecedor</TableCell></TableRow>
-             ) : fornecedores.map(f => (
-                 <TableRow key={f.id}>
-                   <TableCell className="font-medium">{f.nome}</TableCell>
-                   <TableCell>
-                     <Badge variant="outline">
-                       {f.tipo === "insumo" ? "Insumos" : f.tipo === "embalagem" ? "Embalagens" : "Ambos"}
-                     </Badge>
-                   </TableCell>
-                   <TableCell>{f.telefone || "—"}</TableCell>
-                   <TableCell>{f.email || "—"}</TableCell>
+                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Nenhum fornecedor</TableCell></TableRow>
+              ) : fornecedores.map(f => (
+                <TableRow key={f.id}>
+                  <TableCell className="font-medium">{f.nome}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">
+                      {f.tipo === "insumo" ? "Insumos" : f.tipo === "embalagem" ? "Embalagens" : "Ambos"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{f.telefone || "—"}</TableCell>
+                  <TableCell>{f.email || "—"}</TableCell>
                   <TableCell>
                     <Badge variant={f.ativo ? "default" : "secondary"}>{f.ativo ? "Ativo" : "Inativo"}</Badge>
                   </TableCell>
@@ -433,8 +558,6 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     </div>
   );
 }
-
-// ─── RELATORIOS TAB ───
 function RelatoriosTab({ compras, fornecedorMap }: { compras: Compra[]; fornecedorMap: Record<string, string> }) {
   const [filtroFornecedor, setFiltroFornecedor] = useState("todos");
   const [dataInicio, setDataInicio] = useState(() => format(startOfMonth(new Date()), "yyyy-MM-dd"));
