@@ -297,7 +297,7 @@ export default function Producao() {
     if (validFuncs.length === 0) return toast({ title: "Adicione ao menos um responsável", variant: "destructive" });
 
     const nomesFuncionarios = validFuncs.map(f => funcionarios.find(fn => fn.id === f)?.nome).filter(Boolean).join(", ");
-    const finalQtdTotal = editModo === "lote" ? editQtdLotes * 84 : editQtdTotal;
+    const finalQtdTotal = editModo === "lote" ? editQtdLotes * getGelosPorLote(editSaborId) : editQtdTotal;
 
     setEditLoading(true);
     try {
