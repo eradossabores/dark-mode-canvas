@@ -378,18 +378,7 @@ export default function SuperAdmin() {
                 <Input
                   placeholder="Ex: Gelos Premium Ltda"
                   value={newFactory.name}
-                  onChange={(e) => {
-                    const name = e.target.value;
-                    const firstName = name.trim().split(/\s+/)[0].toLowerCase()
-                      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-                      .replace(/[^a-z0-9]/g, "");
-                    setNewFactory({
-                      ...newFactory,
-                      name,
-                      ownerEmail: firstName ? `${firstName}@icetech.com` : "",
-                      ownerPassword: firstName ? `${firstName}@2026` : "",
-                    });
-                  }}
+                  onChange={(e) => setNewFactory({ ...newFactory, name: e.target.value })}
                 />
               </div>
               <div>
