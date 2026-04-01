@@ -75,6 +75,39 @@ export default function SuperAdmin() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
+  useEffect(() => {
+    const baseName = newFactory.ownerName.trim() || newFactory.name.trim();
+    const next = buildAutoCredentials(baseName);
+
+    setNewFactory((prev) => {
+      if (prev.ownerEmail === next.email && prev.ownerPassword === next.password) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        ownerEmail: next.email,
+        ownerPassword: next.password,
+      };
+    });
+  }, [newFactory.name, newFactory.ownerName]);
+
+  useEffect(() => {
+    const next = buildAutoCredentials(newAdmin.name);
+
+    setNewAdmin((prev) => {
+      if (prev.email === next.email && prev.password === next.password) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        email: next.email,
+        password: next.password,
+      };
+    });
+  }, [newAdmin.name]);
+
   async function loadFactories() {
     try {
       const { data: factoriesData, error } = await (supabase as any)
