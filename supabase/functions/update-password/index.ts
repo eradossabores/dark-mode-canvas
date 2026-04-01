@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
       .eq("user_id", caller.id)
       .maybeSingle();
 
-    if (roleData?.role !== "admin") {
+    if (roleData?.role !== "admin" && roleData?.role !== "super_admin") {
       return new Response(JSON.stringify({ error: "Apenas administradores podem alterar senhas" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

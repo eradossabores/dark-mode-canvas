@@ -3,8 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Users, Package, ShoppingCart, DollarSign, Factory, IceCream, AlertTriangle, CheckCircle, Clock, XCircle, Activity, UserPlus } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { toast } from "@/hooks/use-toast";
+import { Users, Package, ShoppingCart, DollarSign, Factory, IceCream, AlertTriangle, CheckCircle, Clock, XCircle, Activity, UserPlus, Pencil, Trash2, KeyRound } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -33,6 +37,7 @@ interface Props {
 }
 
 interface UserUsage {
+  userId: string;
   nome: string;
   email: string;
   role: string;
@@ -69,6 +74,10 @@ export default function FactoryDetailsDialog({ open, onOpenChange, factory, onAd
   const [details, setDetails] = useState<any>(null);
   const [usageData, setUsageData] = useState<UserUsage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingSocio, setEditingSocio] = useState<UserUsage | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editPassword, setEditPassword] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -76,6 +85,69 @@ export default function FactoryDetailsDialog({ open, onOpenChange, factory, onAd
       loadUsageData();
     }
   }, [open]);
+
+  async function handleDeleteSocio(userId: string, nome: string) {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ user_id: userId }),
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Erro ao excluir");
+      toast({ title: "Sócio excluído", description: `${nome} foi removido com sucesso.` });
+      loadUsageData();
+    } catch (e: any) {
+      toast({ title: "Erro ao excluir sócio", description: e.message, variant: "destructive" });
+    }
+  }
+
+  async function handleSaveEdit() {
+    if (!editingSocio) return;
+    setSaving(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+
+      // Update name in profiles
+      if (editName && editName !== editingSocio.nome) {
+        const { error } = await (supabase as any)
+          .from("profiles")
+          .update({ nome: editName })
+          .eq("id", editingSocio.userId);
+        if (error) throw error;
+      }
+
+      // Update password if provided
+      if (editPassword) {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-password`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ user_id: editingSocio.userId, new_password: editPassword }),
+          }
+        );
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Erro ao atualizar senha");
+      }
+
+      toast({ title: "Sócio atualizado com sucesso!" });
+      setEditingSocio(null);
+      setEditName("");
+      setEditPassword("");
+      loadUsageData();
+    } catch (e: any) {
+      toast({ title: "Erro ao salvar", description: e.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function loadUsageData() {
     try {
@@ -129,6 +201,7 @@ export default function FactoryDetailsDialog({ open, onOpenChange, factory, onAd
         const profile = profileMap[uid];
         const sess = sessionMap[uid] || { total: 0, count: 0, first: null, last: null };
         return {
+          userId: uid,
           nome: profile?.nome || "Desconhecido",
           email: profile?.email || "",
           role: roleMap[uid] || "N/A",
@@ -307,12 +380,70 @@ export default function FactoryDetailsDialog({ open, onOpenChange, factory, onAd
                             <p className="font-semibold">{formatDuration(s.totalMinutes)}</p>
                           </div>
                         </div>
+                        <div className="flex gap-2 mt-2">
+                          <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => {
+                            setEditingSocio(s);
+                            setEditName(s.nome);
+                            setEditPassword("");
+                          }}>
+                            <Pencil className="h-3 w-3 mr-1" /> Editar
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="ghost" className="flex-1 h-7 text-xs text-destructive hover:text-destructive hover:bg-destructive/10">
+                                <Trash2 className="h-3 w-3 mr-1" /> Excluir
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Excluir sócio "{s.nome}"?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  O acesso de {s.nome} ({s.email}) será removido permanentemente desta fábrica.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  onClick={() => handleDeleteSocio(s.userId, s.nome)}
+                                >
+                                  Sim, excluir
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
               );
             })()}
+
+            {/* Edit Sócio Dialog */}
+            {editingSocio && (
+              <Dialog open={!!editingSocio} onOpenChange={(open) => { if (!open) { setEditingSocio(null); setEditName(""); setEditPassword(""); } }}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Editar Sócio — {editingSocio.nome}</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 pt-2">
+                    <div>
+                      <Label>Nome</Label>
+                      <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+                    </div>
+                    <div>
+                      <Label className="flex items-center gap-1"><KeyRound className="h-3.5 w-3.5" /> Nova Senha (opcional)</Label>
+                      <Input type="text" placeholder="Deixe vazio para manter a atual" value={editPassword} onChange={(e) => setEditPassword(e.target.value)} />
+                    </div>
+                    <p className="text-xs text-muted-foreground">Email: {editingSocio.email} (não editável)</p>
+                    <Button className="w-full" onClick={handleSaveEdit} disabled={saving}>
+                      {saving ? "Salvando..." : "Salvar Alterações"}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
 
             <Separator />
 
