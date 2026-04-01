@@ -328,7 +328,7 @@ export default function ConfigurarFabrica() {
           <TabsTrigger value="producao">⚙️ Produção</TabsTrigger>
           <TabsTrigger value="sacos">📦 Sacos</TabsTrigger>
           <TabsTrigger value="endereco">📍 Endereço / CNPJ</TabsTrigger>
-          <TabsTrigger value="socios">👥 Sócios</TabsTrigger>
+          
         </TabsList>
 
         <TabsContent value="vendas">
