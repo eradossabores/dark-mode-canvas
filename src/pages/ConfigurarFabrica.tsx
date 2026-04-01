@@ -296,12 +296,11 @@ export default function ConfigurarFabrica() {
     setSavingRec(true);
     try {
       for (const r of receitas) {
-        const insumo = r.is_agua_de_coco ? config.quantidade_insumo_agua_coco : config.quantidade_insumo_geral;
         const { error } = await (supabase as any)
           .from("sabor_receita")
           .update({
             gelos_por_lote: config.gelos_por_lote,
-            quantidade_insumo_por_lote: insumo,
+            quantidade_insumo_por_lote: r.quantidade_insumo_por_lote,
             embalagens_por_lote: config.gelos_por_lote,
           })
           .eq("id", r.id);
