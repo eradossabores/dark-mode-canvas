@@ -380,12 +380,70 @@ export default function FactoryDetailsDialog({ open, onOpenChange, factory, onAd
                             <p className="font-semibold">{formatDuration(s.totalMinutes)}</p>
                           </div>
                         </div>
+                        <div className="flex gap-2 mt-2">
+                          <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => {
+                            setEditingSocio(s);
+                            setEditName(s.nome);
+                            setEditPassword("");
+                          }}>
+                            <Pencil className="h-3 w-3 mr-1" /> Editar
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="ghost" className="flex-1 h-7 text-xs text-destructive hover:text-destructive hover:bg-destructive/10">
+                                <Trash2 className="h-3 w-3 mr-1" /> Excluir
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Excluir sócio "{s.nome}"?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  O acesso de {s.nome} ({s.email}) será removido permanentemente desta fábrica.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  onClick={() => handleDeleteSocio(s.userId, s.nome)}
+                                >
+                                  Sim, excluir
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
               );
             })()}
+
+            {/* Edit Sócio Dialog */}
+            {editingSocio && (
+              <Dialog open={!!editingSocio} onOpenChange={(open) => { if (!open) { setEditingSocio(null); setEditName(""); setEditPassword(""); } }}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Editar Sócio — {editingSocio.nome}</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 pt-2">
+                    <div>
+                      <Label>Nome</Label>
+                      <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+                    </div>
+                    <div>
+                      <Label className="flex items-center gap-1"><KeyRound className="h-3.5 w-3.5" /> Nova Senha (opcional)</Label>
+                      <Input type="text" placeholder="Deixe vazio para manter a atual" value={editPassword} onChange={(e) => setEditPassword(e.target.value)} />
+                    </div>
+                    <p className="text-xs text-muted-foreground">Email: {editingSocio.email} (não editável)</p>
+                    <Button className="w-full" onClick={handleSaveEdit} disabled={saving}>
+                      {saving ? "Salvando..." : "Salvar Alterações"}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
 
             <Separator />
 
