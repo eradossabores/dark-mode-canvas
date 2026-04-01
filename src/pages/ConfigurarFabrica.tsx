@@ -279,16 +279,11 @@ export default function ConfigurarFabrica() {
         sabor_nome: r.sabores?.nome || "?",
         gelos_por_lote: r.gelos_por_lote,
         quantidade_insumo_por_lote: r.quantidade_insumo_por_lote,
-        is_agua_de_coco: (r.sabores?.nome || "").toLowerCase().includes("água de coco") || (r.sabores?.nome || "").toLowerCase().includes("agua de coco"),
       }));
       setReceitas(list);
-      // Derive config from first non-agua-de-coco and agua-de-coco
-      const geral = list.find((r: ReceitaRaw) => !r.is_agua_de_coco);
-      const aguaCoco = list.find((r: ReceitaRaw) => r.is_agua_de_coco);
+      const first = list[0];
       setConfig({
-        gelos_por_lote: geral?.gelos_por_lote || 84,
-        quantidade_insumo_geral: geral?.quantidade_insumo_por_lote || 400,
-        quantidade_insumo_agua_coco: aguaCoco?.quantidade_insumo_por_lote || 500,
+        gelos_por_lote: first?.gelos_por_lote || 84,
       });
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
