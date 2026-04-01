@@ -45,7 +45,9 @@ export default function SuperAdmin() {
   const [creating, setCreating] = useState(false);
   const [editingFactory, setEditingFactory] = useState<FactoryRow | null>(null);
   const [detailsFactory, setDetailsFactory] = useState<FactoryRow | null>(null);
-
+  const [addAdminFactory, setAddAdminFactory] = useState<FactoryRow | null>(null);
+  const [addingAdmin, setAddingAdmin] = useState(false);
+  const [newAdmin, setNewAdmin] = useState({ email: "", password: "", name: "" });
   // New factory form
   const [newFactory, setNewFactory] = useState({
     name: "",
