@@ -79,8 +79,8 @@ export default function Vendas() {
   const [detalhePix, setDetalhePix] = useState("");
   const [detalheEspecie, setDetalheEspecie] = useState("");
   const [valorFrete, setValorFrete] = useState("");
-  const [brindeQtd, setBrindeQtd] = useState("");
-  const [brindeSaborId, setBrindeSaborId] = useState("");
+  const [fretePagoPor, setFretePagoPor] = useState<"empresa" | "cliente">("cliente");
+  const [brindes, setBrindes] = useState<{ sabor_id: string; quantidade: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [sendingToProduction, setSendingToProduction] = useState<string | null>(null);
 
