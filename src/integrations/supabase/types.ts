@@ -2001,6 +2001,7 @@ export type Database = {
           forma_pagamento: string
           id: string
           numero_nf: string | null
+          numero_pedido: number | null
           observacoes: string | null
           operador: string
           status: Database["public"]["Enums"]["status_venda"]
@@ -2018,6 +2019,7 @@ export type Database = {
           forma_pagamento?: string
           id?: string
           numero_nf?: string | null
+          numero_pedido?: number | null
           observacoes?: string | null
           operador?: string
           status?: Database["public"]["Enums"]["status_venda"]
@@ -2035,6 +2037,7 @@ export type Database = {
           forma_pagamento?: string
           id?: string
           numero_nf?: string | null
+          numero_pedido?: number | null
           observacoes?: string | null
           operador?: string
           status?: Database["public"]["Enums"]["status_venda"]
