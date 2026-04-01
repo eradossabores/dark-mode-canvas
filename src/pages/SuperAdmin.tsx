@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { Factory, Plus, Users, CreditCard, CheckCircle, XCircle, Clock, AlertTriangle, Upload, Pencil, Trash2, LogIn, Info } from "lucide-react";
+import { Factory, Plus, Users, CreditCard, CheckCircle, XCircle, Clock, AlertTriangle, Upload, Pencil, Trash2, LogIn, Info, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -45,7 +45,9 @@ export default function SuperAdmin() {
   const [creating, setCreating] = useState(false);
   const [editingFactory, setEditingFactory] = useState<FactoryRow | null>(null);
   const [detailsFactory, setDetailsFactory] = useState<FactoryRow | null>(null);
-
+  const [addAdminFactory, setAddAdminFactory] = useState<FactoryRow | null>(null);
+  const [addingAdmin, setAddingAdmin] = useState(false);
+  const [newAdmin, setNewAdmin] = useState({ email: "", password: "", name: "" });
   // New factory form
   const [newFactory, setNewFactory] = useState({
     name: "",
@@ -238,6 +240,44 @@ export default function SuperAdmin() {
       loadFactories();
     } catch (e: any) {
       toast({ title: "Erro ao excluir", description: e.message, variant: "destructive" });
+    }
+  }
+
+  async function handleAddAdmin() {
+    if (!addAdminFactory || !newAdmin.email || !newAdmin.password || !newAdmin.name) {
+      toast({ title: "Preencha todos os campos", variant: "destructive" });
+      return;
+    }
+    setAddingAdmin(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/add-factory-admin`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            email: newAdmin.email,
+            password: newAdmin.password,
+            nome: newAdmin.name,
+            factory_id: addAdminFactory.id,
+          }),
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Erro ao adicionar admin");
+      toast({ title: "Administrador adicionado!", description: `${newAdmin.name} agora é admin de ${addAdminFactory.name}` });
+      setAddAdminFactory(null);
+      setNewAdmin({ email: "", password: "", name: "" });
+      loadFactories();
+    } catch (e: any) {
+      toast({ title: "Erro ao adicionar admin", description: e.message, variant: "destructive" });
+    } finally {
+      setAddingAdmin(false);
     }
   }
 
@@ -501,6 +541,9 @@ export default function SuperAdmin() {
                       </Button>
                     </>
                   )}
+                  <Button size="sm" variant="outline" className="w-full mt-1 gap-1" onClick={() => setAddAdminFactory(factory)}>
+                    <UserPlus className="h-3.5 w-3.5" /> Adicionar Sócio/Admin
+                  </Button>
                 </div>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
@@ -548,6 +591,36 @@ export default function SuperAdmin() {
           onOpenChange={(open) => !open && setDetailsFactory(null)}
           factory={detailsFactory}
         />
+      )}
+      {/* Add Admin Dialog */}
+      {addAdminFactory && (
+        <Dialog open={!!addAdminFactory} onOpenChange={(open) => { if (!open) { setAddAdminFactory(null); setNewAdmin({ email: "", password: "", name: "" }); } }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Adicionar Administrador — {addAdminFactory.name}</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground">
+              Crie um acesso de administrador (sócio) para esta fábrica. Ele terá acesso total ao sistema da fábrica.
+            </p>
+            <div className="space-y-4 pt-2">
+              <div>
+                <Label>Nome do Sócio</Label>
+                <Input placeholder="Nome completo" value={newAdmin.name} onChange={(e) => setNewAdmin({ ...newAdmin, name: e.target.value })} />
+              </div>
+              <div>
+                <Label>Email</Label>
+                <Input type="email" placeholder="socio@email.com" value={newAdmin.email} onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })} />
+              </div>
+              <div>
+                <Label>Senha Inicial</Label>
+                <Input type="text" placeholder="Senha do sócio" value={newAdmin.password} onChange={(e) => setNewAdmin({ ...newAdmin, password: e.target.value })} />
+              </div>
+              <Button className="w-full" onClick={handleAddAdmin} disabled={addingAdmin}>
+                {addingAdmin ? "Adicionando..." : "Adicionar Administrador"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
