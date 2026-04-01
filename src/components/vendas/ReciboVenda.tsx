@@ -312,6 +312,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
 
           <div className="space-y-1">
             <p><strong>Cliente:</strong> {data.cliente_nome}</p>
+            {data.numero_pedido && <p><strong>Pedido:</strong> #{data.numero_pedido}</p>}
             <p><strong>Data:</strong> {data.data}</p>
             <p><strong>Pagamento:</strong> {data.forma_pagamento}</p>
             {data.numero_nf && <p><strong>NF:</strong> {data.numero_nf}</p>}
