@@ -90,10 +90,11 @@ export default function ConfigurarFabrica() {
 
   async function handleCepLookup(cep: string) {
     const cleanCep = cep.replace(/\D/g, "");
-    if (cleanCep.length !== 8) return;
+    if (!/^\d{8}$/.test(cleanCep)) return;
     setFetchingCep(true);
     try {
       const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       if (!data.erro) {
         const newAddr = {
@@ -117,10 +118,11 @@ export default function ConfigurarFabrica() {
 
         toast({ title: "CEP encontrado!", description: `${data.localidade} - ${data.uf}` });
       } else {
-        toast({ title: "CEP não encontrado", variant: "destructive" });
+        toast({ title: "CEP não encontrado", description: "Verifique o CEP digitado.", variant: "destructive" });
       }
-    } catch {
-      toast({ title: "Erro ao buscar CEP", variant: "destructive" });
+    } catch (err: any) {
+      console.error("CEP lookup error:", err);
+      toast({ title: "Erro ao buscar CEP", description: "Tente novamente em alguns segundos.", variant: "destructive" });
     }
     setFetchingCep(false);
   }
