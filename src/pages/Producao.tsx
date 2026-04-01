@@ -407,14 +407,14 @@ export default function Producao() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Produção</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold">Produção</h1>
         <div className="flex gap-2">
           <Button variant="outline" size="icon" onClick={() => setConfigOpen(true)} title="Configurações de Produção">
             <Settings className="h-4 w-4" />
           </Button>
           <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-2" />Nova Produção</Button></DialogTrigger>
+          <DialogTrigger asChild><Button size="sm" className="text-xs sm:text-sm"><Plus className="h-4 w-4 mr-1" />Nova Produção</Button></DialogTrigger>
           <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto pb-6">
             <DialogHeader><DialogTitle>Nova Produção</DialogTitle></DialogHeader>
             <div className="space-y-4">
