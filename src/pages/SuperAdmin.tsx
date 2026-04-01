@@ -503,12 +503,24 @@ export default function SuperAdmin() {
                   <span>{format(new Date(factory.created_at), "dd/MM/yyyy", { locale: ptBR })}</span>
                 </div>
 
-                {factory.subscription?.trial_start && factory.subscription.status === "trial" && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Teste até</span>
-                    <span>{format(new Date(new Date(factory.subscription.trial_start).getTime() + 30 * 24 * 60 * 60 * 1000), "dd/MM/yyyy", { locale: ptBR })}</span>
-                  </div>
-                )}
+                {factory.subscription?.trial_start && factory.subscription.status === "trial" && (() => {
+                  const trialEnd = new Date(new Date(factory.subscription!.trial_start).getTime() + 30 * 24 * 60 * 60 * 1000);
+                  const diasRestantes = Math.max(0, Math.ceil((trialEnd.getTime() - Date.now()) / (24 * 60 * 60 * 1000)));
+                  return (
+                    <>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Teste até</span>
+                        <span>{format(trialEnd, "dd/MM/yyyy", { locale: ptBR })}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Dias restantes</span>
+                        <span className={`font-semibold ${diasRestantes <= 5 ? "text-destructive" : diasRestantes <= 10 ? "text-amber-500" : "text-emerald-500"}`}>
+                          {diasRestantes === 0 ? "Expira hoje" : `${diasRestantes} dia${diasRestantes !== 1 ? "s" : ""}`}
+                        </span>
+                      </div>
+                    </>
+                  );
+                })()}
 
                 {factory.subscription?.current_period_end && (
                   <div className="flex items-center justify-between text-sm">
