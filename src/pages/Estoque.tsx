@@ -949,7 +949,7 @@ export default function Estoque() {
             </div>
           )}
           <div className="flex justify-end mb-4">
-            <Dialog open={openEmb} onOpenChange={(o) => { setOpenEmb(o); if (!o) { setEmbModoEntrada("saquinho"); setEmbQtd(0); } }}>
+            <Dialog open={openEmb} onOpenChange={(o) => { setOpenEmb(o); if (!o) { setEmbModoEntrada("saquinho"); setEmbQtd(0); setEmbBobinaQtd(0); setEmbBobinaPesoKg(0); } }}>
               <DialogTrigger asChild>
                 <Button><Plus className="h-4 w-4 mr-2" />Entrada Embalagem</Button>
               </DialogTrigger>
