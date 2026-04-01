@@ -557,7 +557,40 @@ export default function Vendas() {
     if (!deleteId) return;
     try {
       const vendaDeletada = vendas.find(v => v.id === deleteId);
-      // Delete child records first (trigger on vendas handles stock reversal + movimentacoes)
+
+      // 1. Fetch full sale items and parcels for backup
+      const [itensRes, parcelasRes] = await Promise.all([
+        (supabase as any).from("venda_itens").select("*, sabores(nome)").eq("venda_id", deleteId),
+        (supabase as any).from("venda_parcelas").select("*").eq("venda_id", deleteId),
+      ]);
+
+      // 2. Save backup to vendas_excluidas
+      await (supabase as any).from("vendas_excluidas").insert({
+        venda_id: deleteId,
+        cliente_id: vendaDeletada?.cliente_id,
+        cliente_nome: vendaDeletada?.clientes?.nome || "?",
+        total: Number(vendaDeletada?.total || 0),
+        forma_pagamento: vendaDeletada?.forma_pagamento,
+        status: vendaDeletada?.status,
+        operador: vendaDeletada?.operador,
+        observacoes: vendaDeletada?.observacoes,
+        numero_nf: vendaDeletada?.numero_nf,
+        valor_pago: Number(vendaDeletada?.valor_pago || 0),
+        valor_pix: Number(vendaDeletada?.valor_pix || 0),
+        valor_especie: Number(vendaDeletada?.valor_especie || 0),
+        itens: (itensRes.data || []).map((i: any) => ({
+          sabor_id: i.sabor_id, sabor_nome: i.sabores?.nome || "?",
+          quantidade: i.quantidade, preco_unitario: Number(i.preco_unitario), subtotal: Number(i.subtotal),
+        })),
+        parcelas: (parcelasRes.data || []).map((p: any) => ({
+          numero: p.numero, valor: Number(p.valor), vencimento: p.vencimento, paga: p.paga,
+        })),
+        data_venda: vendaDeletada?.created_at,
+        factory_id: vendaDeletada?.factory_id || factoryId,
+        excluido_por: "sistema",
+      });
+
+      // 3. Delete child records (trigger on vendas handles stock reversal + movimentacoes)
       await (supabase as any).from("venda_itens").delete().eq("venda_id", deleteId);
       await (supabase as any).from("venda_parcelas").delete().eq("venda_id", deleteId);
       await (supabase as any).from("abatimentos_historico").delete().eq("venda_id", deleteId);
@@ -570,9 +603,10 @@ export default function Vendas() {
         acao: "venda_excluida",
         registro_afetado: deleteId,
         descricao: `Venda excluída permanentemente - Cliente: ${vendaDeletada?.clientes?.nome || "?"} - R$ ${Number(vendaDeletada?.total || 0).toFixed(2)}`,
+        factory_id: vendaDeletada?.factory_id || factoryId,
       });
 
-      toast({ title: "Venda excluída!" });
+      toast({ title: "Venda excluída!", description: "A venda foi salva na lixeira e pode ser restaurada na Auditoria." });
       setDeleteId(null);
       loadData();
     } catch (e: any) {
