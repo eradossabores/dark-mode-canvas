@@ -14,7 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 const COLORS = ["hsl(200,98%,39%)", "hsl(213,93%,67%)", "hsl(38,92%,50%)", "hsl(142,71%,45%)", "hsl(215,20%,65%)", "hsl(0,72%,50%)"];
 
 export default function RelatorioColaboradores() {
-  const { factoryId } = useAuth();
+  const { factoryId, factoryName, branding } = useAuth();
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
   const [producaoFunc, setProducaoFunc] = useState<any[]>([]);
   const [startDate, setStartDate] = useState<Date | undefined>(
