@@ -652,11 +652,11 @@ export default function SuperAdmin() {
                 }} />
               </div>
               <div>
-                <Label>Email (gerado automaticamente)</Label>
+                <Label>Email</Label>
                 <Input type="email" value={newAdmin.email} onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })} />
               </div>
               <div>
-                <Label>Senha Inicial (gerada automaticamente)</Label>
+                <Label>Senha Inicial</Label>
                 <Input type="text" value={newAdmin.password} onChange={(e) => setNewAdmin({ ...newAdmin, password: e.target.value })} />
               </div>
               <Button className="w-full" onClick={handleAddAdmin} disabled={addingAdmin}>
