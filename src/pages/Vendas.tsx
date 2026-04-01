@@ -184,6 +184,7 @@ export default function Vendas() {
       data: new Date(v.created_at).toLocaleDateString("pt-BR"),
       forma_pagamento: getFormaPagamentoLabel(v),
       numero_nf: v.numero_nf || undefined,
+      numero_pedido: v.numero_pedido || undefined,
       total: Number(v.total),
       observacoes: (v.observacoes || "").replace(/^\[[^\]]*\]\s*/, "").trim() || undefined,
       telefone: clienteData?.telefone || undefined,
@@ -1358,6 +1359,7 @@ export default function Vendas() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-16">#</TableHead>
                 <TableHead>Data</TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead className="text-right">Unidades</TableHead>
@@ -1371,10 +1373,11 @@ export default function Vendas() {
             <TableBody>
               {(() => {
                 if (filteredVendas.length === 0) return (
-                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Nenhuma venda{clienteFilter ? ` para "${clienteFilter}"` : ""}.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground">Nenhuma venda{clienteFilter ? ` para "${clienteFilter}"` : ""}.</TableCell></TableRow>
                 );
                 return filteredVendas.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((v) => (
                   <TableRow key={v.id}>
+                    <TableCell className="font-bold text-primary">#{v.numero_pedido || "-"}</TableCell>
                     <TableCell>{new Date(v.created_at).toLocaleDateString("pt-BR")}</TableCell>
                     <TableCell>{v.clientes?.nome}</TableCell>
                     <TableCell className="text-right font-medium">{v.totalUnidades || 0}</TableCell>

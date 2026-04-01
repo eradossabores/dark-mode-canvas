@@ -19,6 +19,7 @@ interface ReciboData {
   data: string;
   forma_pagamento: string;
   numero_nf?: string;
+  numero_pedido?: number;
   total: number;
   itens: ReciboItem[];
   observacoes?: string;
@@ -121,6 +122,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     };
 
     infoLabel("Cliente:", data.cliente_nome, y); y += 3.5;
+    if (data.numero_pedido) { infoLabel("Pedido:", `#${data.numero_pedido}`, y); y += 3.5; }
     infoLabel("Data:", data.data, y); y += 3.5;
     infoLabel("Pgto:", data.forma_pagamento, y); y += 3.5;
     if (data.numero_nf) { infoLabel("NF:", data.numero_nf, y); y += 3.5; }
@@ -310,6 +312,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
 
           <div className="space-y-1">
             <p><strong>Cliente:</strong> {data.cliente_nome}</p>
+            {data.numero_pedido && <p><strong>Pedido:</strong> #{data.numero_pedido}</p>}
             <p><strong>Data:</strong> {data.data}</p>
             <p><strong>Pagamento:</strong> {data.forma_pagamento}</p>
             {data.numero_nf && <p><strong>NF:</strong> {data.numero_nf}</p>}
