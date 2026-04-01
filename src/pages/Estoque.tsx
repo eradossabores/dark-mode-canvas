@@ -374,6 +374,7 @@ export default function Estoque() {
         acao: "avaria",
         registro_afetado: avariaSaborId,
         descricao: `Avaria de ${avariaQtd} un. de ${saborNome}${embDescricao}. Motivo: ${avariaMotivo}`,
+        factory_id: factoryId,
       });
 
       toast({ title: "Avaria registrada!", description: `${avariaQtd} un. de ${saborNome} descontadas do estoque` });
