@@ -290,6 +290,8 @@ export default function Estoque() {
       toast({ title: "Estoque atualizado!", description: descEntrada });
       setOpenEmb(false);
       setEmbQtd(0);
+      setEmbBobinaQtd(0);
+      setEmbBobinaPesoKg(0);
       setEmbModoEntrada("saquinho");
       loadData();
     } catch (e: any) {
