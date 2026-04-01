@@ -33,7 +33,7 @@ const STATUS_VENDA = [
 ];
 
 export default function RelatorioVendas() {
-  const { factoryId } = useAuth();
+  const { factoryId, factoryName, branding } = useAuth();
   const [vendas, setVendas] = useState<any[]>([]);
   const [itens, setItens] = useState<any[]>([]);
   const [startDate, setStartDate] = useState<Date | undefined>(
