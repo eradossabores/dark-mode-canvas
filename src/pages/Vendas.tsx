@@ -978,17 +978,40 @@ export default function Vendas() {
                   <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
                   <Input type="number" step="0.01" min="0" className="pl-7" value={valorFrete} onChange={(e) => setValorFrete(e.target.value)} placeholder="0.00" />
                 </div>
+                {Number(valorFrete) > 0 && (
+                  <div className="flex items-center gap-4 mt-2">
+                    <Label className="text-xs text-muted-foreground">Pago por:</Label>
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="frete-cliente" checked={fretePagoPor === "cliente"} onCheckedChange={() => setFretePagoPor("cliente")} />
+                      <Label htmlFor="frete-cliente" className="text-xs cursor-pointer">Cliente</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="frete-empresa" checked={fretePagoPor === "empresa"} onCheckedChange={() => setFretePagoPor("empresa")} />
+                      <Label htmlFor="frete-empresa" className="text-xs cursor-pointer">Empresa</Label>
+                    </div>
+                  </div>
+                )}
               </div>
-              {/* Brinde */}
+              {/* Brindes */}
               <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
-                <Label className="text-xs font-medium">🎁 Brinde (opcional)</Label>
-                <div className="flex gap-2">
-                  <Select value={brindeSaborId} onValueChange={setBrindeSaborId}>
-                    <SelectTrigger className="flex-1"><SelectValue placeholder="Sabor do brinde" /></SelectTrigger>
-                    <SelectContent>{sabores.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}</SelectContent>
-                  </Select>
-                  <Input type="number" min={0} className="w-20" value={brindeQtd} onChange={(e) => setBrindeQtd(e.target.value)} placeholder="Qtd" />
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-medium">🎁 Brindes (opcional)</Label>
+                  <Button type="button" size="sm" variant="ghost" className="h-6 text-xs gap-1" onClick={() => setBrindes([...brindes, { sabor_id: "", quantidade: "" }])}>
+                    <Plus className="h-3 w-3" /> Add
+                  </Button>
                 </div>
+                {brindes.map((b, i) => (
+                  <div key={i} className="flex gap-2 items-center">
+                    <Select value={b.sabor_id} onValueChange={(v) => { const updated = [...brindes]; updated[i].sabor_id = v; setBrindes(updated); }}>
+                      <SelectTrigger className="flex-1"><SelectValue placeholder="Sabor" /></SelectTrigger>
+                      <SelectContent>{sabores.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Input type="number" min={0} className="w-20" value={b.quantidade} onChange={(e) => { const updated = [...brindes]; updated[i].quantidade = e.target.value; setBrindes(updated); }} placeholder="Qtd" />
+                    <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => setBrindes(brindes.filter((_, idx) => idx !== i))}>
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
               </div>
               {/* Venda por Pacote (Sacos) */}
               {factoryUsaSacos && (
