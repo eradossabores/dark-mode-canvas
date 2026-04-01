@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Settings, Save, Loader2, Package } from "lucide-react";
+import { Settings, Save, Loader2, Package, MapPin } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -26,6 +26,17 @@ interface ConfigGeral {
   quantidade_insumo_agua_coco: number;
 }
 
+interface FactoryAddress {
+  endereco: string;
+  bairro: string;
+  cidade: string;
+  estado: string;
+  cep: string;
+  cnpj: string;
+  latitude: number | null;
+  longitude: number | null;
+}
+
 export default function ConfigurarFabrica() {
   const { factoryId } = useAuth();
   const [receitas, setReceitas] = useState<ReceitaRaw[]>([]);
@@ -40,10 +51,114 @@ export default function ConfigurarFabrica() {
   const [savingSacos, setSavingSacos] = useState(false);
   const [loadingSacos, setLoadingSacos] = useState(true);
 
+  // Address config
+  const [address, setAddress] = useState<FactoryAddress>({ endereco: "", bairro: "", cidade: "", estado: "SP", cep: "", cnpj: "", latitude: null, longitude: null });
+  const [loadingAddr, setLoadingAddr] = useState(true);
+  const [savingAddr, setSavingAddr] = useState(false);
+  const [fetchingCep, setFetchingCep] = useState(false);
+
   useEffect(() => {
     loadReceitas();
     loadSacosConfig();
+    loadAddress();
   }, [factoryId]);
+
+  async function loadAddress() {
+    if (!factoryId) { setLoadingAddr(false); return; }
+    setLoadingAddr(true);
+    try {
+      const { data } = await (supabase as any)
+        .from("factories")
+        .select("endereco, bairro, cidade, estado, cep, cnpj, latitude, longitude")
+        .eq("id", factoryId)
+        .single();
+      if (data) {
+        setAddress({
+          endereco: data.endereco || "",
+          bairro: data.bairro || "",
+          cidade: data.cidade || "",
+          estado: data.estado || "SP",
+          cep: data.cep || "",
+          cnpj: data.cnpj || "",
+          latitude: data.latitude,
+          longitude: data.longitude,
+        });
+      }
+    } catch { /* ignore */ }
+    setLoadingAddr(false);
+  }
+
+  async function handleCepLookup(cep: string) {
+    const cleanCep = cep.replace(/\D/g, "");
+    if (cleanCep.length !== 8) return;
+    setFetchingCep(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+      const data = await res.json();
+      if (!data.erro) {
+        const newAddr = {
+          ...address,
+          cep,
+          endereco: data.logradouro || address.endereco,
+          bairro: data.bairro || address.bairro,
+          cidade: data.localidade || address.cidade,
+          estado: data.uf || address.estado,
+        };
+        setAddress(newAddr);
+
+        // Geocode city to update map center
+        try {
+          const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(`${newAddr.cidade}, ${newAddr.estado}, Brasil`)}&format=json&limit=1`);
+          const geoData = await geoRes.json();
+          if (geoData.length > 0) {
+            setAddress(prev => ({ ...prev, latitude: parseFloat(geoData[0].lat), longitude: parseFloat(geoData[0].lon) }));
+          }
+        } catch { /* geocoding optional */ }
+
+        toast({ title: "CEP encontrado!", description: `${data.localidade} - ${data.uf}` });
+      } else {
+        toast({ title: "CEP não encontrado", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Erro ao buscar CEP", variant: "destructive" });
+    }
+    setFetchingCep(false);
+  }
+
+  async function handleSaveAddress() {
+    if (!factoryId) return;
+    setSavingAddr(true);
+    try {
+      await (supabase as any).from("factories").update({
+        endereco: address.endereco || null,
+        bairro: address.bairro || null,
+        cidade: address.cidade || null,
+        estado: address.estado || null,
+        cep: address.cep || null,
+        cnpj: address.cnpj || null,
+        latitude: address.latitude,
+        longitude: address.longitude,
+      }).eq("id", factoryId);
+      toast({ title: "Endereço salvo com sucesso!" });
+    } catch (e: any) {
+      toast({ title: "Erro ao salvar", description: e.message, variant: "destructive" });
+    }
+    setSavingAddr(false);
+  }
+
+  function formatCnpj(value: string) {
+    const digits = value.replace(/\D/g, "").slice(0, 14);
+    return digits
+      .replace(/^(\d{2})(\d)/, "$1.$2")
+      .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+      .replace(/\.(\d{3})(\d)/, ".$1/$2")
+      .replace(/(\d{4})(\d)/, "$1-$2");
+  }
+
+  function formatCep(value: string) {
+    const digits = value.replace(/\D/g, "").slice(0, 8);
+    return digits.replace(/^(\d{5})(\d)/, "$1-$2");
+  }
 
   async function loadSacosConfig() {
     if (!factoryId) { setLoadingSacos(false); return; }
@@ -150,9 +265,10 @@ export default function ConfigurarFabrica() {
 
       <Tabs defaultValue="vendas" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="vendas">💰 Tabela de Preços</TabsTrigger>
-          <TabsTrigger value="producao">⚙️ Produção (Receitas)</TabsTrigger>
-          <TabsTrigger value="sacos">📦 Sacos / Pacotes</TabsTrigger>
+          <TabsTrigger value="vendas">💰 Preços</TabsTrigger>
+          <TabsTrigger value="producao">⚙️ Produção</TabsTrigger>
+          <TabsTrigger value="sacos">📦 Sacos</TabsTrigger>
+          <TabsTrigger value="endereco">📍 Endereço / CNPJ</TabsTrigger>
         </TabsList>
 
         <TabsContent value="vendas">
@@ -363,6 +479,114 @@ export default function ConfigurarFabrica() {
                       <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Salvando...</>
                     ) : (
                       <><Save className="h-4 w-4 mr-2" /> Salvar Configuração de Sacos</>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="endereco">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                Endereço e CNPJ da Fábrica
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Preencha o CEP para buscar o endereço automaticamente. As coordenadas do mapa serão ajustadas para a cidade.
+              </p>
+            </CardHeader>
+            <CardContent>
+              {loadingAddr ? (
+                <div className="flex items-center justify-center py-8 gap-2 text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Carregando...
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* CNPJ */}
+                  <div>
+                    <Label>CNPJ</Label>
+                    <Input
+                      placeholder="00.000.000/0000-00"
+                      value={address.cnpj}
+                      onChange={(e) => setAddress({ ...address, cnpj: formatCnpj(e.target.value) })}
+                      maxLength={18}
+                    />
+                  </div>
+
+                  {/* CEP with auto-fill */}
+                  <div>
+                    <Label>CEP</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="00000-000"
+                        value={address.cep}
+                        onChange={(e) => {
+                          const formatted = formatCep(e.target.value);
+                          setAddress({ ...address, cep: formatted });
+                          if (formatted.replace(/\D/g, "").length === 8) {
+                            handleCepLookup(formatted);
+                          }
+                        }}
+                        maxLength={9}
+                      />
+                      {fetchingCep && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground mt-2" />}
+                    </div>
+                  </div>
+
+                  {/* Address fields */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label>Endereço (Rua/Logradouro)</Label>
+                      <Input
+                        placeholder="Rua Exemplo, 123"
+                        value={address.endereco}
+                        onChange={(e) => setAddress({ ...address, endereco: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label>Bairro</Label>
+                      <Input
+                        placeholder="Centro"
+                        value={address.bairro}
+                        onChange={(e) => setAddress({ ...address, bairro: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label>Cidade</Label>
+                      <Input
+                        placeholder="São Paulo"
+                        value={address.cidade}
+                        onChange={(e) => setAddress({ ...address, cidade: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label>Estado (UF)</Label>
+                      <Input
+                        placeholder="SP"
+                        value={address.estado}
+                        onChange={(e) => setAddress({ ...address, estado: e.target.value.toUpperCase().slice(0, 2) })}
+                        maxLength={2}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Coordinates info */}
+                  {address.latitude && address.longitude && (
+                    <div className="rounded-lg bg-primary/5 border border-primary/20 p-3">
+                      <p className="text-xs text-muted-foreground">
+                        📍 <strong>Coordenadas detectadas:</strong> {address.latitude.toFixed(4)}, {address.longitude.toFixed(4)} — O mapa será centralizado nesta localização.
+                      </p>
+                    </div>
+                  )}
+
+                  <Button className="w-full" onClick={handleSaveAddress} disabled={savingAddr}>
+                    {savingAddr ? (
+                      <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Salvando...</>
+                    ) : (
+                      <><Save className="h-4 w-4 mr-2" /> Salvar Endereço</>
                     )}
                   </Button>
                 </div>
