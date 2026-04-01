@@ -1369,6 +1369,7 @@ export default function Vendas() {
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { setHistoricoVenda(v); loadHistorico(v.id); }}><History className="h-4 w-4" /></Button>
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openDetailDialog(v)}><Eye className="h-4 w-4" /></Button>
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openRecibo(v)}><Receipt className="h-4 w-4 text-emerald-600" /></Button>
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => duplicarVenda(v)}><CopyPlus className="h-4 w-4 text-blue-600" /></Button>
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEditDialog(v)}><Pencil className="h-4 w-4" /></Button>
                     <div className="ml-auto flex gap-1">
                       {v.status !== "cancelada" && (
