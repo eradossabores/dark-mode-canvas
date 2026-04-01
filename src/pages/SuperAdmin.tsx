@@ -541,6 +541,9 @@ export default function SuperAdmin() {
                       </Button>
                     </>
                   )}
+                  <Button size="sm" variant="outline" className="w-full mt-1 gap-1" onClick={() => setAddAdminFactory(factory)}>
+                    <UserPlus className="h-3.5 w-3.5" /> Adicionar Sócio/Admin
+                  </Button>
                 </div>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
