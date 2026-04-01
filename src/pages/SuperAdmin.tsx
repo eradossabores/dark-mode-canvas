@@ -36,6 +36,23 @@ interface FactoryRow {
   collaborator_count?: number;
 }
 
+const buildAutoCredentials = (rawName: string) => {
+  const slug = rawName
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, "")
+    .replace(/[^a-z0-9]/g, "");
+
+  const capitalized = slug ? slug.charAt(0).toUpperCase() + slug.slice(1) : "";
+
+  return {
+    email: slug ? `${slug}@icetech.com` : "",
+    password: capitalized ? `${capitalized}@2026` : "",
+  };
+};
+
 export default function SuperAdmin() {
   const { user, impersonateFactory, impersonatingFactory, clearImpersonation } = useAuth();
   const navigate = useNavigate();
