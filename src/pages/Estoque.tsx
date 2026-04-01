@@ -41,6 +41,8 @@ export default function Estoque() {
   const [openEmb, setOpenEmb] = useState(false);
   const [embId, setEmbId] = useState("");
   const [embQtd, setEmbQtd] = useState(0);
+  const [embModoEntrada, setEmbModoEntrada] = useState<"saquinho" | "bobina">("saquinho");
+  const BOBINA_FATOR = 950; // 1kg de bobina = 950 saquinhos
 
   // Ajuste de estoque
   const [openAjuste, setOpenAjuste] = useState(false);
@@ -267,18 +269,23 @@ export default function Estoque() {
     if (!embId || embQtd <= 0) return toast({ title: "Preencha todos os campos", variant: "destructive" });
     try {
       const emb = embalagens.find((e) => e.id === embId);
-      await (supabase as any).from("embalagens").update({ estoque_atual: emb.estoque_atual + embQtd }).eq("id", embId);
+      const qtdSaquinhos = embModoEntrada === "bobina" ? Math.round(embQtd * BOBINA_FATOR) : embQtd;
+      const descEntrada = embModoEntrada === "bobina"
+        ? `Entrada de ${embQtd} kg (bobina) = ${qtdSaquinhos} saquinhos de ${emb.nome}`
+        : `Entrada de ${embQtd} un. de ${emb.nome}`;
+      await (supabase as any).from("embalagens").update({ estoque_atual: emb.estoque_atual + qtdSaquinhos }).eq("id", embId);
       await (supabase as any).from("movimentacoes_estoque").insert({
         tipo_item: "embalagem", item_id: embId, tipo_movimentacao: "entrada",
-        quantidade: embQtd, referencia: "entrada_manual", operador: "sistema",
+        quantidade: qtdSaquinhos, referencia: "entrada_manual", operador: "sistema",
       });
       await (supabase as any).from("auditoria").insert({
         usuario_nome: "sistema", modulo: "estoque", acao: "entrada_embalagem",
-        registro_afetado: embId, descricao: `Entrada de ${embQtd} un. de ${emb.nome}`,
+        registro_afetado: embId, descricao: descEntrada,
       });
-      toast({ title: "Estoque atualizado!" });
+      toast({ title: "Estoque atualizado!", description: descEntrada });
       setOpenEmb(false);
       setEmbQtd(0);
+      setEmbModoEntrada("saquinho");
       loadData();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
@@ -906,10 +913,13 @@ export default function Estoque() {
 
         <TabsContent value="emb">
           {embalagens.length > 0 && (
-            <div className="mb-6">
+             <div className="mb-6">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-sm text-muted-foreground font-medium">Embalagens por Tipo</p>
-                <Badge variant="secondary" className="text-xs font-bold">Total: {totalEmbalagens.toLocaleString()} un.</Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="text-xs font-bold">Total: {totalEmbalagens.toLocaleString()} un.</Badge>
+                  <Badge variant="outline" className="text-xs">≈ {(totalEmbalagens / BOBINA_FATOR).toFixed(2)} kg bobina</Badge>
+                </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
                 {embalagens.map((e) => (
@@ -920,23 +930,46 @@ export default function Estoque() {
                   >
                     <p className="text-[11px] font-semibold truncate">{e.nome}</p>
                     <p className="text-lg font-extrabold mt-0.5">{(e.estoque_atual || 0).toLocaleString()}</p>
+                    <p className="text-[10px] opacity-75">≈ {((e.estoque_atual || 0) / BOBINA_FATOR).toFixed(2)} kg</p>
                   </div>
                 ))}
                 <div className="rounded-lg border px-3 py-2.5 text-center transition-all hover:scale-[1.03] bg-gray-700/90 text-white border-gray-800">
                   <p className="text-[11px] font-semibold truncate">TOTAL</p>
                   <p className="text-lg font-extrabold mt-0.5">{totalEmbalagens.toLocaleString()}</p>
+                  <p className="text-[10px] opacity-75">≈ {(totalEmbalagens / BOBINA_FATOR).toFixed(2)} kg</p>
                 </div>
               </div>
             </div>
           )}
           <div className="flex justify-end mb-4">
-            <Dialog open={openEmb} onOpenChange={setOpenEmb}>
+            <Dialog open={openEmb} onOpenChange={(o) => { setOpenEmb(o); if (!o) { setEmbModoEntrada("saquinho"); setEmbQtd(0); } }}>
               <DialogTrigger asChild>
                 <Button><Plus className="h-4 w-4 mr-2" />Entrada Embalagem</Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader><DialogTitle>Entrada de Embalagens</DialogTitle></DialogHeader>
                 <div className="space-y-4">
+                  <div>
+                    <Label>Formato de Entrada</Label>
+                    <div className="flex gap-2 mt-1">
+                      <Button
+                        type="button"
+                        variant={embModoEntrada === "saquinho" ? "default" : "outline"}
+                        className="flex-1"
+                        onClick={() => { setEmbModoEntrada("saquinho"); setEmbQtd(0); }}
+                      >
+                        📦 Saquinho
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={embModoEntrada === "bobina" ? "default" : "outline"}
+                        className="flex-1"
+                        onClick={() => { setEmbModoEntrada("bobina"); setEmbQtd(0); }}
+                      >
+                        🔄 Bobina (kg)
+                      </Button>
+                    </div>
+                  </div>
                   <div>
                     <Label>Embalagem</Label>
                     <Select value={embId} onValueChange={setEmbId}>
@@ -947,8 +980,20 @@ export default function Estoque() {
                     </Select>
                   </div>
                   <div>
-                    <Label>Quantidade (unidades)</Label>
-                    <Input type="number" min={0} value={embQtd || ""} onChange={(e) => setEmbQtd(Number(e.target.value))} />
+                    <Label>{embModoEntrada === "bobina" ? "Peso (kg)" : "Quantidade (unidades)"}</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={embModoEntrada === "bobina" ? "0.1" : "1"}
+                      value={embQtd || ""}
+                      onChange={(e) => setEmbQtd(Number(e.target.value))}
+                    />
+                    {embModoEntrada === "bobina" && embQtd > 0 && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        = <span className="font-bold text-foreground">{Math.round(embQtd * BOBINA_FATOR).toLocaleString()}</span> saquinhos
+                        <span className="text-xs ml-1">(1 kg = {BOBINA_FATOR} un.)</span>
+                      </p>
+                    )}
                   </div>
                   <Button className="w-full" onClick={addEstoqueEmb}>Confirmar Entrada</Button>
                 </div>
@@ -970,7 +1015,7 @@ export default function Estoque() {
                     {embalagens.map((e) => (
                       <TableRow key={e.id}>
                         <TableCell>{e.nome}</TableCell>
-                        <TableCell>{e.estoque_atual} un.</TableCell>
+                        <TableCell>{e.estoque_atual} un. <span className="text-xs text-muted-foreground">({((e.estoque_atual || 0) / BOBINA_FATOR).toFixed(2)} kg)</span></TableCell>
                         <TableCell className="text-right">
                           <Button variant="outline" size="sm" onClick={() => openAjusteDialog("emb", e.id, e.estoque_atual)}>
                             <Settings2 className="h-3 w-3 mr-1" /> Ajustar
@@ -986,7 +1031,7 @@ export default function Estoque() {
                   <div key={e.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
                     <div>
                       <p className="font-medium text-sm">{e.nome}</p>
-                      <p className="text-xs text-muted-foreground">{e.estoque_atual} un.</p>
+                      <p className="text-xs text-muted-foreground">{e.estoque_atual} un. ({((e.estoque_atual || 0) / BOBINA_FATOR).toFixed(2)} kg)</p>
                     </div>
                     <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => openAjusteDialog("emb", e.id, e.estoque_atual)}>
                       <Settings2 className="h-3.5 w-3.5" />
