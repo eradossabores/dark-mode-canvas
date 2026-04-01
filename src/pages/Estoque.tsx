@@ -224,6 +224,7 @@ export default function Estoque() {
         quantidade: Math.abs(diff),
         referencia: "ajuste_manual",
         operador: "sistema",
+        factory_id: factoryId,
       });
 
       await (supabase as any).from("auditoria").insert({
