@@ -22,13 +22,10 @@ interface ReceitaRaw {
   sabor_nome: string;
   gelos_por_lote: number;
   quantidade_insumo_por_lote: number;
-  is_agua_de_coco: boolean;
 }
 
 interface ConfigGeral {
   gelos_por_lote: number;
-  quantidade_insumo_geral: number;
-  quantidade_insumo_agua_coco: number;
 }
 
 interface FactoryAddress {
