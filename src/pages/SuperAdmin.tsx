@@ -590,6 +590,10 @@ export default function SuperAdmin() {
           open={!!detailsFactory}
           onOpenChange={(open) => !open && setDetailsFactory(null)}
           factory={detailsFactory}
+          onAddAdmin={() => {
+            setAddAdminFactory(detailsFactory);
+            setDetailsFactory(null);
+          }}
         />
       )}
       {/* Add Admin Dialog */}

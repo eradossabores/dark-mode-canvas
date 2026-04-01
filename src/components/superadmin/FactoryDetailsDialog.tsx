@@ -2,14 +2,16 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Users, Package, ShoppingCart, DollarSign, Factory, IceCream, AlertTriangle, CheckCircle, Clock, XCircle, Activity } from "lucide-react";
+import { Users, Package, ShoppingCart, DollarSign, Factory, IceCream, AlertTriangle, CheckCircle, Clock, XCircle, Activity, UserPlus } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onAddAdmin?: () => void;
   factory: {
     id: string;
     name: string;
@@ -63,7 +65,7 @@ function formatDurationLong(totalMinutes: number) {
   return parts.join(", ") || "Menos de 1 minuto";
 }
 
-export default function FactoryDetailsDialog({ open, onOpenChange, factory }: Props) {
+export default function FactoryDetailsDialog({ open, onOpenChange, factory, onAddAdmin }: Props) {
   const [details, setDetails] = useState<any>(null);
   const [usageData, setUsageData] = useState<UserUsage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -366,7 +368,16 @@ export default function FactoryDetailsDialog({ open, onOpenChange, factory }: Pr
                 <p className="text-lg font-bold text-emerald-500">{details.pedidosConcluidos}</p>
                 <p className="text-[11px] text-muted-foreground">Concluídos</p>
               </div>
-            </div>
+             </div>
+
+            {onAddAdmin && (
+              <>
+                <Separator />
+                <Button className="w-full gap-2" onClick={onAddAdmin}>
+                  <UserPlus className="h-4 w-4" /> Adicionar Sócio/Admin
+                </Button>
+              </>
+            )}
           </div>
         )}
       </DialogContent>
