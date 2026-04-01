@@ -368,7 +368,16 @@ export default function FactoryDetailsDialog({ open, onOpenChange, factory, onAd
                 <p className="text-lg font-bold text-emerald-500">{details.pedidosConcluidos}</p>
                 <p className="text-[11px] text-muted-foreground">Concluídos</p>
               </div>
-            </div>
+             </div>
+
+            {onAddAdmin && (
+              <>
+                <Separator />
+                <Button className="w-full gap-2" onClick={onAddAdmin}>
+                  <UserPlus className="h-4 w-4" /> Adicionar Sócio/Admin
+                </Button>
+              </>
+            )}
           </div>
         )}
       </DialogContent>
