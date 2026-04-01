@@ -679,16 +679,7 @@ export default function SuperAdmin() {
             <div className="space-y-4 pt-2">
               <div>
                 <Label>Nome do Sócio</Label>
-                <Input placeholder="Ex: Carlos Sheik" value={newAdmin.name} onChange={(e) => {
-                  const name = e.target.value;
-                  const slug = name.trim().toLowerCase().replace(/\s+/g, "").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                  const capitalizedSlug = slug.charAt(0).toUpperCase() + slug.slice(1);
-                  setNewAdmin({
-                    name,
-                    email: slug ? `${slug}@icetech.com` : "",
-                    password: slug ? `${capitalizedSlug}@2026` : "",
-                  });
-                }} />
+                <Input placeholder="Ex: Carlos Sheik" value={newAdmin.name} onChange={(e) => setNewAdmin((prev) => ({ ...prev, name: e.target.value }))} />
               </div>
               <div>
                 <Label>Email</Label>
