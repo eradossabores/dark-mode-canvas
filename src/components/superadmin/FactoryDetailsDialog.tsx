@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Users, Package, ShoppingCart, DollarSign, Factory, IceCream, AlertTriangle, CheckCircle, Clock, XCircle, Activity } from "lucide-react";
+import { Users, Package, ShoppingCart, DollarSign, Factory, IceCream, AlertTriangle, CheckCircle, Clock, XCircle, Activity, UserPlus } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
