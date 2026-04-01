@@ -24,7 +24,7 @@ const FAIXAS_ATRASO = [
 ];
 
 export default function RelatorioInadimplencia() {
-  const { factoryId } = useAuth();
+  const { factoryId, factoryName, branding } = useAuth();
   const [parcelas, setParcelas] = useState<any[]>([]);
   const [vendas, setVendas] = useState<any[]>([]);
   const [previewLoaded, setPreviewLoaded] = useState(false);
