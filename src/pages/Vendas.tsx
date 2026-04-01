@@ -79,8 +79,8 @@ export default function Vendas() {
   const [detalhePix, setDetalhePix] = useState("");
   const [detalheEspecie, setDetalheEspecie] = useState("");
   const [valorFrete, setValorFrete] = useState("");
-  const [brindeQtd, setBrindeQtd] = useState("");
-  const [brindeSaborId, setBrindeSaborId] = useState("");
+  const [fretePagoPor, setFretePagoPor] = useState<"empresa" | "cliente">("cliente");
+  const [brindes, setBrindes] = useState<{ sabor_id: string; quantidade: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [sendingToProduction, setSendingToProduction] = useState<string | null>(null);
 
@@ -285,10 +285,12 @@ export default function Vendas() {
 
   async function handleSubmit() {
     let itensValidos = itens.filter(i => i.sabor_id && i.quantidade > 0);
-    // Add brinde as free item
-    if (Number(brindeQtd) > 0 && brindeSaborId) {
-      itensValidos.push({ sabor_id: brindeSaborId, quantidade: Number(brindeQtd), preco_unitario: "0", preco_auto: false });
-    }
+    // Add brindes as free items
+    brindes.forEach(b => {
+      if (Number(b.quantidade) > 0 && b.sabor_id) {
+        itensValidos.push({ sabor_id: b.sabor_id, quantidade: Number(b.quantidade), preco_unitario: "0", preco_auto: false });
+      }
+    });
     if (itensValidos.length === 0) return toast({ title: "Adicione ao menos um gelo com quantidade", variant: "destructive" });
     if (!clienteId) return toast({ title: "Selecione o cliente", variant: "destructive" });
 
@@ -327,8 +329,10 @@ export default function Vendas() {
       const vencInfo = (formaPagamento === "boleto" || formaPagamento === "parcelado") && dataVencimento
         ? ` | Vencimento: ${format(dataVencimento, "dd/MM/yyyy")}`
         : "";
-      const freteInfo = Number(valorFrete) > 0 ? ` | Frete: R$${Number(valorFrete).toFixed(2)}` : "";
-      const brindeInfo = Number(brindeQtd) > 0 && brindeSaborId ? ` | Brinde: ${brindeQtd}un` : "";
+      const freteInfo = Number(valorFrete) > 0 ? ` | Frete: R$${Number(valorFrete).toFixed(2)} (${fretePagoPor === "empresa" ? "empresa" : "cliente"})` : "";
+      const brindeInfo = brindes.filter(b => Number(b.quantidade) > 0 && b.sabor_id).length > 0 
+        ? ` | Brindes: ${brindes.filter(b => Number(b.quantidade) > 0 && b.sabor_id).map(b => `${b.quantidade}un`).join(", ")}` 
+        : "";
       await realizarVenda({
         p_cliente_id: clienteId, p_operador: "sistema",
         p_observacoes: observacoes
@@ -421,7 +425,7 @@ export default function Vendas() {
         }
       }
 
-      setOpen(false); setItens([]); setClienteId(""); setFormaPagamento("dinheiro"); setObservacoes(""); setNumeroNf(""); setDataVenda(new Date()); setValorTotal(""); setValorEntrada(""); setValorRestante(""); setDataVencimento(undefined); setIgnorarEstoque(false); setStatusVenda("pendente"); setDetalhePgto("especie"); setDetalhePix(""); setDetalheEspecie(""); setValorFrete(""); setBrindeQtd(""); setBrindeSaborId(""); setVendaPorPacote(false);
+      setOpen(false); setItens([]); setClienteId(""); setFormaPagamento("dinheiro"); setObservacoes(""); setNumeroNf(""); setDataVenda(new Date()); setValorTotal(""); setValorEntrada(""); setValorRestante(""); setDataVencimento(undefined); setIgnorarEstoque(false); setStatusVenda("pendente"); setDetalhePgto("especie"); setDetalhePix(""); setDetalheEspecie(""); setValorFrete(""); setFretePagoPor("cliente"); setBrindes([]); setVendaPorPacote(false);
       loadData();
     } catch (e: any) {
       toast({ title: "Erro na venda", description: e.message, variant: "destructive" });
@@ -540,8 +544,8 @@ export default function Vendas() {
     setStatusVenda("pendente");
     setIgnorarEstoque(false);
     setValorFrete("");
-    setBrindeQtd("");
-    setBrindeSaborId("");
+    setFretePagoPor("cliente");
+    setBrindes([]);
     setVendaPorPacote(false);
     setDetalhePgto("especie");
     setDetalhePix("");
@@ -855,7 +859,7 @@ export default function Vendas() {
                     </div>
                     {Number(valorFrete) > 0 && (
                       <div className="flex justify-between items-center text-sm">
-                        <span>Frete:</span>
+                        <span>Frete ({fretePagoPor === "empresa" ? "empresa" : "cliente"}):</span>
                         <span>R$ {Number(valorFrete).toFixed(2)}</span>
                       </div>
                     )}
@@ -863,12 +867,12 @@ export default function Vendas() {
                       <span>Total da Venda:</span>
                       <span className="text-lg">R$ {(itens.reduce((sum, item) => sum + (Number(item.preco_unitario) || 0) * (item.quantidade || 0), 0) + (Number(valorFrete) || 0)).toFixed(2)}</span>
                     </div>
-                    {Number(brindeQtd) > 0 && brindeSaborId && (
-                      <div className="flex justify-between items-center text-sm text-emerald-600">
+                    {brindes.filter(b => Number(b.quantidade) > 0 && b.sabor_id).map((b, i) => (
+                      <div key={i} className="flex justify-between items-center text-sm text-primary">
                         <span>🎁 Brinde:</span>
-                        <span>+{brindeQtd} un ({sabores.find(s => s.id === brindeSaborId)?.nome || "?"})</span>
+                        <span>+{b.quantidade} un ({sabores.find(s => s.id === b.sabor_id)?.nome || "?"})</span>
                       </div>
-                    )}
+                    ))}
                   </div>
                 )}
               </div>
@@ -973,17 +977,40 @@ export default function Vendas() {
                   <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
                   <Input type="number" step="0.01" min="0" className="pl-7" value={valorFrete} onChange={(e) => setValorFrete(e.target.value)} placeholder="0.00" />
                 </div>
+                {Number(valorFrete) > 0 && (
+                  <div className="flex items-center gap-4 mt-2">
+                    <Label className="text-xs text-muted-foreground">Pago por:</Label>
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="frete-cliente" checked={fretePagoPor === "cliente"} onCheckedChange={() => setFretePagoPor("cliente")} />
+                      <Label htmlFor="frete-cliente" className="text-xs cursor-pointer">Cliente</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="frete-empresa" checked={fretePagoPor === "empresa"} onCheckedChange={() => setFretePagoPor("empresa")} />
+                      <Label htmlFor="frete-empresa" className="text-xs cursor-pointer">Empresa</Label>
+                    </div>
+                  </div>
+                )}
               </div>
-              {/* Brinde */}
+              {/* Brindes */}
               <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
-                <Label className="text-xs font-medium">🎁 Brinde (opcional)</Label>
-                <div className="flex gap-2">
-                  <Select value={brindeSaborId} onValueChange={setBrindeSaborId}>
-                    <SelectTrigger className="flex-1"><SelectValue placeholder="Sabor do brinde" /></SelectTrigger>
-                    <SelectContent>{sabores.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}</SelectContent>
-                  </Select>
-                  <Input type="number" min={0} className="w-20" value={brindeQtd} onChange={(e) => setBrindeQtd(e.target.value)} placeholder="Qtd" />
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-medium">🎁 Brindes (opcional)</Label>
+                  <Button type="button" size="sm" variant="ghost" className="h-6 text-xs gap-1" onClick={() => setBrindes([...brindes, { sabor_id: "", quantidade: "" }])}>
+                    <Plus className="h-3 w-3" /> Add
+                  </Button>
                 </div>
+                {brindes.map((b, i) => (
+                  <div key={i} className="flex gap-2 items-center">
+                    <Select value={b.sabor_id} onValueChange={(v) => { const updated = [...brindes]; updated[i].sabor_id = v; setBrindes(updated); }}>
+                      <SelectTrigger className="flex-1"><SelectValue placeholder="Sabor" /></SelectTrigger>
+                      <SelectContent>{sabores.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Input type="number" min={0} className="w-20" value={b.quantidade} onChange={(e) => { const updated = [...brindes]; updated[i].quantidade = e.target.value; setBrindes(updated); }} placeholder="Qtd" />
+                    <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => setBrindes(brindes.filter((_, idx) => idx !== i))}>
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
               </div>
               {/* Venda por Pacote (Sacos) */}
               {factoryUsaSacos && (
