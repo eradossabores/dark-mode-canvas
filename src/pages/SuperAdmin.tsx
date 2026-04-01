@@ -640,15 +640,24 @@ export default function SuperAdmin() {
             <div className="space-y-4 pt-2">
               <div>
                 <Label>Nome do Sócio</Label>
-                <Input placeholder="Nome completo" value={newAdmin.name} onChange={(e) => setNewAdmin({ ...newAdmin, name: e.target.value })} />
+                <Input placeholder="Ex: Carlos Sheik" value={newAdmin.name} onChange={(e) => {
+                  const name = e.target.value;
+                  const slug = name.trim().toLowerCase().replace(/\s+/g, "").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                  const capitalizedSlug = slug.charAt(0).toUpperCase() + slug.slice(1);
+                  setNewAdmin({
+                    name,
+                    email: slug ? `${slug}@icetech.com` : "",
+                    password: slug ? `${capitalizedSlug}@2026` : "",
+                  });
+                }} />
               </div>
               <div>
-                <Label>Email</Label>
-                <Input type="email" placeholder="socio@email.com" value={newAdmin.email} onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })} />
+                <Label>Email (gerado automaticamente)</Label>
+                <Input type="email" value={newAdmin.email} onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })} />
               </div>
               <div>
-                <Label>Senha Inicial</Label>
-                <Input type="text" placeholder="Senha do sócio" value={newAdmin.password} onChange={(e) => setNewAdmin({ ...newAdmin, password: e.target.value })} />
+                <Label>Senha Inicial (gerada automaticamente)</Label>
+                <Input type="text" value={newAdmin.password} onChange={(e) => setNewAdmin({ ...newAdmin, password: e.target.value })} />
               </div>
               <Button className="w-full" onClick={handleAddAdmin} disabled={addingAdmin}>
                 {addingAdmin ? "Adicionando..." : "Adicionar Administrador"}
