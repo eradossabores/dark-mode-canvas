@@ -33,7 +33,7 @@ const STATUS_VENDA = [
 ];
 
 export default function RelatorioVendas() {
-  const { factoryId } = useAuth();
+  const { factoryId, factoryName, branding } = useAuth();
   const [vendas, setVendas] = useState<any[]>([]);
   const [itens, setItens] = useState<any[]>([]);
   const [startDate, setStartDate] = useState<Date | undefined>(
@@ -179,7 +179,7 @@ export default function RelatorioVendas() {
             { label: "Período", value: periodoLabel },
             ...(filtroPagamento !== "todos" ? [{ label: "Filtro Pagamento", value: filtroPagamento.toUpperCase() }] : []),
             ...(filtroStatus !== "todos" ? [{ label: "Filtro Status", value: filtroStatus }] : []),
-          ], "charts-vendas")}
+          ], "charts-vendas", { factoryName: factoryName || undefined, factoryLogoUrl: branding?.logoUrl })}
           onExcel={() => exportToExcel(headers, rows, "Vendas", "relatorio-vendas")}
         />
       </DateRangeFilter>
