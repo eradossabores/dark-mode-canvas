@@ -4,6 +4,11 @@ import * as XLSX from "xlsx";
 import html2canvas from "html2canvas";
 import logoUrl from "@/assets/logo.png";
 
+export interface PDFBranding {
+  factoryName?: string;
+  factoryLogoUrl?: string | null;
+}
+
 function loadImageAsBase64(url: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -42,13 +47,17 @@ export async function exportToPDF(
   rows: (string | number)[][],
   filename: string,
   totals?: { label: string; value: string }[],
-  chartContainerId?: string
+  chartContainerId?: string,
+  branding?: PDFBranding
 ) {
   const doc = new jsPDF();
 
+  const useLogo = branding?.factoryLogoUrl || logoUrl;
+  const displayName = branding?.factoryName || "ICETECH";
+
   // Logo
   try {
-    const base64 = await loadImageAsBase64(logoUrl);
+    const base64 = await loadImageAsBase64(useLogo);
     doc.addImage(base64, "PNG", 14, 8, 30, 30);
   } catch {
     // sem logo
@@ -60,7 +69,7 @@ export async function exportToPDF(
   doc.text(title, 50, 20);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.text("ERA DOS SABORES", 50, 26);
+  doc.text(displayName, 50, 26);
   doc.setFontSize(8);
   doc.setTextColor(100);
   doc.text(`Gerado em: ${new Date().toLocaleDateString("pt-BR")} as ${new Date().toLocaleTimeString("pt-BR")}`, 50, 31);
@@ -77,7 +86,6 @@ export async function exportToPDF(
   if (chartContainerId) {
     const chartContainer = document.getElementById(chartContainerId);
     if (chartContainer) {
-      // Capturar cada card de gráfico individualmente
       const chartCards = chartContainer.querySelectorAll<HTMLElement>("[data-chart-export]");
       const elements = chartCards.length > 0 ? Array.from(chartCards) : [chartContainer];
 
@@ -86,9 +94,8 @@ export async function exportToPDF(
         if (imgData) {
           const imgWidth = 180;
           const imgHeight = (el.offsetHeight * imgWidth) / el.offsetWidth;
-          const scaledHeight = Math.min(imgHeight, 120); // max height per chart
+          const scaledHeight = Math.min(imgHeight, 120);
 
-          // Check if needs new page
           if (currentY + scaledHeight > 275) {
             doc.addPage();
             currentY = 15;
@@ -99,7 +106,6 @@ export async function exportToPDF(
         }
       }
 
-      // Add separator after charts
       if (currentY > 50) {
         if (currentY + 10 > 275) {
           doc.addPage();
@@ -128,7 +134,6 @@ export async function exportToPDF(
     const finalY = (doc as any).previousAutoTable?.finalY || (doc as any).lastAutoTable?.finalY || 60;
     let y = finalY + 10;
 
-    // Verificar se precisa de nova página
     if (y > 270) {
       doc.addPage();
       y = 20;
@@ -159,7 +164,7 @@ export async function exportToPDF(
     doc.setPage(i);
     doc.setFontSize(7);
     doc.setTextColor(150);
-    doc.text(`Era dos Sabores - Pagina ${i}/${pageCount}`, 14, 290);
+    doc.text(`${displayName} - Pagina ${i}/${pageCount}`, 14, 290);
     doc.text("Sistema de Gestao", 170, 290);
     doc.setTextColor(0);
   }
