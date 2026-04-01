@@ -2061,6 +2061,83 @@ export type Database = {
           },
         ]
       }
+      vendas_excluidas: {
+        Row: {
+          cliente_id: string | null
+          cliente_nome: string | null
+          data_venda: string | null
+          excluido_em: string
+          excluido_por: string | null
+          factory_id: string | null
+          forma_pagamento: string | null
+          id: string
+          itens: Json
+          motivo: string | null
+          numero_nf: string | null
+          observacoes: string | null
+          operador: string | null
+          parcelas: Json | null
+          status: string | null
+          total: number
+          valor_especie: number | null
+          valor_pago: number | null
+          valor_pix: number | null
+          venda_id: string
+        }
+        Insert: {
+          cliente_id?: string | null
+          cliente_nome?: string | null
+          data_venda?: string | null
+          excluido_em?: string
+          excluido_por?: string | null
+          factory_id?: string | null
+          forma_pagamento?: string | null
+          id?: string
+          itens?: Json
+          motivo?: string | null
+          numero_nf?: string | null
+          observacoes?: string | null
+          operador?: string | null
+          parcelas?: Json | null
+          status?: string | null
+          total?: number
+          valor_especie?: number | null
+          valor_pago?: number | null
+          valor_pix?: number | null
+          venda_id: string
+        }
+        Update: {
+          cliente_id?: string | null
+          cliente_nome?: string | null
+          data_venda?: string | null
+          excluido_em?: string
+          excluido_por?: string | null
+          factory_id?: string | null
+          forma_pagamento?: string | null
+          id?: string
+          itens?: Json
+          motivo?: string | null
+          numero_nf?: string | null
+          observacoes?: string | null
+          operador?: string | null
+          parcelas?: Json | null
+          status?: string | null
+          total?: number
+          valor_especie?: number | null
+          valor_pago?: number | null
+          valor_pix?: number | null
+          venda_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendas_excluidas_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
