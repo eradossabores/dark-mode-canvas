@@ -416,11 +416,19 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                             <span className="text-sm flex-1 truncate">{name}</span>
                             <Input
                               type="number" min="0" step="0.01"
-                              className="h-8 w-24 text-center text-sm"
+                              className="h-8 w-20 text-center text-sm"
                               placeholder="0"
                               value={itemQuantities[`insumo:${name}`] || ""}
                               onChange={e => setItemQuantities(prev => ({ ...prev, [`insumo:${name}`]: parseFloat(e.target.value) || 0 }))}
                             />
+                            <select
+                              className="h-8 rounded-md border border-input bg-background px-1.5 text-xs font-medium"
+                              value={itemUnits[`insumo:${name}`] || "g"}
+                              onChange={e => setItemUnits(prev => ({ ...prev, [`insumo:${name}`]: e.target.value }))}
+                            >
+                              <option value="g">g</option>
+                              <option value="kg">kg</option>
+                            </select>
                           </div>
                         ))}
                         {insumoOtherItems.length > 0 && (
@@ -431,11 +439,19 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                             <span className="text-sm flex-1 truncate">{name}</span>
                             <Input
                               type="number" min="0" step="0.01"
-                              className="h-8 w-24 text-center text-sm"
+                              className="h-8 w-20 text-center text-sm"
                               placeholder="0"
                               value={itemQuantities[`insumo:${name}`] || ""}
                               onChange={e => setItemQuantities(prev => ({ ...prev, [`insumo:${name}`]: parseFloat(e.target.value) || 0 }))}
                             />
+                            <select
+                              className="h-8 rounded-md border border-input bg-background px-1.5 text-xs font-medium"
+                              value={itemUnits[`insumo:${name}`] || "g"}
+                              onChange={e => setItemUnits(prev => ({ ...prev, [`insumo:${name}`]: e.target.value }))}
+                            >
+                              <option value="g">g</option>
+                              <option value="kg">kg</option>
+                            </select>
                           </div>
                         ))}
                       </>
