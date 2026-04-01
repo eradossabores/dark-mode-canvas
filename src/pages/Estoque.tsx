@@ -254,6 +254,7 @@ export default function Estoque() {
       await (supabase as any).from("movimentacoes_estoque").insert({
         tipo_item: "materia_prima", item_id: mpId, tipo_movimentacao: "entrada",
         quantidade: qtdEmGramas, referencia: "entrada_manual", operador: "sistema",
+        factory_id: factoryId,
       });
       await (supabase as any).from("auditoria").insert({
         usuario_nome: "sistema", modulo: "estoque", acao: "entrada_mp",
