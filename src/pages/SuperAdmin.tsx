@@ -611,6 +611,11 @@ export default function SuperAdmin() {
                   <Button size="sm" variant="outline" onClick={() => setAddAdminFactory(factory)}>
                     <UserPlus className="h-3.5 w-3.5 mr-1" /> Add Sócio
                   </Button>
+                  {factory.subscription?.status !== "blocked" && (
+                    <Button size="sm" variant="outline" className="col-span-2" onClick={() => setDetailsFactory(factory)}>
+                      <Users className="h-3.5 w-3.5 mr-1" /> Ver Sócios
+                    </Button>
+                  )}
                 </div>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>

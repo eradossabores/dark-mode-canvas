@@ -33,6 +33,7 @@ interface Props {
 }
 
 interface UserUsage {
+  userId: string;
   nome: string;
   email: string;
   role: string;
