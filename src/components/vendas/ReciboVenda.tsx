@@ -122,6 +122,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     };
 
     infoLabel("Cliente:", data.cliente_nome, y); y += 3.5;
+    if (data.numero_pedido) { infoLabel("Pedido:", `#${data.numero_pedido}`, y); y += 3.5; }
     infoLabel("Data:", data.data, y); y += 3.5;
     infoLabel("Pgto:", data.forma_pagamento, y); y += 3.5;
     if (data.numero_nf) { infoLabel("NF:", data.numero_nf, y); y += 3.5; }
