@@ -94,6 +94,22 @@ export default function SuperAdmin() {
         })
       );
 
+      // Sort: least time remaining first (trial expiring soonest, then active by period end, then others)
+      enriched.sort((a, b) => {
+        const getExpiry = (f: any) => {
+          const sub = f.subscription;
+          if (!sub) return Infinity;
+          if (sub.status === "trial" && sub.trial_start) {
+            return new Date(sub.trial_start).getTime() + 30 * 24 * 60 * 60 * 1000;
+          }
+          if (sub.current_period_end) {
+            return new Date(sub.current_period_end).getTime();
+          }
+          return Infinity;
+        };
+        return getExpiry(a) - getExpiry(b);
+      });
+
       setFactories(enriched);
     } catch (e: any) {
       toast({ title: "Erro ao carregar fábricas", description: e.message, variant: "destructive" });
