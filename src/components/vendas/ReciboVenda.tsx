@@ -19,6 +19,7 @@ interface ReciboData {
   data: string;
   forma_pagamento: string;
   numero_nf?: string;
+  numero_pedido?: number;
   total: number;
   itens: ReciboItem[];
   observacoes?: string;
