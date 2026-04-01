@@ -320,6 +320,7 @@ export default function Estoque() {
         quantidade: avariaQtd,
         motivo: avariaMotivo,
         operador: "sistema",
+        factory_id: factoryId,
       });
 
       // Deduct from stock
