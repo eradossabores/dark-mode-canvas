@@ -42,6 +42,8 @@ export default function Estoque() {
   const [embId, setEmbId] = useState("");
   const [embQtd, setEmbQtd] = useState(0);
   const [embModoEntrada, setEmbModoEntrada] = useState<"saquinho" | "bobina">("saquinho");
+  const [embBobinaQtd, setEmbBobinaQtd] = useState(0);
+  const [embBobinaPesoKg, setEmbBobinaPesoKg] = useState(0);
   const BOBINA_FATOR = 950; // 1kg de bobina = 950 saquinhos
 
   // Ajuste de estoque
