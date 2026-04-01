@@ -184,6 +184,7 @@ export default function Vendas() {
       data: new Date(v.created_at).toLocaleDateString("pt-BR"),
       forma_pagamento: getFormaPagamentoLabel(v),
       numero_nf: v.numero_nf || undefined,
+      numero_pedido: v.numero_pedido || undefined,
       total: Number(v.total),
       observacoes: (v.observacoes || "").replace(/^\[[^\]]*\]\s*/, "").trim() || undefined,
       telefone: clienteData?.telefone || undefined,
