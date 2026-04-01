@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Settings, Save, Loader2, Package, MapPin } from "lucide-react";
+import { Settings, Save, Loader2, Package, MapPin, Users } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -57,11 +61,64 @@ export default function ConfigurarFabrica() {
   const [savingAddr, setSavingAddr] = useState(false);
   const [fetchingCep, setFetchingCep] = useState(false);
 
+  // Partners/Sócios
+  const [partners, setPartners] = useState<any[]>([]);
+  const [loadingPartners, setLoadingPartners] = useState(true);
+
   useEffect(() => {
     loadReceitas();
     loadSacosConfig();
     loadAddress();
+    loadPartners();
   }, [factoryId]);
+
+  async function loadPartners() {
+    if (!factoryId) { setLoadingPartners(false); return; }
+    setLoadingPartners(true);
+    try {
+      // Get all users with roles for this factory (owners/admins)
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("user_id, role")
+        .eq("factory_id", factoryId)
+        .in("role", ["factory_owner", "admin"]);
+
+      if (!roles || roles.length === 0) { setPartners([]); setLoadingPartners(false); return; }
+
+      const userIds = roles.map(r => r.user_id);
+      
+      // Get profiles
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, nome, email")
+        .in("id", userIds);
+
+      // Get last session for each user
+      const { data: sessions } = await supabase
+        .from("user_sessions")
+        .select("user_id, last_seen_at")
+        .in("user_id", userIds)
+        .order("last_seen_at", { ascending: false });
+
+      const partnerList = roles.map(r => {
+        const profile = profiles?.find(p => p.id === r.user_id);
+        const lastSession = sessions?.find(s => s.user_id === r.user_id);
+        return {
+          user_id: r.user_id,
+          role: r.role,
+          nome: profile?.nome || "Sem nome",
+          email: profile?.email || "",
+          last_seen: lastSession?.last_seen_at || null,
+        };
+      });
+
+      setPartners(partnerList);
+    } catch (err) {
+      console.error("Erro ao carregar sócios:", err);
+    } finally {
+      setLoadingPartners(false);
+    }
+  }
 
   async function loadAddress() {
     if (!factoryId) { setLoadingAddr(false); return; }
@@ -271,6 +328,7 @@ export default function ConfigurarFabrica() {
           <TabsTrigger value="producao">⚙️ Produção</TabsTrigger>
           <TabsTrigger value="sacos">📦 Sacos</TabsTrigger>
           <TabsTrigger value="endereco">📍 Endereço / CNPJ</TabsTrigger>
+          <TabsTrigger value="socios">👥 Sócios</TabsTrigger>
         </TabsList>
 
         <TabsContent value="vendas">
@@ -591,6 +649,74 @@ export default function ConfigurarFabrica() {
                       <><Save className="h-4 w-4 mr-2" /> Salvar Endereço</>
                     )}
                   </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="socios">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Sócios e Administradores
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Usuários com acesso administrativo a esta fábrica.
+              </p>
+            </CardHeader>
+            <CardContent>
+              {loadingPartners ? (
+                <div className="flex items-center justify-center py-8 gap-2 text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Carregando...
+                </div>
+              ) : partners.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  Nenhum sócio ou administrador encontrado.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {partners.map((p) => {
+                    const initials = p.nome
+                      .split(" ")
+                      .map((n: string) => n[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase();
+                    const isOnlineRecently = p.last_seen && (Date.now() - new Date(p.last_seen).getTime()) < 5 * 60 * 1000;
+                    return (
+                      <div
+                        key={p.user_id}
+                        className="flex items-center gap-4 rounded-lg border p-4 hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="relative">
+                          <Avatar className="h-10 w-10">
+                            <AvatarFallback className="bg-primary/10 text-primary font-bold text-sm">
+                              {initials}
+                            </AvatarFallback>
+                          </Avatar>
+                          {isOnlineRecently && (
+                            <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-background" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{p.nome}</p>
+                          <p className="text-xs text-muted-foreground truncate">{p.email}</p>
+                        </div>
+                        <div className="text-right space-y-1">
+                          <Badge variant={p.role === "factory_owner" ? "default" : "secondary"} className="text-xs">
+                            {p.role === "factory_owner" ? "Dono" : "Admin"}
+                          </Badge>
+                          <p className="text-xs text-muted-foreground">
+                            {p.last_seen
+                              ? `${formatDistanceToNow(new Date(p.last_seen), { addSuffix: true, locale: ptBR })}`
+                              : "Nunca acessou"}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
