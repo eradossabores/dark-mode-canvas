@@ -268,12 +268,15 @@ export default function Estoque() {
 
 // ... keep existing code (addEstoqueEmb function)
   async function addEstoqueEmb() {
-    if (!embId || embQtd <= 0) return toast({ title: "Preencha todos os campos", variant: "destructive" });
+    if (!embId) return toast({ title: "Selecione a embalagem", variant: "destructive" });
+    if (embModoEntrada === "bobina" && (embBobinaQtd <= 0 || embBobinaPesoKg <= 0)) return toast({ title: "Preencha quantidade e peso por bobina", variant: "destructive" });
+    if (embModoEntrada === "saquinho" && embQtd <= 0) return toast({ title: "Preencha a quantidade", variant: "destructive" });
     try {
       const emb = embalagens.find((e) => e.id === embId);
-      const qtdSaquinhos = embModoEntrada === "bobina" ? Math.round(embQtd * BOBINA_FATOR) : embQtd;
+      const pesoTotalKg = embBobinaQtd * embBobinaPesoKg;
+      const qtdSaquinhos = embModoEntrada === "bobina" ? Math.round(pesoTotalKg * BOBINA_FATOR) : embQtd;
       const descEntrada = embModoEntrada === "bobina"
-        ? `Entrada de ${embQtd} kg (bobina) = ${qtdSaquinhos} saquinhos de ${emb.nome}`
+        ? `Entrada de ${embBobinaQtd} bobina(s) x ${embBobinaPesoKg} kg = ${pesoTotalKg} kg = ${qtdSaquinhos} saquinhos de ${emb.nome}`
         : `Entrada de ${embQtd} un. de ${emb.nome}`;
       await (supabase as any).from("embalagens").update({ estoque_atual: emb.estoque_atual + qtdSaquinhos }).eq("id", embId);
       await (supabase as any).from("movimentacoes_estoque").insert({
