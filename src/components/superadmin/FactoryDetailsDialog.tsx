@@ -130,6 +130,7 @@ export default function FactoryDetailsDialog({ open, onOpenChange, factory, onAd
         const profile = profileMap[uid];
         const sess = sessionMap[uid] || { total: 0, count: 0, first: null, last: null };
         return {
+          userId: uid,
           nome: profile?.nome || "Desconhecido",
           email: profile?.email || "",
           role: roleMap[uid] || "N/A",
