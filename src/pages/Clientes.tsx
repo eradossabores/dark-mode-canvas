@@ -160,13 +160,13 @@ export default function Clientes() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold">Clientes</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+        <h1 className="text-xl sm:text-2xl font-bold">Clientes</h1>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => navigate("/painel/mapa-clientes")}>
-            <Map className="mr-2 h-4 w-4" /> Ver no mapa
+          <Button variant="outline" size="sm" className="text-xs sm:text-sm" onClick={() => navigate("/painel/mapa-clientes")}>
+            <Map className="mr-1 sm:mr-2 h-4 w-4" /> <span className="hidden sm:inline">Ver no </span>Mapa
           </Button>
-          <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" />Novo Cliente</Button>
+          <Button size="sm" className="text-xs sm:text-sm" onClick={openNew}><Plus className="h-4 w-4 mr-1" />Novo Cliente</Button>
         </div>
       </div>
 
