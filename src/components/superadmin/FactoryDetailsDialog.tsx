@@ -65,7 +65,7 @@ function formatDurationLong(totalMinutes: number) {
   return parts.join(", ") || "Menos de 1 minuto";
 }
 
-export default function FactoryDetailsDialog({ open, onOpenChange, factory }: Props) {
+export default function FactoryDetailsDialog({ open, onOpenChange, factory, onAddAdmin }: Props) {
   const [details, setDetails] = useState<any>(null);
   const [usageData, setUsageData] = useState<UserUsage[]>([]);
   const [loading, setLoading] = useState(true);
