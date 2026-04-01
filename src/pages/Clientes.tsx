@@ -160,13 +160,13 @@ export default function Clientes() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold">Clientes</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+        <h1 className="text-xl sm:text-2xl font-bold">Clientes</h1>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => navigate("/painel/mapa-clientes")}>
-            <Map className="mr-2 h-4 w-4" /> Ver no mapa
+          <Button variant="outline" size="sm" className="text-xs sm:text-sm" onClick={() => navigate("/painel/mapa-clientes")}>
+            <Map className="mr-1 sm:mr-2 h-4 w-4" /> <span className="hidden sm:inline">Ver no </span>Mapa
           </Button>
-          <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" />Novo Cliente</Button>
+          <Button size="sm" className="text-xs sm:text-sm" onClick={openNew}><Plus className="h-4 w-4 mr-1" />Novo Cliente</Button>
         </div>
       </div>
 
@@ -235,6 +235,47 @@ export default function Clientes() {
 
       <Card>
         <CardContent className="pt-6">
+          {/* Mobile card view */}
+          <div className="block sm:hidden space-y-2">
+            {clientesFiltrados.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((c) => {
+              const dias = diasSemComprar(c.ultima_compra);
+              return (
+                <div key={c.id} className="rounded-lg border bg-card p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-sm truncate max-w-[60%]">{c.nome}</span>
+                    <Badge
+                      variant={c.status === "ativo" ? "default" : "destructive"}
+                      className="cursor-pointer text-[10px]"
+                      onClick={() => handleToggleStatus(c)}
+                    >{c.status}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{c.telefone || "Sem telefone"}</span>
+                    <span>{dias !== null ? (
+                      <span className={dias > 30 ? "text-destructive font-semibold" : ""}>{dias}d sem comprar</span>
+                    ) : "Nunca comprou"}</span>
+                  </div>
+                  {(c.possui_freezer || c.preco_padrao_personalizado) && (
+                    <div className="flex items-center gap-2 text-xs">
+                      {c.possui_freezer && <Badge variant="outline" className="text-[10px]">❄ {c.freezer_identificacao || "Freezer"}</Badge>}
+                      {c.preco_padrao_personalizado && <Badge variant="secondary" className="text-[10px]">R$ {Number(c.preco_padrao_personalizado).toFixed(2)}</Badge>}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1 pt-1 border-t">
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openClienteOnMap(c.id)}><Map className="h-3.5 w-3.5" /></Button>
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setHistoricoCliente({ id: c.id, nome: c.nome })}><History className="h-3.5 w-3.5" /></Button>
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEdit(c)}><Pencil className="h-3.5 w-3.5" /></Button>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 ml-auto" onClick={() => setDeleteId(c.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                  </div>
+                </div>
+              );
+            })}
+            {clientesFiltrados.length === 0 && (
+              <p className="text-center text-muted-foreground py-8 text-sm">Nenhum cliente encontrado.</p>
+            )}
+          </div>
+          {/* Desktop table view */}
+          <div className="hidden sm:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -286,9 +327,10 @@ export default function Clientes() {
               )}
             </TableBody>
           </Table>
+          </div>
           {clientesFiltrados.length > PAGE_SIZE && (
             <div className="flex items-center justify-between mt-4">
-              <span className="text-sm text-muted-foreground">
+              <span className="text-xs sm:text-sm text-muted-foreground">
                 {page * PAGE_SIZE + 1}-{Math.min((page + 1) * PAGE_SIZE, clientesFiltrados.length)} de {clientesFiltrados.length}
               </span>
               <div className="flex gap-2">
