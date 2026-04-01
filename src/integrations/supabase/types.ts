@@ -747,7 +747,13 @@ export type Database = {
       }
       factories: {
         Row: {
+          bairro: string | null
+          cep: string | null
+          cidade: string | null
+          cnpj: string | null
           created_at: string | null
+          endereco: string | null
+          estado: string | null
           id: string
           latitude: number | null
           logo_url: string | null
@@ -761,7 +767,13 @@ export type Database = {
           usa_sacos: boolean
         }
         Insert: {
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
           created_at?: string | null
+          endereco?: string | null
+          estado?: string | null
           id?: string
           latitude?: number | null
           logo_url?: string | null
@@ -775,7 +787,13 @@ export type Database = {
           usa_sacos?: boolean
         }
         Update: {
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
           created_at?: string | null
+          endereco?: string | null
+          estado?: string | null
           id?: string
           latitude?: number | null
           logo_url?: string | null
