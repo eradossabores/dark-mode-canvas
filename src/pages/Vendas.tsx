@@ -530,6 +530,34 @@ export default function Vendas() {
     setDetailOpen(true);
   }
 
+  async function duplicarVenda(v: any) {
+    const { data: vendaItens } = await (supabase as any).from("venda_itens").select("*, sabores(nome)").eq("venda_id", v.id);
+    setClienteId(v.cliente_id || "");
+    setFormaPagamento(v.forma_pagamento || "dinheiro");
+    setObservacoes(v.observacoes || "");
+    setNumeroNf("");
+    setDataVenda(new Date());
+    setStatusVenda("pendente");
+    setIgnorarEstoque(false);
+    setValorFrete("");
+    setBrindeQtd("");
+    setBrindeSaborId("");
+    setVendaPorPacote(false);
+    setDetalhePgto("especie");
+    setDetalhePix("");
+    setDetalheEspecie("");
+    if (vendaItens && vendaItens.length > 0) {
+      setItens(vendaItens.map((i: any) => ({
+        sabor_id: i.sabor_id,
+        quantidade: i.quantidade,
+        preco_unitario: String(i.preco_unitario),
+        preco_auto: false,
+      })));
+    }
+    setOpen(true);
+    toast({ title: "Comanda duplicada!", description: "Revise os dados e confirme a nova venda." });
+  }
+
   async function handleCancel() {
     if (!cancelId) return;
     try {
