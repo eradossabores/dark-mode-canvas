@@ -1015,7 +1015,7 @@ export default function Estoque() {
                     {embalagens.map((e) => (
                       <TableRow key={e.id}>
                         <TableCell>{e.nome}</TableCell>
-                        <TableCell>{e.estoque_atual} un.</TableCell>
+                        <TableCell>{e.estoque_atual} un. <span className="text-xs text-muted-foreground">({((e.estoque_atual || 0) / BOBINA_FATOR).toFixed(2)} kg)</span></TableCell>
                         <TableCell className="text-right">
                           <Button variant="outline" size="sm" onClick={() => openAjusteDialog("emb", e.id, e.estoque_atual)}>
                             <Settings2 className="h-3 w-3 mr-1" /> Ajustar
@@ -1031,7 +1031,7 @@ export default function Estoque() {
                   <div key={e.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
                     <div>
                       <p className="font-medium text-sm">{e.nome}</p>
-                      <p className="text-xs text-muted-foreground">{e.estoque_atual} un.</p>
+                      <p className="text-xs text-muted-foreground">{e.estoque_atual} un. ({((e.estoque_atual || 0) / BOBINA_FATOR).toFixed(2)} kg)</p>
                     </div>
                     <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => openAjusteDialog("emb", e.id, e.estoque_atual)}>
                       <Settings2 className="h-3.5 w-3.5" />
