@@ -359,6 +359,7 @@ export default function Estoque() {
             quantidade: avariaQtd,
             referencia: "avaria",
             operador: "sistema",
+            factory_id: factoryId,
           });
           embDescricao = " (com perda de embalagem)";
         }
