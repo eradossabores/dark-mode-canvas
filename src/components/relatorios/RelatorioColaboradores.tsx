@@ -168,7 +168,7 @@ export default function RelatorioColaboradores() {
             { label: "Total Dias Trabalhados", value: dados.totalDias.toString() },
             { label: "Unidades Produzidas", value: dados.totalUnidades.toLocaleString("pt-BR") },
             { label: "Período", value: periodoLabel },
-          ], "charts-colaboradores")}
+          ], "charts-colaboradores", { factoryName: factoryName || undefined, factoryLogoUrl: branding?.logoUrl })}
           onExcel={() => exportToExcel(headers, rows, "Colaboradores", "relatorio-colaboradores")}
         />
       </DateRangeFilter>

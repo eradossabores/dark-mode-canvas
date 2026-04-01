@@ -128,7 +128,7 @@ export default function RelatorioInadimplencia() {
             { label: "Parcelas Vencidas", value: parcelasVencidas.length.toString() },
             { label: "Clientes Devedores", value: clienteDebitos.length.toString() },
             ...(filtroFaixa !== "todos" ? [{ label: "Filtro Faixa", value: filtroFaixa }] : []),
-          ], "charts-inadimplencia")}
+          ], "charts-inadimplencia", { factoryName: factoryName || undefined, factoryLogoUrl: branding?.logoUrl })}
           onExcel={() => exportToExcel(headers, rows, "Inadimplência", "relatorio-inadimplencia")}
         />
       </div>
