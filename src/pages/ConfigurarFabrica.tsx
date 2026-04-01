@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Settings, Save, Loader2, Package } from "lucide-react";
+import { Settings, Save, Loader2, Package, MapPin } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -26,6 +26,17 @@ interface ConfigGeral {
   quantidade_insumo_agua_coco: number;
 }
 
+interface FactoryAddress {
+  endereco: string;
+  bairro: string;
+  cidade: string;
+  estado: string;
+  cep: string;
+  cnpj: string;
+  latitude: number | null;
+  longitude: number | null;
+}
+
 export default function ConfigurarFabrica() {
   const { factoryId } = useAuth();
   const [receitas, setReceitas] = useState<ReceitaRaw[]>([]);
@@ -40,10 +51,114 @@ export default function ConfigurarFabrica() {
   const [savingSacos, setSavingSacos] = useState(false);
   const [loadingSacos, setLoadingSacos] = useState(true);
 
+  // Address config
+  const [address, setAddress] = useState<FactoryAddress>({ endereco: "", bairro: "", cidade: "", estado: "SP", cep: "", cnpj: "", latitude: null, longitude: null });
+  const [loadingAddr, setLoadingAddr] = useState(true);
+  const [savingAddr, setSavingAddr] = useState(false);
+  const [fetchingCep, setFetchingCep] = useState(false);
+
   useEffect(() => {
     loadReceitas();
     loadSacosConfig();
+    loadAddress();
   }, [factoryId]);
+
+  async function loadAddress() {
+    if (!factoryId) { setLoadingAddr(false); return; }
+    setLoadingAddr(true);
+    try {
+      const { data } = await (supabase as any)
+        .from("factories")
+        .select("endereco, bairro, cidade, estado, cep, cnpj, latitude, longitude")
+        .eq("id", factoryId)
+        .single();
+      if (data) {
+        setAddress({
+          endereco: data.endereco || "",
+          bairro: data.bairro || "",
+          cidade: data.cidade || "",
+          estado: data.estado || "SP",
+          cep: data.cep || "",
+          cnpj: data.cnpj || "",
+          latitude: data.latitude,
+          longitude: data.longitude,
+        });
+      }
+    } catch { /* ignore */ }
+    setLoadingAddr(false);
+  }
+
+  async function handleCepLookup(cep: string) {
+    const cleanCep = cep.replace(/\D/g, "");
+    if (cleanCep.length !== 8) return;
+    setFetchingCep(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+      const data = await res.json();
+      if (!data.erro) {
+        const newAddr = {
+          ...address,
+          cep,
+          endereco: data.logradouro || address.endereco,
+          bairro: data.bairro || address.bairro,
+          cidade: data.localidade || address.cidade,
+          estado: data.uf || address.estado,
+        };
+        setAddress(newAddr);
+
+        // Geocode city to update map center
+        try {
+          const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(`${newAddr.cidade}, ${newAddr.estado}, Brasil`)}&format=json&limit=1`);
+          const geoData = await geoRes.json();
+          if (geoData.length > 0) {
+            setAddress(prev => ({ ...prev, latitude: parseFloat(geoData[0].lat), longitude: parseFloat(geoData[0].lon) }));
+          }
+        } catch { /* geocoding optional */ }
+
+        toast({ title: "CEP encontrado!", description: `${data.localidade} - ${data.uf}` });
+      } else {
+        toast({ title: "CEP não encontrado", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Erro ao buscar CEP", variant: "destructive" });
+    }
+    setFetchingCep(false);
+  }
+
+  async function handleSaveAddress() {
+    if (!factoryId) return;
+    setSavingAddr(true);
+    try {
+      await (supabase as any).from("factories").update({
+        endereco: address.endereco || null,
+        bairro: address.bairro || null,
+        cidade: address.cidade || null,
+        estado: address.estado || null,
+        cep: address.cep || null,
+        cnpj: address.cnpj || null,
+        latitude: address.latitude,
+        longitude: address.longitude,
+      }).eq("id", factoryId);
+      toast({ title: "Endereço salvo com sucesso!" });
+    } catch (e: any) {
+      toast({ title: "Erro ao salvar", description: e.message, variant: "destructive" });
+    }
+    setSavingAddr(false);
+  }
+
+  function formatCnpj(value: string) {
+    const digits = value.replace(/\D/g, "").slice(0, 14);
+    return digits
+      .replace(/^(\d{2})(\d)/, "$1.$2")
+      .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+      .replace(/\.(\d{3})(\d)/, ".$1/$2")
+      .replace(/(\d{4})(\d)/, "$1-$2");
+  }
+
+  function formatCep(value: string) {
+    const digits = value.replace(/\D/g, "").slice(0, 8);
+    return digits.replace(/^(\d{5})(\d)/, "$1-$2");
+  }
 
   async function loadSacosConfig() {
     if (!factoryId) { setLoadingSacos(false); return; }
