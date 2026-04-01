@@ -42,7 +42,7 @@ interface FactoryAddress {
 export default function ConfigurarFabrica() {
   const { factoryId } = useAuth();
   const [receitas, setReceitas] = useState<ReceitaRaw[]>([]);
-  const [config, setConfig] = useState<ConfigGeral>({ gelos_por_lote: 84, quantidade_insumo_geral: 400, quantidade_insumo_agua_coco: 500 });
+  const [config, setConfig] = useState<ConfigGeral>({ gelos_por_lote: 84 });
   const [loadingRec, setLoadingRec] = useState(true);
   const [savingRec, setSavingRec] = useState(false);
 
