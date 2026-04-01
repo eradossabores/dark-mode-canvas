@@ -74,6 +74,10 @@ export default function FactoryDetailsDialog({ open, onOpenChange, factory, onAd
   const [details, setDetails] = useState<any>(null);
   const [usageData, setUsageData] = useState<UserUsage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingSocio, setEditingSocio] = useState<UserUsage | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editPassword, setEditPassword] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -81,6 +85,69 @@ export default function FactoryDetailsDialog({ open, onOpenChange, factory, onAd
       loadUsageData();
     }
   }, [open]);
+
+  async function handleDeleteSocio(userId: string, nome: string) {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ user_id: userId }),
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Erro ao excluir");
+      toast({ title: "Sócio excluído", description: `${nome} foi removido com sucesso.` });
+      loadUsageData();
+    } catch (e: any) {
+      toast({ title: "Erro ao excluir sócio", description: e.message, variant: "destructive" });
+    }
+  }
+
+  async function handleSaveEdit() {
+    if (!editingSocio) return;
+    setSaving(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+
+      // Update name in profiles
+      if (editName && editName !== editingSocio.nome) {
+        const { error } = await (supabase as any)
+          .from("profiles")
+          .update({ nome: editName })
+          .eq("id", editingSocio.userId);
+        if (error) throw error;
+      }
+
+      // Update password if provided
+      if (editPassword) {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-password`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ user_id: editingSocio.userId, new_password: editPassword }),
+          }
+        );
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Erro ao atualizar senha");
+      }
+
+      toast({ title: "Sócio atualizado com sucesso!" });
+      setEditingSocio(null);
+      setEditName("");
+      setEditPassword("");
+      loadUsageData();
+    } catch (e: any) {
+      toast({ title: "Erro ao salvar", description: e.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function loadUsageData() {
     try {
