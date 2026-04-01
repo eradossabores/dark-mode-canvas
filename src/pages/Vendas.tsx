@@ -1376,6 +1376,7 @@ export default function Vendas() {
                 );
                 return filteredVendas.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((v) => (
                   <TableRow key={v.id}>
+                    <TableCell className="font-bold text-primary">#{v.numero_pedido || "-"}</TableCell>
                     <TableCell>{new Date(v.created_at).toLocaleDateString("pt-BR")}</TableCell>
                     <TableCell>{v.clientes?.nome}</TableCell>
                     <TableCell className="text-right font-medium">{v.totalUnidades || 0}</TableCell>
