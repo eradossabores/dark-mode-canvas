@@ -544,8 +544,8 @@ export default function Vendas() {
     setStatusVenda("pendente");
     setIgnorarEstoque(false);
     setValorFrete("");
-    setBrindeQtd("");
-    setBrindeSaborId("");
+    setFretePagoPor("cliente");
+    setBrindes([]);
     setVendaPorPacote(false);
     setDetalhePgto("especie");
     setDetalhePix("");
