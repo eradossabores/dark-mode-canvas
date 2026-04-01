@@ -42,6 +42,8 @@ export default function Estoque() {
   const [embId, setEmbId] = useState("");
   const [embQtd, setEmbQtd] = useState(0);
   const [embModoEntrada, setEmbModoEntrada] = useState<"saquinho" | "bobina">("saquinho");
+  const [embBobinaQtd, setEmbBobinaQtd] = useState(0);
+  const [embBobinaPesoKg, setEmbBobinaPesoKg] = useState(0);
   const BOBINA_FATOR = 950; // 1kg de bobina = 950 saquinhos
 
   // Ajuste de estoque
@@ -266,12 +268,15 @@ export default function Estoque() {
 
 // ... keep existing code (addEstoqueEmb function)
   async function addEstoqueEmb() {
-    if (!embId || embQtd <= 0) return toast({ title: "Preencha todos os campos", variant: "destructive" });
+    if (!embId) return toast({ title: "Selecione a embalagem", variant: "destructive" });
+    if (embModoEntrada === "bobina" && (embBobinaQtd <= 0 || embBobinaPesoKg <= 0)) return toast({ title: "Preencha quantidade e peso por bobina", variant: "destructive" });
+    if (embModoEntrada === "saquinho" && embQtd <= 0) return toast({ title: "Preencha a quantidade", variant: "destructive" });
     try {
       const emb = embalagens.find((e) => e.id === embId);
-      const qtdSaquinhos = embModoEntrada === "bobina" ? Math.round(embQtd * BOBINA_FATOR) : embQtd;
+      const pesoTotalKg = embBobinaQtd * embBobinaPesoKg;
+      const qtdSaquinhos = embModoEntrada === "bobina" ? Math.round(pesoTotalKg * BOBINA_FATOR) : embQtd;
       const descEntrada = embModoEntrada === "bobina"
-        ? `Entrada de ${embQtd} kg (bobina) = ${qtdSaquinhos} saquinhos de ${emb.nome}`
+        ? `Entrada de ${embBobinaQtd} bobina(s) x ${embBobinaPesoKg} kg = ${pesoTotalKg} kg = ${qtdSaquinhos} saquinhos de ${emb.nome}`
         : `Entrada de ${embQtd} un. de ${emb.nome}`;
       await (supabase as any).from("embalagens").update({ estoque_atual: emb.estoque_atual + qtdSaquinhos }).eq("id", embId);
       await (supabase as any).from("movimentacoes_estoque").insert({
@@ -285,6 +290,8 @@ export default function Estoque() {
       toast({ title: "Estoque atualizado!", description: descEntrada });
       setOpenEmb(false);
       setEmbQtd(0);
+      setEmbBobinaQtd(0);
+      setEmbBobinaPesoKg(0);
       setEmbModoEntrada("saquinho");
       loadData();
     } catch (e: any) {
@@ -942,7 +949,7 @@ export default function Estoque() {
             </div>
           )}
           <div className="flex justify-end mb-4">
-            <Dialog open={openEmb} onOpenChange={(o) => { setOpenEmb(o); if (!o) { setEmbModoEntrada("saquinho"); setEmbQtd(0); } }}>
+            <Dialog open={openEmb} onOpenChange={(o) => { setOpenEmb(o); if (!o) { setEmbModoEntrada("saquinho"); setEmbQtd(0); setEmbBobinaQtd(0); setEmbBobinaPesoKg(0); } }}>
               <DialogTrigger asChild>
                 <Button><Plus className="h-4 w-4 mr-2" />Entrada Embalagem</Button>
               </DialogTrigger>
@@ -956,7 +963,7 @@ export default function Estoque() {
                         type="button"
                         variant={embModoEntrada === "saquinho" ? "default" : "outline"}
                         className="flex-1"
-                        onClick={() => { setEmbModoEntrada("saquinho"); setEmbQtd(0); }}
+                        onClick={() => { setEmbModoEntrada("saquinho"); setEmbQtd(0); setEmbBobinaQtd(0); setEmbBobinaPesoKg(0); }}
                       >
                         📦 Saquinho
                       </Button>
@@ -964,7 +971,7 @@ export default function Estoque() {
                         type="button"
                         variant={embModoEntrada === "bobina" ? "default" : "outline"}
                         className="flex-1"
-                        onClick={() => { setEmbModoEntrada("bobina"); setEmbQtd(0); }}
+                        onClick={() => { setEmbModoEntrada("bobina"); setEmbQtd(0); setEmbBobinaQtd(0); setEmbBobinaPesoKg(0); }}
                       >
                         🔄 Bobina (kg)
                       </Button>
@@ -979,22 +986,56 @@ export default function Estoque() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
-                    <Label>{embModoEntrada === "bobina" ? "Peso (kg)" : "Quantidade (unidades)"}</Label>
-                    <Input
-                      type="number"
-                      min={0}
-                      step={embModoEntrada === "bobina" ? "0.1" : "1"}
-                      value={embQtd || ""}
-                      onChange={(e) => setEmbQtd(Number(e.target.value))}
-                    />
-                    {embModoEntrada === "bobina" && embQtd > 0 && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        = <span className="font-bold text-foreground">{Math.round(embQtd * BOBINA_FATOR).toLocaleString()}</span> saquinhos
-                        <span className="text-xs ml-1">(1 kg = {BOBINA_FATOR} un.)</span>
-                      </p>
-                    )}
-                  </div>
+                  {embModoEntrada === "bobina" ? (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label>Qtd. Bobinas</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            step="1"
+                            value={embBobinaQtd || ""}
+                            onChange={(e) => setEmbBobinaQtd(Number(e.target.value))}
+                            placeholder="Ex: 5"
+                          />
+                        </div>
+                        <div>
+                          <Label>Peso por Bobina (kg)</Label>
+                          <Input
+                            type="number"
+                            min={0.1}
+                            step="0.1"
+                            value={embBobinaPesoKg || ""}
+                            onChange={(e) => setEmbBobinaPesoKg(Number(e.target.value))}
+                            placeholder="Ex: 7"
+                          />
+                        </div>
+                      </div>
+                      {embBobinaQtd > 0 && embBobinaPesoKg > 0 && (
+                        <div className="rounded-lg border bg-muted/50 p-3 space-y-1">
+                          <p className="text-sm font-medium">
+                            {embBobinaQtd} bobina(s) × {embBobinaPesoKg} kg = <span className="text-primary font-bold">{(embBobinaQtd * embBobinaPesoKg).toFixed(1)} kg</span>
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            = <span className="font-bold text-foreground">{Math.round(embBobinaQtd * embBobinaPesoKg * BOBINA_FATOR).toLocaleString()}</span> saquinhos
+                            <span className="text-xs ml-1">(1 kg = {BOBINA_FATOR} un.)</span>
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      <Label>Quantidade (unidades)</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        step="1"
+                        value={embQtd || ""}
+                        onChange={(e) => setEmbQtd(Number(e.target.value))}
+                      />
+                    </div>
+                  )}
                   <Button className="w-full" onClick={addEstoqueEmb}>Confirmar Entrada</Button>
                 </div>
               </DialogContent>
