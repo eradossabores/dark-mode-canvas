@@ -269,18 +269,23 @@ export default function Estoque() {
     if (!embId || embQtd <= 0) return toast({ title: "Preencha todos os campos", variant: "destructive" });
     try {
       const emb = embalagens.find((e) => e.id === embId);
-      await (supabase as any).from("embalagens").update({ estoque_atual: emb.estoque_atual + embQtd }).eq("id", embId);
+      const qtdSaquinhos = embModoEntrada === "bobina" ? Math.round(embQtd * BOBINA_FATOR) : embQtd;
+      const descEntrada = embModoEntrada === "bobina"
+        ? `Entrada de ${embQtd} kg (bobina) = ${qtdSaquinhos} saquinhos de ${emb.nome}`
+        : `Entrada de ${embQtd} un. de ${emb.nome}`;
+      await (supabase as any).from("embalagens").update({ estoque_atual: emb.estoque_atual + qtdSaquinhos }).eq("id", embId);
       await (supabase as any).from("movimentacoes_estoque").insert({
         tipo_item: "embalagem", item_id: embId, tipo_movimentacao: "entrada",
-        quantidade: embQtd, referencia: "entrada_manual", operador: "sistema",
+        quantidade: qtdSaquinhos, referencia: "entrada_manual", operador: "sistema",
       });
       await (supabase as any).from("auditoria").insert({
         usuario_nome: "sistema", modulo: "estoque", acao: "entrada_embalagem",
-        registro_afetado: embId, descricao: `Entrada de ${embQtd} un. de ${emb.nome}`,
+        registro_afetado: embId, descricao: descEntrada,
       });
-      toast({ title: "Estoque atualizado!" });
+      toast({ title: "Estoque atualizado!", description: descEntrada });
       setOpenEmb(false);
       setEmbQtd(0);
+      setEmbModoEntrada("saquinho");
       loadData();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
