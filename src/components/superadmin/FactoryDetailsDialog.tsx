@@ -11,6 +11,7 @@ import { ptBR } from "date-fns/locale";
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onAddAdmin?: () => void;
   factory: {
     id: string;
     name: string;
