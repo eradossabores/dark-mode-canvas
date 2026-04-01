@@ -243,6 +243,44 @@ export default function SuperAdmin() {
     }
   }
 
+  async function handleAddAdmin() {
+    if (!addAdminFactory || !newAdmin.email || !newAdmin.password || !newAdmin.name) {
+      toast({ title: "Preencha todos os campos", variant: "destructive" });
+      return;
+    }
+    setAddingAdmin(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/add-factory-admin`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            email: newAdmin.email,
+            password: newAdmin.password,
+            nome: newAdmin.name,
+            factory_id: addAdminFactory.id,
+          }),
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Erro ao adicionar admin");
+      toast({ title: "Administrador adicionado!", description: `${newAdmin.name} agora é admin de ${addAdminFactory.name}` });
+      setAddAdminFactory(null);
+      setNewAdmin({ email: "", password: "", name: "" });
+      loadFactories();
+    } catch (e: any) {
+      toast({ title: "Erro ao adicionar admin", description: e.message, variant: "destructive" });
+    } finally {
+      setAddingAdmin(false);
+    }
+  }
+
   async function handleUnblock(factoryId: string) {
     await handleMarkPaid(factoryId);
   }
