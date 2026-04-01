@@ -375,18 +375,6 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                   <Input type="date" value={dataCompra} onChange={e => setDataCompra(e.target.value)} />
                 </div>
               </div>
-              {showInsumos && !showEmbalagens && (
-                <div>
-                  <Label>Unidade (Insumos)</Label>
-                  <Select value={unidadeInsumo} onValueChange={setUnidadeInsumo}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="g">Gramas (g)</SelectItem>
-                      <SelectItem value="kg">Quilos (kg)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
 
               <div>
                 <Label>Fornecedor</Label>
