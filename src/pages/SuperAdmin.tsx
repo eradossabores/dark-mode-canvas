@@ -36,6 +36,23 @@ interface FactoryRow {
   collaborator_count?: number;
 }
 
+const buildAutoCredentials = (rawName: string) => {
+  const slug = rawName
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, "")
+    .replace(/[^a-z0-9]/g, "");
+
+  const capitalized = slug ? slug.charAt(0).toUpperCase() + slug.slice(1) : "";
+
+  return {
+    email: slug ? `${slug}@icetech.com` : "",
+    password: capitalized ? `${capitalized}@2026` : "",
+  };
+};
+
 export default function SuperAdmin() {
   const { user, impersonateFactory, impersonatingFactory, clearImpersonation } = useAuth();
   const navigate = useNavigate();
@@ -57,6 +74,39 @@ export default function SuperAdmin() {
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    const baseName = newFactory.ownerName.trim() || newFactory.name.trim();
+    const next = buildAutoCredentials(baseName);
+
+    setNewFactory((prev) => {
+      if (prev.ownerEmail === next.email && prev.ownerPassword === next.password) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        ownerEmail: next.email,
+        ownerPassword: next.password,
+      };
+    });
+  }, [newFactory.name, newFactory.ownerName]);
+
+  useEffect(() => {
+    const next = buildAutoCredentials(newAdmin.name);
+
+    setNewAdmin((prev) => {
+      if (prev.email === next.email && prev.password === next.password) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        email: next.email,
+        password: next.password,
+      };
+    });
+  }, [newAdmin.name]);
 
   async function loadFactories() {
     try {
@@ -378,22 +428,7 @@ export default function SuperAdmin() {
                 <Input
                   placeholder="Ex: Gelos Premium Ltda"
                   value={newFactory.name}
-                  onChange={(e) => {
-                    const name = e.target.value;
-                    setNewFactory((prev) => {
-                      const base = prev.ownerName?.trim() || name.trim();
-                      const slug = base.split(/\s+/).join("").toLowerCase()
-                        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-                        .replace(/[^a-z0-9]/g, "");
-                      const cap = slug.charAt(0).toUpperCase() + slug.slice(1);
-                      return {
-                        ...prev,
-                        name,
-                        ownerEmail: slug ? `${slug}@icetech.com` : "",
-                        ownerPassword: slug ? `${cap}@2026` : "",
-                      };
-                    });
-                  }}
+                  onChange={(e) => setNewFactory((prev) => ({ ...prev, name: e.target.value }))}
                 />
               </div>
               <div>
@@ -401,19 +436,7 @@ export default function SuperAdmin() {
                 <Input
                   placeholder="Nome completo"
                   value={newFactory.ownerName}
-                  onChange={(e) => {
-                    const ownerName = e.target.value;
-                    const slug = ownerName.trim().split(/\s+/).join("").toLowerCase()
-                      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-                      .replace(/[^a-z0-9]/g, "");
-                    const capitalized = slug.charAt(0).toUpperCase() + slug.slice(1);
-                    setNewFactory({
-                      ...newFactory,
-                      ownerName,
-                      ownerEmail: slug ? `${slug}@icetech.com` : "",
-                      ownerPassword: slug ? `${capitalized}@2026` : "",
-                    });
-                  }}
+                  onChange={(e) => setNewFactory((prev) => ({ ...prev, ownerName: e.target.value }))}
                 />
               </div>
               <div>
@@ -656,16 +679,7 @@ export default function SuperAdmin() {
             <div className="space-y-4 pt-2">
               <div>
                 <Label>Nome do Sócio</Label>
-                <Input placeholder="Ex: Carlos Sheik" value={newAdmin.name} onChange={(e) => {
-                  const name = e.target.value;
-                  const slug = name.trim().toLowerCase().replace(/\s+/g, "").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                  const capitalizedSlug = slug.charAt(0).toUpperCase() + slug.slice(1);
-                  setNewAdmin({
-                    name,
-                    email: slug ? `${slug}@icetech.com` : "",
-                    password: slug ? `${capitalizedSlug}@2026` : "",
-                  });
-                }} />
+                <Input placeholder="Ex: Carlos Sheik" value={newAdmin.name} onChange={(e) => setNewAdmin((prev) => ({ ...prev, name: e.target.value }))} />
               </div>
               <div>
                 <Label>Email</Label>
