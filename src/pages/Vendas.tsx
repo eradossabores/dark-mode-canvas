@@ -1358,6 +1358,7 @@ export default function Vendas() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-16">#</TableHead>
                 <TableHead>Data</TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead className="text-right">Unidades</TableHead>
