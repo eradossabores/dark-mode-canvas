@@ -291,6 +291,7 @@ export default function Estoque() {
       await (supabase as any).from("auditoria").insert({
         usuario_nome: "sistema", modulo: "estoque", acao: "entrada_embalagem",
         registro_afetado: embId, descricao: descEntrada,
+        factory_id: factoryId,
       });
       toast({ title: "Estoque atualizado!", description: descEntrada });
       setOpenEmb(false);
