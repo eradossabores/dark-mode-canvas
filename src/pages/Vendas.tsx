@@ -22,7 +22,7 @@ import { ptBR } from "date-fns/locale";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Plus, Trash2, ShoppingCart, Pencil, Eye, CalendarIcon, X, Truck, Package, History, CalendarClock, Receipt } from "lucide-react";
+import { Plus, Trash2, ShoppingCart, Pencil, Eye, CalendarIcon, X, Truck, Package, History, CalendarClock, Receipt, CopyPlus } from "lucide-react";
 import ReciboVenda from "@/components/vendas/ReciboVenda";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ToastAction } from "@/components/ui/toast";
