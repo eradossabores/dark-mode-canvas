@@ -22,7 +22,7 @@ import { ptBR } from "date-fns/locale";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Plus, Trash2, ShoppingCart, Pencil, Eye, CalendarIcon, X, Truck, Package, History, CalendarClock, Receipt } from "lucide-react";
+import { Plus, Trash2, ShoppingCart, Pencil, Eye, CalendarIcon, X, Truck, Package, History, CalendarClock, Receipt, CopyPlus } from "lucide-react";
 import ReciboVenda from "@/components/vendas/ReciboVenda";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ToastAction } from "@/components/ui/toast";
@@ -528,6 +528,34 @@ export default function Vendas() {
     const { data } = await (supabase as any).from("venda_itens").select("*, sabores(nome)").eq("venda_id", v.id);
     setDetailItens(data || []);
     setDetailOpen(true);
+  }
+
+  async function duplicarVenda(v: any) {
+    const { data: vendaItens } = await (supabase as any).from("venda_itens").select("*, sabores(nome)").eq("venda_id", v.id);
+    setClienteId(v.cliente_id || "");
+    setFormaPagamento(v.forma_pagamento || "dinheiro");
+    setObservacoes(v.observacoes || "");
+    setNumeroNf("");
+    setDataVenda(new Date());
+    setStatusVenda("pendente");
+    setIgnorarEstoque(false);
+    setValorFrete("");
+    setBrindeQtd("");
+    setBrindeSaborId("");
+    setVendaPorPacote(false);
+    setDetalhePgto("especie");
+    setDetalhePix("");
+    setDetalheEspecie("");
+    if (vendaItens && vendaItens.length > 0) {
+      setItens(vendaItens.map((i: any) => ({
+        sabor_id: i.sabor_id,
+        quantidade: i.quantidade,
+        preco_unitario: String(i.preco_unitario),
+        preco_auto: false,
+      })));
+    }
+    setOpen(true);
+    toast({ title: "Comanda duplicada!", description: "Revise os dados e confirme a nova venda." });
   }
 
   async function handleCancel() {
@@ -1341,6 +1369,7 @@ export default function Vendas() {
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { setHistoricoVenda(v); loadHistorico(v.id); }}><History className="h-4 w-4" /></Button>
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openDetailDialog(v)}><Eye className="h-4 w-4" /></Button>
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openRecibo(v)}><Receipt className="h-4 w-4 text-emerald-600" /></Button>
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => duplicarVenda(v)}><CopyPlus className="h-4 w-4 text-blue-600" /></Button>
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEditDialog(v)}><Pencil className="h-4 w-4" /></Button>
                     <div className="ml-auto flex gap-1">
                       {v.status !== "cancelada" && (
@@ -1427,6 +1456,12 @@ export default function Vendas() {
                         <Button size="icon" variant="ghost" onClick={() => { setHistoricoVenda(v); loadHistorico(v.id); }}><History className="h-4 w-4" /></Button>
                         <Button size="icon" variant="ghost" onClick={() => openDetailDialog(v)}><Eye className="h-4 w-4" /></Button>
                         <Button size="icon" variant="ghost" onClick={() => openRecibo(v)}><Receipt className="h-4 w-4 text-emerald-600" /></Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button size="icon" variant="ghost" onClick={() => duplicarVenda(v)}><CopyPlus className="h-4 w-4 text-blue-600" /></Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Duplicar Comanda</TooltipContent>
+                        </Tooltip>
                         <Button size="icon" variant="ghost" onClick={() => openEditDialog(v)}><Pencil className="h-4 w-4" /></Button>
                         {v.status !== "cancelada" && (
                           <Button size="icon" variant="ghost" onClick={() => setCancelId(v.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
