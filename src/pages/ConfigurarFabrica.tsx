@@ -147,17 +147,21 @@ export default function ConfigurarFabrica() {
   }
 
   async function handleCepLookup(cep: string) {
-    const cleanCep = cep.replace(/\D/g, "");
-    if (!/^\d{8}$/.test(cleanCep)) return;
+    const cleanCep = normalizeCep(cep);
+    if (!isValidCep(cleanCep)) {
+      return;
+    }
+
     setFetchingCep(true);
     try {
       const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
+
       if (!data.erro) {
         const newAddr = {
           ...address,
-          cep,
+          cep: formatCep(cleanCep),
           endereco: data.logradouro || address.endereco,
           bairro: data.bairro || address.bairro,
           cidade: data.localidade || address.cidade,
@@ -165,14 +169,14 @@ export default function ConfigurarFabrica() {
         };
         setAddress(newAddr);
 
-        // Geocode city to update map center
         try {
           const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(`${newAddr.cidade}, ${newAddr.estado}, Brasil`)}&format=json&limit=1`);
           const geoData = await geoRes.json();
           if (geoData.length > 0) {
             setAddress(prev => ({ ...prev, latitude: parseFloat(geoData[0].lat), longitude: parseFloat(geoData[0].lon) }));
           }
-        } catch { /* geocoding optional */ }
+        } catch {
+        }
 
         toast({ title: "CEP encontrado!", description: `${data.localidade} - ${data.uf}` });
       } else {
@@ -187,6 +191,13 @@ export default function ConfigurarFabrica() {
 
   async function handleSaveAddress() {
     if (!factoryId) return;
+
+    const cleanCep = normalizeCep(address.cep);
+    if (cleanCep && !isValidCep(cleanCep)) {
+      toast({ title: "CEP inválido", description: "Informe um CEP com 8 dígitos válidos.", variant: "destructive" });
+      return;
+    }
+
     setSavingAddr(true);
     try {
       await (supabase as any).from("factories").update({
@@ -194,30 +205,17 @@ export default function ConfigurarFabrica() {
         bairro: address.bairro || null,
         cidade: address.cidade || null,
         estado: address.estado || null,
-        cep: address.cep || null,
+        cep: cleanCep || null,
         cnpj: address.cnpj || null,
         latitude: address.latitude,
         longitude: address.longitude,
       }).eq("id", factoryId);
+      setAddress((prev) => ({ ...prev, cep: cleanCep ? formatCep(cleanCep) : "" }));
       toast({ title: "Endereço salvo com sucesso!" });
     } catch (e: any) {
       toast({ title: "Erro ao salvar", description: e.message, variant: "destructive" });
     }
     setSavingAddr(false);
-  }
-
-  function formatCnpj(value: string) {
-    const digits = value.replace(/\D/g, "").slice(0, 14);
-    return digits
-      .replace(/^(\d{2})(\d)/, "$1.$2")
-      .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
-      .replace(/\.(\d{3})(\d)/, ".$1/$2")
-      .replace(/(\d{4})(\d)/, "$1-$2");
-  }
-
-  function formatCep(value: string) {
-    const digits = value.replace(/\D/g, "").slice(0, 8);
-    return digits.replace(/^(\d{5})(\d)/, "$1-$2");
   }
 
   async function loadSacosConfig() {
