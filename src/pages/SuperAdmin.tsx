@@ -592,6 +592,36 @@ export default function SuperAdmin() {
           factory={detailsFactory}
         />
       )}
+      {/* Add Admin Dialog */}
+      {addAdminFactory && (
+        <Dialog open={!!addAdminFactory} onOpenChange={(open) => { if (!open) { setAddAdminFactory(null); setNewAdmin({ email: "", password: "", name: "" }); } }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Adicionar Administrador — {addAdminFactory.name}</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground">
+              Crie um acesso de administrador (sócio) para esta fábrica. Ele terá acesso total ao sistema da fábrica.
+            </p>
+            <div className="space-y-4 pt-2">
+              <div>
+                <Label>Nome do Sócio</Label>
+                <Input placeholder="Nome completo" value={newAdmin.name} onChange={(e) => setNewAdmin({ ...newAdmin, name: e.target.value })} />
+              </div>
+              <div>
+                <Label>Email</Label>
+                <Input type="email" placeholder="socio@email.com" value={newAdmin.email} onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })} />
+              </div>
+              <div>
+                <Label>Senha Inicial</Label>
+                <Input type="text" placeholder="Senha do sócio" value={newAdmin.password} onChange={(e) => setNewAdmin({ ...newAdmin, password: e.target.value })} />
+              </div>
+              <Button className="w-full" onClick={handleAddAdmin} disabled={addingAdmin}>
+                {addingAdmin ? "Adicionando..." : "Adicionar Administrador"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
