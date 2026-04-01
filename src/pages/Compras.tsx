@@ -148,7 +148,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const [temFrete, setTemFrete] = useState(false);
   const [tipoFrete, setTipoFrete] = useState("sedex");
   const [valorFrete, setValorFrete] = useState("");
-  const [unidadeInsumo, setUnidadeInsumo] = useState("g");
+  const [itemUnits, setItemUnits] = useState<Record<string, string>>({});
   const [obs, setObs] = useState("");
   const [dataCompra, setDataCompra] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [saving, setSaving] = useState(false);
