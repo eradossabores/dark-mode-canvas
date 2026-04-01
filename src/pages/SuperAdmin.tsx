@@ -545,7 +545,7 @@ export default function SuperAdmin() {
                   </div>
                 )}
 
-                <Separator className="my-1" />
+                <div className="border-t my-1" />
 
                 {/* Primary action */}
                 <Button size="sm" variant="default" className="w-full" onClick={() => {
