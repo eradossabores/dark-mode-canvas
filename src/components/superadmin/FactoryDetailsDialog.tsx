@@ -275,6 +275,47 @@ export default function FactoryDetailsDialog({ open, onOpenChange, factory, onAd
 
             <Separator />
 
+            {/* Sócios / Administradores */}
+            {(() => {
+              const socios = usageData.filter(u => u.role === "factory_owner" || u.role === "admin");
+              if (socios.length === 0) return null;
+              return (
+                <div>
+                  <h4 className="text-sm font-semibold flex items-center gap-2 mb-3">
+                    <Users className="h-4 w-4 text-primary" />
+                    Sócios / Administradores ({socios.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {socios.map((s, i) => (
+                      <div key={i} className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold truncate">{s.nome}</p>
+                            <p className="text-[11px] text-muted-foreground truncate">{s.email}</p>
+                          </div>
+                          <Badge variant="outline" className="text-[10px] shrink-0 ml-2 border-primary/30 text-primary">
+                            {getRoleName(s.role)}
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
+                          <div>
+                            <span className="text-muted-foreground">Último acesso:</span>
+                            <p className="font-semibold">{s.lastSeen ? format(new Date(s.lastSeen), "dd/MM/yy HH:mm", { locale: ptBR }) : "Nunca acessou"}</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Tempo total:</span>
+                            <p className="font-semibold">{formatDuration(s.totalMinutes)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
+            <Separator />
+
             {/* Tempo de Uso */}
             <div>
               <h4 className="text-sm font-semibold flex items-center gap-2 mb-3">
