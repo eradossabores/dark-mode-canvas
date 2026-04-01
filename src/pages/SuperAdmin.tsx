@@ -318,22 +318,19 @@ export default function SuperAdmin() {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/add-factory-admin`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            email: newAdmin.email,
-            password: newAdmin.password,
-            nome: newAdmin.name,
-            factory_id: addAdminFactory.id,
-          }),
-        }
-      );
+      if (!token) {
+        toast({ title: "Sessão expirada", description: "Faça login novamente.", variant: "destructive" });
+        setAddingAdmin(false);
+        return;
+      }
+      const response = await supabase.functions.invoke("add-factory-admin", {
+        body: {
+          email: newAdmin.email,
+          password: newAdmin.password,
+          nome: newAdmin.name,
+          factory_id: addAdminFactory.id,
+        },
+      });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Erro ao adicionar admin");
       toast({ title: "Administrador adicionado!", description: `${newAdmin.name} agora é admin de ${addAdminFactory.name}` });
