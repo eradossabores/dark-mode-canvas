@@ -379,50 +379,35 @@ export default function ConfigurarFabrica() {
                     </div>
                   </div>
 
-                  {/* Seção 2: Matéria-Prima por Lote */}
+                  {/* Seção 2: Matéria-Prima por Lote (por sabor) */}
                   <div className="rounded-lg border p-4 space-y-3">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">🧪</span>
                       <h3 className="font-semibold text-sm">Matéria-Prima por Lote</h3>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Quantidade de matéria-prima utilizada em cada lote de produção.
+                      Configure a quantidade de insumo (g ou kg) por lote para cada sabor individualmente.
                     </p>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
-                        <div>
-                          <span className="font-medium text-sm">🧊 Geral</span>
-                          <div className="text-xs text-muted-foreground">Todos os sabores (exceto Água de Coco)</div>
+                    <div className="space-y-2">
+                      {receitas.map((r, idx) => (
+                        <div key={r.id} className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
+                          <span className="font-medium text-sm truncate max-w-[180px]">{r.sabor_nome}</span>
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              min={0}
+                              step={10}
+                              className="h-9 text-center text-sm w-24 font-bold"
+                              value={r.quantidade_insumo_por_lote}
+                              onChange={(e) => {
+                                const val = Number(e.target.value);
+                                setReceitas(prev => prev.map((rec, i) => i === idx ? { ...rec, quantidade_insumo_por_lote: val } : rec));
+                              }}
+                            />
+                            <span className="text-xs text-muted-foreground">{r.quantidade_insumo_por_lote >= 1000 ? "g (kg)" : "g"}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Input
-                            type="number"
-                            min={0}
-                            step={10}
-                            className="h-9 text-center text-sm w-24 font-bold"
-                            value={config.quantidade_insumo_geral}
-                            onChange={(e) => setConfig(prev => ({ ...prev, quantidade_insumo_geral: Number(e.target.value) }))}
-                          />
-                          <span className="text-xs text-muted-foreground">g</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
-                        <div>
-                          <span className="font-medium text-sm">🥥 Água de Coco</span>
-                          <div className="text-xs text-muted-foreground">Configuração específica</div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Input
-                            type="number"
-                            min={0}
-                            step={10}
-                            className="h-9 text-center text-sm w-24 font-bold"
-                            value={config.quantidade_insumo_agua_coco}
-                            onChange={(e) => setConfig(prev => ({ ...prev, quantidade_insumo_agua_coco: Number(e.target.value) }))}
-                          />
-                          <span className="text-xs text-muted-foreground">g</span>
-                        </div>
-                      </div>
+                      ))}
                     </div>
                   </div>
 
@@ -430,8 +415,8 @@ export default function ConfigurarFabrica() {
                   <div className="rounded-lg bg-primary/5 border border-primary/20 p-3">
                     <p className="text-xs text-muted-foreground">
                       📋 <strong>Resumo:</strong> 1 lote = <strong>{config.gelos_por_lote} unidades</strong>. 
-                      Matéria-prima: <strong>{config.quantidade_insumo_geral}g</strong> (geral) | <strong>{config.quantidade_insumo_agua_coco}g</strong> (Água de Coco). 
                       Embalagens: <strong>{config.gelos_por_lote}</strong> por lote (1 por unidade).
+                      Cada sabor tem sua própria configuração de matéria-prima.
                     </p>
                   </div>
 
