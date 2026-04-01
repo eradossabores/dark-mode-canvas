@@ -61,11 +61,64 @@ export default function ConfigurarFabrica() {
   const [savingAddr, setSavingAddr] = useState(false);
   const [fetchingCep, setFetchingCep] = useState(false);
 
+  // Partners/Sócios
+  const [partners, setPartners] = useState<any[]>([]);
+  const [loadingPartners, setLoadingPartners] = useState(true);
+
   useEffect(() => {
     loadReceitas();
     loadSacosConfig();
     loadAddress();
+    loadPartners();
   }, [factoryId]);
+
+  async function loadPartners() {
+    if (!factoryId) { setLoadingPartners(false); return; }
+    setLoadingPartners(true);
+    try {
+      // Get all users with roles for this factory (owners/admins)
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("user_id, role")
+        .eq("factory_id", factoryId)
+        .in("role", ["factory_owner", "admin"]);
+
+      if (!roles || roles.length === 0) { setPartners([]); setLoadingPartners(false); return; }
+
+      const userIds = roles.map(r => r.user_id);
+      
+      // Get profiles
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, nome, email")
+        .in("id", userIds);
+
+      // Get last session for each user
+      const { data: sessions } = await supabase
+        .from("user_sessions")
+        .select("user_id, last_seen_at")
+        .in("user_id", userIds)
+        .order("last_seen_at", { ascending: false });
+
+      const partnerList = roles.map(r => {
+        const profile = profiles?.find(p => p.id === r.user_id);
+        const lastSession = sessions?.find(s => s.user_id === r.user_id);
+        return {
+          user_id: r.user_id,
+          role: r.role,
+          nome: profile?.nome || "Sem nome",
+          email: profile?.email || "",
+          last_seen: lastSession?.last_seen_at || null,
+        };
+      });
+
+      setPartners(partnerList);
+    } catch (err) {
+      console.error("Erro ao carregar sócios:", err);
+    } finally {
+      setLoadingPartners(false);
+    }
+  }
 
   async function loadAddress() {
     if (!factoryId) { setLoadingAddr(false); return; }
