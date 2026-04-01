@@ -833,6 +833,28 @@ export default function Producao() {
                       </Badge>
                     ))}
                   </div>
+                  {/* Mobile card view */}
+                  <div className="block sm:hidden space-y-2">
+                    {dayItems.map((p) => (
+                      <div key={p.id} className="rounded-lg border bg-card/50 p-3 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-sm">{p.sabores?.nome}</span>
+                          <Badge variant="secondary" className="text-[10px]">{p.quantidade_total} un</Badge>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span className="capitalize">{p.modo} · {p.quantidade_lotes} lotes</span>
+                          <span>{p.operador}</span>
+                        </div>
+                        <div className="flex items-center gap-1 pt-1">
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openDetailDialog(p)}><Eye className="h-3.5 w-3.5" /></Button>
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEditDialog(p)}><Pencil className="h-3.5 w-3.5" /></Button>
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setDeleteId(p.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Desktop table view */}
+                  <div className="hidden sm:block">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -861,6 +883,7 @@ export default function Producao() {
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 </div>
               );
             });

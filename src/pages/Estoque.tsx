@@ -478,7 +478,7 @@ export default function Estoque() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Estoque</h1>
+      <h1 className="text-xl sm:text-2xl font-bold mb-4">Estoque</h1>
 
       {/* Painel de gelos por sabor */}
       {gelos.length > 0 && (
