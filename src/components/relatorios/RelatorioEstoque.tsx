@@ -14,7 +14,7 @@ import { exportToPDF, exportToExcel } from "@/lib/export-utils";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function RelatorioEstoque() {
-  const { factoryId } = useAuth();
+  const { factoryId, factoryName, branding } = useAuth();
   const [gelos, setGelos] = useState<any[]>([]);
   const [materias, setMaterias] = useState<any[]>([]);
   const [embalagens, setEmbalagens] = useState<any[]>([]);
