@@ -224,6 +224,7 @@ export default function Estoque() {
         quantidade: Math.abs(diff),
         referencia: "ajuste_manual",
         operador: "sistema",
+        factory_id: factoryId,
       });
 
       await (supabase as any).from("auditoria").insert({
@@ -232,6 +233,7 @@ export default function Estoque() {
         acao: "ajuste_estoque",
         registro_afetado: ajusteItemId,
         descricao: `Ajuste de ${itemNome}: ${qtdAnterior} → ${ajusteNovaQtd} (${diff >= 0 ? "+" : ""}${diff}). Motivo: ${ajusteMotivo}`,
+        factory_id: factoryId,
       });
 
       toast({ title: "Estoque ajustado!", description: `${itemNome}: ${qtdAnterior} → ${ajusteNovaQtd}` });
@@ -252,10 +254,12 @@ export default function Estoque() {
       await (supabase as any).from("movimentacoes_estoque").insert({
         tipo_item: "materia_prima", item_id: mpId, tipo_movimentacao: "entrada",
         quantidade: qtdEmGramas, referencia: "entrada_manual", operador: "sistema",
+        factory_id: factoryId,
       });
       await (supabase as any).from("auditoria").insert({
         usuario_nome: "sistema", modulo: "estoque", acao: "entrada_mp",
         registro_afetado: mpId, descricao: `Entrada de ${mpQtd}${mpUnidade} de ${mp.nome}`,
+        factory_id: factoryId,
       });
       toast({ title: "Estoque atualizado!" });
       setOpenMP(false);
@@ -282,10 +286,12 @@ export default function Estoque() {
       await (supabase as any).from("movimentacoes_estoque").insert({
         tipo_item: "embalagem", item_id: embId, tipo_movimentacao: "entrada",
         quantidade: qtdSaquinhos, referencia: "entrada_manual", operador: "sistema",
+        factory_id: factoryId,
       });
       await (supabase as any).from("auditoria").insert({
         usuario_nome: "sistema", modulo: "estoque", acao: "entrada_embalagem",
         registro_afetado: embId, descricao: descEntrada,
+        factory_id: factoryId,
       });
       toast({ title: "Estoque atualizado!", description: descEntrada });
       setOpenEmb(false);
@@ -314,6 +320,7 @@ export default function Estoque() {
         quantidade: avariaQtd,
         motivo: avariaMotivo,
         operador: "sistema",
+        factory_id: factoryId,
       });
 
       // Deduct from stock
@@ -331,6 +338,7 @@ export default function Estoque() {
         quantidade: avariaQtd,
         referencia: "avaria",
         operador: "sistema",
+        factory_id: factoryId,
       });
 
       // Deduct embalagem if checked
@@ -353,6 +361,7 @@ export default function Estoque() {
             quantidade: avariaQtd,
             referencia: "avaria",
             operador: "sistema",
+            factory_id: factoryId,
           });
           embDescricao = " (com perda de embalagem)";
         }
@@ -365,6 +374,7 @@ export default function Estoque() {
         acao: "avaria",
         registro_afetado: avariaSaborId,
         descricao: `Avaria de ${avariaQtd} un. de ${saborNome}${embDescricao}. Motivo: ${avariaMotivo}`,
+        factory_id: factoryId,
       });
 
       toast({ title: "Avaria registrada!", description: `${avariaQtd} un. de ${saborNome} descontadas do estoque` });
