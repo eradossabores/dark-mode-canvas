@@ -436,19 +436,7 @@ export default function SuperAdmin() {
                 <Input
                   placeholder="Nome completo"
                   value={newFactory.ownerName}
-                  onChange={(e) => {
-                    const ownerName = e.target.value;
-                    const slug = ownerName.trim().split(/\s+/).join("").toLowerCase()
-                      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-                      .replace(/[^a-z0-9]/g, "");
-                    const capitalized = slug.charAt(0).toUpperCase() + slug.slice(1);
-                    setNewFactory({
-                      ...newFactory,
-                      ownerName,
-                      ownerEmail: slug ? `${slug}@icetech.com` : "",
-                      ownerPassword: slug ? `${capitalized}@2026` : "",
-                    });
-                  }}
+                  onChange={(e) => setNewFactory((prev) => ({ ...prev, ownerName: e.target.value }))}
                 />
               </div>
               <div>
