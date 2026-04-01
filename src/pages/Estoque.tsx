@@ -259,6 +259,7 @@ export default function Estoque() {
       await (supabase as any).from("auditoria").insert({
         usuario_nome: "sistema", modulo: "estoque", acao: "entrada_mp",
         registro_afetado: mpId, descricao: `Entrada de ${mpQtd}${mpUnidade} de ${mp.nome}`,
+        factory_id: factoryId,
       });
       toast({ title: "Estoque atualizado!" });
       setOpenMP(false);
