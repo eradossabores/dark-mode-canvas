@@ -378,18 +378,7 @@ export default function SuperAdmin() {
                 <Input
                   placeholder="Ex: Gelos Premium Ltda"
                   value={newFactory.name}
-                  onChange={(e) => {
-                    const name = e.target.value;
-                    const firstName = name.trim().split(/\s+/)[0].toLowerCase()
-                      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-                      .replace(/[^a-z0-9]/g, "");
-                    setNewFactory({
-                      ...newFactory,
-                      name,
-                      ownerEmail: firstName ? `${firstName}@icetech.com` : "",
-                      ownerPassword: firstName ? `${firstName}@2026` : "",
-                    });
-                  }}
+                  onChange={(e) => setNewFactory({ ...newFactory, name: e.target.value })}
                 />
               </div>
               <div>
@@ -397,7 +386,19 @@ export default function SuperAdmin() {
                 <Input
                   placeholder="Nome completo"
                   value={newFactory.ownerName}
-                  onChange={(e) => setNewFactory({ ...newFactory, ownerName: e.target.value })}
+                  onChange={(e) => {
+                    const ownerName = e.target.value;
+                    const slug = ownerName.trim().split(/\s+/).join("").toLowerCase()
+                      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                      .replace(/[^a-z0-9]/g, "");
+                    const capitalized = slug.charAt(0).toUpperCase() + slug.slice(1);
+                    setNewFactory({
+                      ...newFactory,
+                      ownerName,
+                      ownerEmail: slug ? `${slug}@icetech.com` : "",
+                      ownerPassword: slug ? `${capitalized}@2026` : "",
+                    });
+                  }}
                 />
               </div>
               <div>
