@@ -545,32 +545,35 @@ export default function SuperAdmin() {
                   </div>
                 )}
 
-                <div className="flex gap-2 pt-2">
-                  <Button size="sm" variant="default" className="flex-1" onClick={() => {
-                    impersonateFactory({ id: factory.id, name: factory.name, logo_url: factory.logo_url, theme: undefined });
-                    navigate("/painel");
-                  }}>
-                    <LogIn className="h-3.5 w-3.5 mr-1" /> Entrar
-                  </Button>
-                  <Button size="sm" variant="secondary" className="flex-1" onClick={() => setEditingFactory(factory)}>
+                <div className="border-t my-1" />
+
+                {/* Primary action */}
+                <Button size="sm" variant="default" className="w-full" onClick={() => {
+                  impersonateFactory({ id: factory.id, name: factory.name, logo_url: factory.logo_url, theme: undefined });
+                  navigate("/painel");
+                }}>
+                  <LogIn className="h-3.5 w-3.5 mr-1" /> Entrar na Fábrica
+                </Button>
+
+                {/* Grid of secondary actions */}
+                <div className="grid grid-cols-2 gap-1.5">
+                  <Button size="sm" variant="secondary" onClick={() => setEditingFactory(factory)}>
                     <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
                   </Button>
+                  <Button size="sm" variant="secondary" onClick={() => setDetailsFactory(factory)}>
+                    <Info className="h-3.5 w-3.5 mr-1" /> Detalhes
+                  </Button>
                   {factory.subscription?.status === "blocked" ? (
-                    <Button size="sm" className="flex-1" onClick={() => handleUnblock(factory.id)}>
+                    <Button size="sm" variant="outline" className="col-span-2" onClick={() => handleUnblock(factory.id)}>
                       Desbloquear
                     </Button>
                   ) : (
-                    <>
-                      <Button size="sm" variant="outline" className="flex-1" onClick={() => handleMarkPaid(factory.id)}>
-                        <CheckCircle className="h-3.5 w-3.5 mr-1" /> Pago
-                      </Button>
-                      <Button size="sm" variant="secondary" onClick={() => setDetailsFactory(factory)}>
-                        <Info className="h-3.5 w-3.5 mr-1" /> Detalhes
-                      </Button>
-                    </>
+                    <Button size="sm" variant="outline" onClick={() => handleMarkPaid(factory.id)}>
+                      <CheckCircle className="h-3.5 w-3.5 mr-1" /> Pago
+                    </Button>
                   )}
-                  <Button size="sm" variant="outline" className="w-full mt-1 gap-1" onClick={() => setAddAdminFactory(factory)}>
-                    <UserPlus className="h-3.5 w-3.5" /> Adicionar Sócio/Admin
+                  <Button size="sm" variant="outline" onClick={() => setAddAdminFactory(factory)}>
+                    <UserPlus className="h-3.5 w-3.5 mr-1" /> Add Sócio
                   </Button>
                 </div>
                 <AlertDialog>
