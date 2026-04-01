@@ -233,6 +233,7 @@ export default function Estoque() {
         acao: "ajuste_estoque",
         registro_afetado: ajusteItemId,
         descricao: `Ajuste de ${itemNome}: ${qtdAnterior} → ${ajusteNovaQtd} (${diff >= 0 ? "+" : ""}${diff}). Motivo: ${ajusteMotivo}`,
+        factory_id: factoryId,
       });
 
       toast({ title: "Estoque ajustado!", description: `${itemNome}: ${qtdAnterior} → ${ajusteNovaQtd}` });
