@@ -872,8 +872,8 @@ export default function Vendas() {
                         <span>🎁 Brinde:</span>
                         <span>+{b.quantidade} un ({sabores.find(s => s.id === b.sabor_id)?.nome || "?"})</span>
                       </div>
-                    ))
-                    )}
+                    ))}
+                    }
                   </div>
                 )}
               </div>
