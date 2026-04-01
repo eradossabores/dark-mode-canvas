@@ -331,8 +331,8 @@ export default function SuperAdmin() {
           factory_id: addAdminFactory.id,
         },
       });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Erro ao adicionar admin");
+      if (response.error) throw new Error(response.error.message || "Erro ao adicionar admin");
+      const result = response.data;
       toast({ title: "Administrador adicionado!", description: `${newAdmin.name} agora é admin de ${addAdminFactory.name}` });
       setAddAdminFactory(null);
       setNewAdmin({ email: "", password: "", name: "" });
