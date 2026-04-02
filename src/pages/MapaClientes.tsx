@@ -320,9 +320,10 @@ export default function MapaClientes() {
             </div>
           </div>
         ),
-      },
-      data: c,
-    })),
+        },
+        data: c,
+      };
+    }),
     ...(tempMarker ? [{
       id: 'temp-marker',
       position: tempMarker,
