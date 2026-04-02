@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import ConfigVendasSection from "@/components/configurar/ConfigVendasSection";
 import { formatCep, isValidCep, normalizeCep } from "@/lib/cep";
+import { geocodeClienteAddress } from "@/lib/geocoding";
 
 interface ReceitaRaw {
   id: string;
