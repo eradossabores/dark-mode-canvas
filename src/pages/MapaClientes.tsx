@@ -99,6 +99,7 @@ export default function MapaClientes() {
   const [autoGeocodeStatus, setAutoGeocodeStatus] = useState<Record<string, AutoGeocodeStatus>>({});
   const [factoryCenter, setFactoryCenter] = useState<[number, number]>(DEFAULT_CENTER);
   const [factoryName, setFactoryName] = useState<string>("");
+  const [hasFactoryCoords, setHasFactoryCoords] = useState(false);
 
   // Load factory location (with auto-geocode if missing coords)
   useEffect(() => {
