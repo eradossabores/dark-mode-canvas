@@ -689,10 +689,16 @@ export default function ConfigurarFabrica() {
                   </div>
 
                   {/* Coordinates info */}
-                  {address.latitude && address.longitude && (
+                  {address.latitude && address.longitude ? (
                     <div className="rounded-lg bg-primary/5 border border-primary/20 p-3">
                       <p className="text-xs text-muted-foreground">
                         📍 <strong>Coordenadas detectadas:</strong> {address.latitude.toFixed(4)}, {address.longitude.toFixed(4)} — O mapa será centralizado nesta localização.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="rounded-lg bg-destructive/5 border border-destructive/20 p-3">
+                      <p className="text-xs text-muted-foreground">
+                        ⚠️ <strong>Coordenadas não definidas.</strong> Ao salvar, o sistema tentará localizar automaticamente. Caso não funcione, preencha o CEP para buscar.
                       </p>
                     </div>
                   )}
