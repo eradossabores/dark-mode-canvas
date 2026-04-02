@@ -391,7 +391,6 @@ export default function ConfigurarFabrica() {
           <ConfigVendasSection factoryId={factoryId} />
           <ConfigPrecoSaborSection factoryId={factoryId} />
         </TabsContent>
-        </TabsContent>
 
         <TabsContent value="producao">
           <Card>
