@@ -126,6 +126,7 @@ export default function MapaClientes() {
             });
             if (coords) {
               setFactoryCenter([coords.lat, coords.lng]);
+              setHasFactoryCoords(true);
               // Persist coordinates so we don't geocode again
               await (supabase as any).from("factories").update({ latitude: coords.lat, longitude: coords.lng }).eq("id", factoryId);
             }
