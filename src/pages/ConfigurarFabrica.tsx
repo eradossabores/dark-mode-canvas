@@ -179,10 +179,9 @@ export default function ConfigurarFabrica() {
         setAddress(newAddr);
 
         try {
-          const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(`${newAddr.cidade}, ${newAddr.estado}, Brasil`)}&format=json&limit=1`);
-          const geoData = await geoRes.json();
-          if (geoData.length > 0) {
-            setAddress(prev => ({ ...prev, latitude: parseFloat(geoData[0].lat), longitude: parseFloat(geoData[0].lon) }));
+          const coords = await geocodeFullAddress(newAddr);
+          if (coords) {
+            setAddress(prev => ({ ...prev, latitude: coords.lat, longitude: coords.lng }));
           }
         } catch {
         }
