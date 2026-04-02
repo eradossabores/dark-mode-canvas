@@ -358,7 +358,7 @@ export default function MapaClientes() {
       },
     }] : []),
     // Factory marker
-    ...(factoryCenter[0] !== DEFAULT_CENTER[0] || factoryCenter[1] !== DEFAULT_CENTER[1] ? [{
+    ...(hasFactoryCoords ? [{
       id: 'factory-marker',
       position: factoryCenter,
       icon: createFactoryIcon(factoryName || 'Fábrica'),
