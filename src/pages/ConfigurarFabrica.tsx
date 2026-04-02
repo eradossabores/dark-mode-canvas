@@ -387,8 +387,10 @@ export default function ConfigurarFabrica() {
           
         </TabsList>
 
-        <TabsContent value="vendas">
+        <TabsContent value="vendas" className="space-y-6">
           <ConfigVendasSection factoryId={factoryId} />
+          <ConfigPrecoSaborSection factoryId={factoryId} />
+        </TabsContent>
         </TabsContent>
 
         <TabsContent value="producao">
