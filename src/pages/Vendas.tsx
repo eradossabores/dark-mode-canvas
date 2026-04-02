@@ -995,19 +995,17 @@ export default function Vendas() {
                   <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
                   <Input type="number" step="0.01" min="0" className="pl-7" value={valorFrete} onChange={(e) => setValorFrete(e.target.value)} placeholder="0.00" />
                 </div>
-                {Number(valorFrete) > 0 && (
-                  <div className="flex items-center gap-4 mt-2">
-                    <Label className="text-xs text-muted-foreground">Pago por:</Label>
-                    <div className="flex items-center gap-2">
-                      <Checkbox id="frete-cliente" checked={fretePagoPor === "cliente"} onCheckedChange={() => setFretePagoPor("cliente")} />
-                      <Label htmlFor="frete-cliente" className="text-xs cursor-pointer">Cliente</Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Checkbox id="frete-empresa" checked={fretePagoPor === "empresa"} onCheckedChange={() => setFretePagoPor("empresa")} />
-                      <Label htmlFor="frete-empresa" className="text-xs cursor-pointer">Empresa</Label>
-                    </div>
+                <div className="flex items-center gap-4 mt-2 p-2 rounded-md bg-background border">
+                  <Label className="text-xs text-muted-foreground whitespace-nowrap">Frete pago por:</Label>
+                  <div className="flex items-center gap-2">
+                    <Checkbox id="frete-empresa" checked={fretePagoPor === "empresa"} onCheckedChange={() => setFretePagoPor("empresa")} />
+                    <Label htmlFor="frete-empresa" className="text-xs cursor-pointer font-medium">🏭 Empresa</Label>
                   </div>
-                )}
+                  <div className="flex items-center gap-2">
+                    <Checkbox id="frete-cliente" checked={fretePagoPor === "cliente"} onCheckedChange={() => setFretePagoPor("cliente")} />
+                    <Label htmlFor="frete-cliente" className="text-xs cursor-pointer font-medium">👤 Cliente</Label>
+                  </div>
+                </div>
               </div>
               {/* Brindes */}
               <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
