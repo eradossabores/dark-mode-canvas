@@ -100,15 +100,35 @@ export default function MapaClientes() {
   const [factoryCenter, setFactoryCenter] = useState<[number, number]>(DEFAULT_CENTER);
   const [factoryName, setFactoryName] = useState<string>("");
 
-  // Load factory location
+  // Load factory location (with auto-geocode if missing coords)
   useEffect(() => {
     if (!factoryId) return;
-    (supabase as any).from("factories").select("latitude, longitude, name").eq("id", factoryId).maybeSingle()
-      .then(({ data }: any) => {
-        if (data) {
-          setFactoryName(data.name || "");
-          if (data.latitude != null && data.longitude != null) {
-            setFactoryCenter([data.latitude, data.longitude]);
+    (supabase as any).from("factories").select("latitude, longitude, name, endereco, bairro, cidade, estado").eq("id", factoryId).maybeSingle()
+      .then(async ({ data }: any) => {
+        if (!data) return;
+        setFactoryName(data.name || "");
+
+        if (data.latitude != null && data.longitude != null) {
+          setFactoryCenter([data.latitude, data.longitude]);
+          return;
+        }
+
+        // Auto-geocode factory address if coordinates are missing
+        if (data.endereco?.trim()) {
+          try {
+            const coords = await geocodeClienteAddress({
+              endereco: data.endereco,
+              bairro: data.bairro,
+              cidade: data.cidade,
+              estado: data.estado,
+            });
+            if (coords) {
+              setFactoryCenter([coords.lat, coords.lng]);
+              // Persist coordinates so we don't geocode again
+              await (supabase as any).from("factories").update({ latitude: coords.lat, longitude: coords.lng }).eq("id", factoryId);
+            }
+          } catch (e) {
+            console.warn("Falha ao geocodificar endereço da fábrica:", e);
           }
         }
       });
