@@ -259,7 +259,11 @@ export default function Vendas() {
   }
 
   async function recalcPrecosTotalComanda(currentItens: typeof itens, cId: string) {
-    const totalQtd = currentItens.reduce((s, it) => s + (it.quantidade || 0), 0);
+    // When selling by package, convert to real units for price calculation
+    const totalQtd = currentItens.reduce((s, it) => {
+      const qty = vendaPorPacote ? (it.quantidade || 0) * factoryUnidadesPorSaco : (it.quantidade || 0);
+      return s + qty;
+    }, 0);
     const updated = [...currentItens];
     for (let i = 0; i < updated.length; i++) {
       if (updated[i].sabor_id && updated[i].quantidade > 0) {
