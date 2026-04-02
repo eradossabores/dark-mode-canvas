@@ -890,11 +890,19 @@ export default function Vendas() {
                   <div className="mt-3 pt-3 border-t font-semibold space-y-1">
                     <div className="flex justify-between items-center">
                       <span>Total de Gelos:</span>
-                      <span className="text-lg">{itens.reduce((sum, item) => sum + (item.quantidade || 0), 0)} un.</span>
+                      <span className="text-lg">
+                        {vendaPorPacote 
+                          ? <>{itens.reduce((sum, item) => sum + (item.quantidade || 0), 0)} pacote(s) <span className="text-xs font-normal text-muted-foreground">({itens.reduce((sum, item) => sum + (item.quantidade || 0), 0) * factoryUnidadesPorSaco} un.)</span></>
+                          : <>{itens.reduce((sum, item) => sum + (item.quantidade || 0), 0)} un.</>
+                        }
+                      </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span>Subtotal Produtos:</span>
-                      <span>R$ {itens.reduce((sum, item) => sum + (Number(item.preco_unitario) || 0) * (item.quantidade || 0), 0).toFixed(2)}</span>
+                      <span>R$ {itens.reduce((sum, item) => {
+                        const qty = vendaPorPacote ? (item.quantidade || 0) * factoryUnidadesPorSaco : (item.quantidade || 0);
+                        return sum + (Number(item.preco_unitario) || 0) * qty;
+                      }, 0).toFixed(2)}</span>
                     </div>
                     {Number(valorFrete) > 0 && (
                       <div className="flex justify-between items-center text-sm">
@@ -904,7 +912,10 @@ export default function Vendas() {
                     )}
                     <div className="flex justify-between items-center">
                       <span>Total da Venda:</span>
-                      <span className="text-lg">R$ {(itens.reduce((sum, item) => sum + (Number(item.preco_unitario) || 0) * (item.quantidade || 0), 0) + (Number(valorFrete) || 0)).toFixed(2)}</span>
+                      <span className="text-lg">R$ {(itens.reduce((sum, item) => {
+                        const qty = vendaPorPacote ? (item.quantidade || 0) * factoryUnidadesPorSaco : (item.quantidade || 0);
+                        return sum + (Number(item.preco_unitario) || 0) * qty;
+                      }, 0) + (Number(valorFrete) || 0)).toFixed(2)}</span>
                     </div>
                     {brindes.filter(b => Number(b.quantidade) > 0 && b.sabor_id).map((b, i) => (
                       <div key={i} className="flex justify-between items-center text-sm text-primary">
