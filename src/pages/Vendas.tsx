@@ -1041,7 +1041,16 @@ export default function Vendas() {
                     <Checkbox id="frete-cliente" checked={fretePagoPor === "cliente"} onCheckedChange={() => setFretePagoPor("cliente")} />
                     <Label htmlFor="frete-cliente" className="text-xs cursor-pointer font-medium">👤 Cliente</Label>
                   </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox id="frete-ambos" checked={fretePagoPor === "ambos"} onCheckedChange={() => setFretePagoPor("ambos")} />
+                    <Label htmlFor="frete-ambos" className="text-xs cursor-pointer font-medium">🤝 Ambos (50/50)</Label>
+                  </div>
                 </div>
+                {fretePagoPor === "ambos" && valorFrete && Number(valorFrete) > 0 && (
+                  <div className="text-xs text-muted-foreground mt-1 p-2 rounded bg-background border">
+                    Empresa: <span className="font-semibold">R$ {(Number(valorFrete) / 2).toFixed(2)}</span> · Cliente: <span className="font-semibold">R$ {(Number(valorFrete) / 2).toFixed(2)}</span>
+                  </div>
+                )}
               </div>
               {/* Brindes */}
               <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
