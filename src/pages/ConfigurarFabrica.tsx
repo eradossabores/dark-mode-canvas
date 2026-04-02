@@ -179,10 +179,9 @@ export default function ConfigurarFabrica() {
         setAddress(newAddr);
 
         try {
-          const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(`${newAddr.cidade}, ${newAddr.estado}, Brasil`)}&format=json&limit=1`);
-          const geoData = await geoRes.json();
-          if (geoData.length > 0) {
-            setAddress(prev => ({ ...prev, latitude: parseFloat(geoData[0].lat), longitude: parseFloat(geoData[0].lon) }));
+          const coords = await geocodeFullAddress(newAddr);
+          if (coords) {
+            setAddress(prev => ({ ...prev, latitude: coords.lat, longitude: coords.lng }));
           }
         } catch {
         }
@@ -196,6 +195,29 @@ export default function ConfigurarFabrica() {
       toast({ title: "Erro ao buscar CEP", description: "Tente novamente em alguns segundos.", variant: "destructive" });
     }
     setFetchingCep(false);
+  }
+
+  async function geocodeFullAddress(addr: FactoryAddress): Promise<{ lat: number; lng: number } | null> {
+    // Build full address query for Nominatim
+    const parts = [addr.endereco, addr.numero, addr.bairro, addr.cidade, addr.estado, "Brasil"].filter(Boolean);
+    const query = parts.join(", ");
+    if (!query || query === "Brasil") return null;
+
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
+      const data = await res.json();
+      if (data.length > 0) {
+        return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+      }
+      // Fallback: try city only
+      const cityQuery = [addr.cidade, addr.estado, "Brasil"].filter(Boolean).join(", ");
+      const res2 = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cityQuery)}&format=json&limit=1`);
+      const data2 = await res2.json();
+      if (data2.length > 0) {
+        return { lat: parseFloat(data2[0].lat), lng: parseFloat(data2[0].lon) };
+      }
+    } catch {}
+    return null;
   }
 
   async function handleSaveAddress() {
@@ -214,6 +236,18 @@ export default function ConfigurarFabrica() {
       if (address.numero) fullEndereco += `, ${address.numero}`;
       if (address.complemento) fullEndereco += ` - ${address.complemento}`;
 
+      // Auto-geocode if coordinates are missing
+      let lat = address.latitude;
+      let lng = address.longitude;
+      if (!lat || !lng) {
+        const coords = await geocodeFullAddress(address);
+        if (coords) {
+          lat = coords.lat;
+          lng = coords.lng;
+          setAddress(prev => ({ ...prev, latitude: lat, longitude: lng }));
+        }
+      }
+
       await (supabase as any).from("factories").update({
         endereco: fullEndereco || null,
         bairro: address.bairro || null,
@@ -221,11 +255,11 @@ export default function ConfigurarFabrica() {
         estado: address.estado || null,
         cep: cleanCep || null,
         cnpj: address.cnpj || null,
-        latitude: address.latitude,
-        longitude: address.longitude,
+        latitude: lat,
+        longitude: lng,
       }).eq("id", factoryId);
       setAddress((prev) => ({ ...prev, cep: cleanCep ? formatCep(cleanCep) : "" }));
-      toast({ title: "Endereço salvo com sucesso!" });
+      toast({ title: "Endereço salvo com sucesso!", description: lat ? `📍 Coordenadas: ${lat.toFixed(4)}, ${lng!.toFixed(4)}` : "Coordenadas não encontradas." });
     } catch (e: any) {
       toast({ title: "Erro ao salvar", description: e.message, variant: "destructive" });
     }
@@ -655,10 +689,16 @@ export default function ConfigurarFabrica() {
                   </div>
 
                   {/* Coordinates info */}
-                  {address.latitude && address.longitude && (
+                  {address.latitude && address.longitude ? (
                     <div className="rounded-lg bg-primary/5 border border-primary/20 p-3">
                       <p className="text-xs text-muted-foreground">
                         📍 <strong>Coordenadas detectadas:</strong> {address.latitude.toFixed(4)}, {address.longitude.toFixed(4)} — O mapa será centralizado nesta localização.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="rounded-lg bg-destructive/5 border border-destructive/20 p-3">
+                      <p className="text-xs text-muted-foreground">
+                        ⚠️ <strong>Coordenadas não definidas.</strong> Ao salvar, o sistema tentará localizar automaticamente. Caso não funcione, preencha o CEP para buscar.
                       </p>
                     </div>
                   )}
