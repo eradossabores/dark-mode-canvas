@@ -624,7 +624,7 @@ export default function ConfigurarFabrica() {
                           value={address.cep}
                           onChange={(e) => {
                             const formatted = formatCep(e.target.value);
-                            setAddress({ ...address, cep: formatted });
+                            updateAddressText("cep", formatted);
                             if (formatted.replace(/\D/g, "").length === 8) {
                               handleCepLookup(formatted);
                             }
@@ -643,7 +643,7 @@ export default function ConfigurarFabrica() {
                       <Input
                         placeholder="Rua Exemplo"
                         value={address.endereco}
-                        onChange={(e) => setAddress({ ...address, endereco: e.target.value })}
+                        onChange={(e) => updateAddressText("endereco", e.target.value)}
                       />
                     </div>
                     <div>
@@ -651,7 +651,7 @@ export default function ConfigurarFabrica() {
                       <Input
                         placeholder="123"
                         value={address.numero}
-                        onChange={(e) => setAddress({ ...address, numero: e.target.value })}
+                        onChange={(e) => updateAddressText("numero", e.target.value)}
                       />
                     </div>
                     <div>
@@ -659,7 +659,7 @@ export default function ConfigurarFabrica() {
                       <Input
                         placeholder="Sala 2, Galpão"
                         value={address.complemento}
-                        onChange={(e) => setAddress({ ...address, complemento: e.target.value })}
+                        onChange={(e) => updateAddressText("complemento", e.target.value)}
                       />
                     </div>
                   </div>
@@ -671,7 +671,7 @@ export default function ConfigurarFabrica() {
                       <Input
                         placeholder="Centro"
                         value={address.bairro}
-                        onChange={(e) => setAddress({ ...address, bairro: e.target.value })}
+                        onChange={(e) => updateAddressText("bairro", e.target.value)}
                       />
                     </div>
                     <div>
@@ -679,12 +679,12 @@ export default function ConfigurarFabrica() {
                       <Input
                         placeholder="São Paulo"
                         value={address.cidade}
-                        onChange={(e) => setAddress({ ...address, cidade: e.target.value })}
+                        onChange={(e) => updateAddressText("cidade", e.target.value)}
                       />
                     </div>
                     <div>
                       <Label>UF</Label>
-                      <Select value={address.estado} onValueChange={(v) => setAddress({ ...address, estado: v })}>
+                      <Select value={address.estado} onValueChange={(v) => updateAddressText("estado", v)}>
                         <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
                         <SelectContent>
                           {ESTADOS_BR.map(uf => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}
