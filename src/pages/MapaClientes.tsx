@@ -111,6 +111,7 @@ export default function MapaClientes() {
 
         if (data.latitude != null && data.longitude != null) {
           setFactoryCenter([data.latitude, data.longitude]);
+          setHasFactoryCoords(true);
           return;
         }
 
