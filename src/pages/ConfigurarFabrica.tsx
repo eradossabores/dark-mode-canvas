@@ -180,15 +180,19 @@ export default function ConfigurarFabrica() {
           bairro: data.bairro || address.bairro,
           cidade: data.localidade || address.cidade,
           estado: data.uf || address.estado,
+          latitude: null,
+          longitude: null,
         };
-        setAddress(newAddr);
 
         try {
           const coords = await geocodeFullAddress(newAddr);
-          if (coords) {
-            setAddress(prev => ({ ...prev, latitude: coords.lat, longitude: coords.lng }));
-          }
+          setAddress({
+            ...newAddr,
+            latitude: coords?.lat ?? null,
+            longitude: coords?.lng ?? null,
+          });
         } catch {
+          setAddress(newAddr);
         }
 
         toast({ title: "CEP encontrado!", description: `${data.localidade} - ${data.uf}` });
