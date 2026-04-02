@@ -61,7 +61,7 @@ export default function ConfigurarFabrica() {
   const [loadingSacos, setLoadingSacos] = useState(true);
 
   // Address config
-  const [address, setAddress] = useState<FactoryAddress>({ endereco: "", bairro: "", cidade: "", estado: "SP", cep: "", cnpj: "", latitude: null, longitude: null });
+  const [address, setAddress] = useState<FactoryAddress>({ endereco: "", numero: "", complemento: "", bairro: "", cidade: "", estado: "SP", cep: "", cnpj: "", latitude: null, longitude: null });
   const [loadingAddr, setLoadingAddr] = useState(true);
   const [savingAddr, setSavingAddr] = useState(false);
   const [fetchingCep, setFetchingCep] = useState(false);
