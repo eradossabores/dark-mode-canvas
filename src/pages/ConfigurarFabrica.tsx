@@ -135,8 +135,12 @@ export default function ConfigurarFabrica() {
         .eq("id", factoryId)
         .single();
       if (data) {
+        // Parse numero/complemento from endereco if stored together
+        const endParts = (data.endereco || "").match(/^(.+?),\s*(\d+\S*)\s*(?:-\s*(.+))?$/) || [];
         setAddress({
-          endereco: data.endereco || "",
+          endereco: endParts[1] || data.endereco || "",
+          numero: endParts[2] || "",
+          complemento: endParts[3] || "",
           bairro: data.bairro || "",
           cidade: data.cidade || "",
           estado: data.estado || "SP",
