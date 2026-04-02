@@ -208,8 +208,13 @@ export default function ConfigurarFabrica() {
 
     setSavingAddr(true);
     try {
+      // Compose full address string
+      let fullEndereco = address.endereco;
+      if (address.numero) fullEndereco += `, ${address.numero}`;
+      if (address.complemento) fullEndereco += ` - ${address.complemento}`;
+
       await (supabase as any).from("factories").update({
-        endereco: address.endereco || null,
+        endereco: fullEndereco || null,
         bairro: address.bairro || null,
         cidade: address.cidade || null,
         estado: address.estado || null,
