@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Settings, Save, Loader2, Package, MapPin, Users } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
@@ -28,8 +29,15 @@ interface ConfigGeral {
   gelos_por_lote: number;
 }
 
+const ESTADOS_BR = [
+  "AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA",
+  "PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SE","SP","TO"
+];
+
 interface FactoryAddress {
   endereco: string;
+  numero: string;
+  complemento: string;
   bairro: string;
   cidade: string;
   estado: string;
@@ -54,7 +62,7 @@ export default function ConfigurarFabrica() {
   const [loadingSacos, setLoadingSacos] = useState(true);
 
   // Address config
-  const [address, setAddress] = useState<FactoryAddress>({ endereco: "", bairro: "", cidade: "", estado: "SP", cep: "", cnpj: "", latitude: null, longitude: null });
+  const [address, setAddress] = useState<FactoryAddress>({ endereco: "", numero: "", complemento: "", bairro: "", cidade: "", estado: "SP", cep: "", cnpj: "", latitude: null, longitude: null });
   const [loadingAddr, setLoadingAddr] = useState(true);
   const [savingAddr, setSavingAddr] = useState(false);
   const [fetchingCep, setFetchingCep] = useState(false);
@@ -128,8 +136,12 @@ export default function ConfigurarFabrica() {
         .eq("id", factoryId)
         .single();
       if (data) {
+        // Parse numero/complemento from endereco if stored together
+        const endParts = (data.endereco || "").match(/^(.+?),\s*(\d+\S*)\s*(?:-\s*(.+))?$/) || [];
         setAddress({
-          endereco: data.endereco || "",
+          endereco: endParts[1] || data.endereco || "",
+          numero: endParts[2] || "",
+          complemento: endParts[3] || "",
           bairro: data.bairro || "",
           cidade: data.cidade || "",
           estado: data.estado || "SP",
@@ -197,8 +209,13 @@ export default function ConfigurarFabrica() {
 
     setSavingAddr(true);
     try {
+      // Compose full address string
+      let fullEndereco = address.endereco;
+      if (address.numero) fullEndereco += `, ${address.numero}`;
+      if (address.complemento) fullEndereco += ` - ${address.complemento}`;
+
       await (supabase as any).from("factories").update({
-        endereco: address.endereco || null,
+        endereco: fullEndereco || null,
         bairro: address.bairro || null,
         cidade: address.cidade || null,
         estado: address.estado || null,
@@ -548,48 +565,68 @@ export default function ConfigurarFabrica() {
                   <Loader2 className="h-4 w-4 animate-spin" /> Carregando...
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {/* CNPJ */}
-                  <div>
-                    <Label>CNPJ</Label>
-                    <Input
-                      placeholder="00.000.000/0000-00"
-                      value={address.cnpj}
-                      onChange={(e) => setAddress({ ...address, cnpj: formatCnpj(e.target.value) })}
-                      maxLength={18}
-                    />
-                  </div>
-
-                  {/* CEP with auto-fill */}
-                  <div>
-                    <Label>CEP</Label>
-                    <div className="flex gap-2">
+                <div className="space-y-5">
+                  {/* Row 1: CNPJ + CEP */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label>CNPJ</Label>
                       <Input
-                        placeholder="00000-000"
-                        value={address.cep}
-                        onChange={(e) => {
-                          const formatted = formatCep(e.target.value);
-                          setAddress({ ...address, cep: formatted });
-                          if (formatted.replace(/\D/g, "").length === 8) {
-                            handleCepLookup(formatted);
-                          }
-                        }}
-                        maxLength={9}
+                        placeholder="00.000.000/0000-00"
+                        value={address.cnpj}
+                        onChange={(e) => setAddress({ ...address, cnpj: formatCnpj(e.target.value) })}
+                        maxLength={18}
                       />
-                      {fetchingCep && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground mt-2" />}
+                    </div>
+                    <div>
+                      <Label>CEP</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="00000-000"
+                          value={address.cep}
+                          onChange={(e) => {
+                            const formatted = formatCep(e.target.value);
+                            setAddress({ ...address, cep: formatted });
+                            if (formatted.replace(/\D/g, "").length === 8) {
+                              handleCepLookup(formatted);
+                            }
+                          }}
+                          maxLength={9}
+                        />
+                        {fetchingCep && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground mt-2" />}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Address fields */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Row 2: Rua + Número + Complemento */}
+                  <div className="grid grid-cols-[1fr_100px_140px] gap-3">
                     <div>
-                      <Label>Endereço (Rua/Logradouro)</Label>
+                      <Label>Rua / Logradouro</Label>
                       <Input
-                        placeholder="Rua Exemplo, 123"
+                        placeholder="Rua Exemplo"
                         value={address.endereco}
                         onChange={(e) => setAddress({ ...address, endereco: e.target.value })}
                       />
                     </div>
+                    <div>
+                      <Label>Nº</Label>
+                      <Input
+                        placeholder="123"
+                        value={address.numero}
+                        onChange={(e) => setAddress({ ...address, numero: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label>Complemento</Label>
+                      <Input
+                        placeholder="Sala 2, Galpão"
+                        value={address.complemento}
+                        onChange={(e) => setAddress({ ...address, complemento: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Row 3: Bairro + Cidade + Estado */}
+                  <div className="grid grid-cols-[1fr_1fr_80px] gap-3">
                     <div>
                       <Label>Bairro</Label>
                       <Input
@@ -607,13 +644,13 @@ export default function ConfigurarFabrica() {
                       />
                     </div>
                     <div>
-                      <Label>Estado (UF)</Label>
-                      <Input
-                        placeholder="SP"
-                        value={address.estado}
-                        onChange={(e) => setAddress({ ...address, estado: e.target.value.toUpperCase().slice(0, 2) })}
-                        maxLength={2}
-                      />
+                      <Label>UF</Label>
+                      <Select value={address.estado} onValueChange={(v) => setAddress({ ...address, estado: v })}>
+                        <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
+                        <SelectContent>
+                          {ESTADOS_BR.map(uf => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 
