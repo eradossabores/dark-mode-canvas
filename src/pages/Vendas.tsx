@@ -284,7 +284,11 @@ export default function Vendas() {
   }
 
   async function handleSubmit() {
-    let itensValidos = itens.filter(i => i.sabor_id && i.quantidade > 0);
+    let itensValidos = itens.filter(i => i.sabor_id && i.quantidade > 0).map(i => ({
+      ...i,
+      // Convert pacotes to units if selling by package
+      quantidade: vendaPorPacote ? i.quantidade * factoryUnidadesPorSaco : i.quantidade,
+    }));
     // Add brindes as free items
     brindes.forEach(b => {
       if (Number(b.quantidade) > 0 && b.sabor_id) {
