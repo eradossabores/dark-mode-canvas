@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { AdvancedMap, createLabeledSvgIcon, createSvgIcon, MAP_ICONS, type MapMarker } from "@/components/ui/interactive-map";
 import L from "leaflet";
+import L from "leaflet";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
