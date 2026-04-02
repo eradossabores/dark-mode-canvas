@@ -564,48 +564,68 @@ export default function ConfigurarFabrica() {
                   <Loader2 className="h-4 w-4 animate-spin" /> Carregando...
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {/* CNPJ */}
-                  <div>
-                    <Label>CNPJ</Label>
-                    <Input
-                      placeholder="00.000.000/0000-00"
-                      value={address.cnpj}
-                      onChange={(e) => setAddress({ ...address, cnpj: formatCnpj(e.target.value) })}
-                      maxLength={18}
-                    />
-                  </div>
-
-                  {/* CEP with auto-fill */}
-                  <div>
-                    <Label>CEP</Label>
-                    <div className="flex gap-2">
+                <div className="space-y-5">
+                  {/* Row 1: CNPJ + CEP */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label>CNPJ</Label>
                       <Input
-                        placeholder="00000-000"
-                        value={address.cep}
-                        onChange={(e) => {
-                          const formatted = formatCep(e.target.value);
-                          setAddress({ ...address, cep: formatted });
-                          if (formatted.replace(/\D/g, "").length === 8) {
-                            handleCepLookup(formatted);
-                          }
-                        }}
-                        maxLength={9}
+                        placeholder="00.000.000/0000-00"
+                        value={address.cnpj}
+                        onChange={(e) => setAddress({ ...address, cnpj: formatCnpj(e.target.value) })}
+                        maxLength={18}
                       />
-                      {fetchingCep && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground mt-2" />}
+                    </div>
+                    <div>
+                      <Label>CEP</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="00000-000"
+                          value={address.cep}
+                          onChange={(e) => {
+                            const formatted = formatCep(e.target.value);
+                            setAddress({ ...address, cep: formatted });
+                            if (formatted.replace(/\D/g, "").length === 8) {
+                              handleCepLookup(formatted);
+                            }
+                          }}
+                          maxLength={9}
+                        />
+                        {fetchingCep && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground mt-2" />}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Address fields */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Row 2: Rua + Número + Complemento */}
+                  <div className="grid grid-cols-[1fr_100px_140px] gap-3">
                     <div>
-                      <Label>Endereço (Rua/Logradouro)</Label>
+                      <Label>Rua / Logradouro</Label>
                       <Input
-                        placeholder="Rua Exemplo, 123"
+                        placeholder="Rua Exemplo"
                         value={address.endereco}
                         onChange={(e) => setAddress({ ...address, endereco: e.target.value })}
                       />
                     </div>
+                    <div>
+                      <Label>Nº</Label>
+                      <Input
+                        placeholder="123"
+                        value={address.numero}
+                        onChange={(e) => setAddress({ ...address, numero: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label>Complemento</Label>
+                      <Input
+                        placeholder="Sala 2, Galpão"
+                        value={address.complemento}
+                        onChange={(e) => setAddress({ ...address, complemento: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Row 3: Bairro + Cidade + Estado */}
+                  <div className="grid grid-cols-[1fr_1fr_80px] gap-3">
                     <div>
                       <Label>Bairro</Label>
                       <Input
@@ -623,13 +643,13 @@ export default function ConfigurarFabrica() {
                       />
                     </div>
                     <div>
-                      <Label>Estado (UF)</Label>
-                      <Input
-                        placeholder="SP"
-                        value={address.estado}
-                        onChange={(e) => setAddress({ ...address, estado: e.target.value.toUpperCase().slice(0, 2) })}
-                        maxLength={2}
-                      />
+                      <Label>UF</Label>
+                      <Select value={address.estado} onValueChange={(v) => setAddress({ ...address, estado: v })}>
+                        <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
+                        <SelectContent>
+                          {ESTADOS_BR.map(uf => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 
@@ -646,6 +666,10 @@ export default function ConfigurarFabrica() {
                     {savingAddr ? (
                       <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Salvando...</>
                     ) : (
+                      <><Save className="h-4 w-4 mr-2" /> Salvar Endereço</>
+                    )}
+                  </Button>
+                </div>
                       <><Save className="h-4 w-4 mr-2" /> Salvar Endereço</>
                     )}
                   </Button>
