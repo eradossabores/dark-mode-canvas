@@ -239,17 +239,9 @@ export default function ConfigurarFabrica() {
       if (address.numero) fullEndereco += `, ${address.numero}`;
       if (address.complemento) fullEndereco += ` - ${address.complemento}`;
 
-      // Auto-geocode if coordinates are missing
-      let lat = address.latitude;
-      let lng = address.longitude;
-      if (!lat || !lng) {
-        const coords = await geocodeFullAddress(address);
-        if (coords) {
-          lat = coords.lat;
-          lng = coords.lng;
-          setAddress(prev => ({ ...prev, latitude: lat, longitude: lng }));
-        }
-      }
+      const coords = await geocodeFullAddress(address);
+      const lat = coords?.lat ?? null;
+      const lng = coords?.lng ?? null;
 
       await (supabase as any).from("factories").update({
         endereco: fullEndereco || null,
@@ -261,8 +253,18 @@ export default function ConfigurarFabrica() {
         latitude: lat,
         longitude: lng,
       }).eq("id", factoryId);
-      setAddress((prev) => ({ ...prev, cep: cleanCep ? formatCep(cleanCep) : "" }));
-      toast({ title: "Endereço salvo com sucesso!", description: lat ? `📍 Coordenadas: ${lat.toFixed(4)}, ${lng!.toFixed(4)}` : "Coordenadas não encontradas." });
+      setAddress((prev) => ({
+        ...prev,
+        cep: cleanCep ? formatCep(cleanCep) : "",
+        latitude: lat,
+        longitude: lng,
+      }));
+      toast({
+        title: "Endereço salvo com sucesso!",
+        description: lat != null && lng != null
+          ? `📍 Coordenadas atualizadas: ${lat.toFixed(4)}, ${lng.toFixed(4)}`
+          : "Endereço salvo, mas não foi possível localizar automaticamente este ponto exato.",
+      });
     } catch (e: any) {
       toast({ title: "Erro ao salvar", description: e.message, variant: "destructive" });
     }
