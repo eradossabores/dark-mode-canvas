@@ -99,6 +99,7 @@ export default function MapaClientes() {
   const [autoGeocodeStatus, setAutoGeocodeStatus] = useState<Record<string, AutoGeocodeStatus>>({});
   const [factoryCenter, setFactoryCenter] = useState<[number, number]>(DEFAULT_CENTER);
   const [factoryName, setFactoryName] = useState<string>("");
+  const [hasFactoryCoords, setHasFactoryCoords] = useState(false);
 
   // Load factory location (with auto-geocode if missing coords)
   useEffect(() => {
@@ -110,6 +111,7 @@ export default function MapaClientes() {
 
         if (data.latitude != null && data.longitude != null) {
           setFactoryCenter([data.latitude, data.longitude]);
+          setHasFactoryCoords(true);
           return;
         }
 
@@ -124,6 +126,7 @@ export default function MapaClientes() {
             });
             if (coords) {
               setFactoryCenter([coords.lat, coords.lng]);
+              setHasFactoryCoords(true);
               // Persist coordinates so we don't geocode again
               await (supabase as any).from("factories").update({ latitude: coords.lat, longitude: coords.lng }).eq("id", factoryId);
             }
@@ -299,7 +302,7 @@ export default function MapaClientes() {
   }
 
   const placingCliente = clientes.find(c => c.id === placingClienteId);
-  const hasFactoryLocation = factoryCenter[0] !== DEFAULT_CENTER[0] || factoryCenter[1] !== DEFAULT_CENTER[1];
+  const hasFactoryLocation = hasFactoryCoords;
 
   // Build markers for AdvancedMap
   const markers: MapMarker[] = [
@@ -355,7 +358,7 @@ export default function MapaClientes() {
       },
     }] : []),
     // Factory marker
-    ...(factoryCenter[0] !== DEFAULT_CENTER[0] || factoryCenter[1] !== DEFAULT_CENTER[1] ? [{
+    ...(hasFactoryCoords ? [{
       id: 'factory-marker',
       position: factoryCenter,
       icon: createFactoryIcon(factoryName || 'Fábrica'),
