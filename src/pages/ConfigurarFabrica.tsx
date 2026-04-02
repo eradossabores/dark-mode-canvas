@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import ConfigVendasSection from "@/components/configurar/ConfigVendasSection";
 import { formatCep, isValidCep, normalizeCep } from "@/lib/cep";
+import { geocodeClienteAddress } from "@/lib/geocoding";
 
 interface ReceitaRaw {
   id: string;
@@ -66,6 +67,10 @@ export default function ConfigurarFabrica() {
   const [loadingAddr, setLoadingAddr] = useState(true);
   const [savingAddr, setSavingAddr] = useState(false);
   const [fetchingCep, setFetchingCep] = useState(false);
+
+  function updateAddressText(field: "endereco" | "numero" | "complemento" | "bairro" | "cidade" | "estado" | "cep", value: string) {
+    setAddress((prev) => ({ ...prev, [field]: value, latitude: null, longitude: null }));
+  }
 
   // Partners/Sócios
   const [partners, setPartners] = useState<any[]>([]);
@@ -175,15 +180,19 @@ export default function ConfigurarFabrica() {
           bairro: data.bairro || address.bairro,
           cidade: data.localidade || address.cidade,
           estado: data.uf || address.estado,
+          latitude: null,
+          longitude: null,
         };
-        setAddress(newAddr);
 
         try {
           const coords = await geocodeFullAddress(newAddr);
-          if (coords) {
-            setAddress(prev => ({ ...prev, latitude: coords.lat, longitude: coords.lng }));
-          }
+          setAddress({
+            ...newAddr,
+            latitude: coords?.lat ?? null,
+            longitude: coords?.lng ?? null,
+          });
         } catch {
+          setAddress(newAddr);
         }
 
         toast({ title: "CEP encontrado!", description: `${data.localidade} - ${data.uf}` });
@@ -198,26 +207,20 @@ export default function ConfigurarFabrica() {
   }
 
   async function geocodeFullAddress(addr: FactoryAddress): Promise<{ lat: number; lng: number } | null> {
-    // Build full address query for Nominatim
-    const parts = [addr.endereco, addr.numero, addr.bairro, addr.cidade, addr.estado, "Brasil"].filter(Boolean);
-    const query = parts.join(", ");
-    if (!query || query === "Brasil") return null;
+    const enderecoCompleto = [addr.endereco?.trim(), addr.numero?.trim()].filter(Boolean).join(", ");
+
+    if (!enderecoCompleto) return null;
 
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
-      const data = await res.json();
-      if (data.length > 0) {
-        return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-      }
-      // Fallback: try city only
-      const cityQuery = [addr.cidade, addr.estado, "Brasil"].filter(Boolean).join(", ");
-      const res2 = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cityQuery)}&format=json&limit=1`);
-      const data2 = await res2.json();
-      if (data2.length > 0) {
-        return { lat: parseFloat(data2[0].lat), lng: parseFloat(data2[0].lon) };
-      }
-    } catch {}
-    return null;
+      return await geocodeClienteAddress({
+        endereco: enderecoCompleto,
+        bairro: addr.bairro,
+        cidade: addr.cidade,
+        estado: addr.estado,
+      });
+    } catch {
+      return null;
+    }
   }
 
   async function handleSaveAddress() {
@@ -236,17 +239,9 @@ export default function ConfigurarFabrica() {
       if (address.numero) fullEndereco += `, ${address.numero}`;
       if (address.complemento) fullEndereco += ` - ${address.complemento}`;
 
-      // Auto-geocode if coordinates are missing
-      let lat = address.latitude;
-      let lng = address.longitude;
-      if (!lat || !lng) {
-        const coords = await geocodeFullAddress(address);
-        if (coords) {
-          lat = coords.lat;
-          lng = coords.lng;
-          setAddress(prev => ({ ...prev, latitude: lat, longitude: lng }));
-        }
-      }
+      const coords = await geocodeFullAddress(address);
+      const lat = coords?.lat ?? null;
+      const lng = coords?.lng ?? null;
 
       await (supabase as any).from("factories").update({
         endereco: fullEndereco || null,
@@ -258,8 +253,18 @@ export default function ConfigurarFabrica() {
         latitude: lat,
         longitude: lng,
       }).eq("id", factoryId);
-      setAddress((prev) => ({ ...prev, cep: cleanCep ? formatCep(cleanCep) : "" }));
-      toast({ title: "Endereço salvo com sucesso!", description: lat ? `📍 Coordenadas: ${lat.toFixed(4)}, ${lng!.toFixed(4)}` : "Coordenadas não encontradas." });
+      setAddress((prev) => ({
+        ...prev,
+        cep: cleanCep ? formatCep(cleanCep) : "",
+        latitude: lat,
+        longitude: lng,
+      }));
+      toast({
+        title: "Endereço salvo com sucesso!",
+        description: lat != null && lng != null
+          ? `📍 Coordenadas atualizadas: ${lat.toFixed(4)}, ${lng.toFixed(4)}`
+          : "Endereço salvo, mas não foi possível localizar automaticamente este ponto exato.",
+      });
     } catch (e: any) {
       toast({ title: "Erro ao salvar", description: e.message, variant: "destructive" });
     }
@@ -619,7 +624,7 @@ export default function ConfigurarFabrica() {
                           value={address.cep}
                           onChange={(e) => {
                             const formatted = formatCep(e.target.value);
-                            setAddress({ ...address, cep: formatted });
+                            updateAddressText("cep", formatted);
                             if (formatted.replace(/\D/g, "").length === 8) {
                               handleCepLookup(formatted);
                             }
@@ -638,7 +643,7 @@ export default function ConfigurarFabrica() {
                       <Input
                         placeholder="Rua Exemplo"
                         value={address.endereco}
-                        onChange={(e) => setAddress({ ...address, endereco: e.target.value })}
+                        onChange={(e) => updateAddressText("endereco", e.target.value)}
                       />
                     </div>
                     <div>
@@ -646,7 +651,7 @@ export default function ConfigurarFabrica() {
                       <Input
                         placeholder="123"
                         value={address.numero}
-                        onChange={(e) => setAddress({ ...address, numero: e.target.value })}
+                        onChange={(e) => updateAddressText("numero", e.target.value)}
                       />
                     </div>
                     <div>
@@ -654,7 +659,7 @@ export default function ConfigurarFabrica() {
                       <Input
                         placeholder="Sala 2, Galpão"
                         value={address.complemento}
-                        onChange={(e) => setAddress({ ...address, complemento: e.target.value })}
+                        onChange={(e) => updateAddressText("complemento", e.target.value)}
                       />
                     </div>
                   </div>
@@ -666,7 +671,7 @@ export default function ConfigurarFabrica() {
                       <Input
                         placeholder="Centro"
                         value={address.bairro}
-                        onChange={(e) => setAddress({ ...address, bairro: e.target.value })}
+                        onChange={(e) => updateAddressText("bairro", e.target.value)}
                       />
                     </div>
                     <div>
@@ -674,12 +679,12 @@ export default function ConfigurarFabrica() {
                       <Input
                         placeholder="São Paulo"
                         value={address.cidade}
-                        onChange={(e) => setAddress({ ...address, cidade: e.target.value })}
+                        onChange={(e) => updateAddressText("cidade", e.target.value)}
                       />
                     </div>
                     <div>
                       <Label>UF</Label>
-                      <Select value={address.estado} onValueChange={(v) => setAddress({ ...address, estado: v })}>
+                      <Select value={address.estado} onValueChange={(v) => updateAddressText("estado", v)}>
                         <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
                         <SelectContent>
                           {ESTADOS_BR.map(uf => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}
