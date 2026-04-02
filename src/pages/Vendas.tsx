@@ -1030,24 +1030,6 @@ export default function Vendas() {
                   </div>
                 ))}
               </div>
-              {/* Venda por Pacote (Sacos) */}
-              {factoryUsaSacos && (
-                <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label className="text-xs font-medium">📦 Venda por Pacote (Saco)</Label>
-                      <p className="text-[10px] text-muted-foreground">1 saco = {factoryUnidadesPorSaco} unidades. Desconta sacos do estoque.</p>
-                    </div>
-                    <Switch checked={vendaPorPacote} onCheckedChange={setVendaPorPacote} />
-                  </div>
-                  {vendaPorPacote && itens.filter(i => i.sabor_id && i.quantidade > 0).length > 0 && (
-                    <div className="text-xs text-muted-foreground bg-primary/5 rounded p-2">
-                      Total: {itens.reduce((s, i) => s + (i.quantidade || 0), 0)} unidades → 
-                      <strong> {Math.ceil(itens.reduce((s, i) => s + (i.quantidade || 0), 0) / factoryUnidadesPorSaco)} saco(s)</strong> serão descontados
-                    </div>
-                  )}
-                </div>
-              )}
               <div><Label>Observações</Label><Input value={observacoes} onChange={(e) => setObservacoes(e.target.value)} /></div>
               <div className="flex items-center space-x-2">
                 <Checkbox id="ignorar-estoque" checked={ignorarEstoque} onCheckedChange={(v) => setIgnorarEstoque(!!v)} />
