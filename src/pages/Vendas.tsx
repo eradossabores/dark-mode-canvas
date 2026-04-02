@@ -259,7 +259,11 @@ export default function Vendas() {
   }
 
   async function recalcPrecosTotalComanda(currentItens: typeof itens, cId: string) {
-    const totalQtd = currentItens.reduce((s, it) => s + (it.quantidade || 0), 0);
+    // When selling by package, convert to real units for price calculation
+    const totalQtd = currentItens.reduce((s, it) => {
+      const qty = vendaPorPacote ? (it.quantidade || 0) * factoryUnidadesPorSaco : (it.quantidade || 0);
+      return s + qty;
+    }, 0);
     const updated = [...currentItens];
     for (let i = 0; i < updated.length; i++) {
       if (updated[i].sabor_id && updated[i].quantidade > 0) {
@@ -835,7 +839,7 @@ export default function Vendas() {
                       }
                     </p>
                   </div>
-                  <Switch checked={vendaPorPacote} onCheckedChange={setVendaPorPacote} disabled={!factoryUsaSacos} />
+                  <Switch checked={vendaPorPacote} onCheckedChange={(v) => { setVendaPorPacote(v); if (clienteId && itens.length > 0) setTimeout(() => recalcPrecosTotalComanda(itens, clienteId), 50); }} disabled={!factoryUsaSacos} />
                 </div>
                 {vendaPorPacote && itens.filter(i => i.sabor_id && i.quantidade > 0).length > 0 && (
                   <div className="text-xs text-muted-foreground bg-primary/10 rounded p-2 font-medium">
