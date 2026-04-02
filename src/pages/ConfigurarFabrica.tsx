@@ -670,10 +670,6 @@ export default function ConfigurarFabrica() {
                     )}
                   </Button>
                 </div>
-                      <><Save className="h-4 w-4 mr-2" /> Salvar Endereço</>
-                    )}
-                  </Button>
-                </div>
               )}
             </CardContent>
           </Card>
