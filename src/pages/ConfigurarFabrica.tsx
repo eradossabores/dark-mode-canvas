@@ -68,6 +68,10 @@ export default function ConfigurarFabrica() {
   const [savingAddr, setSavingAddr] = useState(false);
   const [fetchingCep, setFetchingCep] = useState(false);
 
+  function updateAddressText(field: "endereco" | "numero" | "complemento" | "bairro" | "cidade" | "estado" | "cep", value: string) {
+    setAddress((prev) => ({ ...prev, [field]: value, latitude: null, longitude: null }));
+  }
+
   // Partners/Sócios
   const [partners, setPartners] = useState<any[]>([]);
   const [loadingPartners, setLoadingPartners] = useState(true);
