@@ -302,7 +302,7 @@ export default function MapaClientes() {
   }
 
   const placingCliente = clientes.find(c => c.id === placingClienteId);
-  const hasFactoryLocation = factoryCenter[0] !== DEFAULT_CENTER[0] || factoryCenter[1] !== DEFAULT_CENTER[1];
+  const hasFactoryLocation = hasFactoryCoords;
 
   // Build markers for AdvancedMap
   const markers: MapMarker[] = [
