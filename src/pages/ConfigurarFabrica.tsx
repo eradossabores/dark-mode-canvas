@@ -198,6 +198,29 @@ export default function ConfigurarFabrica() {
     setFetchingCep(false);
   }
 
+  async function geocodeFullAddress(addr: FactoryAddress): Promise<{ lat: number; lng: number } | null> {
+    // Build full address query for Nominatim
+    const parts = [addr.endereco, addr.numero, addr.bairro, addr.cidade, addr.estado, "Brasil"].filter(Boolean);
+    const query = parts.join(", ");
+    if (!query || query === "Brasil") return null;
+
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
+      const data = await res.json();
+      if (data.length > 0) {
+        return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+      }
+      // Fallback: try city only
+      const cityQuery = [addr.cidade, addr.estado, "Brasil"].filter(Boolean).join(", ");
+      const res2 = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cityQuery)}&format=json&limit=1`);
+      const data2 = await res2.json();
+      if (data2.length > 0) {
+        return { lat: parseFloat(data2[0].lat), lng: parseFloat(data2[0].lon) };
+      }
+    } catch {}
+    return null;
+  }
+
   async function handleSaveAddress() {
     if (!factoryId) return;
 
@@ -214,6 +237,18 @@ export default function ConfigurarFabrica() {
       if (address.numero) fullEndereco += `, ${address.numero}`;
       if (address.complemento) fullEndereco += ` - ${address.complemento}`;
 
+      // Auto-geocode if coordinates are missing
+      let lat = address.latitude;
+      let lng = address.longitude;
+      if (!lat || !lng) {
+        const coords = await geocodeFullAddress(address);
+        if (coords) {
+          lat = coords.lat;
+          lng = coords.lng;
+          setAddress(prev => ({ ...prev, latitude: lat, longitude: lng }));
+        }
+      }
+
       await (supabase as any).from("factories").update({
         endereco: fullEndereco || null,
         bairro: address.bairro || null,
@@ -221,11 +256,11 @@ export default function ConfigurarFabrica() {
         estado: address.estado || null,
         cep: cleanCep || null,
         cnpj: address.cnpj || null,
-        latitude: address.latitude,
-        longitude: address.longitude,
+        latitude: lat,
+        longitude: lng,
       }).eq("id", factoryId);
       setAddress((prev) => ({ ...prev, cep: cleanCep ? formatCep(cleanCep) : "" }));
-      toast({ title: "Endereço salvo com sucesso!" });
+      toast({ title: "Endereço salvo com sucesso!", description: lat ? `📍 Coordenadas: ${lat.toFixed(4)}, ${lng!.toFixed(4)}` : "Coordenadas não encontradas." });
     } catch (e: any) {
       toast({ title: "Erro ao salvar", description: e.message, variant: "destructive" });
     }
