@@ -57,6 +57,20 @@ const createFactoryIcon = (label: string) => {
   });
 };
 
+// Haversine distance calculation
+function calcDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function formatDistance(km: number): string {
+  if (km < 1) return `${Math.round(km * 1000)}m`;
+  return `${km.toFixed(1)}km`;
+}
+
 interface Cliente {
   id: string;
   nome: string;
@@ -265,44 +279,52 @@ export default function MapaClientes() {
   }
 
   const placingCliente = clientes.find(c => c.id === placingClienteId);
+  const hasFactoryLocation = factoryCenter[0] !== DEFAULT_CENTER[0] || factoryCenter[1] !== DEFAULT_CENTER[1];
 
   // Build markers for AdvancedMap
   const markers: MapMarker[] = [
-    ...clientesFiltrados.map(c => ({
-      id: c.id,
-      position: [c.latitude!, c.longitude!] as [number, number],
-      icon: createLabeledSvgIcon(
-        c.id === highlightedClienteId ? '#d97706' : '#2563eb',
-        c.nome,
-        c.id === highlightedClienteId ? 'large' : 'medium'
-      ),
-      popup: {
-        title: c.nome,
-        content: (
-          <div className="space-y-1">
-            {c.bairro && <p className="text-xs text-gray-600">{c.bairro}</p>}
-            {c.endereco && <p className="text-xs text-gray-500">{c.endereco}</p>}
-            {c.telefone && <p className="text-xs text-gray-500">📞 {c.telefone}</p>}
-            {c.possui_freezer && <p className="text-xs text-blue-600 font-medium mt-1">❄️ Possui Freezer</p>}
-            <div className="flex gap-1 mt-2">
-              <button
-                className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
-                onClick={() => startPlacing(c.id)}
-              >
-                Reposicionar
-              </button>
-              <button
-                className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
-                onClick={() => removePosition(c.id)}
+    ...clientesFiltrados.map(c => {
+      const dist = hasFactoryLocation ? calcDistanceKm(factoryCenter[0], factoryCenter[1], c.latitude!, c.longitude!) : null;
+      const distLabel = dist !== null ? ` · ${formatDistance(dist)}` : '';
+      return {
+        id: c.id,
+        position: [c.latitude!, c.longitude!] as [number, number],
+        icon: createLabeledSvgIcon(
+          c.id === highlightedClienteId ? '#d97706' : '#2563eb',
+          `${c.nome}${distLabel}`,
+          c.id === highlightedClienteId ? 'large' : 'medium'
+        ),
+        popup: {
+          title: c.nome,
+          content: (
+            <div className="space-y-1">
+              {dist !== null && (
+                <p className="text-xs font-semibold text-primary">📏 {formatDistance(dist)} da fábrica</p>
+              )}
+              {c.bairro && <p className="text-xs text-muted-foreground">{c.bairro}</p>}
+              {c.endereco && <p className="text-xs text-muted-foreground">{c.endereco}</p>}
+              {c.telefone && <p className="text-xs text-muted-foreground">📞 {c.telefone}</p>}
+              {c.possui_freezer && <p className="text-xs text-primary font-medium mt-1">❄️ Possui Freezer</p>}
+              <div className="flex gap-1 mt-2">
+                <button
+                  className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded hover:opacity-90"
+                  onClick={() => startPlacing(c.id)}
+                >
+                  Reposicionar
+                </button>
+                <button
+                  className="text-xs bg-destructive text-destructive-foreground px-2 py-1 rounded hover:opacity-90"
+                  onClick={() => removePosition(c.id)}
               >
                 Remover
               </button>
             </div>
           </div>
         ),
-      },
-      data: c,
-    })),
+        },
+        data: c,
+      };
+    }),
     ...(tempMarker ? [{
       id: 'temp-marker',
       position: tempMarker,
