@@ -808,6 +808,45 @@ export type Database = {
         }
         Relationships: []
       }
+      factory_preco_sabor: {
+        Row: {
+          created_at: string
+          factory_id: string | null
+          id: string
+          preco_unitario: number
+          sabor_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          factory_id?: string | null
+          id?: string
+          preco_unitario: number
+          sabor_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          factory_id?: string | null
+          id?: string
+          preco_unitario?: number
+          sabor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "factory_preco_sabor_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factory_preco_sabor_sabor_id_fkey"
+            columns: ["sabor_id"]
+            isOneToOne: false
+            referencedRelation: "sabores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       factory_pricing_tiers: {
         Row: {
           created_at: string
