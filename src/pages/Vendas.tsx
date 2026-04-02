@@ -284,7 +284,11 @@ export default function Vendas() {
   }
 
   async function handleSubmit() {
-    let itensValidos = itens.filter(i => i.sabor_id && i.quantidade > 0);
+    let itensValidos = itens.filter(i => i.sabor_id && i.quantidade > 0).map(i => ({
+      ...i,
+      // Convert pacotes to units if selling by package
+      quantidade: vendaPorPacote ? i.quantidade * factoryUnidadesPorSaco : i.quantidade,
+    }));
     // Add brindes as free items
     brindes.forEach(b => {
       if (Number(b.quantidade) > 0 && b.sabor_id) {
@@ -820,26 +824,38 @@ export default function Vendas() {
                 </Select>
               </div>
               {/* Venda por Pacote (Sacos) - no topo da comanda */}
-              {factoryUsaSacos && (
-                <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label className="text-xs font-medium">📦 Venda por Pacote (Saco)</Label>
-                      <p className="text-[10px] text-muted-foreground">1 saco = {factoryUnidadesPorSaco} unidades. Desconta sacos do estoque.</p>
-                    </div>
-                    <Switch checked={vendaPorPacote} onCheckedChange={setVendaPorPacote} />
+              <div className="space-y-2 p-3 border-2 rounded-lg bg-muted/30 border-primary/20">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-sm font-bold">📦 Venda por Pacote</Label>
+                    <p className="text-[10px] text-muted-foreground">
+                      {factoryUsaSacos 
+                        ? `1 pacote = ${factoryUnidadesPorSaco} unidades. Quantidades em pacotes.`
+                        : "Ative 'Usa Sacos' nas configurações da fábrica para usar pacotes."
+                      }
+                    </p>
                   </div>
-                  {vendaPorPacote && itens.filter(i => i.sabor_id && i.quantidade > 0).length > 0 && (
-                    <div className="text-xs text-muted-foreground bg-primary/5 rounded p-2">
-                      Total: {itens.reduce((s, i) => s + (i.quantidade || 0), 0)} unidades → 
-                      <strong> {Math.ceil(itens.reduce((s, i) => s + (i.quantidade || 0), 0) / factoryUnidadesPorSaco)} saco(s)</strong> serão descontados
-                    </div>
-                  )}
+                  <Switch checked={vendaPorPacote} onCheckedChange={setVendaPorPacote} disabled={!factoryUsaSacos} />
                 </div>
-              )}
+                {vendaPorPacote && itens.filter(i => i.sabor_id && i.quantidade > 0).length > 0 && (
+                  <div className="text-xs text-muted-foreground bg-primary/10 rounded p-2 font-medium">
+                    {itens.filter(i => i.sabor_id && i.quantidade > 0).map((item, idx) => {
+                      const saborNome = sabores.find(s => s.id === item.sabor_id)?.nome || "?";
+                      const unidades = item.quantidade * factoryUnidadesPorSaco;
+                      return <div key={idx}>{saborNome}: {item.quantidade} pacote(s) = <strong>{unidades} un.</strong></div>;
+                    })}
+                    <div className="mt-1 pt-1 border-t border-primary/20">
+                      Total: <strong>{itens.reduce((s, i) => s + (i.quantidade || 0), 0)} pacote(s)</strong> → <strong>{itens.reduce((s, i) => s + (i.quantidade || 0), 0) * factoryUnidadesPorSaco} unidades</strong>
+                    </div>
+                  </div>
+                )}
+              </div>
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <Label className="text-base font-semibold flex items-center gap-2"><ShoppingCart className="h-4 w-4" /> Gelos</Label>
+                  <Label className="text-base font-semibold flex items-center gap-2">
+                    <ShoppingCart className="h-4 w-4" /> Gelos
+                    {vendaPorPacote && <Badge variant="secondary" className="text-[10px] ml-1">Modo Pacote</Badge>}
+                  </Label>
                   <Button size="sm" variant="outline" onClick={addItem}><Plus className="h-3 w-3 mr-1" />Add</Button>
                 </div>
                 {itens.length === 0 && <p className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md">Clique em "Add"</p>}
@@ -849,7 +865,12 @@ export default function Vendas() {
                       <SelectTrigger className="flex-1"><SelectValue placeholder="Sabor" /></SelectTrigger>
                       <SelectContent>{sabores.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}</SelectContent>
                     </Select>
-                    <Input type="number" className="w-20" min={1} value={item.quantidade || ""} onChange={(e) => updateItem(i, "quantidade", e.target.value)} placeholder="Qtd" />
+                    <div className="relative">
+                      <Input type="number" className="w-20" min={1} value={item.quantidade || ""} onChange={(e) => updateItem(i, "quantidade", e.target.value)} placeholder={vendaPorPacote ? "Pct" : "Qtd"} />
+                      {vendaPorPacote && item.quantidade > 0 && (
+                        <span className="absolute -bottom-4 left-0 text-[9px] text-muted-foreground whitespace-nowrap">= {item.quantidade * factoryUnidadesPorSaco} un</span>
+                      )}
+                    </div>
                     <div className="relative w-24">
                       <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
                       <Input
@@ -869,11 +890,19 @@ export default function Vendas() {
                   <div className="mt-3 pt-3 border-t font-semibold space-y-1">
                     <div className="flex justify-between items-center">
                       <span>Total de Gelos:</span>
-                      <span className="text-lg">{itens.reduce((sum, item) => sum + (item.quantidade || 0), 0)} un.</span>
+                      <span className="text-lg">
+                        {vendaPorPacote 
+                          ? <>{itens.reduce((sum, item) => sum + (item.quantidade || 0), 0)} pacote(s) <span className="text-xs font-normal text-muted-foreground">({itens.reduce((sum, item) => sum + (item.quantidade || 0), 0) * factoryUnidadesPorSaco} un.)</span></>
+                          : <>{itens.reduce((sum, item) => sum + (item.quantidade || 0), 0)} un.</>
+                        }
+                      </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span>Subtotal Produtos:</span>
-                      <span>R$ {itens.reduce((sum, item) => sum + (Number(item.preco_unitario) || 0) * (item.quantidade || 0), 0).toFixed(2)}</span>
+                      <span>R$ {itens.reduce((sum, item) => {
+                        const qty = vendaPorPacote ? (item.quantidade || 0) * factoryUnidadesPorSaco : (item.quantidade || 0);
+                        return sum + (Number(item.preco_unitario) || 0) * qty;
+                      }, 0).toFixed(2)}</span>
                     </div>
                     {Number(valorFrete) > 0 && (
                       <div className="flex justify-between items-center text-sm">
@@ -883,7 +912,10 @@ export default function Vendas() {
                     )}
                     <div className="flex justify-between items-center">
                       <span>Total da Venda:</span>
-                      <span className="text-lg">R$ {(itens.reduce((sum, item) => sum + (Number(item.preco_unitario) || 0) * (item.quantidade || 0), 0) + (Number(valorFrete) || 0)).toFixed(2)}</span>
+                      <span className="text-lg">R$ {(itens.reduce((sum, item) => {
+                        const qty = vendaPorPacote ? (item.quantidade || 0) * factoryUnidadesPorSaco : (item.quantidade || 0);
+                        return sum + (Number(item.preco_unitario) || 0) * qty;
+                      }, 0) + (Number(valorFrete) || 0)).toFixed(2)}</span>
                     </div>
                     {brindes.filter(b => Number(b.quantidade) > 0 && b.sabor_id).map((b, i) => (
                       <div key={i} className="flex justify-between items-center text-sm text-primary">
