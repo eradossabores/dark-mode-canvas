@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,10 +13,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { DollarSign, Plus, Pencil, Trash2, Loader2, TrendingDown, Receipt, CircleDollarSign, AlertTriangle, Check, X, CalendarDays, History } from "lucide-react";
-import { format } from "date-fns";
+import { DollarSign, Plus, Pencil, Trash2, Loader2, TrendingDown, Receipt, CircleDollarSign, AlertTriangle, Check, X, CalendarDays, BarChart3 } from "lucide-react";
+import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 const FORMAS_PAGAMENTO = [
   { value: "pix", label: "PIX" },
@@ -27,6 +29,8 @@ const FORMAS_PAGAMENTO = [
   { value: "transferencia", label: "Transferência" },
   { value: "cheque", label: "Cheque" },
 ];
+
+const MESES_PT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
 interface ContaPagar {
   id: string;
@@ -42,6 +46,7 @@ interface ContaPagar {
   ativa: boolean;
   pago_mes: boolean;
   proxima_parcela_data: string | null;
+  created_at?: string;
 }
 
 export default function ContasAPagar() {
@@ -92,6 +97,42 @@ export default function ContasAPagar() {
   const calcTotalParcelas = parseInt(totalParcelas || "0");
   const calcValorParcela = calcTotalParcelas > 0 ? calcRestanteParaParcelar / calcTotalParcelas : 0;
 
+  // Bar chart data - gastos mensais (últimos 6 meses)
+  const chartData = useMemo(() => {
+    const now = new Date();
+    const months: { name: string; total: number; fixo: number; parcelado: number; isCurrent: boolean }[] = [];
+    
+    for (let i = 5; i >= 0; i--) {
+      const monthDate = subMonths(now, i);
+      const monthIdx = monthDate.getMonth();
+      const year = monthDate.getFullYear();
+      const isCurrent = i === 0;
+      
+      // Fixos always count for every month
+      const fixoTotal = contas.filter(c => c.tipo === "fixo").reduce((s, c) => s + c.valor_parcela, 0);
+      
+      // Parcelados: estimate based on created_at
+      const parceladoTotal = contas.filter(c => {
+        if (c.tipo !== "parcelado") return false;
+        const created = new Date(c.created_at || "");
+        const createdMonth = startOfMonth(created);
+        const thisMonth = startOfMonth(monthDate);
+        // Count if the bill was created before or during this month and not fully paid
+        return createdMonth <= thisMonth;
+      }).reduce((s, c) => s + c.valor_parcela, 0);
+      
+      months.push({
+        name: `${MESES_PT[monthIdx]}/${String(year).slice(2)}`,
+        total: fixoTotal + parceladoTotal,
+        fixo: fixoTotal,
+        parcelado: parceladoTotal,
+        isCurrent,
+      });
+    }
+    
+    return months;
+  }, [contas]);
+
   async function loadContas() {
     setLoading(true);
     let q = (supabase as any)
@@ -120,10 +161,9 @@ export default function ContasAPagar() {
     const tp = tipo === "parcelado" ? calcTotalParcelas : 0;
     const vt = tipo === "parcelado" ? calcValorTotalNum : 0;
     const entradaPaga = calcEntrada + calcIntermediarios;
-    const parcelasJaPagas = 0; // Parcelas start at 0, entrada is separate
+    const parcelasJaPagas = 0;
     const vr = tipo === "parcelado" ? calcRestanteParaParcelar : 0;
 
-    // Build observacoes with payment history
     let obs = "";
     if (calcEntrada > 0) {
       obs += `Entrada: R$${calcEntrada.toFixed(2)} (${FORMAS_PAGAMENTO.find(f => f.value === formaEntrada)?.label || formaEntrada})`;
@@ -231,6 +271,8 @@ export default function ContasAPagar() {
   const totalRestante = parceladas.reduce((s, c) => s + c.valor_restante, 0);
   const totalFixo = fixas.reduce((s, c) => s + c.valor_parcela, 0);
   const totalParcelado = parceladas.reduce((s, c) => s + c.valor_parcela, 0);
+  const contasPagas = contas.filter(c => c.pago_mes).length;
+  const contasPendentes = contas.filter(c => !c.pago_mes).length;
 
   function renderEditForm() {
     return (
@@ -324,7 +366,6 @@ export default function ContasAPagar() {
 
         {tipo === "parcelado" && (
           <>
-            {/* Step 1: Valor Total */}
             <div className="p-3 border rounded-lg bg-muted/30 space-y-3">
               <Label className="text-sm font-bold">💰 1. Valor Total da Compra</Label>
               <div className="relative">
@@ -333,7 +374,6 @@ export default function ContasAPagar() {
               </div>
             </div>
 
-            {/* Step 2: Entrada */}
             <div className="p-3 border rounded-lg bg-muted/30 space-y-3">
               <Label className="text-sm font-bold">💵 2. Entrada (opcional)</Label>
               <div className="grid grid-cols-2 gap-2">
@@ -350,7 +390,6 @@ export default function ContasAPagar() {
               </div>
             </div>
 
-            {/* Step 3: Pagamentos intermediários */}
             <div className="p-3 border rounded-lg bg-muted/30 space-y-3">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-bold">📝 3. Pagamentos Intermediários (opcional)</Label>
@@ -394,7 +433,6 @@ export default function ContasAPagar() {
               ))}
             </div>
 
-            {/* Step 4: Parcelamento do restante */}
             <div className="p-3 border rounded-lg bg-muted/30 space-y-3">
               <Label className="text-sm font-bold">📊 4. Parcelar o Restante</Label>
               <div className="grid grid-cols-2 gap-2">
@@ -409,7 +447,6 @@ export default function ContasAPagar() {
               </div>
             </div>
 
-            {/* Summary */}
             <div className="p-3 border-2 border-primary/30 rounded-lg bg-primary/5 space-y-2">
               <Label className="text-sm font-bold">📋 Resumo</Label>
               <div className="text-sm space-y-1">
@@ -452,16 +489,36 @@ export default function ContasAPagar() {
     );
   }
 
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-popover border rounded-lg shadow-lg p-3 text-sm">
+          <p className="font-bold text-foreground mb-1">{label}</p>
+          <p className="text-primary">Fixos: {R(payload[0]?.payload?.fixo || 0)}</p>
+          <p className="text-destructive">Parcelados: {R(payload[0]?.payload?.parcelado || 0)}</p>
+          <p className="font-bold text-foreground mt-1 border-t pt-1">Total: {R(payload[0]?.value || 0)}</p>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <DollarSign className="h-7 w-7 text-primary" />
-          <h1 className="text-2xl font-bold text-foreground">Contas a Pagar</h1>
+          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <DollarSign className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Contas a Pagar</h1>
+            <p className="text-sm text-muted-foreground">{contas.length} conta(s) ativa(s) · {contasPendentes} pendente(s)</p>
+          </div>
         </div>
         <Dialog open={open} onOpenChange={v => { setOpen(v); if (!v) resetForm(); }}>
           <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 mr-2" />Nova Conta</Button>
+            <Button size="sm" className="gap-2"><Plus className="h-4 w-4" />Nova Conta</Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader><DialogTitle>Nova Conta a Pagar</DialogTitle></DialogHeader>
@@ -473,140 +530,209 @@ export default function ContasAPagar() {
         </Dialog>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
+      {/* KPIs - Redesigned */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
           <CardContent className="pt-4 pb-3">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-              <Receipt className="h-4 w-4" /> Total Mensal
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+              <Receipt className="h-3.5 w-3.5 text-primary" /> Total Mensal
             </div>
             <p className="text-xl font-bold text-foreground">{R(totalMensal)}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">{contas.length} conta(s)</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-destructive/20 bg-gradient-to-br from-destructive/5 to-transparent">
           <CardContent className="pt-4 pb-3">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-              <AlertTriangle className="h-4 w-4" /> Faltam Pagar
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+              <AlertTriangle className="h-3.5 w-3.5 text-destructive" /> Saldo Devedor
             </div>
             <p className="text-xl font-bold text-destructive">{R(totalRestante)}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">{parceladas.length} parcelada(s)</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-              <CircleDollarSign className="h-4 w-4" /> Custos Fixos
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+              <CircleDollarSign className="h-3.5 w-3.5" /> Custos Fixos
             </div>
             <p className="text-xl font-bold text-foreground">{R(totalFixo)}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">{fixas.length} fixa(s)</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-              <TrendingDown className="h-4 w-4" /> Parcelas/Mês
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+              <TrendingDown className="h-3.5 w-3.5" /> Parcelas/Mês
             </div>
             <p className="text-xl font-bold text-foreground">{R(totalParcelado)}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">{parceladas.length} conta(s)</p>
+          </CardContent>
+        </Card>
+        <Card className={contasPendentes > 0 ? "border-amber-500/30 bg-gradient-to-br from-amber-500/5 to-transparent" : "border-green-500/30 bg-gradient-to-br from-green-500/5 to-transparent"}>
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+              {contasPendentes > 0 ? <X className="h-3.5 w-3.5 text-amber-500" /> : <Check className="h-3.5 w-3.5 text-green-500" />}
+              Status do Mês
+            </div>
+            <p className="text-xl font-bold text-foreground">{contasPagas}/{contas.length}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">{contasPendentes > 0 ? `${contasPendentes} pendente(s)` : "Tudo pago! ✅"}</p>
           </CardContent>
         </Card>
       </div>
+
+      {/* Monthly Bar Chart */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-primary" />
+            Gastos Mensais (Últimos 6 meses)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[280px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} className="text-muted-foreground" />
+                <YAxis 
+                  tickFormatter={v => `R$${(v / 1000).toFixed(0)}k`} 
+                  tick={{ fontSize: 11 }} 
+                  className="text-muted-foreground"
+                  width={60}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="total" radius={[6, 6, 0, 0]} maxBarSize={48}>
+                  {chartData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={entry.isCurrent ? "hsl(var(--primary))" : "hsl(var(--primary) / 0.4)"}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex items-center justify-center gap-6 mt-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-sm bg-primary/40" />
+              Meses anteriores
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-sm bg-primary" />
+              Mês atual
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Contas Parceladas */}
       {parceladas.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              📋 Contas Parceladas
-              <Badge variant="secondary" className="text-xs">{parceladas.length}</Badge>
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                📋 Contas Parceladas
+                <Badge variant="secondary" className="text-xs">{parceladas.length}</Badge>
+              </CardTitle>
+              <div className="text-xs text-muted-foreground">
+                Saldo total: <span className="font-bold text-destructive">{R(totalRestante)}</span>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Custo</TableHead>
-                  <TableHead>Responsável</TableHead>
-                  <TableHead className="text-center">Mês Pago?</TableHead>
-                  <TableHead className="text-right">Parcela</TableHead>
-                  <TableHead>Próx. Vencimento</TableHead>
-                  <TableHead className="text-center">Progresso</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead className="text-right">Faltam</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {parceladas.map(c => {
-                  const pct = c.total_parcelas > 0 ? Math.round((c.parcela_atual / c.total_parcelas) * 100) : 0;
-                  const quaseQuitando = c.parcela_atual >= c.total_parcelas - 2 && c.parcela_atual < c.total_parcelas;
-                  const quitado = c.parcela_atual >= c.total_parcelas;
-                  const descParts = c.descricao.split(" — ");
-                  return (
-                    <TableRow key={c.id} className={quitado ? "opacity-60" : ""}>
-                      <TableCell className="font-medium">
-                        <div>{descParts[0]}</div>
-                        {descParts[1] && <p className="text-[10px] text-muted-foreground mt-0.5">{descParts[1]}</p>}
-                      </TableCell>
-                      <TableCell>{c.responsavel || "—"}</TableCell>
-                      <TableCell className="text-center">
-                        <Button
-                          size="sm"
-                          variant={c.pago_mes ? "default" : "outline"}
-                          className={`h-7 w-7 p-0 ${c.pago_mes ? "bg-green-600 hover:bg-green-700" : "hover:bg-red-50 dark:hover:bg-red-950/30"}`}
-                          onClick={() => togglePagoMes(c)}
-                          title={c.pago_mes ? "Parcela do mês paga ✅" : "Parcela do mês pendente"}
-                        >
-                          {c.pago_mes ? <Check className="h-4 w-4 text-white" /> : <X className="h-4 w-4 text-destructive" />}
-                        </Button>
-                      </TableCell>
-                      <TableCell className="text-right font-mono">{R(c.valor_parcela)}</TableCell>
-                      <TableCell>
-                        {c.proxima_parcela_data ? (
-                          <Badge variant="outline" className="text-xs gap-1">
-                            <CalendarDays className="h-3 w-3" />
-                            {new Date(c.proxima_parcela_data + "T12:00:00").toLocaleDateString("pt-BR")}
-                          </Badge>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Progress value={pct} className="h-2 flex-1" />
-                          <Badge variant={quitado ? "default" : quaseQuitando ? "secondary" : "outline"} className="text-xs font-mono whitespace-nowrap">
-                            {c.parcela_atual}/{c.total_parcelas}
-                          </Badge>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right font-mono">{R(c.valor_total)}</TableCell>
-                      <TableCell className="text-right font-mono font-bold text-destructive">{R(c.valor_restante)}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          {!quitado && (
-                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { setPagarConta(c); setPagarData(undefined); setPagarValor(String(c.valor_parcela)); }} title="Pagar próxima parcela">
-                              💰 Pagar
-                            </Button>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Custo</TableHead>
+                    <TableHead>Responsável</TableHead>
+                    <TableHead className="text-center">Mês Pago?</TableHead>
+                    <TableHead className="text-right">Parcela</TableHead>
+                    <TableHead>Próx. Vencimento</TableHead>
+                    <TableHead className="text-center">Progresso</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead className="text-right">Faltam</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {parceladas.map(c => {
+                    const pct = c.total_parcelas > 0 ? Math.round((c.parcela_atual / c.total_parcelas) * 100) : 0;
+                    const quaseQuitando = c.parcela_atual >= c.total_parcelas - 2 && c.parcela_atual < c.total_parcelas;
+                    const quitado = c.parcela_atual >= c.total_parcelas;
+                    const descParts = c.descricao.split(" — ");
+                    return (
+                      <TableRow key={c.id} className={quitado ? "opacity-60" : ""}>
+                        <TableCell className="font-medium">
+                          <div>{descParts[0]}</div>
+                          {descParts[1] && <p className="text-[10px] text-muted-foreground mt-0.5 max-w-[200px] truncate">{descParts[1]}</p>}
+                        </TableCell>
+                        <TableCell className="text-sm">{c.responsavel || "—"}</TableCell>
+                        <TableCell className="text-center">
+                          <Button
+                            size="sm"
+                            variant={c.pago_mes ? "default" : "outline"}
+                            className={cn(
+                              "h-7 w-7 p-0 transition-all",
+                              c.pago_mes ? "bg-green-600 hover:bg-green-700 shadow-sm" : "hover:bg-destructive/10"
+                            )}
+                            onClick={() => togglePagoMes(c)}
+                            title={c.pago_mes ? "Parcela do mês paga ✅" : "Parcela do mês pendente"}
+                          >
+                            {c.pago_mes ? <Check className="h-4 w-4 text-white" /> : <X className="h-4 w-4 text-destructive" />}
+                          </Button>
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-sm">{R(c.valor_parcela)}</TableCell>
+                        <TableCell>
+                          {c.proxima_parcela_data ? (
+                            <Badge variant="outline" className="text-xs gap-1">
+                              <CalendarDays className="h-3 w-3" />
+                              {new Date(c.proxima_parcela_data + "T12:00:00").toLocaleDateString("pt-BR")}
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
                           )}
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(c)}>
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setDeleteId(c.id)}>
-                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-                <TableRow className="bg-muted/50 font-bold">
-                  <TableCell colSpan={3}>TOTAL PARCELADAS</TableCell>
-                  <TableCell className="text-right font-mono">{R(totalParcelado)}</TableCell>
-                  <TableCell />
-                  <TableCell />
-                  <TableCell className="text-right font-mono">{R(parceladas.reduce((s, c) => s + c.valor_total, 0))}</TableCell>
-                  <TableCell className="text-right font-mono text-destructive">{R(totalRestante)}</TableCell>
-                  <TableCell />
-                </TableRow>
-              </TableBody>
-            </Table>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2 min-w-[120px]">
+                            <Progress value={pct} className="h-2 flex-1" />
+                            <Badge variant={quitado ? "default" : quaseQuitando ? "secondary" : "outline"} className="text-xs font-mono whitespace-nowrap">
+                              {c.parcela_atual}/{c.total_parcelas}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-sm">{R(c.valor_total)}</TableCell>
+                        <TableCell className="text-right font-mono font-bold text-destructive text-sm">{R(c.valor_restante)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            {!quitado && (
+                              <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => { setPagarConta(c); setPagarData(undefined); setPagarValor(String(c.valor_parcela)); }} title="Pagar próxima parcela">
+                                💰 Pagar
+                              </Button>
+                            )}
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(c)}>
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setDeleteId(c.id)}>
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  <TableRow className="bg-muted/50 font-bold">
+                    <TableCell colSpan={3}>TOTAL PARCELADAS</TableCell>
+                    <TableCell className="text-right font-mono">{R(totalParcelado)}</TableCell>
+                    <TableCell />
+                    <TableCell />
+                    <TableCell className="text-right font-mono">{R(parceladas.reduce((s, c) => s + c.valor_total, 0))}</TableCell>
+                    <TableCell className="text-right font-mono text-destructive">{R(totalRestante)}</TableCell>
+                    <TableCell />
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -615,10 +741,15 @@ export default function ContasAPagar() {
       {fixas.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              🔁 Custos Fixos Mensais
-              <Badge variant="secondary" className="text-xs">{fixas.length}</Badge>
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                🔁 Custos Fixos Mensais
+                <Badge variant="secondary" className="text-xs">{fixas.length}</Badge>
+              </CardTitle>
+              <div className="text-xs text-muted-foreground">
+                Total mensal: <span className="font-bold">{R(totalFixo)}</span>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <Table>
@@ -635,19 +766,22 @@ export default function ContasAPagar() {
                 {fixas.map(c => (
                   <TableRow key={c.id}>
                     <TableCell className="font-medium">{c.descricao.split(" — ")[0]}</TableCell>
-                    <TableCell>{c.responsavel || "—"}</TableCell>
+                    <TableCell className="text-sm">{c.responsavel || "—"}</TableCell>
                     <TableCell className="text-center">
                       <Button
                         size="sm"
                         variant={c.pago_mes ? "default" : "outline"}
-                        className={`h-7 w-7 p-0 ${c.pago_mes ? "bg-green-600 hover:bg-green-700" : "hover:bg-red-50 dark:hover:bg-red-950/30"}`}
+                        className={cn(
+                          "h-7 w-7 p-0 transition-all",
+                          c.pago_mes ? "bg-green-600 hover:bg-green-700 shadow-sm" : "hover:bg-destructive/10"
+                        )}
                         onClick={() => togglePagoMes(c)}
                         title={c.pago_mes ? "Pago este mês ✅" : "Pendente este mês"}
                       >
                         {c.pago_mes ? <Check className="h-4 w-4 text-white" /> : <X className="h-4 w-4 text-destructive" />}
                       </Button>
                     </TableCell>
-                    <TableCell className="text-right font-mono">{R(c.valor_parcela)}</TableCell>
+                    <TableCell className="text-right font-mono text-sm">{R(c.valor_parcela)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(c)}>
@@ -667,6 +801,18 @@ export default function ContasAPagar() {
                 </TableRow>
               </TableBody>
             </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Empty state */}
+      {contas.length === 0 && (
+        <Card className="border-dashed">
+          <CardContent className="py-12 text-center">
+            <DollarSign className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+            <h3 className="font-semibold text-foreground mb-1">Nenhuma conta cadastrada</h3>
+            <p className="text-sm text-muted-foreground mb-4">Clique em "Nova Conta" para adicionar sua primeira conta a pagar.</p>
+            <Button size="sm" onClick={() => setOpen(true)}><Plus className="h-4 w-4 mr-1" /> Nova Conta</Button>
           </CardContent>
         </Card>
       )}
