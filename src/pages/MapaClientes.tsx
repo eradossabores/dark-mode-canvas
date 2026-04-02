@@ -15,8 +15,47 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const clienteIcon = createSvgIcon('#2563eb');
 const pendingIcon = createSvgIcon('#dc2626');
-const factoryIcon = createSvgIcon('#f59e0b');
 const DEFAULT_CENTER: [number, number] = [2.8195, -60.6714];
+
+// Custom factory icon - distinct building shape
+const createFactoryIcon = (label: string) => {
+  const w = 44;
+  const h = 44;
+  const labelWidth = Math.max(160, Math.min(240, label.length * 7.4));
+  const labelHeight = 52;
+  const gap = 6;
+  const totalHeight = h + labelHeight + gap;
+  const totalWidth = Math.max(w, labelWidth);
+
+  return L.divIcon({
+    html: `
+      <div style="display:flex; flex-direction:column; align-items:center; width:${totalWidth}px; height:${totalHeight}px;">
+        <div style="width:${labelWidth}px; min-height:${labelHeight}px; padding:4px; margin-bottom:${gap}px; border-radius:22px; background:linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.88)); border:2px solid rgba(234,88,12,0.4); box-shadow:0 22px 40px -24px rgba(15,23,42,0.48), 0 0 16px -4px rgba(234,88,12,0.25); backdrop-filter:blur(16px);">
+          <div style="display:flex; align-items:center; gap:10px; min-height:${labelHeight - 8}px; padding:0 12px; border-radius:18px; background:rgba(255,255,255,0.72);">
+            <div style="font-size:20px; flex-shrink:0;">🏭</div>
+            <div style="flex:1; min-width:0; color:#ea580c; font-family:'DM Sans', system-ui, sans-serif; font-size:12.5px; font-weight:900; letter-spacing:-0.03em; line-height:1.1; text-transform:uppercase; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; text-overflow:ellipsis;">
+              ${label}
+            </div>
+          </div>
+        </div>
+        <svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 44 44">
+          <circle cx="22" cy="22" r="20" fill="#ea580c" stroke="#fff" stroke-width="2.5" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.3))"/>
+          <g transform="translate(10, 10)" fill="#fff">
+            <rect x="0" y="8" width="8" height="16" rx="1"/>
+            <rect x="10" y="4" width="8" height="20" rx="1"/>
+            <rect x="3" y="2" width="3" height="8" rx="1"/>
+            <rect x="13" y="0" width="2" height="5" rx="0.5"/>
+            <rect x="20" y="10" width="4" height="14" rx="1"/>
+          </g>
+        </svg>
+      </div>
+    `,
+    className: '',
+    iconSize: [totalWidth, totalHeight] as [number, number],
+    iconAnchor: [totalWidth / 2, totalHeight] as [number, number],
+    popupAnchor: [1, -totalHeight + 10] as [number, number],
+  });
+};
 
 interface Cliente {
   id: string;
@@ -277,7 +316,7 @@ export default function MapaClientes() {
     ...(factoryCenter[0] !== DEFAULT_CENTER[0] || factoryCenter[1] !== DEFAULT_CENTER[1] ? [{
       id: 'factory-marker',
       position: factoryCenter,
-      icon: createLabeledSvgIcon('#f59e0b', `🏭 ${factoryName || 'Fábrica'}`, 'large'),
+      icon: createFactoryIcon(factoryName || 'Fábrica'),
       popup: {
         title: `🏭 ${factoryName || 'Fábrica'}`,
         content: <p className="text-xs text-muted-foreground">Localização da fábrica (ponto de referência)</p>,
