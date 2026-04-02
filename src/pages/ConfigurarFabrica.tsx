@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import ConfigVendasSection from "@/components/configurar/ConfigVendasSection";
+import ConfigPrecoSaborSection from "@/components/configurar/ConfigPrecoSaborSection";
 import { formatCep, isValidCep, normalizeCep } from "@/lib/cep";
 import { geocodeClienteAddress } from "@/lib/geocoding";
 
