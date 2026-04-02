@@ -207,26 +207,20 @@ export default function ConfigurarFabrica() {
   }
 
   async function geocodeFullAddress(addr: FactoryAddress): Promise<{ lat: number; lng: number } | null> {
-    // Build full address query for Nominatim
-    const parts = [addr.endereco, addr.numero, addr.bairro, addr.cidade, addr.estado, "Brasil"].filter(Boolean);
-    const query = parts.join(", ");
-    if (!query || query === "Brasil") return null;
+    const enderecoCompleto = [addr.endereco?.trim(), addr.numero?.trim()].filter(Boolean).join(", ");
+
+    if (!enderecoCompleto) return null;
 
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
-      const data = await res.json();
-      if (data.length > 0) {
-        return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-      }
-      // Fallback: try city only
-      const cityQuery = [addr.cidade, addr.estado, "Brasil"].filter(Boolean).join(", ");
-      const res2 = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cityQuery)}&format=json&limit=1`);
-      const data2 = await res2.json();
-      if (data2.length > 0) {
-        return { lat: parseFloat(data2[0].lat), lng: parseFloat(data2[0].lon) };
-      }
-    } catch {}
-    return null;
+      return await geocodeClienteAddress({
+        endereco: enderecoCompleto,
+        bairro: addr.bairro,
+        cidade: addr.cidade,
+        estado: addr.estado,
+      });
+    } catch {
+      return null;
+    }
   }
 
   async function handleSaveAddress() {
