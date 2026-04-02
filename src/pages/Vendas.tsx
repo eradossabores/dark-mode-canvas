@@ -839,7 +839,7 @@ export default function Vendas() {
                       }
                     </p>
                   </div>
-                  <Switch checked={vendaPorPacote} onCheckedChange={setVendaPorPacote} disabled={!factoryUsaSacos} />
+                  <Switch checked={vendaPorPacote} onCheckedChange={(v) => { setVendaPorPacote(v); if (clienteId && itens.length > 0) setTimeout(() => recalcPrecosTotalComanda(itens, clienteId), 50); }} disabled={!factoryUsaSacos} />
                 </div>
                 {vendaPorPacote && itens.filter(i => i.sabor_id && i.quantidade > 0).length > 0 && (
                   <div className="text-xs text-muted-foreground bg-primary/10 rounded p-2 font-medium">
