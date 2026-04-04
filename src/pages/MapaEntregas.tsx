@@ -396,6 +396,14 @@ export default function MapaEntregas() {
                           Entrega: {new Date(p.dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}
                         </span>
                       </div>
+                      {routeInfoMap[p.id] && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1 border-t border-border/50">
+                          <Navigation className="h-3 w-3 text-primary" />
+                          <span className="font-medium text-foreground">{routeInfoMap[p.id].distanceKm} km</span>
+                          <span>·</span>
+                          <span>~{routeInfoMap[p.id].durationMin} min</span>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
