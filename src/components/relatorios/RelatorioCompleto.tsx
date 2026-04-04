@@ -442,6 +442,8 @@ export default function RelatorioCompleto() {
 
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <KpiCard title="Faturamento" value={formatBRL(totalVendas)} icon={DollarSign} />
+            <KpiCard title="Valor Recebido" value={formatBRL(valorRecebido)} icon={DollarSign} subtitle="efetivamente recebido" />
+            <KpiCard title="Pendente a Receber" value={formatBRL(valorPendente)} icon={AlertTriangle} subtitle={valorPendente > 0 ? "em aberto" : "nada pendente"} />
             <KpiCard title="Nº de Vendas" value={filteredVendas.length.toString()} icon={ShoppingCart} />
             <KpiCard title="Ticket Médio" value={formatBRL(ticketMedio)} icon={TrendingUp} />
             <KpiCard title="Produzido" value={`${totalProduzido.toLocaleString("pt-BR")} un`} icon={Factory} />
