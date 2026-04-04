@@ -112,6 +112,7 @@ export type MapMarker = {
   color?: string;
   size?: 'small' | 'medium' | 'large';
   icon?: L.Icon | L.DivIcon;
+  draggable?: boolean;
   popup?: {
     title?: string;
     content?: string | React.ReactNode;
