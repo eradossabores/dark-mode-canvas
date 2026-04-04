@@ -308,7 +308,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
         <div className="space-y-3 text-sm">
           <div className="text-center border-b pb-3">
             <img src={factoryLogo} alt={factoryName || "Logo"} className="h-28 mx-auto mb-1" />
-            <p className="text-muted-foreground text-xs font-semibold">{factoryName || "Gelos Saborizados"}</p>
+            <p className="text-muted-foreground text-xs font-semibold">{factoryName || "ICETECH"}</p>
           </div>
 
           <div className="space-y-1">
