@@ -272,6 +272,88 @@ export default function ContasAPagar() {
     loadContas();
   }
 
+  function loadImageAsBase64(url: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL("image/png"));
+      };
+      img.onerror = reject;
+      img.src = url;
+    });
+  }
+
+  async function gerarComprovante(descricao: string, valor: number, formaLabel: string, tipo: "fixo" | "parcelado", parcelaInfo?: string) {
+    const doc = new jsPDF({ unit: "mm", format: [80, 160] });
+    const W = 80;
+    const displayName = factoryName || "ICETECH";
+    const useLogo = branding?.logoUrl || logoUrl;
+
+    let y = 8;
+
+    // Logo
+    try {
+      const base64 = await loadImageAsBase64(useLogo);
+      doc.addImage(base64, "PNG", (W - 18) / 2, y, 18, 18);
+      y += 22;
+    } catch {
+      y += 4;
+    }
+
+    // Factory name
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text(displayName, W / 2, y, { align: "center" });
+    y += 6;
+
+    // Title
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text("COMPROVANTE DE PAGAMENTO", W / 2, y, { align: "center" });
+    y += 5;
+
+    // Separator
+    doc.setDrawColor(180);
+    doc.setLineWidth(0.3);
+    doc.line(6, y, W - 6, y);
+    y += 5;
+
+    // Details
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+
+    const addLine = (label: string, value: string) => {
+      doc.setFont("helvetica", "bold");
+      doc.text(label, 8, y);
+      doc.setFont("helvetica", "normal");
+      doc.text(value, W - 8, y, { align: "right" });
+      y += 5;
+    };
+
+    addLine("Descrição:", descricao.length > 25 ? descricao.substring(0, 25) + "..." : descricao);
+    addLine("Tipo:", tipo === "fixo" ? "Custo Fixo" : "Parcelado");
+    if (parcelaInfo) addLine("Parcela:", parcelaInfo);
+    addLine("Valor Pago:", valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }));
+    addLine("Pagamento:", formaLabel);
+    addLine("Data:", format(new Date(), "dd/MM/yyyy HH:mm"));
+
+    y += 2;
+    doc.line(6, y, W - 6, y);
+    y += 5;
+
+    doc.setFontSize(7);
+    doc.setTextColor(120);
+    doc.text(`${displayName} — Sistema de Gestão`, W / 2, y, { align: "center" });
+
+    doc.save(`comprovante_${descricao.replace(/[^a-zA-Z0-9]/g, "_").substring(0, 20)}.pdf`);
+  }
+
   async function handlePagarFixoAdiantamento() {
     if (!pagarFixoConta) return;
     const valor = parseFloat(pagarFixoValor || "0");
@@ -284,7 +366,11 @@ export default function ContasAPagar() {
       valor_parcela: Math.round(valor * 100) / 100,
     }).eq("id", pagarFixoConta.id);
     
-    toast({ title: `✅ ${pagarFixoConta.descricao.split(" — ")[0]} — Pago ${R(valor)} (${formaLabel})` });
+    const descName = pagarFixoConta.descricao.split(" — ")[0];
+    toast({ title: `✅ ${descName} — Pago ${R(valor)} (${formaLabel})` });
+    
+    await gerarComprovante(descName, valor, formaLabel, "fixo");
+    
     setPagarFixoConta(null);
     setPagarFixoValor("");
     setPagarFixoForma("pix");
