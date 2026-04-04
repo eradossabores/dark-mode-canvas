@@ -440,7 +440,7 @@ export default function RelatorioCompleto() {
         <>
           <div className="text-sm text-muted-foreground font-medium">Período: {periodoLabel}</div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             <KpiCard title="Faturamento" value={formatBRL(totalVendas)} icon={DollarSign} />
             <KpiCard title="Valor Recebido" value={formatBRL(valorRecebido)} icon={DollarSign} subtitle="efetivamente recebido" />
             <KpiCard title="Pendente a Receber" value={formatBRL(valorPendente)} icon={AlertTriangle} subtitle={valorPendente > 0 ? "em aberto" : "nada pendente"} />
