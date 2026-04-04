@@ -409,6 +409,15 @@ export default function RelatorioCompleto() {
     return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 10);
   }, [filteredProducoes]);
 
+  const producaoPorDia = useMemo(() => {
+    const map: Record<string, number> = {};
+    filteredProducoes.forEach(p => {
+      const day = new Date(p.created_at).toLocaleDateString("pt-BR");
+      map[day] = (map[day] || 0) + p.quantidade_total;
+    });
+    return Object.entries(map).map(([name, value]) => ({ name, value })).reverse().slice(0, 15).reverse();
+  }, [filteredProducoes]);
+
   const topClientes = useMemo(() => {
     const map: Record<string, number> = {};
     filteredVendas.forEach(v => {
