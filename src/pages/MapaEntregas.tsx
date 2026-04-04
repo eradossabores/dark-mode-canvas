@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { MapPin, Truck, Package, Filter } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
+import type { MapMarker } from "@/components/ui/interactive-map";
+
+const LazyMap = lazy(() => import("@/components/ui/interactive-map").then(m => ({ default: m.AdvancedMap })));
 
 const BAIRRO_COLORS: Record<string, string> = {};
 const COLOR_PALETTE = [
