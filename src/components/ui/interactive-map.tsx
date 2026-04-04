@@ -112,6 +112,7 @@ export type MapMarker = {
   color?: string;
   size?: 'small' | 'medium' | 'large';
   icon?: L.Icon | L.DivIcon;
+  draggable?: boolean;
   popup?: {
     title?: string;
     content?: string | React.ReactNode;
@@ -220,6 +221,7 @@ export function AdvancedMap({
   circles = [] as MapCircle[],
   polylines = [] as MapPolyline[],
   onMarkerClick,
+  onMarkerDragEnd,
   onMapClick,
   enableClustering = false,
   enableControls = true,
@@ -237,6 +239,7 @@ export function AdvancedMap({
   circles?: MapCircle[];
   polylines?: MapPolyline[];
   onMarkerClick?: (marker: MapMarker) => void;
+  onMarkerDragEnd?: (marker: MapMarker, newPosition: [number, number]) => void;
   onMapClick?: (latlng: L.LatLng) => void;
   enableClustering?: boolean;
   enableControls?: boolean;
@@ -275,8 +278,13 @@ export function AdvancedMap({
         key={marker.id}
         position={marker.position}
         icon={marker.icon || createSvgIcon(marker.color || '#2563eb', marker.size || 'medium')}
+        draggable={marker.draggable || false}
         eventHandlers={{
           click: () => onMarkerClick?.(marker),
+          dragend: (e) => {
+            const latlng = e.target.getLatLng();
+            onMarkerDragEnd?.(marker, [latlng.lat, latlng.lng]);
+          },
         }}
       >
         {marker.popup && (
