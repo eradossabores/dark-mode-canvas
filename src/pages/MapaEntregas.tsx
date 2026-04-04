@@ -477,13 +477,22 @@ export default function MapaEntregas() {
             <CardTitle className="text-sm flex flex-wrap items-center gap-2">
               <MapPin className="h-4 w-4" /> Mapa das Entregas
               <Badge variant="secondary">{mapMarkers.length} no mapa</Badge>
-              <Badge variant="outline">Arraste a fábrica para reposicionar</Badge>
               {previousSavedPosition && (
                 <Button variant="outline" size="sm" className="h-6 text-xs gap-1" onClick={undoReposition} disabled={savingFactoryPosition}>
                   <Undo2 className="h-3 w-3" /> Desfazer reposição
                 </Button>
               )}
             </CardTitle>
+            <div className="flex flex-wrap items-center gap-3 mt-1">
+              <span className="flex items-center gap-1 text-xs">
+                <span className="inline-block w-3 h-3 rounded-full" style={{ background: "#16a34a" }} />
+                <span className="font-medium">A</span> Fábrica (origem)
+              </span>
+              <span className="flex items-center gap-1 text-xs">
+                <span className="inline-block w-3 h-3 rounded-full" style={{ background: "#dc2626" }} />
+                <span className="font-medium">B</span> Cliente (destino)
+              </span>
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             <Suspense fallback={<div className="h-[400px] flex items-center justify-center text-muted-foreground">Carregando mapa...</div>}>
