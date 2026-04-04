@@ -13,7 +13,7 @@ export default function Relatorios() {
     <div>
       <h1 className="text-2xl font-bold mb-6">Relatórios</h1>
       <Tabs defaultValue="completo">
-        <TabsList className="mb-4 flex-wrap">
+        <TabsList className="mb-4 w-full overflow-x-auto flex justify-start h-auto gap-1 p-1">
           <TabsTrigger value="completo" className="gap-2"><FileBarChart className="h-4 w-4" /> Completo</TabsTrigger>
           <TabsTrigger value="producao" className="gap-2"><Factory className="h-4 w-4" /> Produção</TabsTrigger>
           <TabsTrigger value="estoque" className="gap-2"><Warehouse className="h-4 w-4" /> Estoque</TabsTrigger>
