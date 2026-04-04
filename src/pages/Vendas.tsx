@@ -1269,30 +1269,104 @@ export default function Vendas() {
 
       {/* Detail Dialog */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Detalhes da Venda</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle className="text-lg">Detalhes da Venda</DialogTitle></DialogHeader>
           {detailVenda && (
-            <div className="space-y-3">
-              <p><strong>Cliente:</strong> {detailVenda.clientes?.nome}</p>
-              <p><strong>Data:</strong> {new Date(detailVenda.created_at).toLocaleDateString("pt-BR")}</p>
-              <p><strong>Total:</strong> R$ {Number(detailVenda.total).toFixed(2)}</p>
-              <p><strong>Status:</strong> {detailVenda.status}</p>
-              <p><strong>Pagamento:</strong> {getFormaPagamentoLabel(detailVenda)}</p>
-              {detailVenda.observacoes && <p><strong>Obs:</strong> {detailVenda.observacoes}</p>}
-              {detailVenda.numero_nf && <p><strong>NF:</strong> {detailVenda.numero_nf}</p>}
-              <Table>
-                <TableHeader><TableRow><TableHead>Sabor</TableHead><TableHead>Qtd</TableHead><TableHead>Preço Un.</TableHead><TableHead>Subtotal</TableHead></TableRow></TableHeader>
-                <TableBody>
-                  {detailItens.map((it) => (
-                    <TableRow key={it.id}>
-                      <TableCell>{it.sabores?.nome}</TableCell>
-                      <TableCell>{it.quantidade}</TableCell>
-                      <TableCell>R$ {Number(it.preco_unitario).toFixed(2)}</TableCell>
-                      <TableCell>R$ {Number(it.subtotal).toFixed(2)}</TableCell>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3 p-4 rounded-lg bg-muted/40 border">
+                <div>
+                  <p className="text-xs text-muted-foreground">Cliente</p>
+                  <p className="font-semibold text-sm">{detailVenda.clientes?.nome}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Data</p>
+                  <p className="font-semibold text-sm">{new Date(detailVenda.created_at).toLocaleDateString("pt-BR")}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Status</p>
+                  <Badge variant={detailVenda.status === "paga" ? "default" : detailVenda.status === "cancelada" ? "destructive" : "secondary"} className="mt-0.5">
+                    {detailVenda.status === "paga" ? "Paga" : detailVenda.status === "cancelada" ? "Cancelada" : "Pendente"}
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Pagamento</p>
+                  <p className="font-semibold text-sm">{getFormaPagamentoLabel(detailVenda)}</p>
+                </div>
+                {detailVenda.numero_nf && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Nº NF</p>
+                    <p className="font-semibold text-sm">{detailVenda.numero_nf}</p>
+                  </div>
+                )}
+                {detailVenda.numero_pedido && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Nº Pedido</p>
+                    <p className="font-semibold text-sm">#{detailVenda.numero_pedido}</p>
+                  </div>
+                )}
+              </div>
+              {detailVenda.observacoes && (
+                <div className="p-3 rounded-lg bg-muted/30 border">
+                  <p className="text-xs text-muted-foreground mb-1">Observações</p>
+                  <p className="text-sm">{detailVenda.observacoes}</p>
+                </div>
+              )}
+              <div className="border rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead className="text-xs font-semibold">Sabor</TableHead>
+                      <TableHead className="text-xs font-semibold text-center">Qtd</TableHead>
+                      <TableHead className="text-xs font-semibold text-right">Preço Un.</TableHead>
+                      <TableHead className="text-xs font-semibold text-right">Subtotal</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {detailItens.map((it) => (
+                      <TableRow key={it.id}>
+                        <TableCell className="font-medium text-sm">{it.sabores?.nome}</TableCell>
+                        <TableCell className="text-center text-sm">
+                          {it.quantidade}
+                          {factoryUsaSacos && factoryUnidadesPorSaco > 0 && it.quantidade >= factoryUnidadesPorSaco && (
+                            <span className="text-xs text-muted-foreground ml-1">
+                              ({Math.floor(it.quantidade / factoryUnidadesPorSaco)} pct{it.quantidade % factoryUnidadesPorSaco > 0 ? ` +${it.quantidade % factoryUnidadesPorSaco}` : ""})
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right text-sm">R$ {Number(it.preco_unitario).toFixed(2)}</TableCell>
+                        <TableCell className="text-right text-sm font-medium">R$ {Number(it.subtotal).toFixed(2)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              {(() => {
+                const totalUnidades = detailItens.reduce((s: number, it: any) => s + (it.quantidade || 0), 0);
+                const totalPacotes = factoryUsaSacos && factoryUnidadesPorSaco > 0 ? Math.floor(totalUnidades / factoryUnidadesPorSaco) : 0;
+                const restoUnidades = factoryUsaSacos && factoryUnidadesPorSaco > 0 ? totalUnidades % factoryUnidadesPorSaco : 0;
+                return (
+                  <div className="flex flex-col gap-2 p-4 rounded-lg bg-primary/5 border border-primary/20">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Total de unidades</span>
+                      <span className="font-bold text-sm">{totalUnidades} un</span>
+                    </div>
+                    {factoryUsaSacos && totalPacotes > 0 && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground flex items-center gap-1">
+                          <Package className="h-3.5 w-3.5" /> Pacotes
+                        </span>
+                        <span className="font-bold text-sm">
+                          {totalPacotes} pct{restoUnidades > 0 ? ` + ${restoUnidades} un` : ""}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center pt-2 border-t border-primary/20">
+                      <span className="font-semibold">Total</span>
+                      <span className="font-bold text-lg text-primary">R$ {Number(detailVenda.total).toFixed(2)}</span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
         </DialogContent>
