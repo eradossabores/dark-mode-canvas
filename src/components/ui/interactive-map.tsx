@@ -238,6 +238,7 @@ export function AdvancedMap({
   circles?: MapCircle[];
   polylines?: MapPolyline[];
   onMarkerClick?: (marker: MapMarker) => void;
+  onMarkerDragEnd?: (marker: MapMarker, newPosition: [number, number]) => void;
   onMapClick?: (latlng: L.LatLng) => void;
   enableClustering?: boolean;
   enableControls?: boolean;
