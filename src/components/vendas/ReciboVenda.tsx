@@ -132,30 +132,60 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     drawDottedLine(doc, 6, y, w - 6);
     y += 3;
 
-    // Items table
-    autoTable(doc, {
-      startY: y,
-      margin: { left: 4, right: 4 },
-      head: [["Sabor", "Qtd", "Unit.", "Subtotal"]],
-      body: data.itens.map(i => [
-        i.sabor_nome,
-        String(i.quantidade),
-        `R$${i.preco_unitario.toFixed(2)}`,
-        `R$${i.subtotal.toFixed(2)}`,
-      ]),
-      styles: { fontSize: 6.5, cellPadding: 1.8, textColor: [40, 40, 40] },
-      headStyles: { fillColor: [0, 100, 160], fontSize: 6.5, textColor: [255, 255, 255], fontStyle: "bold" },
-      alternateRowStyles: { fillColor: [240, 246, 252] },
-      columnStyles: {
-        0: { cellWidth: 24 },
-        1: { cellWidth: 8, halign: "center" },
-        2: { cellWidth: 16, halign: "right" },
-        3: { cellWidth: 18, halign: "right" },
-      },
-      theme: "grid",
-      tableLineColor: [200, 210, 220],
-      tableLineWidth: 0.2,
-    });
+    // Separate paid items and gift items
+    const paidItems = data.itens.filter(i => i.preco_unitario > 0);
+    const giftItems = data.itens.filter(i => i.preco_unitario === 0);
+
+    // Paid items table
+    if (paidItems.length > 0) {
+      autoTable(doc, {
+        startY: y,
+        margin: { left: 4, right: 4 },
+        head: [["Sabor", "Qtd", "Unit.", "Subtotal"]],
+        body: paidItems.map(i => [
+          i.sabor_nome,
+          String(i.quantidade),
+          `R$${i.preco_unitario.toFixed(2)}`,
+          `R$${i.subtotal.toFixed(2)}`,
+        ]),
+        styles: { fontSize: 6.5, cellPadding: 1.8, textColor: [40, 40, 40] },
+        headStyles: { fillColor: [0, 100, 160], fontSize: 6.5, textColor: [255, 255, 255], fontStyle: "bold" },
+        alternateRowStyles: { fillColor: [240, 246, 252] },
+        columnStyles: {
+          0: { cellWidth: 24 },
+          1: { cellWidth: 8, halign: "center" },
+          2: { cellWidth: 16, halign: "right" },
+          3: { cellWidth: 18, halign: "right" },
+        },
+        theme: "grid",
+        tableLineColor: [200, 210, 220],
+        tableLineWidth: 0.2,
+      });
+      y = (doc as any).lastAutoTable.finalY + 3;
+    }
+
+    // Gift items section
+    if (giftItems.length > 0) {
+      doc.setFillColor(255, 243, 224);
+      doc.roundedRect(6, y - 1, w - 12, 5, 1.5, 1.5, "F");
+      doc.setFontSize(6.5);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(200, 120, 0);
+      doc.text("🎁 BRINDES", w / 2, y + 2.5, { align: "center" });
+      y += 6;
+
+      giftItems.forEach(i => {
+        doc.setFontSize(6.5);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(80, 80, 80);
+        doc.text(`${i.sabor_nome}  x${i.quantidade}`, 10, y);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(34, 139, 34);
+        doc.text("CORTESIA", w - 10, y, { align: "right" });
+        y += 3.5;
+      });
+      y += 1;
+    }
 
     y = (doc as any).lastAutoTable.finalY + 4;
 
