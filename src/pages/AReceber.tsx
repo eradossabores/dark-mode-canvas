@@ -694,7 +694,8 @@ export default function AReceber() {
     const fileName = `recibo-${clienteNome.replace(/\s+/g, "-")}.pdf`;
 
     const pagoLine = pago > 0 ? `\nPago: R$ ${pago.toFixed(2)}` : "";
-    const msg = `*A ERA DOS SABORES*\n\nOla ${clienteNome}, segue seu recibo.\n\nTotal: R$ ${total.toFixed(2)}${pagoLine}\nRestante: R$ ${restante.toFixed(2)}\nData: ${new Date(venda.created_at).toLocaleDateString("pt-BR")}\nPagamento: ${venda.forma_pagamento?.replace("_", " ") || "-"}`;
+    const displayName2 = factoryName || "ICETECH";
+    const msg = `*${displayName2}*\n\nOlá ${clienteNome}, segue seu recibo.\n\nTotal: R$ ${total.toFixed(2)}${pagoLine}\nRestante: R$ ${restante.toFixed(2)}\nData: ${new Date(venda.created_at).toLocaleDateString("pt-BR")}\nPagamento: ${venda.forma_pagamento?.replace("_", " ") || "-"}`;
 
     const pdfBlob = doc.output("blob");
     const file = new File([pdfBlob], fileName, { type: "application/pdf" });
