@@ -463,7 +463,7 @@ export default function MapaEntregas() {
                 }}
                 onMarkerDragEnd={(marker, newPosition) => {
                   if (marker.id === "factory") {
-                    void saveFactoryPosition(newPosition);
+                    handleMarkerDragEnd(newPosition);
                   }
                 }}
                 style={{ height: "400px", width: "100%" }}
