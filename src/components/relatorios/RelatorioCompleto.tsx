@@ -20,15 +20,16 @@ const formatPct = (v: number) => `${v.toLocaleString("pt-BR", { minimumFractionD
 
 const parseBRL = (v: string) => parseFloat(v.replace(/\./g, "").replace(",", ".")) || 0;
 
-function FinanceiroSection({ totalVendasAuto }: { totalVendasAuto: number }) {
+function FinanceiroSection({ totalVendasAuto, totalDespesasFixasAuto }: { totalVendasAuto: number; totalDespesasFixasAuto: number }) {
   const [receitaInput, setReceitaInput] = useState<string>("");
   const [cmvInput, setCmvInput] = useState<string>("");
   const [despesasFixasInput, setDespesasFixasInput] = useState<string>("");
   const [useAutoReceita, setUseAutoReceita] = useState(true);
+  const [useAutoDespesas, setUseAutoDespesas] = useState(true);
 
   const receita = useAutoReceita ? totalVendasAuto : parseBRL(receitaInput);
   const cmv = parseBRL(cmvInput);
-  const despesasFixas = parseBRL(despesasFixasInput);
+  const despesasFixas = useAutoDespesas ? totalDespesasFixasAuto : parseBRL(despesasFixasInput);
 
   const lucroBruto = receita - cmv;
   const lucroLiquido = lucroBruto - despesasFixas;
@@ -161,14 +162,30 @@ function FinanceiroSection({ totalVendasAuto }: { totalVendasAuto: number }) {
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs font-medium">Despesas Fixas — R$</Label>
-              <Input
-                type="text"
-                inputMode="decimal"
-                placeholder="0,00"
-                value={despesasFixasInput}
-                onChange={e => setDespesasFixasInput(e.target.value.replace(/[^0-9.,]/g, ""))}
-                className="h-9"
-              />
+              <div className="flex items-center gap-2">
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder={formatBRL(totalDespesasFixasAuto)}
+                  value={useAutoDespesas ? "" : despesasFixasInput}
+                  onChange={e => {
+                    setUseAutoDespesas(false);
+                    setDespesasFixasInput(e.target.value.replace(/[^0-9.,]/g, ""));
+                  }}
+                  className="h-9"
+                />
+                {!useAutoDespesas && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs h-9 px-2 shrink-0"
+                    onClick={() => { setUseAutoDespesas(true); setDespesasFixasInput(""); }}
+                  >
+                    Auto
+                  </Button>
+                )}
+              </div>
+              {useAutoDespesas && <p className="text-[10px] text-muted-foreground">Usando contas a pagar: {formatBRL(totalDespesasFixasAuto)}</p>}
             </div>
           </div>
 
@@ -274,6 +291,7 @@ export default function RelatorioCompleto() {
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
   const [materiasPrimas, setMateriasPrimas] = useState<any[]>([]);
   const [embalagens, setEmbalagens] = useState<any[]>([]);
+  const [contasAPagar, setContasAPagar] = useState<any[]>([]);
 
   useEffect(() => { loadData(); }, [factoryId]);
   useEffect(() => { setPreviewLoaded(false); }, [startDate, endDate]);
@@ -290,6 +308,7 @@ export default function RelatorioCompleto() {
       (supabase as any).from("funcionarios").select("*"),
       (supabase as any).from("materias_primas").select("*"),
       (supabase as any).from("embalagens").select("*"),
+      (supabase as any).from("contas_a_pagar").select("*").eq("ativa", true),
     ];
 
     if (fid) {
@@ -306,6 +325,7 @@ export default function RelatorioCompleto() {
     setFuncionarios(results[6].data || []);
     setMateriasPrimas(results[7].data || []);
     setEmbalagens(results[8].data || []);
+    setContasAPagar(results[9].data || []);
   }
 
   const filteredVendas = useMemo(() => vendas.filter((v) => {
@@ -330,6 +350,7 @@ export default function RelatorioCompleto() {
   const clientesInativos = clientes.filter(c => c.status === "inativo").length;
   const mpBaixo = materiasPrimas.filter(m => m.estoque_atual <= m.estoque_minimo).length;
   const embBaixo = embalagens.filter(e => e.estoque_atual <= e.estoque_minimo).length;
+  const totalDespesasFixas = contasAPagar.reduce((s, c) => s + Number(c.valor_parcela || 0), 0);
 
   const vendasPorDia = useMemo(() => {
     const map: Record<string, number> = {};
@@ -431,7 +452,7 @@ export default function RelatorioCompleto() {
           </div>
 
           {/* Indicadores Financeiros */}
-          <FinanceiroSection totalVendasAuto={totalVendas} />
+          <FinanceiroSection totalVendasAuto={totalVendas} totalDespesasFixasAuto={totalDespesasFixas} />
 
           {/* Charts */}
           <div id="charts-completo" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
