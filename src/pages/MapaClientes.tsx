@@ -484,19 +484,27 @@ export default function MapaClientes() {
               zoom={13}
               markers={markers}
               onMapClick={handleMapClick}
-              onMarkerDragEnd={async (marker, newPos) => {
-                if (marker.id === 'factory-marker' || marker.id === 'temp-marker') return;
-                try {
-                  const { error } = await (supabase as any)
-                    .from("clientes")
-                    .update({ latitude: newPos[0], longitude: newPos[1] })
-                    .eq("id", marker.id);
-                  if (error) throw error;
-                  toast({ title: "📍 Posição ajustada!", description: `${marker.data?.nome || 'Cliente'} foi reposicionado.` });
-                  loadClientes(false);
-                } catch (e: any) {
-                  toast({ title: "Erro ao salvar posição", description: e.message, variant: "destructive" });
+              onMarkerDragEnd={(marker, newPos) => {
+                if (marker.id === 'temp-marker') return;
+                const oldPos: [number, number] = marker.position as [number, number];
+                if (marker.id === 'factory-marker') {
+                  setPendingDrag({
+                    type: "factory",
+                    id: factoryId || "",
+                    name: factoryName || "Fábrica",
+                    oldPos,
+                    newPos,
+                  });
+                } else {
+                  setPendingDrag({
+                    type: "client",
+                    id: marker.id,
+                    name: marker.data?.nome || "Cliente",
+                    oldPos,
+                    newPos,
+                  });
                 }
+                setConfirmDragOpen(true);
               }}
               enableClustering={clientesFiltrados.length > 20}
               enableControls={true}
