@@ -60,6 +60,7 @@ const menuGroups = [
     label: "Mapas",
     items: [
       { path: "/painel/mapa-entregas", label: "Mapa Entregas", icon: MapPin },
+      { path: "/painel/pedidos-producao", label: "Histórico Pedidos p/ Entregas", icon: ShoppingBag },
       { path: "/painel/mapa-clientes", label: "Mapa Clientes", icon: Map },
     ],
   },
