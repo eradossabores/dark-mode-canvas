@@ -33,6 +33,11 @@ function getBairroColor(bairro: string) {
   return BAIRRO_COLORS[bairro];
 }
 
+interface RouteInfo {
+  distanceKm: number;
+  durationMin: number;
+}
+
 interface PedidoEntrega {
   id: string;
   clienteNome: string;
