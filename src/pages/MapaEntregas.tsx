@@ -50,6 +50,7 @@ export default function MapaEntregas() {
   const [pedidos, setPedidos] = useState<PedidoEntrega[]>([]);
   const [filtroStatus, setFiltroStatus] = useState<string>("todos");
   const [filtroBairro, setFiltroBairro] = useState<string>("todos");
+  const [factoryCoords, setFactoryCoords] = useState<[number, number]>([2.8195, -60.6714]);
 
   useEffect(() => {
     if (role !== "super_admin" && !factoryId) { setPedidos([]); return; }
