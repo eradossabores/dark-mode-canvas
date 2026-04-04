@@ -2,8 +2,10 @@ import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { DollarSign, Package, Users, ShoppingCart, Factory, Warehouse, TrendingUp, AlertTriangle } from "lucide-react";
+import { DollarSign, Package, Users, ShoppingCart, Factory, Warehouse, TrendingUp, AlertTriangle, Calculator } from "lucide-react";
 import DateRangeFilter from "./DateRangeFilter";
 import KpiCard from "./KpiCard";
 import ExportButtons from "./ExportButtons";
@@ -11,6 +13,9 @@ import { exportToPDF, exportToExcel } from "@/lib/export-utils";
 import { useAuth } from "@/contexts/AuthContext";
 
 const COLORS = ["hsl(200,98%,39%)", "hsl(213,93%,67%)", "hsl(38,92%,50%)", "hsl(142,71%,45%)", "hsl(215,20%,65%)", "hsl(0,72%,50%)"];
+
+const formatBRL = (v: number) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const formatPct = (v: number) => `${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
 
 export default function RelatorioCompleto() {
   const { factoryId, factoryName, branding } = useAuth();
@@ -29,6 +34,10 @@ export default function RelatorioCompleto() {
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
   const [materiasPrimas, setMateriasPrimas] = useState<any[]>([]);
   const [embalagens, setEmbalagens] = useState<any[]>([]);
+
+  // Financial inputs
+  const [cmvInput, setCmvInput] = useState<string>("");
+  const [despesasFixasInput, setDespesasFixasInput] = useState<string>("");
 
   useEffect(() => { loadData(); }, [factoryId]);
   useEffect(() => { setPreviewLoaded(false); }, [startDate, endDate]);
@@ -87,6 +96,14 @@ export default function RelatorioCompleto() {
   const mpBaixo = materiasPrimas.filter(m => m.estoque_atual <= m.estoque_minimo).length;
   const embBaixo = embalagens.filter(e => e.estoque_atual <= e.estoque_minimo).length;
 
+  // Financial calculations
+  const cmv = parseFloat(cmvInput.replace(",", ".")) || 0;
+  const despesasFixas = parseFloat(despesasFixasInput.replace(",", ".")) || 0;
+  const lucroBruto = totalVendas - cmv;
+  const lucroLiquido = lucroBruto - despesasFixas;
+  const margemContribuicao = totalVendas > 0 ? ((totalVendas - cmv) / totalVendas) * 100 : 0;
+  const pontoEquilibrio = margemContribuicao > 0 ? despesasFixas / (margemContribuicao / 100) : 0;
+
   // Charts data
   const vendasPorDia = useMemo(() => {
     const map: Record<string, number> = {};
@@ -125,13 +142,11 @@ export default function RelatorioCompleto() {
   const periodoLabel = `${startDate?.toLocaleDateString("pt-BR") || "—"} a ${endDate?.toLocaleDateString("pt-BR") || "—"}`;
 
   // Export data
-  const headers = [
-    "Seção", "Indicador", "Valor"
-  ];
+  const headers = ["Seção", "Indicador", "Valor"];
   const rows: (string | number)[][] = [
-    ["Vendas", "Total Faturado", `R$ ${totalVendas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`],
+    ["Vendas", "Total Faturado", formatBRL(totalVendas)],
     ["Vendas", "Nº de Vendas", filteredVendas.length],
-    ["Vendas", "Ticket Médio", `R$ ${ticketMedio.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`],
+    ["Vendas", "Ticket Médio", formatBRL(ticketMedio)],
     ["Produção", "Total Produzido", `${totalProduzido.toLocaleString("pt-BR")} un`],
     ["Produção", "Nº de Produções", filteredProducoes.length],
     ["Clientes", "Clientes Ativos", totalClientes],
@@ -141,12 +156,21 @@ export default function RelatorioCompleto() {
     ["Estoque", "Embalagens Baixas", embBaixo],
   ];
 
-  // Add top clients
+  if (cmv > 0 || despesasFixas > 0) {
+    rows.push(
+      ["Indicadores Financeiros", "CMV (Custo Variável)", formatBRL(cmv)],
+      ["Indicadores Financeiros", "Despesas Fixas", formatBRL(despesasFixas)],
+      ["Indicadores Financeiros", "Lucro Bruto", formatBRL(lucroBruto)],
+      ["Indicadores Financeiros", "Lucro Líquido", formatBRL(lucroLiquido)],
+      ["Indicadores Financeiros", "Margem de Contribuição", formatPct(margemContribuicao)],
+      ["Indicadores Financeiros", "Ponto de Equilíbrio", formatBRL(pontoEquilibrio)],
+    );
+  }
+
   topClientes.slice(0, 5).forEach((c, i) => {
-    rows.push(["Top Clientes", `${i + 1}º - ${c.name}`, `R$ ${c.value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`]);
+    rows.push(["Top Clientes", `${i + 1}º - ${c.name}`, formatBRL(c.value)]);
   });
 
-  // Add stock by flavor
   estoquePorSabor.slice(0, 5).forEach(e => {
     rows.push(["Estoque por Sabor", e.name, `${e.value.toLocaleString("pt-BR")} un`]);
   });
@@ -159,7 +183,7 @@ export default function RelatorioCompleto() {
           previewLoaded={previewLoaded}
           onPDF={() => exportToPDF("Relatório Completo", headers, rows, "relatorio-completo", [
             { label: "Período", value: periodoLabel },
-            { label: "Total Faturado", value: `R$ ${totalVendas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
+            { label: "Total Faturado", value: formatBRL(totalVendas) },
             { label: "Total Produzido", value: `${totalProduzido.toLocaleString("pt-BR")} unidades` },
             { label: "Estoque Atual", value: `${totalEstoque.toLocaleString("pt-BR")} unidades` },
           ], "charts-completo", { factoryName: factoryName || undefined, factoryLogoUrl: branding?.logoUrl })}
@@ -180,9 +204,9 @@ export default function RelatorioCompleto() {
 
           {/* KPIs Row 1 - Financeiro */}
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <KpiCard title="Faturamento" value={`R$ ${totalVendas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={DollarSign} />
+            <KpiCard title="Faturamento" value={formatBRL(totalVendas)} icon={DollarSign} />
             <KpiCard title="Nº de Vendas" value={filteredVendas.length.toString()} icon={ShoppingCart} />
-            <KpiCard title="Ticket Médio" value={`R$ ${ticketMedio.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={TrendingUp} />
+            <KpiCard title="Ticket Médio" value={formatBRL(ticketMedio)} icon={TrendingUp} />
             <KpiCard title="Produzido" value={`${totalProduzido.toLocaleString("pt-BR")} un`} icon={Factory} />
           </div>
 
@@ -194,6 +218,76 @@ export default function RelatorioCompleto() {
             <KpiCard title="Embalagens Alerta" value={embBaixo.toString()} icon={Package} subtitle={embBaixo > 0 ? "abaixo do mínimo" : "ok"} />
           </div>
 
+          {/* Indicadores Financeiros */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Calculator className="h-4 w-4 text-primary" /> Indicadores Financeiros
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Inputs */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="cmv" className="text-xs font-medium">CMV (Custo Variável) — R$</Label>
+                  <Input
+                    id="cmv"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0,00"
+                    value={cmvInput}
+                    onChange={e => setCmvInput(e.target.value.replace(/[^0-9.,]/g, ""))}
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="despesas-fixas" className="text-xs font-medium">Despesas Fixas — R$</Label>
+                  <Input
+                    id="despesas-fixas"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0,00"
+                    value={despesasFixasInput}
+                    onChange={e => setDespesasFixasInput(e.target.value.replace(/[^0-9.,]/g, ""))}
+                    className="h-9"
+                  />
+                </div>
+              </div>
+
+              {/* Results */}
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
+                <div className="rounded-lg border p-3 space-y-1">
+                  <p className="text-[11px] text-muted-foreground font-medium">Lucro Bruto</p>
+                  <p className={`text-lg font-bold ${lucroBruto >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                    {formatBRL(lucroBruto)}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">Receita − CMV</p>
+                </div>
+                <div className="rounded-lg border p-3 space-y-1">
+                  <p className="text-[11px] text-muted-foreground font-medium">Lucro Líquido</p>
+                  <p className={`text-lg font-bold ${lucroLiquido >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                    {formatBRL(lucroLiquido)}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">L. Bruto − Desp. Fixas</p>
+                </div>
+                <div className="rounded-lg border p-3 space-y-1">
+                  <p className="text-[11px] text-muted-foreground font-medium">Margem de Contribuição</p>
+                  <p className={`text-lg font-bold ${margemContribuicao >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                    {totalVendas > 0 ? formatPct(margemContribuicao) : "—"}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">(Receita − CMV) / Receita</p>
+                </div>
+                <div className="rounded-lg border p-3 space-y-1">
+                  <p className="text-[11px] text-muted-foreground font-medium">Ponto de Equilíbrio</p>
+                  <p className="text-lg font-bold text-foreground">
+                    {margemContribuicao > 0 ? formatBRL(pontoEquilibrio) : "—"}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">Desp. Fixas / Margem</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Charts */}
           <div id="charts-completo" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card data-chart-export>
@@ -204,7 +298,7 @@ export default function RelatorioCompleto() {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" fontSize={10} angle={-20} textAnchor="end" height={50} />
                     <YAxis fontSize={10} />
-                    <Tooltip formatter={(v: number) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} />
+                    <Tooltip formatter={(v: number) => formatBRL(v)} />
                     <Bar dataKey="value" name="Faturamento" fill="hsl(200,98%,39%)" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -233,7 +327,7 @@ export default function RelatorioCompleto() {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis type="number" fontSize={10} />
                     <YAxis type="category" dataKey="name" fontSize={10} width={100} />
-                    <Tooltip formatter={(v: number) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} />
+                    <Tooltip formatter={(v: number) => formatBRL(v)} />
                     <Bar dataKey="value" name="Total" fill="hsl(142,71%,45%)" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -296,7 +390,7 @@ export default function RelatorioCompleto() {
                       <Badge variant={v.status === "paga" ? "default" : "outline"} className="text-xs">
                         {v.status}
                       </Badge>
-                      <span className="text-sm font-bold">R$ {Number(v.total).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                      <span className="text-sm font-bold">{formatBRL(Number(v.total))}</span>
                     </div>
                   </div>
                 ))}
