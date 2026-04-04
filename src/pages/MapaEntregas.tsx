@@ -335,13 +335,18 @@ export default function MapaEntregas() {
       .map(p => {
         const info = routeInfoMap[p.id];
         const routeText = info ? `\n🛣️ ${info.distanceKm} km · ~${info.durationMin} min` : "";
+        const isSelected = selectedRoute === p.id;
 
         return {
           id: p.id,
           position: [p.latitude!, p.longitude!] as [number, number],
-          color: STATUS_MARKER_COLORS[p.status] || "#6b7280",
+          icon: createLabeledSvgIcon(
+            isSelected ? "#dc2626" : (STATUS_MARKER_COLORS[p.status] || "#6b7280"),
+            `📍B ${p.clienteNome}`,
+            isSelected ? "large" : "medium"
+          ),
           popup: {
-            title: p.clienteNome,
+            title: `📍 Destino: ${p.clienteNome}`,
             content: `📦 ${p.itens} un · ${p.bairro}\n📅 ${new Date(p.dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}${routeText}\n🗺️ Clique para ver a rota`,
           },
         } satisfies MapMarker;
@@ -351,13 +356,13 @@ export default function MapaEntregas() {
       id: "factory",
       position: factoryCoords,
       draggable: true,
-      icon: createLabeledSvgIcon("#d97706", `🏭 ${factoryName}`, "large"),
+      icon: createLabeledSvgIcon("#16a34a", `🏭A ${factoryName}`, "large"),
       popup: {
-        title: factoryName,
+        title: `🏭 Origem: ${factoryName}`,
         content: (
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Localização da fábrica (ponto de partida das entregas)</p>
-            <p className="text-xs text-primary font-medium">✋ Arraste o marcador para reposicionar a fábrica</p>
+            <p className="text-xs font-semibold text-emerald-600">📍 Ponto A — Origem das entregas</p>
+            <p className="text-xs text-muted-foreground">Arraste o marcador para reposicionar a fábrica</p>
             {savingFactoryPosition && (
               <p className="text-xs text-muted-foreground">Salvando nova posição...</p>
             )}
@@ -367,7 +372,7 @@ export default function MapaEntregas() {
     };
 
     return [factoryMarker, ...clientMarkers];
-  }, [factoryCoords, factoryName, filtered, routeInfoMap, savingFactoryPosition]);
+  }, [factoryCoords, factoryName, filtered, routeInfoMap, savingFactoryPosition, selectedRoute]);
 
   const totalItens = filtered.reduce((s, p) => s + p.itens, 0);
 
