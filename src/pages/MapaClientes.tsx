@@ -7,7 +7,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { MapPin, Save, X, Users, RefreshCw, Search } from "lucide-react";
+import { MapPin, Save, X, Users, RefreshCw, Search, Undo2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { geocodeClienteAddress, hasAddressForGeocoding } from "@/lib/geocoding";
@@ -100,6 +101,18 @@ export default function MapaClientes() {
   const [factoryCenter, setFactoryCenter] = useState<[number, number]>(DEFAULT_CENTER);
   const [factoryName, setFactoryName] = useState<string>("");
   const [hasFactoryCoords, setHasFactoryCoords] = useState(false);
+
+  // Drag confirmation state
+  interface PendingDrag {
+    type: "factory" | "client";
+    id: string;
+    name: string;
+    oldPos: [number, number];
+    newPos: [number, number];
+  }
+  const [pendingDrag, setPendingDrag] = useState<PendingDrag | null>(null);
+  const [confirmDragOpen, setConfirmDragOpen] = useState(false);
+  
 
   // Load factory location (with auto-geocode if missing coords)
   useEffect(() => {
@@ -363,10 +376,16 @@ export default function MapaClientes() {
     ...(hasFactoryCoords ? [{
       id: 'factory-marker',
       position: factoryCenter,
+      draggable: true,
       icon: createFactoryIcon(factoryName || 'Fábrica'),
       popup: {
         title: `🏭 ${factoryName || 'Fábrica'}`,
-        content: <p className="text-xs text-muted-foreground">Localização da fábrica (ponto de referência)</p>,
+        content: (
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Localização da fábrica (ponto de referência)</p>
+            <p className="text-xs text-amber-600">✋ Arraste para ajustar a posição</p>
+          </div>
+        ),
       },
     }] : []),
   ];
@@ -465,19 +484,27 @@ export default function MapaClientes() {
               zoom={13}
               markers={markers}
               onMapClick={handleMapClick}
-              onMarkerDragEnd={async (marker, newPos) => {
-                if (marker.id === 'factory-marker' || marker.id === 'temp-marker') return;
-                try {
-                  const { error } = await (supabase as any)
-                    .from("clientes")
-                    .update({ latitude: newPos[0], longitude: newPos[1] })
-                    .eq("id", marker.id);
-                  if (error) throw error;
-                  toast({ title: "📍 Posição ajustada!", description: `${marker.data?.nome || 'Cliente'} foi reposicionado.` });
-                  loadClientes(false);
-                } catch (e: any) {
-                  toast({ title: "Erro ao salvar posição", description: e.message, variant: "destructive" });
+              onMarkerDragEnd={(marker, newPos) => {
+                if (marker.id === 'temp-marker') return;
+                const oldPos: [number, number] = marker.position as [number, number];
+                if (marker.id === 'factory-marker') {
+                  setPendingDrag({
+                    type: "factory",
+                    id: factoryId || "",
+                    name: factoryName || "Fábrica",
+                    oldPos,
+                    newPos,
+                  });
+                } else {
+                  setPendingDrag({
+                    type: "client",
+                    id: String(marker.id),
+                    name: marker.data?.nome || "Cliente",
+                    oldPos,
+                    newPos,
+                  });
                 }
+                setConfirmDragOpen(true);
               }}
               enableClustering={clientesFiltrados.length > 20}
               enableControls={true}
@@ -535,6 +562,97 @@ export default function MapaClientes() {
           </div>
         </div>
       </div>
+
+      {/* Drag Confirmation Dialog */}
+      <AlertDialog open={confirmDragOpen} onOpenChange={(v) => {
+        if (!v) {
+          setConfirmDragOpen(false);
+          setPendingDrag(null);
+        }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar nova posição?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingDrag && (
+                <>
+                  Deseja mover <strong>{pendingDrag.name}</strong> para a nova localização?
+                  {pendingDrag.type === "factory" && " Isso atualizará o ponto de referência da fábrica para cálculo de distâncias."}
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setPendingDrag(null);
+              loadClientes(false);
+            }}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={async () => {
+              if (!pendingDrag) return;
+              setConfirmDragOpen(false);
+              const { type, id, name, oldPos, newPos } = pendingDrag;
+
+              try {
+                if (type === "factory") {
+                  const { error } = await (supabase as any)
+                    .from("factories")
+                    .update({ latitude: newPos[0], longitude: newPos[1] })
+                    .eq("id", id);
+                  if (error) throw error;
+                  setFactoryCenter(newPos);
+                } else {
+                  const { error } = await (supabase as any)
+                    .from("clientes")
+                    .update({ latitude: newPos[0], longitude: newPos[1] })
+                    .eq("id", id);
+                  if (error) throw error;
+                  await loadClientes(false);
+                }
+
+                // Show undo toast
+                const toastId = toast({
+                  title: `📍 ${name} reposicionado`,
+                  description: (
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs">Nova posição salva.</span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-6 text-xs gap-1"
+                        onClick={async () => {
+                          try {
+                            if (type === "factory") {
+                              await (supabase as any).from("factories").update({ latitude: oldPos[0], longitude: oldPos[1] }).eq("id", id);
+                              setFactoryCenter(oldPos);
+                            } else {
+                              await (supabase as any).from("clientes").update({ latitude: oldPos[0], longitude: oldPos[1] }).eq("id", id);
+                              await loadClientes(false);
+                            }
+                            toast({ title: "↩️ Posição restaurada", description: `${name} voltou à posição anterior.` });
+                          } catch (e: any) {
+                            toast({ title: "Erro ao desfazer", description: e.message, variant: "destructive" });
+                          }
+                        }}
+                      >
+                        <Undo2 className="h-3 w-3" /> Desfazer
+                      </Button>
+                    </div>
+                  ),
+                  duration: 8000,
+                });
+              } catch (e: any) {
+                toast({ title: "Erro ao salvar posição", description: e.message, variant: "destructive" });
+              }
+
+              setPendingDrag(null);
+            }}>
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
