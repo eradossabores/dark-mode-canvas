@@ -113,6 +113,7 @@ export type MapMarker = {
   size?: 'small' | 'medium' | 'large';
   icon?: L.Icon | L.DivIcon;
   draggable?: boolean;
+  excludeFromCluster?: boolean;
   popup?: {
     title?: string;
     content?: string | React.ReactNode;
