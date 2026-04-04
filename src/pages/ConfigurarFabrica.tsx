@@ -70,7 +70,7 @@ export default function ConfigurarFabrica() {
   const [fetchingCep, setFetchingCep] = useState(false);
 
   function updateAddressText(field: "endereco" | "numero" | "complemento" | "bairro" | "cidade" | "estado" | "cep", value: string) {
-    setAddress((prev) => ({ ...prev, [field]: value, latitude: null, longitude: null }));
+    setAddress((prev) => ({ ...prev, [field]: value }));
   }
 
   // Partners/Sócios
@@ -695,20 +695,39 @@ export default function ConfigurarFabrica() {
                     </div>
                   </div>
 
-                  {/* Coordinates info */}
-                  {address.latitude && address.longitude ? (
-                    <div className="rounded-lg bg-primary/5 border border-primary/20 p-3">
-                      <p className="text-xs text-muted-foreground">
-                        📍 <strong>Coordenadas detectadas:</strong> {address.latitude.toFixed(4)}, {address.longitude.toFixed(4)} — O mapa será centralizado nesta localização.
-                      </p>
+                  {/* Manual coordinates */}
+                  <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      📍 <strong>Coordenadas</strong> — Ajuste manualmente para posicionar a fábrica no ponto exato do mapa.
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Latitude</Label>
+                        <Input
+                          type="number"
+                          step="0.0000001"
+                          placeholder="Ex: 2.8400"
+                          value={address.latitude ?? ""}
+                          onChange={(e) => setAddress((prev) => ({ ...prev, latitude: e.target.value ? Number(e.target.value) : null }))}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Longitude</Label>
+                        <Input
+                          type="number"
+                          step="0.0000001"
+                          placeholder="Ex: -60.7524"
+                          value={address.longitude ?? ""}
+                          onChange={(e) => setAddress((prev) => ({ ...prev, longitude: e.target.value ? Number(e.target.value) : null }))}
+                        />
+                      </div>
                     </div>
-                  ) : (
-                    <div className="rounded-lg bg-destructive/5 border border-destructive/20 p-3">
-                      <p className="text-xs text-muted-foreground">
-                        ⚠️ <strong>Coordenadas não definidas.</strong> Ao salvar, o sistema tentará localizar automaticamente. Caso não funcione, preencha o CEP para buscar.
-                      </p>
-                    </div>
-                  )}
+                    {address.latitude && address.longitude ? (
+                      <p className="text-xs text-green-600 dark:text-green-400">✅ Coordenadas definidas: {address.latitude.toFixed(6)}, {address.longitude.toFixed(6)}</p>
+                    ) : (
+                      <p className="text-xs text-destructive">⚠️ Sem coordenadas. O mapa não exibirá a fábrica até que sejam definidas.</p>
+                    )}
+                  </div>
 
                   <Button className="w-full" onClick={handleSaveAddress} disabled={savingAddr}>
                     {savingAddr ? (
