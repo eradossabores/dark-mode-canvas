@@ -252,13 +252,18 @@ export default function ContasAPagar() {
     const valorPago = parseFloat(pagarValor || String(c.valor_parcela));
     const novaParcela = c.parcela_atual + 1;
     const novoRestante = Math.max(0, c.valor_restante - valorPago);
+    const formaLabel = FORMAS_PAGAMENTO.find(f => f.value === pagarForma)?.label || pagarForma;
     await (supabase as any).from("contas_a_pagar").update({
       parcela_atual: novaParcela,
       valor_restante: Math.round(novoRestante * 100) / 100,
       pago_mes: true,
       proxima_parcela_data: proximaData ? format(proximaData, "yyyy-MM-dd") : null,
     }).eq("id", c.id);
-    toast({ title: `Parcela ${novaParcela}/${c.total_parcelas} paga! (${FORMAS_PAGAMENTO.find(f => f.value === pagarForma)?.label || pagarForma})` });
+    toast({ title: `Parcela ${novaParcela}/${c.total_parcelas} paga! (${formaLabel})` });
+    
+    const descName = c.descricao.split(" — ")[0];
+    await gerarComprovante(descName, valorPago, formaLabel, "parcelado", `${novaParcela}/${c.total_parcelas}`);
+    
     setPagarConta(null);
     setPagarData(undefined);
     setPagarValor("");
