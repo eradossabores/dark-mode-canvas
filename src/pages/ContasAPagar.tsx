@@ -97,36 +97,40 @@ export default function ContasAPagar() {
   const calcTotalParcelas = parseInt(totalParcelas || "0");
   const calcValorParcela = calcTotalParcelas > 0 ? calcRestanteParaParcelar / calcTotalParcelas : 0;
 
-  // Bar chart data - gastos mensais (últimos 6 meses)
+  // Bar chart data - gastos mensais (Jan a Dez do ano atual)
   const chartData = useMemo(() => {
     const now = new Date();
-    const months: { name: string; total: number; fixo: number; parcelado: number; isCurrent: boolean }[] = [];
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    const months: { name: string; total: number; fixo: number; parcelado: number; isCurrent: boolean; isFuture: boolean }[] = [];
     
-    for (let i = 5; i >= 0; i--) {
-      const monthDate = subMonths(now, i);
-      const monthIdx = monthDate.getMonth();
-      const year = monthDate.getFullYear();
-      const isCurrent = i === 0;
+    for (let m = 0; m < 12; m++) {
+      const monthDate = new Date(currentYear, m, 1);
+      const isCurrent = m === currentMonth;
+      const isFuture = m > currentMonth;
       
       // Fixos always count for every month
       const fixoTotal = contas.filter(c => c.tipo === "fixo").reduce((s, c) => s + c.valor_parcela, 0);
       
-      // Parcelados: estimate based on created_at
+      // Parcelados: count if created before or during this month and still has remaining parcels
       const parceladoTotal = contas.filter(c => {
         if (c.tipo !== "parcelado") return false;
         const created = new Date(c.created_at || "");
         const createdMonth = startOfMonth(created);
         const thisMonth = startOfMonth(monthDate);
-        // Count if the bill was created before or during this month and not fully paid
-        return createdMonth <= thisMonth;
+        if (createdMonth > thisMonth) return false;
+        // Estimate if parcels still remain for this month
+        const monthsElapsed = (thisMonth.getFullYear() - createdMonth.getFullYear()) * 12 + (thisMonth.getMonth() - createdMonth.getMonth());
+        return monthsElapsed < (c.total_parcelas || 1);
       }).reduce((s, c) => s + c.valor_parcela, 0);
       
       months.push({
-        name: `${MESES_PT[monthIdx]}/${String(year).slice(2)}`,
+        name: `${MESES_PT[m]}/${String(currentYear).slice(2)}`,
         total: fixoTotal + parceladoTotal,
         fixo: fixoTotal,
         parcelado: parceladoTotal,
         isCurrent,
+        isFuture,
       });
     }
     
@@ -585,7 +589,7 @@ export default function ContasAPagar() {
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <BarChart3 className="h-4 w-4 text-primary" />
-            Gastos Mensais (Últimos 6 meses)
+            Gastos Mensais ({new Date().getFullYear()})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -605,7 +609,7 @@ export default function ContasAPagar() {
                   {chartData.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={entry.isCurrent ? "hsl(var(--primary))" : "hsl(var(--primary) / 0.4)"}
+                      fill={entry.isCurrent ? "hsl(var(--primary))" : entry.isFuture ? "hsl(var(--primary) / 0.25)" : "hsl(var(--primary) / 0.5)"}
                     />
                   ))}
                 </Bar>
@@ -614,12 +618,16 @@ export default function ContasAPagar() {
           </div>
           <div className="flex items-center justify-center gap-6 mt-2 text-xs text-muted-foreground">
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-sm bg-primary/40" />
+              <div className="w-3 h-3 rounded-sm bg-primary/50" />
               Meses anteriores
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-sm bg-primary" />
               Mês atual
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-sm bg-primary/25" />
+              Previsão
             </div>
           </div>
         </CardContent>
