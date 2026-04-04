@@ -356,7 +356,7 @@ export default function MapaEntregas() {
       id: "factory",
       position: factoryCoords,
       draggable: true,
-      icon: createLabeledSvgIcon("#16a34a", `🏭A ${factoryName}`, "large"),
+      icon: createLabeledSvgIcon("#ea580c", `🏭 ${factoryName}`, "large"),
       popup: {
         title: `🏭 Origem: ${factoryName}`,
         content: (
