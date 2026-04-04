@@ -360,19 +360,24 @@ export default function RelatorioCompleto() {
 
   // Despesas com diárias de colaboradores no período
   const despesasDiarias = useMemo(() => {
-    const funcMap = new Map(funcionarios.map((f: any) => [f.id, f]));
     let total = 0;
-    // Diaristas: contar presenças no período × valor_pagamento
+    // Diaristas: contar dias distintos de produção no período × valor_pagamento
     const diaristas = funcionarios.filter((f: any) => f.tipo_pagamento === "diaria" && f.ativo);
     diaristas.forEach((func: any) => {
-      const dias = presencas.filter((p: any) => {
-        if (p.funcionario_id !== func.id) return false;
-        const d = new Date(p.data);
+      const diasSet = new Set<string>();
+      presencas.filter((pf: any) => {
+        if (pf.funcionario_id !== func.id) return false;
+        const createdAt = pf.producoes?.created_at;
+        if (!createdAt) return false;
+        const d = new Date(createdAt);
         if (startDate && d < startDate) return false;
         if (endDate && d > new Date(endDate.getTime() + 86400000)) return false;
         return true;
-      }).length;
-      total += dias * Number(func.valor_pagamento || 0);
+      }).forEach((pf: any) => {
+        const day = new Date(pf.producoes.created_at).toISOString().split("T")[0];
+        diasSet.add(day);
+      });
+      total += diasSet.size * Number(func.valor_pagamento || 0);
     });
     // Fixos: proporcional ao período
     const fixos = funcionarios.filter((f: any) => f.tipo_pagamento === "fixo" && f.ativo);
