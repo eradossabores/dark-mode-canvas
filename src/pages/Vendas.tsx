@@ -1204,8 +1204,7 @@ export default function Vendas() {
                         placeholder="Total"
                       />
                     </div>
-                    {item.isNew && (
-                      <Button size="icon" variant="ghost" onClick={() => setEditItens(editItens.filter((_, idx) => idx !== i))}>
+                    <Button size="icon" variant="ghost" onClick={() => setEditItens(editItens.filter((_, idx) => idx !== i))}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     )}
