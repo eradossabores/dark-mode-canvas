@@ -20,15 +20,16 @@ const formatPct = (v: number) => `${v.toLocaleString("pt-BR", { minimumFractionD
 
 const parseBRL = (v: string) => parseFloat(v.replace(/\./g, "").replace(",", ".")) || 0;
 
-function FinanceiroSection({ totalVendasAuto }: { totalVendasAuto: number }) {
+function FinanceiroSection({ totalVendasAuto, totalDespesasFixasAuto }: { totalVendasAuto: number; totalDespesasFixasAuto: number }) {
   const [receitaInput, setReceitaInput] = useState<string>("");
   const [cmvInput, setCmvInput] = useState<string>("");
   const [despesasFixasInput, setDespesasFixasInput] = useState<string>("");
   const [useAutoReceita, setUseAutoReceita] = useState(true);
+  const [useAutoDespesas, setUseAutoDespesas] = useState(true);
 
   const receita = useAutoReceita ? totalVendasAuto : parseBRL(receitaInput);
   const cmv = parseBRL(cmvInput);
-  const despesasFixas = parseBRL(despesasFixasInput);
+  const despesasFixas = useAutoDespesas ? totalDespesasFixasAuto : parseBRL(despesasFixasInput);
 
   const lucroBruto = receita - cmv;
   const lucroLiquido = lucroBruto - despesasFixas;
