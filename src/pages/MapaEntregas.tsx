@@ -447,6 +447,11 @@ export default function MapaEntregas() {
               <MapPin className="h-4 w-4" /> Mapa das Entregas
               <Badge variant="secondary">{mapMarkers.length} no mapa</Badge>
               <Badge variant="outline">Arraste a fábrica para reposicionar</Badge>
+              {previousSavedPosition && (
+                <Button variant="outline" size="sm" className="h-6 text-xs gap-1" onClick={undoReposition} disabled={savingFactoryPosition}>
+                  <Undo2 className="h-3 w-3" /> Desfazer reposição
+                </Button>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
