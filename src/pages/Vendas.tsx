@@ -492,19 +492,25 @@ export default function Vendas() {
       const { error } = await (supabase as any).from("vendas").update(updateData).eq("id", editVenda.id);
       if (error) throw error;
 
-      const itensIdsParaExcluirQuery = (supabase as any)
+      // Fetch current item IDs from DB to find which ones were removed
+      const { data: currentDbItens } = await (supabase as any)
         .from("venda_itens")
-        .delete()
+        .select("id")
         .eq("venda_id", editVenda.id);
+      const currentDbIds = (currentDbItens || []).map((r: any) => r.id);
+      const idsToDelete = currentDbIds.filter((dbId: string) => !itemIdsMantidos.includes(dbId));
 
-      const { error: deleteError } = itemIdsMantidos.length > 0
-        ? await itensIdsParaExcluirQuery.not("id", "in", `(${itemIdsMantidos.join(",")})`)
-        : await itensIdsParaExcluirQuery;
-
-      if (deleteError) {
-        console.error("Erro ao excluir itens removidos:", deleteError);
-        throw deleteError;
+      if (idsToDelete.length > 0) {
+        const { error: deleteError } = await (supabase as any)
+          .from("venda_itens")
+          .delete()
+          .in("id", idsToDelete);
+        if (deleteError) {
+          console.error("Erro ao excluir itens removidos:", deleteError);
+          throw deleteError;
+        }
       }
+
 
       // Update existing items and insert new ones
       let newTotal = 0;
