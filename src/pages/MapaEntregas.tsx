@@ -41,6 +41,8 @@ interface PedidoEntrega {
   status: string;
   dataEntrega: string;
   itens: number;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export default function MapaEntregas() {
