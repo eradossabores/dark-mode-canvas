@@ -328,6 +328,7 @@ export default function RelatorioCompleto() {
     setMateriasPrimas(results[7].data || []);
     setEmbalagens(results[8].data || []);
     setContasAPagar(results[9].data || []);
+    setPresencas(results[10].data || []);
   }
 
   const filteredVendas = useMemo(() => vendas.filter((v) => {
