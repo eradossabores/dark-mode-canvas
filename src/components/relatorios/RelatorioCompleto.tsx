@@ -292,6 +292,7 @@ export default function RelatorioCompleto() {
   const [materiasPrimas, setMateriasPrimas] = useState<any[]>([]);
   const [embalagens, setEmbalagens] = useState<any[]>([]);
   const [contasAPagar, setContasAPagar] = useState<any[]>([]);
+  const [presencas, setPresencas] = useState<any[]>([]);
 
   useEffect(() => { loadData(); }, [factoryId]);
   useEffect(() => { setPreviewLoaded(false); }, [startDate, endDate]);
