@@ -352,6 +352,9 @@ export default function RelatorioCompleto() {
   const embBaixo = embalagens.filter(e => e.estoque_atual <= e.estoque_minimo).length;
   const totalDespesasFixas = contasAPagar.reduce((s, c) => s + Number(c.valor_parcela || 0), 0);
 
+  const valorRecebido = filteredVendas.filter(v => v.status !== "cancelada").reduce((s, v) => s + Number(v.valor_pago || 0), 0);
+  const valorPendente = filteredVendas.filter(v => v.status !== "cancelada").reduce((s, v) => s + Math.max(0, Number(v.total || 0) - Number(v.valor_pago || 0)), 0);
+
   const vendasPorDia = useMemo(() => {
     const map: Record<string, number> = {};
     filteredVendas.forEach(v => {
