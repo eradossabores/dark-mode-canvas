@@ -116,6 +116,19 @@ export default function MapaEntregas() {
     return [from, to];
   }
 
+  const bairros = useMemo(() => {
+    const set = new Set(pedidos.map(p => p.bairro));
+    return Array.from(set).sort();
+  }, [pedidos]);
+
+  const filtered = useMemo(() => {
+    return pedidos.filter(p => {
+      if (filtroStatus !== "todos" && p.status !== filtroStatus) return false;
+      if (filtroBairro !== "todos" && p.bairro !== filtroBairro) return false;
+      return true;
+    });
+  }, [pedidos, filtroStatus, filtroBairro]);
+
   // Load routes when filtered pedidos change
   useEffect(() => {
     if (!factoryCoords[0] || filtered.length === 0) {
@@ -149,19 +162,6 @@ export default function MapaEntregas() {
     loadRoutes();
     return () => { cancelled = true; };
   }, [filtered, factoryCoords, selectedRoute]);
-
-  const bairros = useMemo(() => {
-    const set = new Set(pedidos.map(p => p.bairro));
-    return Array.from(set).sort();
-  }, [pedidos]);
-
-  const filtered = useMemo(() => {
-    return pedidos.filter(p => {
-      if (filtroStatus !== "todos" && p.status !== filtroStatus) return false;
-      if (filtroBairro !== "todos" && p.bairro !== filtroBairro) return false;
-      return true;
-    });
-  }, [pedidos, filtroStatus, filtroBairro]);
 
   // Group by bairro
   const grouped = useMemo(() => {
