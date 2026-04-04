@@ -312,6 +312,7 @@ export default function MapaClientes() {
       return {
         id: c.id,
         position: [c.latitude!, c.longitude!] as [number, number],
+        draggable: true,
         icon: createLabeledSvgIcon(
           c.id === highlightedClienteId ? '#d97706' : '#2563eb',
           `${c.nome}${distLabel}`,
@@ -328,6 +329,7 @@ export default function MapaClientes() {
               {c.endereco && <p className="text-xs text-muted-foreground">{c.endereco}</p>}
               {c.telefone && <p className="text-xs text-muted-foreground">📞 {c.telefone}</p>}
               {c.possui_freezer && <p className="text-xs text-primary font-medium mt-1">❄️ Possui Freezer</p>}
+              <p className="text-xs text-amber-600 mt-1">✋ Arraste o marcador para ajustar a posição</p>
               <div className="flex gap-1 mt-2">
                 <button
                   className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded hover:opacity-90"
