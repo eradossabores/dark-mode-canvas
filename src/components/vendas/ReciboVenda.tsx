@@ -360,7 +360,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {data.itens.map((item, i) => (
+                {data.itens.filter(i => i.preco_unitario > 0).map((item, i) => (
                   <tr key={i} className="border-t">
                     <td className="p-2">{item.sabor_nome}</td>
                     <td className="text-center p-2">{item.quantidade}</td>
@@ -371,6 +371,19 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
               </tbody>
             </table>
           </div>
+
+          {/* Gift items */}
+          {data.itens.some(i => i.preco_unitario === 0) && (
+            <div className="border border-amber-300 bg-amber-50 dark:bg-amber-950/20 rounded-lg p-3 space-y-1.5">
+              <p className="text-xs font-bold text-amber-600 flex items-center gap-1">🎁 Brindes / Cortesia</p>
+              {data.itens.filter(i => i.preco_unitario === 0).map((item, i) => (
+                <div key={i} className="flex justify-between items-center text-xs">
+                  <span className="text-muted-foreground">{item.sabor_nome} x{item.quantidade}</span>
+                  <span className="font-semibold text-green-600">CORTESIA</span>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="text-right font-bold text-lg border-t pt-2">
             TOTAL: R$ {data.total.toFixed(2)}
