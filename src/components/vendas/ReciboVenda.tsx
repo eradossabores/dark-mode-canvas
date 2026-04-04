@@ -89,7 +89,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     doc.setFontSize(6.5);
     doc.setTextColor(80, 80, 80);
     doc.setFont("helvetica", "italic");
-    doc.text(factoryName || "Gelos Saborizados", w / 2, y, { align: "center" });
+    doc.text(factoryName || "ICETECH", w / 2, y, { align: "center" });
     y += 4;
 
     // Decorative double line
@@ -278,7 +278,8 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     const fileName = `recibo-${data.cliente_nome.replace(/\s+/g, "-")}.pdf`;
     const file = new File([pdfBlob], fileName, { type: "application/pdf" });
 
-    const msg = `*${factoryName || "Gelos Saborizados"}*\n\nOla ${data.cliente_nome}, segue seu recibo.\n\nTotal: R$ ${data.total.toFixed(2)}\nData: ${data.data}\nPagamento: ${data.forma_pagamento}`;
+    const displayName = factoryName || "ICETECH";
+    const msg = `*${displayName}*\n\nOlá ${data.cliente_nome}, segue seu recibo.\n\nTotal: R$ ${data.total.toFixed(2)}\nData: ${data.data}\nPagamento: ${data.forma_pagamento}`;
 
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
       try {
@@ -307,7 +308,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
         <div className="space-y-3 text-sm">
           <div className="text-center border-b pb-3">
             <img src={factoryLogo} alt={factoryName || "Logo"} className="h-28 mx-auto mb-1" />
-            <p className="text-muted-foreground text-xs font-semibold">{factoryName || "Gelos Saborizados"}</p>
+            <p className="text-muted-foreground text-xs font-semibold">{factoryName || "ICETECH"}</p>
           </div>
 
           <div className="space-y-1">
