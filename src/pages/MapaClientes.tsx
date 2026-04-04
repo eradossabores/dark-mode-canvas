@@ -112,6 +112,7 @@ export default function MapaClientes() {
   }
   const [pendingDrag, setPendingDrag] = useState<PendingDrag | null>(null);
   const [confirmDragOpen, setConfirmDragOpen] = useState(false);
+  const [mapKey, setMapKey] = useState(0);
   
 
   // Load factory location (with auto-geocode if missing coords)
