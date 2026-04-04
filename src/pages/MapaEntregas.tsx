@@ -342,7 +342,7 @@ export default function MapaEntregas() {
           position: [p.latitude!, p.longitude!] as [number, number],
           icon: createLabeledSvgIcon(
             isSelected ? "#dc2626" : (STATUS_MARKER_COLORS[p.status] || "#6b7280"),
-            `📍B ${p.clienteNome}`,
+            `${p.clienteNome}`,
             isSelected ? "large" : "medium"
           ),
           popup: {
