@@ -66,6 +66,8 @@ export default function MapaEntregas() {
   const [routePolylines, setRoutePolylines] = useState<MapPolyline[]>([]);
   const [routeInfoMap, setRouteInfoMap] = useState<Record<string, RouteInfo>>({});
   const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
+  const [pendingPosition, setPendingPosition] = useState<[number, number] | null>(null);
+  const [previousSavedPosition, setPreviousSavedPosition] = useState<[number, number] | null>(null);
 
   useEffect(() => {
     if (role !== "super_admin" && !factoryId) {
