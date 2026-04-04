@@ -61,6 +61,9 @@ export default function ContasAPagar() {
   const [pagarData, setPagarData] = useState<Date | undefined>(undefined);
   const [pagarForma, setPagarForma] = useState<string>("pix");
   const [pagarValor, setPagarValor] = useState("");
+  const [pagarFixoConta, setPagarFixoConta] = useState<ContaPagar | null>(null);
+  const [pagarFixoValor, setPagarFixoValor] = useState("");
+  const [pagarFixoForma, setPagarFixoForma] = useState<string>("pix");
 
   // Form state
   const [descricao, setDescricao] = useState("");
@@ -263,7 +266,23 @@ export default function ContasAPagar() {
   async function togglePagoMes(c: ContaPagar) {
     const novo = !c.pago_mes;
     await (supabase as any).from("contas_a_pagar").update({ pago_mes: novo }).eq("id", c.id);
-    toast({ title: novo ? `✅ ${c.descricao.split(" — ")[0]} — parcela do mês marcada como paga` : `${c.descricao.split(" — ")[0]} — parcela do mês desmarcada` });
+    toast({ title: novo ? `✅ ${c.descricao.split(" — ")[0]} — marcada como paga` : `${c.descricao.split(" — ")[0]} — desmarcada` });
+    loadContas();
+  }
+
+  async function handlePagarFixoAdiantamento() {
+    if (!pagarFixoConta) return;
+    const valor = parseFloat(pagarFixoValor || "0");
+    if (valor <= 0) return toast({ title: "Informe um valor válido", variant: "destructive" });
+    const formaLabel = FORMAS_PAGAMENTO.find(f => f.value === pagarFixoForma)?.label || pagarFixoForma;
+    const isPagamentoTotal = valor >= pagarFixoConta.valor_parcela;
+    await (supabase as any).from("contas_a_pagar").update({
+      pago_mes: isPagamentoTotal,
+    }).eq("id", pagarFixoConta.id);
+    toast({ title: `💰 ${isPagamentoTotal ? "Pago" : "Adiantamento de"} ${R(valor)} (${formaLabel}) — ${pagarFixoConta.descricao.split(" — ")[0]}` });
+    setPagarFixoConta(null);
+    setPagarFixoValor("");
+    setPagarFixoForma("pix");
     loadContas();
   }
 
@@ -790,28 +809,31 @@ export default function ContasAPagar() {
                       </Button>
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm">{R(c.valor_parcela)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(c)}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setDeleteId(c.id)}>
-                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                <TableRow className="bg-muted/50 font-bold">
-                  <TableCell colSpan={3}>TOTAL FIXOS</TableCell>
-                  <TableCell className="text-right font-mono">{R(totalFixo)}</TableCell>
-                  <TableCell />
-                </TableRow>
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => { setPagarFixoConta(c); setPagarFixoValor(String(c.valor_parcela)); }} title="Pagar / Adiantar">
+                              💰 Pagar
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(c)}>
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setDeleteId(c.id)}>
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow className="bg-muted/50 font-bold">
+                      <TableCell colSpan={3}>TOTAL FIXOS</TableCell>
+                      <TableCell className="text-right font-mono">{R(totalFixo)}</TableCell>
+                      <TableCell />
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
 
       {/* Empty state */}
       {contas.length === 0 && (
@@ -895,6 +917,48 @@ export default function ContasAPagar() {
                 </Popover>
               </div>
               <Button className="w-full" onClick={() => avancarParcela(pagarConta, pagarData)}>
+                💰 Confirmar Pagamento
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Pagar Fixo Dialog */}
+      <Dialog open={!!pagarFixoConta} onOpenChange={v => { if (!v) { setPagarFixoConta(null); setPagarFixoValor(""); setPagarFixoForma("pix"); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Pagar Custo Fixo</DialogTitle>
+          </DialogHeader>
+          {pagarFixoConta && (
+            <div className="space-y-4">
+              <div className="rounded-lg bg-muted p-3 space-y-1">
+                <p className="text-sm font-bold">{pagarFixoConta.descricao.split(" — ")[0]}</p>
+                <p className="text-xs text-muted-foreground">
+                  Valor mensal: <strong>{R(pagarFixoConta.valor_parcela)}</strong>
+                </p>
+                <Badge variant={pagarFixoConta.pago_mes ? "default" : "destructive"} className="text-xs mt-1">
+                  {pagarFixoConta.pago_mes ? "✅ Pago este mês" : "⏳ Pendente este mês"}
+                </Badge>
+              </div>
+              <div>
+                <Label className="text-xs mb-1.5 block">Valor do pagamento</Label>
+                <div className="relative">
+                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
+                  <Input type="number" step="0.01" className="pl-7" value={pagarFixoValor} onChange={e => setPagarFixoValor(e.target.value)} />
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1">Pode adiantar um valor parcial ou pagar o total</p>
+              </div>
+              <div>
+                <Label className="text-xs mb-1.5 block">Forma de pagamento</Label>
+                <Select value={pagarFixoForma} onValueChange={setPagarFixoForma}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {FORMAS_PAGAMENTO.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button className="w-full" onClick={handlePagarFixoAdiantamento}>
                 💰 Confirmar Pagamento
               </Button>
             </div>
