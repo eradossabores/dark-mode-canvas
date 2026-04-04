@@ -60,8 +60,9 @@ export default function MapaEntregas() {
     try {
       let q = (supabase as any)
         .from("pedidos_producao")
-        .select("*, clientes(nome, bairro, endereco, cidade), pedido_producao_itens(quantidade)")
+        .select("*, clientes(nome, bairro, endereco, cidade, latitude, longitude), pedido_producao_itens(quantidade)")
         .in("status", ["separado_para_entrega", "em_producao", "aguardando_producao"])
+        .eq("tipo_pedido", "entrega")
         .order("data_entrega");
       if (factoryId) q = q.eq("factory_id", factoryId);
       const { data } = await q;
