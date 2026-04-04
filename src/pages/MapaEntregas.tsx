@@ -219,6 +219,30 @@ export default function MapaEntregas() {
         </Select>
       </div>
 
+      {/* Mapa */}
+      {mapMarkers.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <MapPin className="h-4 w-4" /> Mapa das Entregas
+              <Badge variant="secondary">{mapMarkers.length} no mapa</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Suspense fallback={<div className="h-[400px] flex items-center justify-center text-muted-foreground">Carregando mapa...</div>}>
+              <LazyMap
+                center={factoryCoords}
+                zoom={13}
+                markers={mapMarkers}
+                enableClustering
+                style={{ height: "400px", width: "100%" }}
+                className="rounded-b-lg overflow-hidden"
+              />
+            </Suspense>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Grouped by bairro */}
       {grouped.length === 0 ? (
         <Card>
