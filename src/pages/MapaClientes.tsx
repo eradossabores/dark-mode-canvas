@@ -377,6 +377,7 @@ export default function MapaClientes() {
       id: 'factory-marker',
       position: factoryCenter,
       draggable: true,
+      excludeFromCluster: true,
       icon: createFactoryIcon(factoryName || 'Fábrica'),
       popup: {
         title: `🏭 ${factoryName || 'Fábrica'}`,
