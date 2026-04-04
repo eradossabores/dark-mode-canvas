@@ -162,14 +162,30 @@ function FinanceiroSection({ totalVendasAuto, totalDespesasFixasAuto }: { totalV
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs font-medium">Despesas Fixas — R$</Label>
-              <Input
-                type="text"
-                inputMode="decimal"
-                placeholder="0,00"
-                value={despesasFixasInput}
-                onChange={e => setDespesasFixasInput(e.target.value.replace(/[^0-9.,]/g, ""))}
-                className="h-9"
-              />
+              <div className="flex items-center gap-2">
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder={formatBRL(totalDespesasFixasAuto)}
+                  value={useAutoDespesas ? "" : despesasFixasInput}
+                  onChange={e => {
+                    setUseAutoDespesas(false);
+                    setDespesasFixasInput(e.target.value.replace(/[^0-9.,]/g, ""));
+                  }}
+                  className="h-9"
+                />
+                {!useAutoDespesas && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs h-9 px-2 shrink-0"
+                    onClick={() => { setUseAutoDespesas(true); setDespesasFixasInput(""); }}
+                  >
+                    Auto
+                  </Button>
+                )}
+              </div>
+              {useAutoDespesas && <p className="text-[10px] text-muted-foreground">Usando contas a pagar: {formatBRL(totalDespesasFixasAuto)}</p>}
             </div>
           </div>
 
