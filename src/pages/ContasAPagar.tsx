@@ -275,11 +275,14 @@ export default function ContasAPagar() {
     const valor = parseFloat(pagarFixoValor || "0");
     if (valor <= 0) return toast({ title: "Informe um valor válido", variant: "destructive" });
     const formaLabel = FORMAS_PAGAMENTO.find(f => f.value === pagarFixoForma)?.label || pagarFixoForma;
-    const isPagamentoTotal = valor >= pagarFixoConta.valor_parcela;
+    
+    // Update valor_parcela to the actual amount paid this month (handles variable bills like electricity)
     await (supabase as any).from("contas_a_pagar").update({
-      pago_mes: isPagamentoTotal,
+      pago_mes: true,
+      valor_parcela: Math.round(valor * 100) / 100,
     }).eq("id", pagarFixoConta.id);
-    toast({ title: `💰 ${isPagamentoTotal ? "Pago" : "Adiantamento de"} ${R(valor)} (${formaLabel}) — ${pagarFixoConta.descricao.split(" — ")[0]}` });
+    
+    toast({ title: `✅ ${pagarFixoConta.descricao.split(" — ")[0]} — Pago ${R(valor)} (${formaLabel})` });
     setPagarFixoConta(null);
     setPagarFixoValor("");
     setPagarFixoForma("pix");
