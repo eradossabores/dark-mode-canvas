@@ -310,6 +310,7 @@ export default function RelatorioCompleto() {
       (supabase as any).from("materias_primas").select("*"),
       (supabase as any).from("embalagens").select("*"),
       (supabase as any).from("contas_a_pagar").select("*").eq("ativa", true),
+      (supabase as any).from("presenca_producao").select("*"),
     ];
 
     if (fid) {
