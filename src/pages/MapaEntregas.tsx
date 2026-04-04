@@ -3,10 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Truck, Package, Filter } from "lucide-react";
+import { MapPin, Truck, Package, Filter, Factory, Navigation } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
-import type { MapMarker } from "@/components/ui/interactive-map";
+import type { MapMarker, MapPolyline } from "@/components/ui/interactive-map";
+import { createLabeledSvgIcon } from "@/components/ui/interactive-map";
 
 const LazyMap = lazy(() => import("@/components/ui/interactive-map").then(m => ({ default: m.AdvancedMap })));
 
@@ -51,6 +52,9 @@ export default function MapaEntregas() {
   const [filtroStatus, setFiltroStatus] = useState<string>("todos");
   const [filtroBairro, setFiltroBairro] = useState<string>("todos");
   const [factoryCoords, setFactoryCoords] = useState<[number, number]>([2.8195, -60.6714]);
+  const [factoryName, setFactoryName] = useState("Fábrica");
+  const [routePolylines, setRoutePolylines] = useState<MapPolyline[]>([]);
+  const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
 
   useEffect(() => {
     if (role !== "super_admin" && !factoryId) { setPedidos([]); return; }
@@ -83,9 +87,10 @@ export default function MapaEntregas() {
 
       // Also load factory location for map center
       if (factoryId) {
-        const { data: fData } = await supabase.from("factories").select("latitude, longitude").eq("id", factoryId).single();
+        const { data: fData } = await supabase.from("factories").select("latitude, longitude, name").eq("id", factoryId).single();
         if (fData?.latitude && fData?.longitude) {
           setFactoryCoords([fData.latitude, fData.longitude]);
+          setFactoryName(fData.name || "Fábrica");
         }
       }
 
@@ -94,6 +99,56 @@ export default function MapaEntregas() {
       console.error("MapaEntregas error:", e);
     }
   }
+
+  // Fetch route from OSRM
+  async function fetchRoute(from: [number, number], to: [number, number]): Promise<[number, number][]> {
+    try {
+      const url = `https://router.project-osrm.org/route/v1/driving/${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.routes?.[0]?.geometry?.coordinates) {
+        return data.routes[0].geometry.coordinates.map((c: number[]) => [c[1], c[0]] as [number, number]);
+      }
+    } catch (e) {
+      console.error("OSRM route error:", e);
+    }
+    // Fallback: straight line
+    return [from, to];
+  }
+
+  // Load routes when filtered pedidos change
+  useEffect(() => {
+    if (!factoryCoords[0] || filtered.length === 0) {
+      setRoutePolylines([]);
+      return;
+    }
+    const pedidosComCoords = filtered.filter(p => p.latitude && p.longitude);
+    if (pedidosComCoords.length === 0) { setRoutePolylines([]); return; }
+
+    let cancelled = false;
+    async function loadRoutes() {
+      const ROUTE_COLORS = ["#2563eb", "#dc2626", "#16a34a", "#d97706", "#7c3aed", "#0891b2", "#ea580c", "#db2777"];
+      const lines: MapPolyline[] = [];
+      for (let i = 0; i < pedidosComCoords.length; i++) {
+        if (cancelled) return;
+        const p = pedidosComCoords[i];
+        const coords = await fetchRoute(factoryCoords, [p.latitude!, p.longitude!]);
+        lines.push({
+          id: `route-${p.id}`,
+          positions: coords,
+          style: {
+            color: selectedRoute === p.id ? "#2563eb" : (ROUTE_COLORS[i % ROUTE_COLORS.length]),
+            weight: selectedRoute === p.id ? 5 : 3,
+            opacity: selectedRoute ? (selectedRoute === p.id ? 1 : 0.2) : 0.7,
+            dashArray: selectedRoute === p.id ? undefined : "8 4",
+          },
+        });
+      }
+      if (!cancelled) setRoutePolylines(lines);
+    }
+    loadRoutes();
+    return () => { cancelled = true; };
+  }, [filtered, factoryCoords, selectedRoute]);
 
   const bairros = useMemo(() => {
     const set = new Set(pedidos.map(p => p.bairro));
@@ -125,7 +180,7 @@ export default function MapaEntregas() {
   };
 
   const mapMarkers: MapMarker[] = useMemo(() => {
-    return filtered
+    const clientMarkers = filtered
       .filter(p => p.latitude && p.longitude)
       .map(p => ({
         id: p.id,
@@ -133,9 +188,22 @@ export default function MapaEntregas() {
         color: STATUS_MARKER_COLORS[p.status] || "#6b7280",
         popup: {
           title: p.clienteNome,
-          content: `📦 ${p.itens} un · ${p.bairro}\n📅 ${new Date(p.dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}`,
+          content: `📦 ${p.itens} un · ${p.bairro}\n📅 ${new Date(p.dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}\n🗺️ Clique para ver a rota`,
         },
       }));
+
+    // Factory marker
+    const factoryMarker: MapMarker = {
+      id: "factory",
+      position: factoryCoords,
+      icon: createLabeledSvgIcon("#d97706", `🏭 ${factoryName}`, "large"),
+      popup: {
+        title: factoryName,
+        content: "📍 Ponto de partida das entregas",
+      },
+    };
+
+    return [factoryMarker, ...clientMarkers];
   }, [filtered]);
 
   const totalItens = filtered.reduce((s, p) => s + p.itens, 0);
@@ -234,13 +302,32 @@ export default function MapaEntregas() {
                 center={factoryCoords}
                 zoom={13}
                 markers={mapMarkers}
-                enableClustering
+                polylines={routePolylines}
+                onMarkerClick={(marker) => {
+                  if (marker.id !== "factory") {
+                    setSelectedRoute(prev => prev === marker.id ? null : String(marker.id));
+                  }
+                }}
                 style={{ height: "400px", width: "100%" }}
                 className="rounded-b-lg overflow-hidden"
               />
             </Suspense>
           </CardContent>
         </Card>
+      )}
+
+      {/* Route legend */}
+      {routePolylines.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 mb-4 px-1">
+          <span className="text-xs text-muted-foreground flex items-center gap-1">
+            <Navigation className="h-3 w-3" /> Rotas traçadas: {routePolylines.length}
+          </span>
+          {selectedRoute && (
+            <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => setSelectedRoute(null)}>
+              Mostrar todas
+            </Button>
+          )}
+        </div>
       )}
 
       {/* Grouped by bairro */}
