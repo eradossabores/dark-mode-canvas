@@ -292,6 +292,7 @@ export default function RelatorioCompleto() {
   const [materiasPrimas, setMateriasPrimas] = useState<any[]>([]);
   const [embalagens, setEmbalagens] = useState<any[]>([]);
   const [contasAPagar, setContasAPagar] = useState<any[]>([]);
+  const [presencas, setPresencas] = useState<any[]>([]);
 
   useEffect(() => { loadData(); }, [factoryId]);
   useEffect(() => { setPreviewLoaded(false); }, [startDate, endDate]);
@@ -309,6 +310,7 @@ export default function RelatorioCompleto() {
       (supabase as any).from("materias_primas").select("*"),
       (supabase as any).from("embalagens").select("*"),
       (supabase as any).from("contas_a_pagar").select("*").eq("ativa", true),
+      (supabase as any).from("presenca_producao").select("*"),
     ];
 
     if (fid) {
@@ -326,6 +328,7 @@ export default function RelatorioCompleto() {
     setMateriasPrimas(results[7].data || []);
     setEmbalagens(results[8].data || []);
     setContasAPagar(results[9].data || []);
+    setPresencas(results[10].data || []);
   }
 
   const filteredVendas = useMemo(() => vendas.filter((v) => {
@@ -354,6 +357,34 @@ export default function RelatorioCompleto() {
 
   const valorRecebido = filteredVendas.filter(v => v.status !== "cancelada").reduce((s, v) => s + Number(v.valor_pago || 0), 0);
   const valorPendente = filteredVendas.filter(v => v.status !== "cancelada").reduce((s, v) => s + Math.max(0, Number(v.total || 0) - Number(v.valor_pago || 0)), 0);
+
+  // Despesas com diárias de colaboradores no período
+  const despesasDiarias = useMemo(() => {
+    const funcMap = new Map(funcionarios.map((f: any) => [f.id, f]));
+    let total = 0;
+    // Diaristas: contar presenças no período × valor_pagamento
+    const diaristas = funcionarios.filter((f: any) => f.tipo_pagamento === "diaria" && f.ativo);
+    diaristas.forEach((func: any) => {
+      const dias = presencas.filter((p: any) => {
+        if (p.funcionario_id !== func.id) return false;
+        const d = new Date(p.data);
+        if (startDate && d < startDate) return false;
+        if (endDate && d > new Date(endDate.getTime() + 86400000)) return false;
+        return true;
+      }).length;
+      total += dias * Number(func.valor_pagamento || 0);
+    });
+    // Fixos: proporcional ao período
+    const fixos = funcionarios.filter((f: any) => f.tipo_pagamento === "fixo" && f.ativo);
+    if (startDate && endDate) {
+      const diasPeriodo = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / 86400000) + 1);
+      fixos.forEach((func: any) => {
+        const mensal = Number(func.valor_pagamento || 0);
+        total += (mensal / 30) * diasPeriodo;
+      });
+    }
+    return total;
+  }, [funcionarios, presencas, startDate, endDate]);
 
   const vendasPorDia = useMemo(() => {
     const map: Record<string, number> = {};
@@ -405,6 +436,7 @@ export default function RelatorioCompleto() {
     ["Estoque", "Total em Estoque", `${totalEstoque.toLocaleString("pt-BR")} un`],
     ["Estoque", "Matérias-Primas Baixas", mpBaixo],
     ["Estoque", "Embalagens Baixas", embBaixo],
+    ["Colaboradores", "Despesas no Período", formatBRL(despesasDiarias)],
   ];
 
   topClientes.slice(0, 5).forEach((c, i) => {
@@ -451,9 +483,10 @@ export default function RelatorioCompleto() {
             <KpiCard title="Produzido" value={`${totalProduzido.toLocaleString("pt-BR")} un`} icon={Factory} />
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             <KpiCard title="Clientes Ativos" value={totalClientes.toString()} icon={Users} />
             <KpiCard title="Estoque Total" value={`${totalEstoque.toLocaleString("pt-BR")} un`} icon={Warehouse} />
+            <KpiCard title="Desp. Colaboradores" value={formatBRL(despesasDiarias)} icon={Users} subtitle="diárias + fixos no período" />
             <KpiCard title="MP em Alerta" value={mpBaixo.toString()} icon={AlertTriangle} subtitle={mpBaixo > 0 ? "abaixo do mínimo" : "ok"} />
             <KpiCard title="Embalagens Alerta" value={embBaixo.toString()} icon={Package} subtitle={embBaixo > 0 ? "abaixo do mínimo" : "ok"} />
           </div>
