@@ -33,6 +33,11 @@ function getBairroColor(bairro: string) {
   return BAIRRO_COLORS[bairro];
 }
 
+interface RouteInfo {
+  distanceKm: number;
+  durationMin: number;
+}
+
 interface PedidoEntrega {
   id: string;
   clienteNome: string;
@@ -54,6 +59,7 @@ export default function MapaEntregas() {
   const [factoryCoords, setFactoryCoords] = useState<[number, number]>([2.8195, -60.6714]);
   const [factoryName, setFactoryName] = useState("Fábrica");
   const [routePolylines, setRoutePolylines] = useState<MapPolyline[]>([]);
+  const [routeInfoMap, setRouteInfoMap] = useState<Record<string, RouteInfo>>({});
   const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
 
   useEffect(() => {
@@ -101,19 +107,31 @@ export default function MapaEntregas() {
   }
 
   // Fetch route from OSRM
-  async function fetchRoute(from: [number, number], to: [number, number]): Promise<[number, number][]> {
+  async function fetchRoute(from: [number, number], to: [number, number]): Promise<{ coords: [number, number][]; distanceKm: number; durationMin: number }> {
     try {
       const url = `https://router.project-osrm.org/route/v1/driving/${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson`;
       const res = await fetch(url);
+      if (!res.ok) throw new Error(`OSRM ${res.status}`);
       const data = await res.json();
-      if (data.routes?.[0]?.geometry?.coordinates) {
-        return data.routes[0].geometry.coordinates.map((c: number[]) => [c[1], c[0]] as [number, number]);
+      if (data.routes?.[0]) {
+        const route = data.routes[0];
+        const coords = route.geometry.coordinates.map((c: number[]) => [c[1], c[0]] as [number, number]);
+        return {
+          coords,
+          distanceKm: Math.round((route.distance / 1000) * 10) / 10,
+          durationMin: Math.round(route.duration / 60),
+        };
       }
     } catch (e) {
       console.error("OSRM route error:", e);
     }
-    // Fallback: straight line
-    return [from, to];
+    // Fallback: straight line with Haversine distance
+    const R = 6371;
+    const dLat = ((to[0] - from[0]) * Math.PI) / 180;
+    const dLon = ((to[1] - from[1]) * Math.PI) / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos((from[0] * Math.PI) / 180) * Math.cos((to[0] * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+    const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return { coords: [from, to], distanceKm: Math.round(dist * 10) / 10, durationMin: Math.round((dist / 30) * 60) };
   }
 
   const bairros = useMemo(() => {
@@ -142,13 +160,15 @@ export default function MapaEntregas() {
     async function loadRoutes() {
       const ROUTE_COLORS = ["#2563eb", "#dc2626", "#16a34a", "#d97706", "#7c3aed", "#0891b2", "#ea580c", "#db2777"];
       const lines: MapPolyline[] = [];
+      const infoMap: Record<string, RouteInfo> = {};
       for (let i = 0; i < pedidosComCoords.length; i++) {
         if (cancelled) return;
         const p = pedidosComCoords[i];
-        const coords = await fetchRoute(factoryCoords, [p.latitude!, p.longitude!]);
+        const result = await fetchRoute(factoryCoords, [p.latitude!, p.longitude!]);
+        infoMap[p.id] = { distanceKm: result.distanceKm, durationMin: result.durationMin };
         lines.push({
           id: `route-${p.id}`,
-          positions: coords,
+          positions: result.coords,
           style: {
             color: selectedRoute === p.id ? "#2563eb" : (ROUTE_COLORS[i % ROUTE_COLORS.length]),
             weight: selectedRoute === p.id ? 5 : 3,
@@ -157,7 +177,10 @@ export default function MapaEntregas() {
           },
         });
       }
-      if (!cancelled) setRoutePolylines(lines);
+      if (!cancelled) {
+        setRoutePolylines(lines);
+        setRouteInfoMap(infoMap);
+      }
     }
     loadRoutes();
     return () => { cancelled = true; };
@@ -182,15 +205,19 @@ export default function MapaEntregas() {
   const mapMarkers: MapMarker[] = useMemo(() => {
     const clientMarkers = filtered
       .filter(p => p.latitude && p.longitude)
-      .map(p => ({
-        id: p.id,
-        position: [p.latitude!, p.longitude!] as [number, number],
-        color: STATUS_MARKER_COLORS[p.status] || "#6b7280",
-        popup: {
-          title: p.clienteNome,
-          content: `📦 ${p.itens} un · ${p.bairro}\n📅 ${new Date(p.dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}\n🗺️ Clique para ver a rota`,
-        },
-      }));
+      .map(p => {
+        const info = routeInfoMap[p.id];
+        const routeText = info ? `\n🛣️ ${info.distanceKm} km · ~${info.durationMin} min` : "";
+        return {
+          id: p.id,
+          position: [p.latitude!, p.longitude!] as [number, number],
+          color: STATUS_MARKER_COLORS[p.status] || "#6b7280",
+          popup: {
+            title: p.clienteNome,
+            content: `📦 ${p.itens} un · ${p.bairro}\n📅 ${new Date(p.dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}${routeText}\n🗺️ Clique para ver a rota`,
+          },
+        };
+    });
 
     // Factory marker
     const factoryMarker: MapMarker = {
@@ -204,7 +231,7 @@ export default function MapaEntregas() {
     };
 
     return [factoryMarker, ...clientMarkers];
-  }, [filtered]);
+  }, [filtered, routeInfoMap]);
 
   const totalItens = filtered.reduce((s, p) => s + p.itens, 0);
 
@@ -369,6 +396,14 @@ export default function MapaEntregas() {
                           Entrega: {new Date(p.dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}
                         </span>
                       </div>
+                      {routeInfoMap[p.id] && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1 border-t border-border/50">
+                          <Navigation className="h-3 w-3 text-primary" />
+                          <span className="font-medium text-foreground">{routeInfoMap[p.id].distanceKm} km</span>
+                          <span>·</span>
+                          <span>~{routeInfoMap[p.id].durationMin} min</span>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
