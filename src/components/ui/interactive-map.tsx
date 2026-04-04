@@ -277,8 +277,13 @@ export function AdvancedMap({
         key={marker.id}
         position={marker.position}
         icon={marker.icon || createSvgIcon(marker.color || '#2563eb', marker.size || 'medium')}
+        draggable={marker.draggable || false}
         eventHandlers={{
           click: () => onMarkerClick?.(marker),
+          dragend: (e) => {
+            const latlng = e.target.getLatLng();
+            onMarkerDragEnd?.(marker, [latlng.lat, latlng.lng]);
+          },
         }}
       >
         {marker.popup && (
