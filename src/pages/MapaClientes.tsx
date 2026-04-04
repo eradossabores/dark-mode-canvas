@@ -102,6 +102,18 @@ export default function MapaClientes() {
   const [factoryName, setFactoryName] = useState<string>("");
   const [hasFactoryCoords, setHasFactoryCoords] = useState(false);
 
+  // Drag confirmation state
+  interface PendingDrag {
+    type: "factory" | "client";
+    id: string;
+    name: string;
+    oldPos: [number, number];
+    newPos: [number, number];
+  }
+  const [pendingDrag, setPendingDrag] = useState<PendingDrag | null>(null);
+  const [confirmDragOpen, setConfirmDragOpen] = useState(false);
+  const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Load factory location (with auto-geocode if missing coords)
   useEffect(() => {
     if (!factoryId) return;
