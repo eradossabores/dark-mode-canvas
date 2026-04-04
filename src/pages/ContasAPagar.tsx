@@ -61,6 +61,9 @@ export default function ContasAPagar() {
   const [pagarData, setPagarData] = useState<Date | undefined>(undefined);
   const [pagarForma, setPagarForma] = useState<string>("pix");
   const [pagarValor, setPagarValor] = useState("");
+  const [pagarFixoConta, setPagarFixoConta] = useState<ContaPagar | null>(null);
+  const [pagarFixoValor, setPagarFixoValor] = useState("");
+  const [pagarFixoForma, setPagarFixoForma] = useState<string>("pix");
 
   // Form state
   const [descricao, setDescricao] = useState("");
