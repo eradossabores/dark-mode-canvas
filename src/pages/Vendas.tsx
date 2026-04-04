@@ -1148,19 +1148,15 @@ export default function Vendas() {
                 </div>
                 {editItens.map((item, i) => (
                   <div key={item.id || `new-${i}`} className="flex gap-2 mb-2 items-center">
-                    {item.isNew ? (
-                      <Select value={item.sabor_id} onValueChange={(v) => {
-                        const updated = [...editItens];
-                        const sab = sabores.find((s: any) => s.id === v);
-                        updated[i] = { ...updated[i], sabor_id: v, sabores: sab ? { nome: sab.nome } : null };
-                        setEditItens(updated);
-                      }}>
-                        <SelectTrigger className="flex-1"><SelectValue placeholder="Sabor" /></SelectTrigger>
-                        <SelectContent>{sabores.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}</SelectContent>
-                      </Select>
-                    ) : (
-                      <span className="flex-1 text-sm truncate">{item.sabores?.nome}</span>
-                    )}
+                    <Select value={item.sabor_id} onValueChange={(v) => {
+                      const updated = [...editItens];
+                      const sab = sabores.find((s: any) => s.id === v);
+                      updated[i] = { ...updated[i], sabor_id: v, sabores: sab ? { nome: sab.nome } : null };
+                      setEditItens(updated);
+                    }}>
+                      <SelectTrigger className="flex-1"><SelectValue placeholder="Sabor" /></SelectTrigger>
+                      <SelectContent>{sabores.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}</SelectContent>
+                    </Select>
                     <Input
                       type="number"
                       className="w-20"
