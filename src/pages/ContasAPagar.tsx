@@ -266,7 +266,23 @@ export default function ContasAPagar() {
   async function togglePagoMes(c: ContaPagar) {
     const novo = !c.pago_mes;
     await (supabase as any).from("contas_a_pagar").update({ pago_mes: novo }).eq("id", c.id);
-    toast({ title: novo ? `✅ ${c.descricao.split(" — ")[0]} — parcela do mês marcada como paga` : `${c.descricao.split(" — ")[0]} — parcela do mês desmarcada` });
+    toast({ title: novo ? `✅ ${c.descricao.split(" — ")[0]} — marcada como paga` : `${c.descricao.split(" — ")[0]} — desmarcada` });
+    loadContas();
+  }
+
+  async function handlePagarFixoAdiantamento() {
+    if (!pagarFixoConta) return;
+    const valor = parseFloat(pagarFixoValor || "0");
+    if (valor <= 0) return toast({ title: "Informe um valor válido", variant: "destructive" });
+    const formaLabel = FORMAS_PAGAMENTO.find(f => f.value === pagarFixoForma)?.label || pagarFixoForma;
+    const isPagamentoTotal = valor >= pagarFixoConta.valor_parcela;
+    await (supabase as any).from("contas_a_pagar").update({
+      pago_mes: isPagamentoTotal,
+    }).eq("id", pagarFixoConta.id);
+    toast({ title: `💰 ${isPagamentoTotal ? "Pago" : "Adiantamento de"} ${R(valor)} (${formaLabel}) — ${pagarFixoConta.descricao.split(" — ")[0]}` });
+    setPagarFixoConta(null);
+    setPagarFixoValor("");
+    setPagarFixoForma("pix");
     loadContas();
   }
 
