@@ -295,9 +295,8 @@ export default function MapaEntregas() {
           positions: result.coords,
           style: {
             color: selectedRoute === p.id ? "#2563eb" : ROUTE_COLORS[i % ROUTE_COLORS.length],
-            weight: selectedRoute === p.id ? 5 : 3,
-            opacity: selectedRoute ? (selectedRoute === p.id ? 1 : 0.2) : 0.7,
-            dashArray: selectedRoute === p.id ? undefined : "8 4",
+            weight: selectedRoute === p.id ? 6 : 4,
+            opacity: selectedRoute ? (selectedRoute === p.id ? 1 : 0.25) : 0.8,
           },
         });
       }
@@ -342,7 +341,7 @@ export default function MapaEntregas() {
           position: [p.latitude!, p.longitude!] as [number, number],
           icon: createLabeledSvgIcon(
             isSelected ? "#dc2626" : (STATUS_MARKER_COLORS[p.status] || "#6b7280"),
-            `📍B ${p.clienteNome}`,
+            `${p.clienteNome}`,
             isSelected ? "large" : "medium"
           ),
           popup: {
@@ -356,7 +355,7 @@ export default function MapaEntregas() {
       id: "factory",
       position: factoryCoords,
       draggable: true,
-      icon: createLabeledSvgIcon("#16a34a", `🏭A ${factoryName}`, "large"),
+      icon: createLabeledSvgIcon("#ea580c", `🏭 ${factoryName}`, "large"),
       popup: {
         title: `🏭 Origem: ${factoryName}`,
         content: (
