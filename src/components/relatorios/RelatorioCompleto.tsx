@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { DollarSign, Package, Users, ShoppingCart, Factory, Warehouse, TrendingUp, AlertTriangle, Calculator, Lightbulb, Target, CircleAlert } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import DateRangeFilter from "./DateRangeFilter";
 import KpiCard from "./KpiCard";
 import ExportButtons from "./ExportButtons";
