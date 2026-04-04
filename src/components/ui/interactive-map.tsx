@@ -342,9 +342,12 @@ export function AdvancedMap({
 
         {/* Markers */}
         {enableClustering ? (
-          <MarkerClusterGroup chunkedLoading>
-            {renderMarkers(markers)}
-          </MarkerClusterGroup>
+          <>
+            <MarkerClusterGroup chunkedLoading>
+              {renderMarkers(markers.filter(m => !m.excludeFromCluster))}
+            </MarkerClusterGroup>
+            {renderMarkers(markers.filter(m => m.excludeFromCluster))}
+          </>
         ) : (
           renderMarkers(markers)
         )}
