@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { DollarSign, Package, Users, ShoppingCart, Factory, Warehouse, TrendingUp, AlertTriangle, Calculator } from "lucide-react";
+import { DollarSign, Package, Users, ShoppingCart, Factory, Warehouse, TrendingUp, AlertTriangle, Calculator, Lightbulb, Target, CircleAlert } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import DateRangeFilter from "./DateRangeFilter";
 import KpiCard from "./KpiCard";
 import ExportButtons from "./ExportButtons";
@@ -16,6 +17,245 @@ const COLORS = ["hsl(200,98%,39%)", "hsl(213,93%,67%)", "hsl(38,92%,50%)", "hsl(
 
 const formatBRL = (v: number) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const formatPct = (v: number) => `${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
+
+const parseBRL = (v: string) => parseFloat(v.replace(/\./g, "").replace(",", ".")) || 0;
+
+function FinanceiroSection({ totalVendasAuto }: { totalVendasAuto: number }) {
+  const [receitaInput, setReceitaInput] = useState<string>("");
+  const [cmvInput, setCmvInput] = useState<string>("");
+  const [despesasFixasInput, setDespesasFixasInput] = useState<string>("");
+  const [useAutoReceita, setUseAutoReceita] = useState(true);
+
+  const receita = useAutoReceita ? totalVendasAuto : parseBRL(receitaInput);
+  const cmv = parseBRL(cmvInput);
+  const despesasFixas = parseBRL(despesasFixasInput);
+
+  const lucroBruto = receita - cmv;
+  const lucroLiquido = lucroBruto - despesasFixas;
+  const margemContribuicao = receita > 0 ? ((receita - cmv) / receita) * 100 : 0;
+  const pontoEquilibrio = margemContribuicao > 0 ? despesasFixas / (margemContribuicao / 100) : 0;
+  const pctCustoSobreReceita = receita > 0 ? ((cmv + despesasFixas) / receita) * 100 : 0;
+  const faltaParaEquilibrio = receita > 0 && pontoEquilibrio > 0 ? Math.max(0, pontoEquilibrio - receita) : 0;
+
+  // Status
+  const statusColor = lucroLiquido > 0 ? "emerald" : lucroLiquido === 0 ? "amber" : "red";
+  const statusEmoji = lucroLiquido > 0 ? "🟢" : lucroLiquido === 0 ? "🟡" : "🔴";
+  const statusLabel = lucroLiquido > 0 ? "Saudável" : lucroLiquido === 0 ? "Atenção" : "Prejuízo";
+
+  const hasInputs = cmv > 0 || despesasFixas > 0;
+
+  // Insights
+  const insights: { icon: string; text: string; type: "success" | "warning" | "danger" }[] = [];
+  if (hasInputs && receita > 0) {
+    if (lucroLiquido > 0) {
+      insights.push({ icon: "✅", text: `Sua empresa está lucrando! Margem líquida de ${formatPct((lucroLiquido / receita) * 100)}.`, type: "success" });
+    } else if (lucroLiquido < 0) {
+      insights.push({ icon: "🚨", text: `Sua empresa está no prejuízo de ${formatBRL(Math.abs(lucroLiquido))}. Ação urgente necessária.`, type: "danger" });
+    }
+    if (pctCustoSobreReceita > 0) {
+      insights.push({ icon: "📊", text: `${formatPct(pctCustoSobreReceita)} da receita está comprometida com custos (variáveis + fixos).`, type: pctCustoSobreReceita > 90 ? "danger" : pctCustoSobreReceita > 70 ? "warning" : "success" });
+    }
+    if (faltaParaEquilibrio > 0) {
+      insights.push({ icon: "🎯", text: `Faltam ${formatBRL(faltaParaEquilibrio)} em faturamento para atingir o ponto de equilíbrio.`, type: "warning" });
+    } else if (pontoEquilibrio > 0 && receita >= pontoEquilibrio) {
+      insights.push({ icon: "🏆", text: `Você já ultrapassou o ponto de equilíbrio em ${formatBRL(receita - pontoEquilibrio)}!`, type: "success" });
+    }
+    if (margemContribuicao <= 0) {
+      insights.push({ icon: "⚠️", text: "Margem de contribuição zerada ou negativa. O custo variável está consumindo toda a receita.", type: "danger" });
+    }
+  }
+
+  // Suggestions
+  const suggestions: string[] = [];
+  if (hasInputs && receita > 0) {
+    if (lucroLiquido < 0) {
+      suggestions.push("Reduza custos variáveis renegociando com fornecedores.");
+      suggestions.push("Avalie aumentar o preço de venda para melhorar a margem.");
+      suggestions.push("Aumente o volume de vendas para diluir as despesas fixas.");
+    } else if (margemContribuicao < 30) {
+      suggestions.push("Margem baixa — considere revisar o preço dos produtos.");
+      suggestions.push("Busque fornecedores alternativos para reduzir o CMV.");
+    }
+    if (pctCustoSobreReceita > 85) {
+      suggestions.push("Custos representam mais de 85% da receita. Reavalie a estrutura de custos.");
+    }
+  }
+
+  const insightBg = { success: "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800", warning: "bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800", danger: "bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800" };
+  const insightText = { success: "text-emerald-800 dark:text-emerald-300", warning: "text-amber-800 dark:text-amber-300", danger: "text-red-800 dark:text-red-300" };
+
+  return (
+    <div className="space-y-4">
+      {/* Executive summary */}
+      {hasInputs && receita > 0 && (
+        <Card className={`border-2 ${statusColor === "emerald" ? "border-emerald-400 dark:border-emerald-600" : statusColor === "amber" ? "border-amber-400 dark:border-amber-600" : "border-red-400 dark:border-red-600"}`}>
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-start gap-3">
+              <span className="text-3xl">{statusEmoji}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <Badge className={`text-xs ${statusColor === "emerald" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200" : statusColor === "amber" ? "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200" : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"}`}>
+                    {statusLabel}
+                  </Badge>
+                </div>
+                <p className="text-sm text-foreground leading-relaxed">
+                  {lucroLiquido > 0
+                    ? `Seu negócio está operando com lucro de ${formatPct((lucroLiquido / receita) * 100)} e ${pontoEquilibrio > 0 ? `precisa faturar ${formatBRL(pontoEquilibrio)} para atingir o equilíbrio` : "está acima do ponto de equilíbrio"}.`
+                    : lucroLiquido === 0
+                    ? "Seu negócio está no ponto de equilíbrio — sem lucro nem prejuízo."
+                    : `Seu negócio está operando com prejuízo de ${formatBRL(Math.abs(lucroLiquido))}. É necessário ${pontoEquilibrio > 0 ? `faturar pelo menos ${formatBRL(pontoEquilibrio)}` : "revisar custos"} para reverter.`
+                  }
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Calculator className="h-4 w-4 text-primary" /> Indicadores Financeiros
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          {/* Inputs */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Receita Total — R$</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder={formatBRL(totalVendasAuto)}
+                  value={useAutoReceita ? "" : receitaInput}
+                  onChange={e => {
+                    setUseAutoReceita(false);
+                    setReceitaInput(e.target.value.replace(/[^0-9.,]/g, ""));
+                  }}
+                  className="h-9"
+                />
+                {!useAutoReceita && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs h-9 px-2 shrink-0"
+                    onClick={() => { setUseAutoReceita(true); setReceitaInput(""); }}
+                  >
+                    Auto
+                  </Button>
+                )}
+              </div>
+              {useAutoReceita && <p className="text-[10px] text-muted-foreground">Usando faturamento do período: {formatBRL(totalVendasAuto)}</p>}
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">CMV (Custo Variável) — R$</Label>
+              <Input
+                type="text"
+                inputMode="decimal"
+                placeholder="0,00"
+                value={cmvInput}
+                onChange={e => setCmvInput(e.target.value.replace(/[^0-9.,]/g, ""))}
+                className="h-9"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Despesas Fixas — R$</Label>
+              <Input
+                type="text"
+                inputMode="decimal"
+                placeholder="0,00"
+                value={despesasFixasInput}
+                onChange={e => setDespesasFixasInput(e.target.value.replace(/[^0-9.,]/g, ""))}
+                className="h-9"
+              />
+            </div>
+          </div>
+
+          {/* Results cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="rounded-xl border p-3.5 space-y-1.5 bg-card">
+              <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Lucro Bruto</p>
+              <p className={`text-xl font-bold ${lucroBruto >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+                {formatBRL(lucroBruto)}
+              </p>
+              <p className="text-[10px] text-muted-foreground">Receita − CMV</p>
+            </div>
+            <div className="rounded-xl border p-3.5 space-y-1.5 bg-card">
+              <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Lucro Líquido</p>
+              <p className={`text-xl font-bold ${lucroLiquido >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+                {formatBRL(lucroLiquido)}
+              </p>
+              <p className="text-[10px] text-muted-foreground">L. Bruto − Desp. Fixas</p>
+              {lucroLiquido < 0 && <Badge variant="destructive" className="text-[9px]">Prejuízo</Badge>}
+            </div>
+            <div className="rounded-xl border p-3.5 space-y-1.5 bg-card">
+              <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Margem Contribuição</p>
+              <p className={`text-xl font-bold ${margemContribuicao > 0 ? "text-emerald-600 dark:text-emerald-400" : margemContribuicao === 0 ? "text-muted-foreground" : "text-destructive"}`}>
+                {receita > 0 ? formatPct(margemContribuicao) : "—"}
+              </p>
+              <p className="text-[10px] text-muted-foreground">(Receita − CMV) / Receita</p>
+              {margemContribuicao <= 0 && receita > 0 && <Badge variant="destructive" className="text-[9px]">Margem zerada</Badge>}
+            </div>
+            <div className="rounded-xl border p-3.5 space-y-1.5 bg-card">
+              <div className="flex items-center gap-1">
+                <Target className="h-3 w-3 text-muted-foreground" />
+                <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Ponto de Equilíbrio</p>
+              </div>
+              <p className="text-xl font-bold text-foreground">
+                {margemContribuicao > 0 ? formatBRL(pontoEquilibrio) : "—"}
+              </p>
+              <p className="text-[10px] text-muted-foreground">Desp. Fixas / Margem</p>
+            </div>
+          </div>
+
+          {/* Alerts */}
+          {hasInputs && receita > 0 && (lucroLiquido < 0 || margemContribuicao <= 0) && (
+            <div className="rounded-lg border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-800 p-3 flex items-start gap-2">
+              <CircleAlert className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+              <div className="space-y-1">
+                {lucroLiquido < 0 && <p className="text-xs text-red-800 dark:text-red-300 font-medium">⚠️ Lucro líquido negativo — seu negócio está operando no prejuízo.</p>}
+                {margemContribuicao <= 0 && <p className="text-xs text-red-800 dark:text-red-300 font-medium">⚠️ Margem de contribuição zerada ou negativa — o custo variável supera a receita.</p>}
+              </div>
+            </div>
+          )}
+
+          {/* Insights */}
+          {insights.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                <Lightbulb className="h-3.5 w-3.5" /> Insights
+              </p>
+              <div className="space-y-2">
+                {insights.map((ins, i) => (
+                  <div key={i} className={`rounded-lg border p-2.5 ${insightBg[ins.type]}`}>
+                    <p className={`text-xs ${insightText[ins.type]}`}>{ins.icon} {ins.text}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Suggestions */}
+          {suggestions.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                <TrendingUp className="h-3.5 w-3.5" /> Sugestões
+              </p>
+              <ul className="space-y-1.5">
+                {suggestions.map((s, i) => (
+                  <li key={i} className="text-xs text-muted-foreground flex items-start gap-1.5">
+                    <span className="text-primary mt-0.5">•</span> {s}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 export default function RelatorioCompleto() {
   const { factoryId, factoryName, branding } = useAuth();
@@ -34,10 +274,6 @@ export default function RelatorioCompleto() {
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
   const [materiasPrimas, setMateriasPrimas] = useState<any[]>([]);
   const [embalagens, setEmbalagens] = useState<any[]>([]);
-
-  // Financial inputs
-  const [cmvInput, setCmvInput] = useState<string>("");
-  const [despesasFixasInput, setDespesasFixasInput] = useState<string>("");
 
   useEffect(() => { loadData(); }, [factoryId]);
   useEffect(() => { setPreviewLoaded(false); }, [startDate, endDate]);
@@ -86,7 +322,6 @@ export default function RelatorioCompleto() {
     return true;
   }), [producoes, startDate, endDate]);
 
-  // KPIs
   const totalVendas = filteredVendas.reduce((s, v) => s + Number(v.total || 0), 0);
   const totalProduzido = filteredProducoes.reduce((s, p) => s + p.quantidade_total, 0);
   const totalClientes = clientes.filter(c => c.status === "ativo").length;
@@ -96,15 +331,6 @@ export default function RelatorioCompleto() {
   const mpBaixo = materiasPrimas.filter(m => m.estoque_atual <= m.estoque_minimo).length;
   const embBaixo = embalagens.filter(e => e.estoque_atual <= e.estoque_minimo).length;
 
-  // Financial calculations
-  const cmv = parseFloat(cmvInput.replace(",", ".")) || 0;
-  const despesasFixas = parseFloat(despesasFixasInput.replace(",", ".")) || 0;
-  const lucroBruto = totalVendas - cmv;
-  const lucroLiquido = lucroBruto - despesasFixas;
-  const margemContribuicao = totalVendas > 0 ? ((totalVendas - cmv) / totalVendas) * 100 : 0;
-  const pontoEquilibrio = margemContribuicao > 0 ? despesasFixas / (margemContribuicao / 100) : 0;
-
-  // Charts data
   const vendasPorDia = useMemo(() => {
     const map: Record<string, number> = {};
     filteredVendas.forEach(v => {
@@ -141,7 +367,6 @@ export default function RelatorioCompleto() {
 
   const periodoLabel = `${startDate?.toLocaleDateString("pt-BR") || "—"} a ${endDate?.toLocaleDateString("pt-BR") || "—"}`;
 
-  // Export data
   const headers = ["Seção", "Indicador", "Valor"];
   const rows: (string | number)[][] = [
     ["Vendas", "Total Faturado", formatBRL(totalVendas)],
@@ -155,17 +380,6 @@ export default function RelatorioCompleto() {
     ["Estoque", "Matérias-Primas Baixas", mpBaixo],
     ["Estoque", "Embalagens Baixas", embBaixo],
   ];
-
-  if (cmv > 0 || despesasFixas > 0) {
-    rows.push(
-      ["Indicadores Financeiros", "CMV (Custo Variável)", formatBRL(cmv)],
-      ["Indicadores Financeiros", "Despesas Fixas", formatBRL(despesasFixas)],
-      ["Indicadores Financeiros", "Lucro Bruto", formatBRL(lucroBruto)],
-      ["Indicadores Financeiros", "Lucro Líquido", formatBRL(lucroLiquido)],
-      ["Indicadores Financeiros", "Margem de Contribuição", formatPct(margemContribuicao)],
-      ["Indicadores Financeiros", "Ponto de Equilíbrio", formatBRL(pontoEquilibrio)],
-    );
-  }
 
   topClientes.slice(0, 5).forEach((c, i) => {
     rows.push(["Top Clientes", `${i + 1}º - ${c.name}`, formatBRL(c.value)]);
@@ -202,7 +416,6 @@ export default function RelatorioCompleto() {
         <>
           <div className="text-sm text-muted-foreground font-medium">Período: {periodoLabel}</div>
 
-          {/* KPIs Row 1 - Financeiro */}
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <KpiCard title="Faturamento" value={formatBRL(totalVendas)} icon={DollarSign} />
             <KpiCard title="Nº de Vendas" value={filteredVendas.length.toString()} icon={ShoppingCart} />
@@ -210,7 +423,6 @@ export default function RelatorioCompleto() {
             <KpiCard title="Produzido" value={`${totalProduzido.toLocaleString("pt-BR")} un`} icon={Factory} />
           </div>
 
-          {/* KPIs Row 2 - Operacional */}
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <KpiCard title="Clientes Ativos" value={totalClientes.toString()} icon={Users} />
             <KpiCard title="Estoque Total" value={`${totalEstoque.toLocaleString("pt-BR")} un`} icon={Warehouse} />
@@ -219,74 +431,7 @@ export default function RelatorioCompleto() {
           </div>
 
           {/* Indicadores Financeiros */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Calculator className="h-4 w-4 text-primary" /> Indicadores Financeiros
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Inputs */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="cmv" className="text-xs font-medium">CMV (Custo Variável) — R$</Label>
-                  <Input
-                    id="cmv"
-                    type="text"
-                    inputMode="decimal"
-                    placeholder="0,00"
-                    value={cmvInput}
-                    onChange={e => setCmvInput(e.target.value.replace(/[^0-9.,]/g, ""))}
-                    className="h-9"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="despesas-fixas" className="text-xs font-medium">Despesas Fixas — R$</Label>
-                  <Input
-                    id="despesas-fixas"
-                    type="text"
-                    inputMode="decimal"
-                    placeholder="0,00"
-                    value={despesasFixasInput}
-                    onChange={e => setDespesasFixasInput(e.target.value.replace(/[^0-9.,]/g, ""))}
-                    className="h-9"
-                  />
-                </div>
-              </div>
-
-              {/* Results */}
-              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
-                <div className="rounded-lg border p-3 space-y-1">
-                  <p className="text-[11px] text-muted-foreground font-medium">Lucro Bruto</p>
-                  <p className={`text-lg font-bold ${lucroBruto >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                    {formatBRL(lucroBruto)}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">Receita − CMV</p>
-                </div>
-                <div className="rounded-lg border p-3 space-y-1">
-                  <p className="text-[11px] text-muted-foreground font-medium">Lucro Líquido</p>
-                  <p className={`text-lg font-bold ${lucroLiquido >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                    {formatBRL(lucroLiquido)}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">L. Bruto − Desp. Fixas</p>
-                </div>
-                <div className="rounded-lg border p-3 space-y-1">
-                  <p className="text-[11px] text-muted-foreground font-medium">Margem de Contribuição</p>
-                  <p className={`text-lg font-bold ${margemContribuicao >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                    {totalVendas > 0 ? formatPct(margemContribuicao) : "—"}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">(Receita − CMV) / Receita</p>
-                </div>
-                <div className="rounded-lg border p-3 space-y-1">
-                  <p className="text-[11px] text-muted-foreground font-medium">Ponto de Equilíbrio</p>
-                  <p className="text-lg font-bold text-foreground">
-                    {margemContribuicao > 0 ? formatBRL(pontoEquilibrio) : "—"}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">Desp. Fixas / Margem</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <FinanceiroSection totalVendasAuto={totalVendas} />
 
           {/* Charts */}
           <div id="charts-completo" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -350,7 +495,6 @@ export default function RelatorioCompleto() {
             </Card>
           </div>
 
-          {/* Alertas de Estoque */}
           {(mpBaixo > 0 || embBaixo > 0) && (
             <Card>
               <CardHeader><CardTitle className="text-sm flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-destructive" /> Alertas de Estoque</CardTitle></CardHeader>
@@ -375,7 +519,6 @@ export default function RelatorioCompleto() {
             </Card>
           )}
 
-          {/* Resumo de Vendas Recentes */}
           <Card>
             <CardHeader><CardTitle className="text-sm">Últimas 10 Vendas</CardTitle></CardHeader>
             <CardContent>
