@@ -219,7 +219,7 @@ export default function Dashboard() {
       // Build queries with factory_id filter
       let gelosQuery = (supabase as any).from("estoque_gelos").select("quantidade, sabor_id, sabores(nome)");
       let clientesQuery = (supabase as any).from("clientes").select("id").eq("status", "ativo");
-      let vendasQuery = (supabase as any).from("vendas").select("total, created_at, status");
+      let vendasQuery = (supabase as any).from("vendas").select("total, created_at, status, clientes(nome)");
       let producoesQuery = (supabase as any).from("producoes").select("quantidade_total, created_at");
       let inativosQuery = (supabase as any).from("clientes").select("id").eq("status", "inativo");
 
