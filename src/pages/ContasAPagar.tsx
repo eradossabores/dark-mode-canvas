@@ -19,6 +19,8 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import jsPDF from "jspdf";
+import logoUrl from "@/assets/logo.png";
 
 const FORMAS_PAGAMENTO = [
   { value: "pix", label: "PIX" },
