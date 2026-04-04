@@ -472,8 +472,13 @@ export default function Vendas() {
   async function handleEditSave() {
     if (!editVenda) return;
     try {
+      const itensValidos = editItens.filter((item) => item.sabor_id && item.quantidade > 0);
+      const itemIdsMantidos = itensValidos
+        .filter((item) => item.id && !item.isNew)
+        .map((item) => item.id);
+
       // Se mudou de paga/cancelada para pendente, resetar valor_pago
-      const editTotal = editItens.reduce((sum: number, it: any) => sum + Number(it.preco_unitario) * (it.quantidade || 0), 0);
+      const editTotal = itensValidos.reduce((sum: number, it: any) => sum + Number(it.preco_unitario) * (it.quantidade || 0), 0);
       const eVPix = editDetalhePgto === "pix" ? editTotal : editDetalhePgto === "misto" ? (parseFloat(editDetalhePix.replace(",", ".")) || 0) : 0;
       const eVEsp = editDetalhePgto === "especie" ? editTotal : editDetalhePgto === "misto" ? (parseFloat(editDetalheEspecie.replace(",", ".")) || 0) : 0;
       const updateData: any = {
@@ -487,9 +492,23 @@ export default function Vendas() {
       const { error } = await (supabase as any).from("vendas").update(updateData).eq("id", editVenda.id);
       if (error) throw error;
 
+      const itensIdsParaExcluirQuery = (supabase as any)
+        .from("venda_itens")
+        .delete()
+        .eq("venda_id", editVenda.id);
+
+      const { error: deleteError } = itemIdsMantidos.length > 0
+        ? await itensIdsParaExcluirQuery.not("id", "in", `(${itemIdsMantidos.join(",")})`)
+        : await itensIdsParaExcluirQuery;
+
+      if (deleteError) {
+        console.error("Erro ao excluir itens removidos:", deleteError);
+        throw deleteError;
+      }
+
       // Update existing items and insert new ones
       let newTotal = 0;
-      for (const item of editItens) {
+      for (const item of itensValidos) {
         if (item.isNew) {
           if (!item.sabor_id || item.quantidade <= 0) continue;
           const subtotal = Number(item.preco_unitario) * item.quantidade;
@@ -1234,7 +1253,7 @@ export default function Vendas() {
                 ))}
                 <div className="flex justify-between items-center mt-2 pt-2 border-t font-semibold text-sm">
                   <span>Novo Total:</span>
-                  <span>R$ {editItens.reduce((sum, it) => sum + Number(it.preco_unitario) * (it.quantidade || 0), 0).toFixed(2)}</span>
+                  <span>R$ {editItens.filter((it) => it.sabor_id && it.quantidade > 0).reduce((sum, it) => sum + Number(it.preco_unitario) * (it.quantidade || 0), 0).toFixed(2)}</span>
                 </div>
               </div>
             <div><Label>Observações</Label><Input value={editObs} onChange={(e) => setEditObs(e.target.value)} /></div>
