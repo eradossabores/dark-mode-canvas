@@ -125,18 +125,24 @@ export default function MapaEntregas() {
     }
   }
 
-  async function saveFactoryPosition(nextPosition: [number, number]) {
-    if (!factoryId || savingFactoryPosition) return;
+  function handleMarkerDragEnd(nextPosition: [number, number]) {
+    setPendingPosition(nextPosition);
+  }
 
-    const previousPosition = factoryCoords;
-    setFactoryCoords(nextPosition);
+  async function confirmReposition() {
+    if (!factoryId || !pendingPosition || savingFactoryPosition) return;
+
+    const oldPosition = factoryCoords;
+    setPreviousSavedPosition(oldPosition);
+    setFactoryCoords(pendingPosition);
     setHasFactoryCoords(true);
     setSavingFactoryPosition(true);
+    setPendingPosition(null);
 
     try {
       const { error } = await supabase
         .from("factories")
-        .update({ latitude: nextPosition[0], longitude: nextPosition[1] })
+        .update({ latitude: pendingPosition[0], longitude: pendingPosition[1] })
         .eq("id", factoryId);
 
       if (error) throw error;
@@ -146,10 +152,46 @@ export default function MapaEntregas() {
         description: "O ponto de partida das entregas foi salvo com sucesso.",
       });
     } catch (error: any) {
-      setFactoryCoords(previousPosition);
+      setFactoryCoords(oldPosition);
+      setPreviousSavedPosition(null);
       toast({
         title: "Erro ao salvar posição",
         description: error?.message || "Não foi possível atualizar a localização da fábrica.",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingFactoryPosition(false);
+    }
+  }
+
+  function cancelReposition() {
+    setPendingPosition(null);
+  }
+
+  async function undoReposition() {
+    if (!factoryId || !previousSavedPosition || savingFactoryPosition) return;
+
+    setSavingFactoryPosition(true);
+    const restoreTo = previousSavedPosition;
+
+    try {
+      const { error } = await supabase
+        .from("factories")
+        .update({ latitude: restoreTo[0], longitude: restoreTo[1] })
+        .eq("id", factoryId);
+
+      if (error) throw error;
+
+      setFactoryCoords(restoreTo);
+      setPreviousSavedPosition(null);
+      toast({
+        title: "Posição restaurada",
+        description: "A fábrica voltou para a posição anterior.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao desfazer",
+        description: error?.message || "Não foi possível restaurar a posição.",
         variant: "destructive",
       });
     } finally {
