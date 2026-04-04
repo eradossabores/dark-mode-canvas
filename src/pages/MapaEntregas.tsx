@@ -118,6 +118,26 @@ export default function MapaEntregas() {
     return Object.entries(map).sort((a, b) => b[1].length - a[1].length);
   }, [filtered]);
 
+  const STATUS_MARKER_COLORS: Record<string, string> = {
+    aguardando_producao: "#f59e0b",
+    em_producao: "#3b82f6",
+    separado_para_entrega: "#16a34a",
+  };
+
+  const mapMarkers: MapMarker[] = useMemo(() => {
+    return filtered
+      .filter(p => p.latitude && p.longitude)
+      .map(p => ({
+        id: p.id,
+        position: [p.latitude!, p.longitude!] as [number, number],
+        color: STATUS_MARKER_COLORS[p.status] || "#6b7280",
+        popup: {
+          title: p.clienteNome,
+          content: `📦 ${p.itens} un · ${p.bairro}\n📅 ${new Date(p.dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}`,
+        },
+      }));
+  }, [filtered]);
+
   const totalItens = filtered.reduce((s, p) => s + p.itens, 0);
 
   const statusLabel: Record<string, string> = {
