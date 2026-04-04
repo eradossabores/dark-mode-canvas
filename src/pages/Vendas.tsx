@@ -1148,11 +1148,21 @@ export default function Vendas() {
                 </div>
                 {editItens.map((item, i) => (
                   <div key={item.id || `new-${i}`} className="flex gap-2 mb-2 items-center">
-                    <Select value={item.sabor_id} onValueChange={(v) => {
+                    <Select value={item.sabor_id} onValueChange={async (v) => {
                       const updated = [...editItens];
                       const sab = sabores.find((s: any) => s.id === v);
                       updated[i] = { ...updated[i], sabor_id: v, sabores: sab ? { nome: sab.nome } : null };
                       setEditItens(updated);
+                      // Auto-fetch price
+                      if (editVenda?.cliente_id && v) {
+                        const totalQtd = updated.reduce((s: number, it: any) => s + (it.quantidade || 0), 0);
+                        const preco = await fetchPreco(editVenda.cliente_id, v, totalQtd);
+                        if (preco != null) {
+                          const u2 = [...updated];
+                          u2[i] = { ...u2[i], preco_unitario: preco };
+                          setEditItens(u2);
+                        }
+                      }
                     }}>
                       <SelectTrigger className="flex-1"><SelectValue placeholder="Sabor" /></SelectTrigger>
                       <SelectContent>{sabores.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}</SelectContent>
