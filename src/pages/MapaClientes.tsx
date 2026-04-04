@@ -376,10 +376,16 @@ export default function MapaClientes() {
     ...(hasFactoryCoords ? [{
       id: 'factory-marker',
       position: factoryCenter,
+      draggable: true,
       icon: createFactoryIcon(factoryName || 'Fábrica'),
       popup: {
         title: `🏭 ${factoryName || 'Fábrica'}`,
-        content: <p className="text-xs text-muted-foreground">Localização da fábrica (ponto de referência)</p>,
+        content: (
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Localização da fábrica (ponto de referência)</p>
+            <p className="text-xs text-amber-600">✋ Arraste para ajustar a posição</p>
+          </div>
+        ),
       },
     }] : []),
   ];
