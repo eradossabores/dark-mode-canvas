@@ -1207,7 +1207,8 @@ export default function Vendas() {
                     <Button size="icon" variant="ghost" onClick={() => setEditItens(editItens.filter((_, idx) => idx !== i))}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
-                    )}
+
+
                   </div>
                 ))}
                 <div className="flex justify-between items-center mt-2 pt-2 border-t font-semibold text-sm">
