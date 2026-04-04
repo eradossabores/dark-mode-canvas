@@ -436,6 +436,7 @@ export default function RelatorioCompleto() {
     ["Estoque", "Total em Estoque", `${totalEstoque.toLocaleString("pt-BR")} un`],
     ["Estoque", "Matérias-Primas Baixas", mpBaixo],
     ["Estoque", "Embalagens Baixas", embBaixo],
+    ["Colaboradores", "Despesas no Período", formatBRL(despesasDiarias)],
   ];
 
   topClientes.slice(0, 5).forEach((c, i) => {
