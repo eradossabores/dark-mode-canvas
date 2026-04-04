@@ -203,25 +203,37 @@ export default function MapaEntregas() {
     from: [number, number],
     to: [number, number]
   ): Promise<{ coords: [number, number][]; distanceKm: number; durationMin: number }> {
-    try {
-      const url = `https://router.project-osrm.org/route/v1/driving/${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`OSRM ${res.status}`);
-      const data = await res.json();
+    const OSRM_SERVERS = [
+      `https://router.project-osrm.org/route/v1/driving/${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson`,
+      `https://routing.openstreetmap.de/routed-car/route/v1/driving/${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson`,
+    ];
 
-      if (data.routes?.[0]) {
-        const route = data.routes[0];
-        const coords = route.geometry.coordinates.map((c: number[]) => [c[1], c[0]] as [number, number]);
-        return {
-          coords,
-          distanceKm: Math.round((route.distance / 1000) * 10) / 10,
-          durationMin: Math.round(route.duration / 60),
-        };
+    for (const url of OSRM_SERVERS) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeout);
+        if (!res.ok) continue;
+        const data = await res.json();
+
+        if (data.routes?.[0]) {
+          const route = data.routes[0];
+          const coords = route.geometry.coordinates.map((c: number[]) => [c[1], c[0]] as [number, number]);
+          if (coords.length > 2) {
+            return {
+              coords,
+              distanceKm: Math.round((route.distance / 1000) * 10) / 10,
+              durationMin: Math.round(route.duration / 60),
+            };
+          }
+        }
+      } catch (e) {
+        console.warn("OSRM route attempt failed:", e);
       }
-    } catch (e) {
-      console.error("OSRM route error:", e);
     }
 
+    // Fallback: straight line with haversine distance
     const R = 6371;
     const dLat = ((to[0] - from[0]) * Math.PI) / 180;
     const dLon = ((to[1] - from[1]) * Math.PI) / 180;
