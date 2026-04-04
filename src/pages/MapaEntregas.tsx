@@ -373,6 +373,20 @@ export default function MapaEntregas() {
 
   return (
     <div>
+      <AlertDialog open={!!pendingPosition} onOpenChange={(open) => { if (!open) cancelReposition(); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reposicionar fábrica?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja mover a fábrica para a nova posição? Isso alterará o ponto de partida de todas as rotas de entrega.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmReposition}>Confirmar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <MapPin className="h-6 w-6 text-primary" />
