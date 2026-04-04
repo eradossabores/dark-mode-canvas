@@ -295,9 +295,8 @@ export default function MapaEntregas() {
           positions: result.coords,
           style: {
             color: selectedRoute === p.id ? "#2563eb" : ROUTE_COLORS[i % ROUTE_COLORS.length],
-            weight: selectedRoute === p.id ? 5 : 3,
-            opacity: selectedRoute ? (selectedRoute === p.id ? 1 : 0.2) : 0.7,
-            dashArray: selectedRoute === p.id ? undefined : "8 4",
+            weight: selectedRoute === p.id ? 6 : 4,
+            opacity: selectedRoute ? (selectedRoute === p.id ? 1 : 0.25) : 0.8,
           },
         });
       }
