@@ -107,19 +107,31 @@ export default function MapaEntregas() {
   }
 
   // Fetch route from OSRM
-  async function fetchRoute(from: [number, number], to: [number, number]): Promise<[number, number][]> {
+  async function fetchRoute(from: [number, number], to: [number, number]): Promise<{ coords: [number, number][]; distanceKm: number; durationMin: number }> {
     try {
       const url = `https://router.project-osrm.org/route/v1/driving/${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson`;
       const res = await fetch(url);
+      if (!res.ok) throw new Error(`OSRM ${res.status}`);
       const data = await res.json();
-      if (data.routes?.[0]?.geometry?.coordinates) {
-        return data.routes[0].geometry.coordinates.map((c: number[]) => [c[1], c[0]] as [number, number]);
+      if (data.routes?.[0]) {
+        const route = data.routes[0];
+        const coords = route.geometry.coordinates.map((c: number[]) => [c[1], c[0]] as [number, number]);
+        return {
+          coords,
+          distanceKm: Math.round((route.distance / 1000) * 10) / 10,
+          durationMin: Math.round(route.duration / 60),
+        };
       }
     } catch (e) {
       console.error("OSRM route error:", e);
     }
-    // Fallback: straight line
-    return [from, to];
+    // Fallback: straight line with Haversine distance
+    const R = 6371;
+    const dLat = ((to[0] - from[0]) * Math.PI) / 180;
+    const dLon = ((to[1] - from[1]) * Math.PI) / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos((from[0] * Math.PI) / 180) * Math.cos((to[0] * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+    const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return { coords: [from, to], distanceKm: Math.round(dist * 10) / 10, durationMin: Math.round((dist / 30) * 60) };
   }
 
   const bairros = useMemo(() => {
