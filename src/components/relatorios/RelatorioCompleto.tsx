@@ -350,6 +350,7 @@ export default function RelatorioCompleto() {
   const clientesInativos = clientes.filter(c => c.status === "inativo").length;
   const mpBaixo = materiasPrimas.filter(m => m.estoque_atual <= m.estoque_minimo).length;
   const embBaixo = embalagens.filter(e => e.estoque_atual <= e.estoque_minimo).length;
+  const totalDespesasFixas = contasAPagar.reduce((s, c) => s + Number(c.valor_parcela || 0), 0);
 
   const vendasPorDia = useMemo(() => {
     const map: Record<string, number> = {};
