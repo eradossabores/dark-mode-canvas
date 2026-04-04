@@ -217,8 +217,7 @@ export default function MapaEntregas() {
             content: `📦 ${p.itens} un · ${p.bairro}\n📅 ${new Date(p.dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}${routeText}\n🗺️ Clique para ver a rota`,
           },
         };
-      });
-      }));
+    });
 
     // Factory marker
     const factoryMarker: MapMarker = {
@@ -232,7 +231,7 @@ export default function MapaEntregas() {
     };
 
     return [factoryMarker, ...clientMarkers];
-  }, [filtered]);
+  }, [filtered, routeInfoMap]);
 
   const totalItens = filtered.reduce((s, p) => s + p.itens, 0);
 
