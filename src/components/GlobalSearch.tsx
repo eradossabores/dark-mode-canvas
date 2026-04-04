@@ -15,7 +15,7 @@ const pages = [
   { path: "/painel", label: "Dashboard", icon: LayoutDashboard, keywords: "inicio home painel" },
   { path: "/painel/producao", label: "Produção", icon: Factory, keywords: "fabricar lote" },
   { path: "/painel/monitor-producao", label: "Monitor Produção", icon: Monitor, keywords: "acompanhar pedidos separação" },
-  { path: "/painel/pedidos-producao", label: "Histórico de Pedidos", icon: ShoppingBag, keywords: "pedidos historico" },
+  { path: "/painel/pedidos-producao", label: "Histórico Pedidos p/ Entregas", icon: ShoppingBag, keywords: "pedidos historico entregas" },
   { path: "/painel/vendas", label: "Vendas", icon: ShoppingCart, keywords: "vender nota fiscal" },
   { path: "/painel/a-receber", label: "A Receber", icon: DollarSign, keywords: "parcelas inadimplência cobrança" },
   { path: "/painel/contas-a-pagar", label: "Contas a Pagar", icon: ClipboardList, keywords: "despesas pagamentos" },

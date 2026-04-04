@@ -33,7 +33,7 @@ const menuGroups = [
       { path: "/painel/producao", label: "Produção", icon: Factory },
       { path: "/painel/monitor-producao", label: "Monitor Produção", icon: Monitor },
       { path: "/painel/presenca", label: "Presença", icon: UserCheck },
-      { path: "/painel/pedidos-producao", label: "Histórico de Pedidos", icon: ShoppingBag },
+      
       { path: "/painel/previsao-demanda", label: "Previsão Demanda", icon: Brain },
     ],
   },
@@ -60,6 +60,7 @@ const menuGroups = [
     label: "Mapas",
     items: [
       { path: "/painel/mapa-entregas", label: "Mapa Entregas", icon: MapPin },
+      { path: "/painel/pedidos-producao", label: "Histórico Pedidos p/ Entregas", icon: ShoppingBag },
       { path: "/painel/mapa-clientes", label: "Mapa Clientes", icon: Map },
     ],
   },
