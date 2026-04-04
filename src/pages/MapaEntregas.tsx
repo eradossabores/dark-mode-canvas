@@ -160,13 +160,15 @@ export default function MapaEntregas() {
     async function loadRoutes() {
       const ROUTE_COLORS = ["#2563eb", "#dc2626", "#16a34a", "#d97706", "#7c3aed", "#0891b2", "#ea580c", "#db2777"];
       const lines: MapPolyline[] = [];
+      const infoMap: Record<string, RouteInfo> = {};
       for (let i = 0; i < pedidosComCoords.length; i++) {
         if (cancelled) return;
         const p = pedidosComCoords[i];
-        const coords = await fetchRoute(factoryCoords, [p.latitude!, p.longitude!]);
+        const result = await fetchRoute(factoryCoords, [p.latitude!, p.longitude!]);
+        infoMap[p.id] = { distanceKm: result.distanceKm, durationMin: result.durationMin };
         lines.push({
           id: `route-${p.id}`,
-          positions: coords,
+          positions: result.coords,
           style: {
             color: selectedRoute === p.id ? "#2563eb" : (ROUTE_COLORS[i % ROUTE_COLORS.length]),
             weight: selectedRoute === p.id ? 5 : 3,
@@ -175,7 +177,10 @@ export default function MapaEntregas() {
           },
         });
       }
-      if (!cancelled) setRoutePolylines(lines);
+      if (!cancelled) {
+        setRoutePolylines(lines);
+        setRouteInfoMap(infoMap);
+      }
     }
     loadRoutes();
     return () => { cancelled = true; };
