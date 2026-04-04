@@ -540,6 +540,21 @@ export default function RelatorioCompleto() {
             </Card>
 
             <Card data-chart-export>
+              <CardHeader><CardTitle className="text-sm">Produção por Dia</CardTitle></CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={producaoPorDia}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" fontSize={10} angle={-20} textAnchor="end" height={50} />
+                    <YAxis fontSize={10} />
+                    <Tooltip />
+                    <Bar dataKey="value" name="Produção (un)" fill="hsl(213,93%,67%)" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card data-chart-export>
               <CardHeader><CardTitle className="text-sm">Top 10 Clientes (Faturamento)</CardTitle></CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={250}>
