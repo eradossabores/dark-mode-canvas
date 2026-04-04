@@ -498,7 +498,7 @@ export default function MapaClientes() {
                 } else {
                   setPendingDrag({
                     type: "client",
-                    id: marker.id,
+                    id: String(marker.id),
                     name: marker.data?.nome || "Cliente",
                     oldPos,
                     newPos,
