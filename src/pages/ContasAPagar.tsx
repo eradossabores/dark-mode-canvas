@@ -924,6 +924,48 @@ export default function ContasAPagar() {
         </DialogContent>
       </Dialog>
 
+      {/* Pagar Fixo Dialog */}
+      <Dialog open={!!pagarFixoConta} onOpenChange={v => { if (!v) { setPagarFixoConta(null); setPagarFixoValor(""); setPagarFixoForma("pix"); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Pagar Custo Fixo</DialogTitle>
+          </DialogHeader>
+          {pagarFixoConta && (
+            <div className="space-y-4">
+              <div className="rounded-lg bg-muted p-3 space-y-1">
+                <p className="text-sm font-bold">{pagarFixoConta.descricao.split(" — ")[0]}</p>
+                <p className="text-xs text-muted-foreground">
+                  Valor mensal: <strong>{R(pagarFixoConta.valor_parcela)}</strong>
+                </p>
+                <Badge variant={pagarFixoConta.pago_mes ? "default" : "destructive"} className="text-xs mt-1">
+                  {pagarFixoConta.pago_mes ? "✅ Pago este mês" : "⏳ Pendente este mês"}
+                </Badge>
+              </div>
+              <div>
+                <Label className="text-xs mb-1.5 block">Valor do pagamento</Label>
+                <div className="relative">
+                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
+                  <Input type="number" step="0.01" className="pl-7" value={pagarFixoValor} onChange={e => setPagarFixoValor(e.target.value)} />
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1">Pode adiantar um valor parcial ou pagar o total</p>
+              </div>
+              <div>
+                <Label className="text-xs mb-1.5 block">Forma de pagamento</Label>
+                <Select value={pagarFixoForma} onValueChange={setPagarFixoForma}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {FORMAS_PAGAMENTO.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button className="w-full" onClick={handlePagarFixoAdiantamento}>
+                💰 Confirmar Pagamento
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <AlertDialog open={!!deleteId} onOpenChange={v => !v && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
