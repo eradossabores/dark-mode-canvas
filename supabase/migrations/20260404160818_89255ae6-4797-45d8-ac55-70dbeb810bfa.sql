@@ -1,0 +1,3 @@
+UPDATE public.factories 
+SET latitude = 2.8400024, longitude = -60.7524714
+WHERE id = '00000000-0000-0000-0000-000000000001';
