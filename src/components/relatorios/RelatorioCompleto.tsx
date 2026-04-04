@@ -452,7 +452,7 @@ export default function RelatorioCompleto() {
           </div>
 
           {/* Indicadores Financeiros */}
-          <FinanceiroSection totalVendasAuto={totalVendas} />
+          <FinanceiroSection totalVendasAuto={totalVendas} totalDespesasFixasAuto={totalDespesasFixas} />
 
           {/* Charts */}
           <div id="charts-completo" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
