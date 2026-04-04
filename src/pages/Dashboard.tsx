@@ -219,7 +219,7 @@ export default function Dashboard() {
       // Build queries with factory_id filter
       let gelosQuery = (supabase as any).from("estoque_gelos").select("quantidade, sabor_id, sabores(nome)");
       let clientesQuery = (supabase as any).from("clientes").select("id").eq("status", "ativo");
-      let vendasQuery = (supabase as any).from("vendas").select("total, created_at, status");
+      let vendasQuery = (supabase as any).from("vendas").select("total, created_at, status, clientes(nome)");
       let producoesQuery = (supabase as any).from("producoes").select("quantidade_total, created_at");
       let inativosQuery = (supabase as any).from("clientes").select("id").eq("status", "inativo");
 
@@ -875,6 +875,40 @@ export default function Dashboard() {
                     <Badge variant="destructive">{contasReceberResumo.vencidas}</Badge>
                   </div>
                 )}
+                {/* Lista de devedores do mais antigo ao mais recente */}
+                {(() => {
+                  const hoje = new Date().toISOString().split("T")[0];
+                  const devedores = allVendas
+                    .filter((v: any) => v.status === "pendente" && isWithinResumoPeriod(v.created_at, receberPeriodo))
+                    .sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+                  if (devedores.length === 0) return null;
+                  return (
+                    <div className="border-t pt-3 mt-2 space-y-2 max-h-[220px] overflow-y-auto">
+                      <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Devedores (mais antigo → recente)</p>
+                      {devedores.map((v: any, i: number) => {
+                        const isVencida = v.created_at.split("T")[0] < hoje;
+                        const diasAtraso = isVencida ? Math.floor((Date.now() - new Date(v.created_at).getTime()) / 86400000) : 0;
+                        return (
+                          <div key={i} className="flex items-center justify-between gap-2 rounded-lg border p-2">
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-sm font-medium truncate">{v.clientes?.nome || "—"}</span>
+                              <span className="text-[10px] text-muted-foreground">
+                                {new Date(v.created_at).toLocaleDateString("pt-BR")}
+                                {isVencida && <span className="text-destructive ml-1">({diasAtraso}d atrás)</span>}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span className={`text-sm font-bold ${isVencida ? "text-destructive" : ""}`}>
+                                R$ {Number(v.total).toFixed(2)}
+                              </span>
+                              {isVencida && <Badge variant="destructive" className="text-[9px] px-1.5">Vencida</Badge>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
             </CardContent>
           </Card>
