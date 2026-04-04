@@ -205,14 +205,19 @@ export default function MapaEntregas() {
   const mapMarkers: MapMarker[] = useMemo(() => {
     const clientMarkers = filtered
       .filter(p => p.latitude && p.longitude)
-      .map(p => ({
-        id: p.id,
-        position: [p.latitude!, p.longitude!] as [number, number],
-        color: STATUS_MARKER_COLORS[p.status] || "#6b7280",
-        popup: {
-          title: p.clienteNome,
-          content: `📦 ${p.itens} un · ${p.bairro}\n📅 ${new Date(p.dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}\n🗺️ Clique para ver a rota`,
-        },
+      .map(p => {
+        const info = routeInfoMap[p.id];
+        const routeText = info ? `\n🛣️ ${info.distanceKm} km · ~${info.durationMin} min` : "";
+        return {
+          id: p.id,
+          position: [p.latitude!, p.longitude!] as [number, number],
+          color: STATUS_MARKER_COLORS[p.status] || "#6b7280",
+          popup: {
+            title: p.clienteNome,
+            content: `📦 ${p.itens} un · ${p.bairro}\n📅 ${new Date(p.dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}${routeText}\n🗺️ Clique para ver a rota`,
+          },
+        };
+      });
       }));
 
     // Factory marker
