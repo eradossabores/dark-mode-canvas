@@ -89,7 +89,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     doc.setFontSize(6.5);
     doc.setTextColor(80, 80, 80);
     doc.setFont("helvetica", "italic");
-    doc.text(factoryName || "Gelos Saborizados", w / 2, y, { align: "center" });
+    doc.text(factoryName || "ICETECH", w / 2, y, { align: "center" });
     y += 4;
 
     // Decorative double line
