@@ -571,6 +571,8 @@ export default function MapaClientes() {
         if (!v) {
           setConfirmDragOpen(false);
           setPendingDrag(null);
+          setMapKey(k => k + 1);
+          loadClientes(false);
         }
       }}>
         <AlertDialogContent>
