@@ -187,7 +187,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
       y += 1;
     }
 
-    y = (doc as any).lastAutoTable.finalY + 4;
+    y += 1;
 
     // Quantity badge
     const totalQtd = data.itens.reduce((s, i) => s + i.quantidade, 0);
