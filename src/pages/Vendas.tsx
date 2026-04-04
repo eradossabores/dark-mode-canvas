@@ -307,7 +307,9 @@ export default function Vendas() {
     // Final price recalculation before submit to avoid race conditions
     const totalQtdFinal = itensValidos.reduce((s, it) => s + (it.quantidade || 0), 0);
     for (let i = 0; i < itensValidos.length; i++) {
-      if (itensValidos[i].preco_auto !== false || !itensValidos[i].preco_unitario) {
+      // Skip brindes (preco_auto === false means manually set, including free items)
+      if (itensValidos[i].preco_auto === false) continue;
+      if (!itensValidos[i].preco_unitario) {
         const preco = await fetchPreco(clienteId, itensValidos[i].sabor_id, totalQtdFinal);
         if (preco !== null) {
           itensValidos[i].preco_unitario = preco.toFixed(2);
