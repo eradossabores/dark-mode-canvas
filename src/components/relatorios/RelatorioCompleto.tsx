@@ -358,6 +358,34 @@ export default function RelatorioCompleto() {
   const valorRecebido = filteredVendas.filter(v => v.status !== "cancelada").reduce((s, v) => s + Number(v.valor_pago || 0), 0);
   const valorPendente = filteredVendas.filter(v => v.status !== "cancelada").reduce((s, v) => s + Math.max(0, Number(v.total || 0) - Number(v.valor_pago || 0)), 0);
 
+  // Despesas com diárias de colaboradores no período
+  const despesasDiarias = useMemo(() => {
+    const funcMap = new Map(funcionarios.map((f: any) => [f.id, f]));
+    let total = 0;
+    // Diaristas: contar presenças no período × valor_pagamento
+    const diaristas = funcionarios.filter((f: any) => f.tipo_pagamento === "diaria" && f.ativo);
+    diaristas.forEach((func: any) => {
+      const dias = presencas.filter((p: any) => {
+        if (p.funcionario_id !== func.id) return false;
+        const d = new Date(p.data);
+        if (startDate && d < startDate) return false;
+        if (endDate && d > new Date(endDate.getTime() + 86400000)) return false;
+        return true;
+      }).length;
+      total += dias * Number(func.valor_pagamento || 0);
+    });
+    // Fixos: proporcional ao período
+    const fixos = funcionarios.filter((f: any) => f.tipo_pagamento === "fixo" && f.ativo);
+    if (startDate && endDate) {
+      const diasPeriodo = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / 86400000) + 1);
+      fixos.forEach((func: any) => {
+        const mensal = Number(func.valor_pagamento || 0);
+        total += (mensal / 30) * diasPeriodo;
+      });
+    }
+    return total;
+  }, [funcionarios, presencas, startDate, endDate]);
+
   const vendasPorDia = useMemo(() => {
     const map: Record<string, number> = {};
     filteredVendas.forEach(v => {
