@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Truck, Package, Filter, Factory, Navigation } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { MapPin, Truck, Package, Filter, Navigation } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import type { MapMarker, MapPolyline } from "@/components/ui/interactive-map";
@@ -53,17 +54,23 @@ interface PedidoEntrega {
 
 export default function MapaEntregas() {
   const { factoryId, role } = useAuth();
+  const { toast } = useToast();
   const [pedidos, setPedidos] = useState<PedidoEntrega[]>([]);
   const [filtroStatus, setFiltroStatus] = useState<string>("todos");
   const [filtroBairro, setFiltroBairro] = useState<string>("todos");
   const [factoryCoords, setFactoryCoords] = useState<[number, number]>([2.8195, -60.6714]);
   const [factoryName, setFactoryName] = useState("Fábrica");
+  const [hasFactoryCoords, setHasFactoryCoords] = useState(false);
+  const [savingFactoryPosition, setSavingFactoryPosition] = useState(false);
   const [routePolylines, setRoutePolylines] = useState<MapPolyline[]>([]);
   const [routeInfoMap, setRouteInfoMap] = useState<Record<string, RouteInfo>>({});
   const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
 
   useEffect(() => {
-    if (role !== "super_admin" && !factoryId) { setPedidos([]); return; }
+    if (role !== "super_admin" && !factoryId) {
+      setPedidos([]);
+      return;
+    }
     loadData();
   }, [factoryId, role]);
 
@@ -75,6 +82,7 @@ export default function MapaEntregas() {
         .in("status", ["separado_para_entrega", "em_producao", "aguardando_producao"])
         .eq("tipo_pedido", "entrega")
         .order("data_entrega");
+
       if (factoryId) q = q.eq("factory_id", factoryId);
       const { data } = await q;
 
@@ -91,13 +99,21 @@ export default function MapaEntregas() {
         longitude: p.clientes?.longitude ?? null,
       }));
 
-      // Also load factory location for map center
       if (factoryId) {
-        const { data: fData } = await supabase.from("factories").select("latitude, longitude, name").eq("id", factoryId).single();
-        if (fData?.latitude && fData?.longitude) {
+        const { data: fData } = await supabase
+          .from("factories")
+          .select("latitude, longitude, name")
+          .eq("id", factoryId)
+          .single();
+
+        if (fData?.latitude != null && fData?.longitude != null) {
           setFactoryCoords([fData.latitude, fData.longitude]);
-          setFactoryName(fData.name || "Fábrica");
+          setHasFactoryCoords(true);
+        } else {
+          setHasFactoryCoords(false);
         }
+
+        setFactoryName(fData?.name || "Fábrica");
       }
 
       setPedidos(mapped);
@@ -106,13 +122,48 @@ export default function MapaEntregas() {
     }
   }
 
-  // Fetch route from OSRM
-  async function fetchRoute(from: [number, number], to: [number, number]): Promise<{ coords: [number, number][]; distanceKm: number; durationMin: number }> {
+  async function saveFactoryPosition(nextPosition: [number, number]) {
+    if (!factoryId || savingFactoryPosition) return;
+
+    const previousPosition = factoryCoords;
+    setFactoryCoords(nextPosition);
+    setHasFactoryCoords(true);
+    setSavingFactoryPosition(true);
+
+    try {
+      const { error } = await supabase
+        .from("factories")
+        .update({ latitude: nextPosition[0], longitude: nextPosition[1] })
+        .eq("id", factoryId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Posição da fábrica atualizada",
+        description: "O ponto de partida das entregas foi salvo com sucesso.",
+      });
+    } catch (error: any) {
+      setFactoryCoords(previousPosition);
+      toast({
+        title: "Erro ao salvar posição",
+        description: error?.message || "Não foi possível atualizar a localização da fábrica.",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingFactoryPosition(false);
+    }
+  }
+
+  async function fetchRoute(
+    from: [number, number],
+    to: [number, number]
+  ): Promise<{ coords: [number, number][]; distanceKm: number; durationMin: number }> {
     try {
       const url = `https://router.project-osrm.org/route/v1/driving/${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`OSRM ${res.status}`);
       const data = await res.json();
+
       if (data.routes?.[0]) {
         const route = data.routes[0];
         const coords = route.geometry.coordinates.map((c: number[]) => [c[1], c[0]] as [number, number]);
@@ -125,13 +176,22 @@ export default function MapaEntregas() {
     } catch (e) {
       console.error("OSRM route error:", e);
     }
-    // Fallback: straight line with Haversine distance
+
     const R = 6371;
     const dLat = ((to[0] - from[0]) * Math.PI) / 180;
     const dLon = ((to[1] - from[1]) * Math.PI) / 180;
-    const a = Math.sin(dLat / 2) ** 2 + Math.cos((from[0] * Math.PI) / 180) * Math.cos((to[0] * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos((from[0] * Math.PI) / 180) *
+        Math.cos((to[0] * Math.PI) / 180) *
+        Math.sin(dLon / 2) ** 2;
     const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return { coords: [from, to], distanceKm: Math.round(dist * 10) / 10, durationMin: Math.round((dist / 30) * 60) };
+
+    return {
+      coords: [from, to],
+      distanceKm: Math.round(dist * 10) / 10,
+      durationMin: Math.round((dist / 30) * 60),
+    };
   }
 
   const bairros = useMemo(() => {
@@ -147,20 +207,27 @@ export default function MapaEntregas() {
     });
   }, [pedidos, filtroStatus, filtroBairro]);
 
-  // Load routes when filtered pedidos change
   useEffect(() => {
-    if (!factoryCoords[0] || filtered.length === 0) {
+    if (!hasFactoryCoords || filtered.length === 0) {
       setRoutePolylines([]);
+      setRouteInfoMap({});
       return;
     }
-    const pedidosComCoords = filtered.filter(p => p.latitude && p.longitude);
-    if (pedidosComCoords.length === 0) { setRoutePolylines([]); return; }
+
+    const pedidosComCoords = filtered.filter(p => p.latitude != null && p.longitude != null);
+    if (pedidosComCoords.length === 0) {
+      setRoutePolylines([]);
+      setRouteInfoMap({});
+      return;
+    }
 
     let cancelled = false;
+
     async function loadRoutes() {
       const ROUTE_COLORS = ["#2563eb", "#dc2626", "#16a34a", "#d97706", "#7c3aed", "#0891b2", "#ea580c", "#db2777"];
       const lines: MapPolyline[] = [];
       const infoMap: Record<string, RouteInfo> = {};
+
       for (let i = 0; i < pedidosComCoords.length; i++) {
         if (cancelled) return;
         const p = pedidosComCoords[i];
@@ -170,23 +237,26 @@ export default function MapaEntregas() {
           id: `route-${p.id}`,
           positions: result.coords,
           style: {
-            color: selectedRoute === p.id ? "#2563eb" : (ROUTE_COLORS[i % ROUTE_COLORS.length]),
+            color: selectedRoute === p.id ? "#2563eb" : ROUTE_COLORS[i % ROUTE_COLORS.length],
             weight: selectedRoute === p.id ? 5 : 3,
             opacity: selectedRoute ? (selectedRoute === p.id ? 1 : 0.2) : 0.7,
             dashArray: selectedRoute === p.id ? undefined : "8 4",
           },
         });
       }
+
       if (!cancelled) {
         setRoutePolylines(lines);
         setRouteInfoMap(infoMap);
       }
     }
-    loadRoutes();
-    return () => { cancelled = true; };
-  }, [filtered, factoryCoords, selectedRoute]);
 
-  // Group by bairro
+    loadRoutes();
+    return () => {
+      cancelled = true;
+    };
+  }, [filtered, factoryCoords, hasFactoryCoords, selectedRoute]);
+
   const grouped = useMemo(() => {
     const map: Record<string, PedidoEntrega[]> = {};
     filtered.forEach(p => {
@@ -204,10 +274,11 @@ export default function MapaEntregas() {
 
   const mapMarkers: MapMarker[] = useMemo(() => {
     const clientMarkers = filtered
-      .filter(p => p.latitude && p.longitude)
+      .filter(p => p.latitude != null && p.longitude != null)
       .map(p => {
         const info = routeInfoMap[p.id];
         const routeText = info ? `\n🛣️ ${info.distanceKm} km · ~${info.durationMin} min` : "";
+
         return {
           id: p.id,
           position: [p.latitude!, p.longitude!] as [number, number],
@@ -216,22 +287,30 @@ export default function MapaEntregas() {
             title: p.clienteNome,
             content: `📦 ${p.itens} un · ${p.bairro}\n📅 ${new Date(p.dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}${routeText}\n🗺️ Clique para ver a rota`,
           },
-        };
-    });
+        } satisfies MapMarker;
+      });
 
-    // Factory marker
     const factoryMarker: MapMarker = {
       id: "factory",
       position: factoryCoords,
+      draggable: true,
       icon: createLabeledSvgIcon("#d97706", `🏭 ${factoryName}`, "large"),
       popup: {
         title: factoryName,
-        content: "📍 Ponto de partida das entregas",
+        content: (
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Localização da fábrica (ponto de partida das entregas)</p>
+            <p className="text-xs text-primary font-medium">✋ Arraste o marcador para reposicionar a fábrica</p>
+            {savingFactoryPosition && (
+              <p className="text-xs text-muted-foreground">Salvando nova posição...</p>
+            )}
+          </div>
+        ),
       },
     };
 
     return [factoryMarker, ...clientMarkers];
-  }, [filtered, routeInfoMap]);
+  }, [factoryCoords, factoryName, filtered, routeInfoMap, savingFactoryPosition]);
 
   const totalItens = filtered.reduce((s, p) => s + p.itens, 0);
 
@@ -259,7 +338,6 @@ export default function MapaEntregas() {
         </Button>
       </div>
 
-      {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardContent className="pt-4 text-center">
@@ -287,7 +365,6 @@ export default function MapaEntregas() {
         </Card>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-6">
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-muted-foreground" />
@@ -309,18 +386,22 @@ export default function MapaEntregas() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos os bairros</SelectItem>
-            {bairros.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+            {bairros.map(b => (
+              <SelectItem key={b} value={b}>
+                {b}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
 
-      {/* Mapa */}
       {mapMarkers.length > 0 && (
         <Card className="mb-6">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
+            <CardTitle className="text-sm flex flex-wrap items-center gap-2">
               <MapPin className="h-4 w-4" /> Mapa das Entregas
               <Badge variant="secondary">{mapMarkers.length} no mapa</Badge>
+              <Badge variant="outline">Arraste a fábrica para reposicionar</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -332,7 +413,12 @@ export default function MapaEntregas() {
                 polylines={routePolylines}
                 onMarkerClick={(marker) => {
                   if (marker.id !== "factory") {
-                    setSelectedRoute(prev => prev === marker.id ? null : String(marker.id));
+                    setSelectedRoute(prev => (prev === marker.id ? null : String(marker.id)));
+                  }
+                }}
+                onMarkerDragEnd={(marker, newPosition) => {
+                  if (marker.id === "factory") {
+                    void saveFactoryPosition(newPosition);
                   }
                 }}
                 style={{ height: "400px", width: "100%" }}
@@ -343,7 +429,6 @@ export default function MapaEntregas() {
         </Card>
       )}
 
-      {/* Route legend */}
       {routePolylines.length > 0 && (
         <div className="flex flex-wrap items-center gap-3 mb-4 px-1">
           <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -357,7 +442,6 @@ export default function MapaEntregas() {
         </div>
       )}
 
-      {/* Grouped by bairro */}
       {grouped.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
@@ -379,16 +463,14 @@ export default function MapaEntregas() {
                 {pedidosBairro.map(p => (
                   <Card key={p.id} className={`border-l-4 ${getBairroColor(bairro)}`}>
                     <CardContent className="pt-3 pb-3 space-y-1">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between gap-2">
                         <span className="font-bold text-sm truncate">{p.clienteNome}</span>
                         <Badge variant={statusVariant(p.status)} className="text-[10px] shrink-0">
                           {statusLabel[p.status] || p.status}
                         </Badge>
                       </div>
-                      {p.endereco && (
-                        <p className="text-xs text-muted-foreground truncate">{p.endereco}</p>
-                      )}
-                      <div className="flex items-center justify-between text-xs">
+                      {p.endereco && <p className="text-xs text-muted-foreground truncate">{p.endereco}</p>}
+                      <div className="flex items-center justify-between text-xs gap-2">
                         <span className="flex items-center gap-1">
                           <Package className="h-3 w-3" /> {p.itens} un
                         </span>
