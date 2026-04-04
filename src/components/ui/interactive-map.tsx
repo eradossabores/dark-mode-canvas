@@ -113,6 +113,7 @@ export type MapMarker = {
   size?: 'small' | 'medium' | 'large';
   icon?: L.Icon | L.DivIcon;
   draggable?: boolean;
+  excludeFromCluster?: boolean;
   popup?: {
     title?: string;
     content?: string | React.ReactNode;
@@ -342,9 +343,12 @@ export function AdvancedMap({
 
         {/* Markers */}
         {enableClustering ? (
-          <MarkerClusterGroup chunkedLoading>
-            {renderMarkers(markers)}
-          </MarkerClusterGroup>
+          <>
+            <MarkerClusterGroup chunkedLoading>
+              {renderMarkers(markers.filter(m => !m.excludeFromCluster))}
+            </MarkerClusterGroup>
+            {renderMarkers(markers.filter(m => m.excludeFromCluster))}
+          </>
         ) : (
           renderMarkers(markers)
         )}

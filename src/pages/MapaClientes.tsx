@@ -112,6 +112,7 @@ export default function MapaClientes() {
   }
   const [pendingDrag, setPendingDrag] = useState<PendingDrag | null>(null);
   const [confirmDragOpen, setConfirmDragOpen] = useState(false);
+  const [mapKey, setMapKey] = useState(0);
   
 
   // Load factory location (with auto-geocode if missing coords)
@@ -377,6 +378,7 @@ export default function MapaClientes() {
       id: 'factory-marker',
       position: factoryCenter,
       draggable: true,
+      excludeFromCluster: true,
       icon: createFactoryIcon(factoryName || 'Fábrica'),
       popup: {
         title: `🏭 ${factoryName || 'Fábrica'}`,
@@ -480,6 +482,7 @@ export default function MapaClientes() {
         <div className="lg:col-span-3">
           <Card className="overflow-hidden">
             <AdvancedMap
+              key={mapKey}
               center={factoryCenter}
               zoom={13}
               markers={markers}
@@ -568,6 +571,8 @@ export default function MapaClientes() {
         if (!v) {
           setConfirmDragOpen(false);
           setPendingDrag(null);
+          setMapKey(k => k + 1);
+          loadClientes(false);
         }
       }}>
         <AlertDialogContent>
@@ -585,6 +590,7 @@ export default function MapaClientes() {
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => {
               setPendingDrag(null);
+              setMapKey(k => k + 1);
               loadClientes(false);
             }}>
               Cancelar
