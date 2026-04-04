@@ -482,9 +482,10 @@ export default function RelatorioCompleto() {
             <KpiCard title="Produzido" value={`${totalProduzido.toLocaleString("pt-BR")} un`} icon={Factory} />
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             <KpiCard title="Clientes Ativos" value={totalClientes.toString()} icon={Users} />
             <KpiCard title="Estoque Total" value={`${totalEstoque.toLocaleString("pt-BR")} un`} icon={Warehouse} />
+            <KpiCard title="Desp. Colaboradores" value={formatBRL(despesasDiarias)} icon={Users} subtitle="diárias + fixos no período" />
             <KpiCard title="MP em Alerta" value={mpBaixo.toString()} icon={AlertTriangle} subtitle={mpBaixo > 0 ? "abaixo do mínimo" : "ok"} />
             <KpiCard title="Embalagens Alerta" value={embBaixo.toString()} icon={Package} subtitle={embBaixo > 0 ? "abaixo do mínimo" : "ok"} />
           </div>
