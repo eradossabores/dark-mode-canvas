@@ -125,7 +125,7 @@ export default function AReceber() {
     } catch { y += 4; }
 
     doc.setFontSize(7);
-    doc.text(factoryName || "Gelos Saborizados", w / 2, y, { align: "center" });
+    doc.text(factoryName || "ICETECH", w / 2, y, { align: "center" });
     y += 5;
 
     doc.setLineWidth(0.3);
