@@ -221,6 +221,7 @@ export function AdvancedMap({
   circles = [] as MapCircle[],
   polylines = [] as MapPolyline[],
   onMarkerClick,
+  onMarkerDragEnd,
   onMapClick,
   enableClustering = false,
   enableControls = true,
