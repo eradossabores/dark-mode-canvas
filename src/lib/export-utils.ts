@@ -29,10 +29,12 @@ function loadImageAsBase64(url: string): Promise<string> {
 async function captureChartElement(element: HTMLElement): Promise<string | null> {
   try {
     const canvas = await html2canvas(element, {
-      scale: 2,
+      scale: 3,
       useCORS: true,
       logging: false,
       backgroundColor: "#ffffff",
+      windowWidth: element.scrollWidth,
+      windowHeight: element.scrollHeight,
     });
     return canvas.toDataURL("image/png");
   } catch (e) {
@@ -51,38 +53,83 @@ export async function exportToPDF(
   branding?: PDFBranding
 ) {
   const doc = new jsPDF();
+  const PAGE_W = 210;
+  const PAGE_H = 297;
+  const MARGIN = 14;
+  const CONTENT_W = PAGE_W - MARGIN * 2;
 
   const useLogo = branding?.factoryLogoUrl || logoUrl;
   const displayName = branding?.factoryName || "ICETECH";
 
-  // Logo
+  // ── Header com logo ──
   try {
     const base64 = await loadImageAsBase64(useLogo);
-    doc.addImage(base64, "PNG", 14, 8, 30, 30);
+    doc.addImage(base64, "PNG", MARGIN, 8, 28, 28);
   } catch {
     // sem logo
   }
 
-  // Header ao lado da logo
-  doc.setFontSize(16);
+  doc.setFontSize(18);
   doc.setFont("helvetica", "bold");
-  doc.text(title, 50, 20);
-  doc.setFontSize(9);
+  doc.text(title, 48, 18);
+
+  doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  doc.text(displayName, 50, 26);
+  doc.setTextColor(60);
+  doc.text(displayName, 48, 25);
+
   doc.setFontSize(8);
-  doc.setTextColor(100);
-  doc.text(`Gerado em: ${new Date().toLocaleDateString("pt-BR")} as ${new Date().toLocaleTimeString("pt-BR")}`, 50, 31);
+  doc.setTextColor(120);
+  doc.text(
+    `Gerado em: ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`,
+    48,
+    31
+  );
   doc.setTextColor(0);
 
-  // Linha separadora
+  // Linha separadora colorida
   doc.setDrawColor(0, 100, 160);
-  doc.setLineWidth(0.8);
-  doc.line(14, 40, 196, 40);
+  doc.setLineWidth(1);
+  doc.line(MARGIN, 40, MARGIN + CONTENT_W, 40);
 
-  let currentY = 44;
+  let currentY = 46;
 
-  // Capturar e adicionar gráficos se houver container
+  // ── Totais / KPIs no topo ──
+  if (totals && totals.length > 0) {
+    const cardW = CONTENT_W / Math.min(totals.length, 4);
+    const cardH = 18;
+
+    doc.setDrawColor(220);
+    doc.setLineWidth(0.3);
+
+    totals.forEach((t, idx) => {
+      const x = MARGIN + (idx % 4) * cardW;
+      const row = Math.floor(idx / 4);
+      const y = currentY + row * (cardH + 2);
+
+      // Card background
+      doc.setFillColor(245, 248, 255);
+      doc.roundedRect(x + 1, y, cardW - 2, cardH, 2, 2, "F");
+
+      // Label
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100);
+      doc.text(t.label.toUpperCase(), x + 4, y + 6);
+
+      // Value
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 80, 140);
+      doc.text(t.value, x + 4, y + 13);
+    });
+
+    doc.setTextColor(0);
+    const totalRows = Math.ceil(totals.length / 4);
+    currentY += totalRows * (cardH + 2) + 6;
+  }
+
+  // ── Gráficos ──
   if (chartContainerId) {
     const chartContainer = document.getElementById(chartContainerId);
     if (chartContainer) {
@@ -92,80 +139,101 @@ export async function exportToPDF(
       for (const el of elements) {
         const imgData = await captureChartElement(el);
         if (imgData) {
-          const imgWidth = 180;
-          const imgHeight = (el.offsetHeight * imgWidth) / el.offsetWidth;
-          const scaledHeight = Math.min(imgHeight, 120);
+          const imgWidth = CONTENT_W;
+          const aspectRatio = el.offsetHeight / el.offsetWidth;
+          const imgHeight = Math.min(imgWidth * aspectRatio, 110);
 
-          if (currentY + scaledHeight > 275) {
+          if (currentY + imgHeight > PAGE_H - 25) {
             doc.addPage();
-            currentY = 15;
+            currentY = MARGIN;
           }
 
-          doc.addImage(imgData, "PNG", 14, currentY, imgWidth, scaledHeight);
-          currentY += scaledHeight + 6;
+          doc.addImage(imgData, "PNG", MARGIN, currentY, imgWidth, imgHeight);
+          currentY += imgHeight + 5;
         }
       }
 
       if (currentY > 50) {
-        if (currentY + 10 > 275) {
+        if (currentY + 8 > PAGE_H - 25) {
           doc.addPage();
-          currentY = 15;
+          currentY = MARGIN;
         }
-        doc.setDrawColor(200);
+        doc.setDrawColor(210);
         doc.setLineWidth(0.3);
-        doc.line(14, currentY, 196, currentY);
+        doc.line(MARGIN, currentY, MARGIN + CONTENT_W, currentY);
         currentY += 6;
       }
     }
   }
 
-  // Tabela
-  autoTable(doc, {
-    head: [headers],
-    body: rows,
-    startY: currentY,
-    styles: { fontSize: 8 },
-    headStyles: { fillColor: [0, 100, 160], textColor: 255, fontStyle: "bold" },
-    alternateRowStyles: { fillColor: [240, 248, 255] },
-  });
-
-  // Totais no final
-  if (totals && totals.length > 0) {
-    const finalY = (doc as any).previousAutoTable?.finalY || (doc as any).lastAutoTable?.finalY || 60;
-    let y = finalY + 10;
-
-    if (y > 270) {
+  // ── Tabela de dados ──
+  if (rows.length > 0) {
+    if (currentY + 30 > PAGE_H - 25) {
       doc.addPage();
-      y = 20;
+      currentY = MARGIN;
     }
 
-    doc.setDrawColor(0, 100, 160);
-    doc.setLineWidth(0.5);
-    doc.line(14, y - 4, 196, y - 4);
-
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "bold");
-    doc.text("TOTAIS", 14, y + 2);
-    y += 8;
-
-    doc.setFontSize(9);
-    totals.forEach((t) => {
-      doc.setFont("helvetica", "bold");
-      doc.text(`${t.label}:`, 14, y);
-      doc.setFont("helvetica", "normal");
-      doc.text(t.value, 60, y);
-      y += 6;
+    autoTable(doc, {
+      head: [headers],
+      body: rows,
+      startY: currentY,
+      margin: { left: MARGIN, right: MARGIN },
+      styles: {
+        fontSize: 8,
+        cellPadding: 3,
+        lineColor: [220, 220, 220],
+        lineWidth: 0.2,
+        overflow: "linebreak",
+      },
+      headStyles: {
+        fillColor: [0, 100, 160],
+        textColor: 255,
+        fontStyle: "bold",
+        fontSize: 8.5,
+        cellPadding: 4,
+      },
+      alternateRowStyles: {
+        fillColor: [245, 248, 255],
+      },
+      columnStyles: (() => {
+        const cs: Record<number, any> = {};
+        headers.forEach((h, i) => {
+          const lower = h.toLowerCase();
+          if (lower.includes("valor") || lower.includes("total") || lower.includes("preço") || lower.includes("preco") || lower.includes("r$")) {
+            cs[i] = { halign: "right", fontStyle: "bold" };
+          }
+          if (lower.includes("qtd") || lower.includes("quantidade") || lower.includes("unidades")) {
+            cs[i] = { halign: "center" };
+          }
+        });
+        return cs;
+      })(),
+      didDrawPage: (data: any) => {
+        // Mini header em páginas adicionais
+        if (data.pageNumber > 1) {
+          doc.setFontSize(8);
+          doc.setTextColor(120);
+          doc.text(`${title} (cont.)`, MARGIN, 10);
+          doc.setTextColor(0);
+        }
+      },
     });
   }
 
-  // Rodapé
+  // ── Rodapé em todas as páginas ──
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
+
+    // Linha fina acima do rodapé
+    doc.setDrawColor(200);
+    doc.setLineWidth(0.2);
+    doc.line(MARGIN, PAGE_H - 15, MARGIN + CONTENT_W, PAGE_H - 15);
+
     doc.setFontSize(7);
-    doc.setTextColor(150);
-    doc.text(`${displayName} - Pagina ${i}/${pageCount}`, 14, 290);
-    doc.text("Sistema de Gestao", 170, 290);
+    doc.setTextColor(140);
+    doc.text(`${displayName} — Sistema de Gestão`, MARGIN, PAGE_H - 10);
+    doc.text(`Página ${i} de ${pageCount}`, MARGIN + CONTENT_W, PAGE_H - 10, { align: "right" });
     doc.setTextColor(0);
   }
 
@@ -179,6 +247,17 @@ export function exportToExcel(
   filename: string
 ) {
   const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+
+  // Auto-size columns
+  const colWidths = headers.map((h, i) => {
+    const maxLen = Math.max(
+      h.length,
+      ...rows.map(r => String(r[i] ?? "").length)
+    );
+    return { wch: Math.min(maxLen + 2, 40) };
+  });
+  ws["!cols"] = colWidths;
+
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
   XLSX.writeFile(wb, `${filename}.xlsx`);
