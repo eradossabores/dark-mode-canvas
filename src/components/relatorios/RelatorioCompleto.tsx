@@ -409,6 +409,15 @@ export default function RelatorioCompleto() {
     return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 10);
   }, [filteredProducoes]);
 
+  const producaoPorDia = useMemo(() => {
+    const map: Record<string, number> = {};
+    filteredProducoes.forEach(p => {
+      const day = new Date(p.created_at).toLocaleDateString("pt-BR");
+      map[day] = (map[day] || 0) + p.quantidade_total;
+    });
+    return Object.entries(map).map(([name, value]) => ({ name, value })).reverse().slice(0, 15).reverse();
+  }, [filteredProducoes]);
+
   const topClientes = useMemo(() => {
     const map: Record<string, number> = {};
     filteredVendas.forEach(v => {
@@ -526,6 +535,21 @@ export default function RelatorioCompleto() {
                     </Pie>
                     <Tooltip />
                   </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card data-chart-export>
+              <CardHeader><CardTitle className="text-sm">Produção por Dia</CardTitle></CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={producaoPorDia}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" fontSize={10} angle={-20} textAnchor="end" height={50} />
+                    <YAxis fontSize={10} />
+                    <Tooltip />
+                    <Bar dataKey="value" name="Produção (un)" fill="hsl(213,93%,67%)" radius={[4, 4, 0, 0]} />
+                  </BarChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
