@@ -70,7 +70,7 @@ export default function ConfigurarFabrica() {
   const [fetchingCep, setFetchingCep] = useState(false);
 
   function updateAddressText(field: "endereco" | "numero" | "complemento" | "bairro" | "cidade" | "estado" | "cep", value: string) {
-    setAddress((prev) => ({ ...prev, [field]: value, latitude: null, longitude: null }));
+    setAddress((prev) => ({ ...prev, [field]: value }));
   }
 
   // Partners/Sócios
