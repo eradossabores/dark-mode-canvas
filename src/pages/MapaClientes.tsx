@@ -465,6 +465,20 @@ export default function MapaClientes() {
               zoom={13}
               markers={markers}
               onMapClick={handleMapClick}
+              onMarkerDragEnd={async (marker, newPos) => {
+                if (marker.id === 'factory-marker' || marker.id === 'temp-marker') return;
+                try {
+                  const { error } = await (supabase as any)
+                    .from("clientes")
+                    .update({ latitude: newPos[0], longitude: newPos[1] })
+                    .eq("id", marker.id);
+                  if (error) throw error;
+                  toast({ title: "📍 Posição ajustada!", description: `${marker.data?.nome || 'Cliente'} foi reposicionado.` });
+                  loadClientes(false);
+                } catch (e: any) {
+                  toast({ title: "Erro ao salvar posição", description: e.message, variant: "destructive" });
+                }
+              }}
               enableClustering={clientesFiltrados.length > 20}
               enableControls={true}
               flyTo={flyTarget}
