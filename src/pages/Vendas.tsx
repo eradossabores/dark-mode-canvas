@@ -1275,7 +1275,7 @@ export default function Vendas() {
 
       {/* Detail Dialog */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent className="max-w-lg">
+         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="text-lg">Detalhes da Venda</DialogTitle></DialogHeader>
           {detailVenda && (
             <div className="space-y-4">
