@@ -203,25 +203,37 @@ export default function MapaEntregas() {
     from: [number, number],
     to: [number, number]
   ): Promise<{ coords: [number, number][]; distanceKm: number; durationMin: number }> {
-    try {
-      const url = `https://router.project-osrm.org/route/v1/driving/${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`OSRM ${res.status}`);
-      const data = await res.json();
+    const OSRM_SERVERS = [
+      `https://router.project-osrm.org/route/v1/driving/${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson`,
+      `https://routing.openstreetmap.de/routed-car/route/v1/driving/${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson`,
+    ];
 
-      if (data.routes?.[0]) {
-        const route = data.routes[0];
-        const coords = route.geometry.coordinates.map((c: number[]) => [c[1], c[0]] as [number, number]);
-        return {
-          coords,
-          distanceKm: Math.round((route.distance / 1000) * 10) / 10,
-          durationMin: Math.round(route.duration / 60),
-        };
+    for (const url of OSRM_SERVERS) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeout);
+        if (!res.ok) continue;
+        const data = await res.json();
+
+        if (data.routes?.[0]) {
+          const route = data.routes[0];
+          const coords = route.geometry.coordinates.map((c: number[]) => [c[1], c[0]] as [number, number]);
+          if (coords.length > 2) {
+            return {
+              coords,
+              distanceKm: Math.round((route.distance / 1000) * 10) / 10,
+              durationMin: Math.round(route.duration / 60),
+            };
+          }
+        }
+      } catch (e) {
+        console.warn("OSRM route attempt failed:", e);
       }
-    } catch (e) {
-      console.error("OSRM route error:", e);
     }
 
+    // Fallback: straight line with haversine distance
     const R = 6371;
     const dLat = ((to[0] - from[0]) * Math.PI) / 180;
     const dLon = ((to[1] - from[1]) * Math.PI) / 180;
@@ -323,13 +335,18 @@ export default function MapaEntregas() {
       .map(p => {
         const info = routeInfoMap[p.id];
         const routeText = info ? `\n🛣️ ${info.distanceKm} km · ~${info.durationMin} min` : "";
+        const isSelected = selectedRoute === p.id;
 
         return {
           id: p.id,
           position: [p.latitude!, p.longitude!] as [number, number],
-          color: STATUS_MARKER_COLORS[p.status] || "#6b7280",
+          icon: createLabeledSvgIcon(
+            isSelected ? "#dc2626" : (STATUS_MARKER_COLORS[p.status] || "#6b7280"),
+            `📍B ${p.clienteNome}`,
+            isSelected ? "large" : "medium"
+          ),
           popup: {
-            title: p.clienteNome,
+            title: `📍 Destino: ${p.clienteNome}`,
             content: `📦 ${p.itens} un · ${p.bairro}\n📅 ${new Date(p.dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}${routeText}\n🗺️ Clique para ver a rota`,
           },
         } satisfies MapMarker;
@@ -339,13 +356,13 @@ export default function MapaEntregas() {
       id: "factory",
       position: factoryCoords,
       draggable: true,
-      icon: createLabeledSvgIcon("#d97706", `🏭 ${factoryName}`, "large"),
+      icon: createLabeledSvgIcon("#16a34a", `🏭A ${factoryName}`, "large"),
       popup: {
-        title: factoryName,
+        title: `🏭 Origem: ${factoryName}`,
         content: (
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Localização da fábrica (ponto de partida das entregas)</p>
-            <p className="text-xs text-primary font-medium">✋ Arraste o marcador para reposicionar a fábrica</p>
+            <p className="text-xs font-semibold text-emerald-600">📍 Ponto A — Origem das entregas</p>
+            <p className="text-xs text-muted-foreground">Arraste o marcador para reposicionar a fábrica</p>
             {savingFactoryPosition && (
               <p className="text-xs text-muted-foreground">Salvando nova posição...</p>
             )}
@@ -355,7 +372,7 @@ export default function MapaEntregas() {
     };
 
     return [factoryMarker, ...clientMarkers];
-  }, [factoryCoords, factoryName, filtered, routeInfoMap, savingFactoryPosition]);
+  }, [factoryCoords, factoryName, filtered, routeInfoMap, savingFactoryPosition, selectedRoute]);
 
   const totalItens = filtered.reduce((s, p) => s + p.itens, 0);
 
@@ -460,13 +477,22 @@ export default function MapaEntregas() {
             <CardTitle className="text-sm flex flex-wrap items-center gap-2">
               <MapPin className="h-4 w-4" /> Mapa das Entregas
               <Badge variant="secondary">{mapMarkers.length} no mapa</Badge>
-              <Badge variant="outline">Arraste a fábrica para reposicionar</Badge>
               {previousSavedPosition && (
                 <Button variant="outline" size="sm" className="h-6 text-xs gap-1" onClick={undoReposition} disabled={savingFactoryPosition}>
                   <Undo2 className="h-3 w-3" /> Desfazer reposição
                 </Button>
               )}
             </CardTitle>
+            <div className="flex flex-wrap items-center gap-3 mt-1">
+              <span className="flex items-center gap-1 text-xs">
+                <span className="inline-block w-3 h-3 rounded-full" style={{ background: "#16a34a" }} />
+                <span className="font-medium">A</span> Fábrica (origem)
+              </span>
+              <span className="flex items-center gap-1 text-xs">
+                <span className="inline-block w-3 h-3 rounded-full" style={{ background: "#dc2626" }} />
+                <span className="font-medium">B</span> Cliente (destino)
+              </span>
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             <Suspense fallback={<div className="h-[400px] flex items-center justify-center text-muted-foreground">Carregando mapa...</div>}>
