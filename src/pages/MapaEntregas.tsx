@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { MapPin, Truck, Package, Filter, Navigation } from "lucide-react";
+import { MapPin, Truck, Package, Filter, Navigation, Undo2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import type { MapMarker, MapPolyline } from "@/components/ui/interactive-map";
@@ -65,6 +66,8 @@ export default function MapaEntregas() {
   const [routePolylines, setRoutePolylines] = useState<MapPolyline[]>([]);
   const [routeInfoMap, setRouteInfoMap] = useState<Record<string, RouteInfo>>({});
   const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
+  const [pendingPosition, setPendingPosition] = useState<[number, number] | null>(null);
+  const [previousSavedPosition, setPreviousSavedPosition] = useState<[number, number] | null>(null);
 
   useEffect(() => {
     if (role !== "super_admin" && !factoryId) {
@@ -122,18 +125,24 @@ export default function MapaEntregas() {
     }
   }
 
-  async function saveFactoryPosition(nextPosition: [number, number]) {
-    if (!factoryId || savingFactoryPosition) return;
+  function handleMarkerDragEnd(nextPosition: [number, number]) {
+    setPendingPosition(nextPosition);
+  }
 
-    const previousPosition = factoryCoords;
-    setFactoryCoords(nextPosition);
+  async function confirmReposition() {
+    if (!factoryId || !pendingPosition || savingFactoryPosition) return;
+
+    const oldPosition = factoryCoords;
+    setPreviousSavedPosition(oldPosition);
+    setFactoryCoords(pendingPosition);
     setHasFactoryCoords(true);
     setSavingFactoryPosition(true);
+    setPendingPosition(null);
 
     try {
       const { error } = await supabase
         .from("factories")
-        .update({ latitude: nextPosition[0], longitude: nextPosition[1] })
+        .update({ latitude: pendingPosition[0], longitude: pendingPosition[1] })
         .eq("id", factoryId);
 
       if (error) throw error;
@@ -143,10 +152,46 @@ export default function MapaEntregas() {
         description: "O ponto de partida das entregas foi salvo com sucesso.",
       });
     } catch (error: any) {
-      setFactoryCoords(previousPosition);
+      setFactoryCoords(oldPosition);
+      setPreviousSavedPosition(null);
       toast({
         title: "Erro ao salvar posição",
         description: error?.message || "Não foi possível atualizar a localização da fábrica.",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingFactoryPosition(false);
+    }
+  }
+
+  function cancelReposition() {
+    setPendingPosition(null);
+  }
+
+  async function undoReposition() {
+    if (!factoryId || !previousSavedPosition || savingFactoryPosition) return;
+
+    setSavingFactoryPosition(true);
+    const restoreTo = previousSavedPosition;
+
+    try {
+      const { error } = await supabase
+        .from("factories")
+        .update({ latitude: restoreTo[0], longitude: restoreTo[1] })
+        .eq("id", factoryId);
+
+      if (error) throw error;
+
+      setFactoryCoords(restoreTo);
+      setPreviousSavedPosition(null);
+      toast({
+        title: "Posição restaurada",
+        description: "A fábrica voltou para a posição anterior.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao desfazer",
+        description: error?.message || "Não foi possível restaurar a posição.",
         variant: "destructive",
       });
     } finally {
@@ -328,6 +373,20 @@ export default function MapaEntregas() {
 
   return (
     <div>
+      <AlertDialog open={!!pendingPosition} onOpenChange={(open) => { if (!open) cancelReposition(); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reposicionar fábrica?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja mover a fábrica para a nova posição? Isso alterará o ponto de partida de todas as rotas de entrega.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmReposition}>Confirmar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <MapPin className="h-6 w-6 text-primary" />
@@ -402,6 +461,11 @@ export default function MapaEntregas() {
               <MapPin className="h-4 w-4" /> Mapa das Entregas
               <Badge variant="secondary">{mapMarkers.length} no mapa</Badge>
               <Badge variant="outline">Arraste a fábrica para reposicionar</Badge>
+              {previousSavedPosition && (
+                <Button variant="outline" size="sm" className="h-6 text-xs gap-1" onClick={undoReposition} disabled={savingFactoryPosition}>
+                  <Undo2 className="h-3 w-3" /> Desfazer reposição
+                </Button>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -418,7 +482,7 @@ export default function MapaEntregas() {
                 }}
                 onMarkerDragEnd={(marker, newPosition) => {
                   if (marker.id === "factory") {
-                    void saveFactoryPosition(newPosition);
+                    handleMarkerDragEnd(newPosition);
                   }
                 }}
                 style={{ height: "400px", width: "100%" }}
