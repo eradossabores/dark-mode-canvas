@@ -308,6 +308,7 @@ export default function RelatorioCompleto() {
       (supabase as any).from("funcionarios").select("*"),
       (supabase as any).from("materias_primas").select("*"),
       (supabase as any).from("embalagens").select("*"),
+      (supabase as any).from("contas_a_pagar").select("*").eq("ativa", true),
     ];
 
     if (fid) {
@@ -324,6 +325,7 @@ export default function RelatorioCompleto() {
     setFuncionarios(results[6].data || []);
     setMateriasPrimas(results[7].data || []);
     setEmbalagens(results[8].data || []);
+    setContasAPagar(results[9].data || []);
   }
 
   const filteredVendas = useMemo(() => vendas.filter((v) => {
