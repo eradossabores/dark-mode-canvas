@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { MapPin, Truck, Package, Filter } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
+import type { MapMarker } from "@/components/ui/interactive-map";
+
+const LazyMap = lazy(() => import("@/components/ui/interactive-map").then(m => ({ default: m.AdvancedMap })));
 
 const BAIRRO_COLORS: Record<string, string> = {};
 const COLOR_PALETTE = [
@@ -38,6 +41,8 @@ interface PedidoEntrega {
   status: string;
   dataEntrega: string;
   itens: number;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export default function MapaEntregas() {
@@ -45,6 +50,7 @@ export default function MapaEntregas() {
   const [pedidos, setPedidos] = useState<PedidoEntrega[]>([]);
   const [filtroStatus, setFiltroStatus] = useState<string>("todos");
   const [filtroBairro, setFiltroBairro] = useState<string>("todos");
+  const [factoryCoords, setFactoryCoords] = useState<[number, number]>([2.8195, -60.6714]);
 
   useEffect(() => {
     if (role !== "super_admin" && !factoryId) { setPedidos([]); return; }
@@ -55,8 +61,9 @@ export default function MapaEntregas() {
     try {
       let q = (supabase as any)
         .from("pedidos_producao")
-        .select("*, clientes(nome, bairro, endereco, cidade), pedido_producao_itens(quantidade)")
+        .select("*, clientes(nome, bairro, endereco, cidade, latitude, longitude), pedido_producao_itens(quantidade)")
         .in("status", ["separado_para_entrega", "em_producao", "aguardando_producao"])
+        .eq("tipo_pedido", "entrega")
         .order("data_entrega");
       if (factoryId) q = q.eq("factory_id", factoryId);
       const { data } = await q;
@@ -70,7 +77,17 @@ export default function MapaEntregas() {
         status: p.status,
         dataEntrega: p.data_entrega,
         itens: (p.pedido_producao_itens || []).reduce((s: number, i: any) => s + i.quantidade, 0),
+        latitude: p.clientes?.latitude ?? null,
+        longitude: p.clientes?.longitude ?? null,
       }));
+
+      // Also load factory location for map center
+      if (factoryId) {
+        const { data: fData } = await supabase.from("factories").select("latitude, longitude").eq("id", factoryId).single();
+        if (fData?.latitude && fData?.longitude) {
+          setFactoryCoords([fData.latitude, fData.longitude]);
+        }
+      }
 
       setPedidos(mapped);
     } catch (e) {
@@ -99,6 +116,26 @@ export default function MapaEntregas() {
       map[p.bairro].push(p);
     });
     return Object.entries(map).sort((a, b) => b[1].length - a[1].length);
+  }, [filtered]);
+
+  const STATUS_MARKER_COLORS: Record<string, string> = {
+    aguardando_producao: "#f59e0b",
+    em_producao: "#3b82f6",
+    separado_para_entrega: "#16a34a",
+  };
+
+  const mapMarkers: MapMarker[] = useMemo(() => {
+    return filtered
+      .filter(p => p.latitude && p.longitude)
+      .map(p => ({
+        id: p.id,
+        position: [p.latitude!, p.longitude!] as [number, number],
+        color: STATUS_MARKER_COLORS[p.status] || "#6b7280",
+        popup: {
+          title: p.clienteNome,
+          content: `📦 ${p.itens} un · ${p.bairro}\n📅 ${new Date(p.dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}`,
+        },
+      }));
   }, [filtered]);
 
   const totalItens = filtered.reduce((s, p) => s + p.itens, 0);
@@ -181,6 +218,30 @@ export default function MapaEntregas() {
           </SelectContent>
         </Select>
       </div>
+
+      {/* Mapa */}
+      {mapMarkers.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <MapPin className="h-4 w-4" /> Mapa das Entregas
+              <Badge variant="secondary">{mapMarkers.length} no mapa</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Suspense fallback={<div className="h-[400px] flex items-center justify-center text-muted-foreground">Carregando mapa...</div>}>
+              <LazyMap
+                center={factoryCoords}
+                zoom={13}
+                markers={mapMarkers}
+                enableClustering
+                style={{ height: "400px", width: "100%" }}
+                className="rounded-b-lg overflow-hidden"
+              />
+            </Suspense>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Grouped by bairro */}
       {grouped.length === 0 ? (
