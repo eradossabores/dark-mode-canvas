@@ -59,6 +59,7 @@ export default function MapaEntregas() {
   const [factoryCoords, setFactoryCoords] = useState<[number, number]>([2.8195, -60.6714]);
   const [factoryName, setFactoryName] = useState("Fábrica");
   const [routePolylines, setRoutePolylines] = useState<MapPolyline[]>([]);
+  const [routeInfoMap, setRouteInfoMap] = useState<Record<string, RouteInfo>>({});
   const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
 
   useEffect(() => {
