@@ -394,6 +394,8 @@ export default function RelatorioCompleto() {
   const headers = ["Seção", "Indicador", "Valor"];
   const rows: (string | number)[][] = [
     ["Vendas", "Total Faturado", formatBRL(totalVendas)],
+    ["Vendas", "Valor Recebido", formatBRL(valorRecebido)],
+    ["Vendas", "Pendente a Receber", formatBRL(valorPendente)],
     ["Vendas", "Nº de Vendas", filteredVendas.length],
     ["Vendas", "Ticket Médio", formatBRL(ticketMedio)],
     ["Produção", "Total Produzido", `${totalProduzido.toLocaleString("pt-BR")} un`],
