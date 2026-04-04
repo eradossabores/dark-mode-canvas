@@ -52,7 +52,7 @@ interface ContaPagar {
 }
 
 export default function ContasAPagar() {
-  const { factoryId, role } = useAuth();
+  const { factoryId, role, factoryName, branding } = useAuth();
   const [contas, setContas] = useState<ContaPagar[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
