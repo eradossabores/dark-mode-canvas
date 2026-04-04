@@ -35,6 +35,7 @@ export default function ConfigPrecoSaborSection({ factoryId }: Props) {
       const { data: saborData } = await supabase
         .from("sabores")
         .select("id, nome")
+        .eq("factory_id", factoryId)
         .eq("ativo", true)
         .order("nome");
 
