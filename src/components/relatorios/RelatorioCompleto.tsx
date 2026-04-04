@@ -352,6 +352,9 @@ export default function RelatorioCompleto() {
   const embBaixo = embalagens.filter(e => e.estoque_atual <= e.estoque_minimo).length;
   const totalDespesasFixas = contasAPagar.reduce((s, c) => s + Number(c.valor_parcela || 0), 0);
 
+  const valorRecebido = filteredVendas.filter(v => v.status !== "cancelada").reduce((s, v) => s + Number(v.valor_pago || 0), 0);
+  const valorPendente = filteredVendas.filter(v => v.status !== "cancelada").reduce((s, v) => s + Math.max(0, Number(v.total || 0) - Number(v.valor_pago || 0)), 0);
+
   const vendasPorDia = useMemo(() => {
     const map: Record<string, number> = {};
     filteredVendas.forEach(v => {
@@ -391,6 +394,8 @@ export default function RelatorioCompleto() {
   const headers = ["Seção", "Indicador", "Valor"];
   const rows: (string | number)[][] = [
     ["Vendas", "Total Faturado", formatBRL(totalVendas)],
+    ["Vendas", "Valor Recebido", formatBRL(valorRecebido)],
+    ["Vendas", "Pendente a Receber", formatBRL(valorPendente)],
     ["Vendas", "Nº de Vendas", filteredVendas.length],
     ["Vendas", "Ticket Médio", formatBRL(ticketMedio)],
     ["Produção", "Total Produzido", `${totalProduzido.toLocaleString("pt-BR")} un`],
@@ -437,8 +442,10 @@ export default function RelatorioCompleto() {
         <>
           <div className="text-sm text-muted-foreground font-medium">Período: {periodoLabel}</div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             <KpiCard title="Faturamento" value={formatBRL(totalVendas)} icon={DollarSign} />
+            <KpiCard title="Valor Recebido" value={formatBRL(valorRecebido)} icon={DollarSign} subtitle="efetivamente recebido" />
+            <KpiCard title="Pendente a Receber" value={formatBRL(valorPendente)} icon={AlertTriangle} subtitle={valorPendente > 0 ? "em aberto" : "nada pendente"} />
             <KpiCard title="Nº de Vendas" value={filteredVendas.length.toString()} icon={ShoppingCart} />
             <KpiCard title="Ticket Médio" value={formatBRL(ticketMedio)} icon={TrendingUp} />
             <KpiCard title="Produzido" value={`${totalProduzido.toLocaleString("pt-BR")} un`} icon={Factory} />
