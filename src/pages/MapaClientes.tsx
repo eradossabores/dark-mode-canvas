@@ -588,6 +588,7 @@ export default function MapaClientes() {
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => {
               setPendingDrag(null);
+              setMapKey(k => k + 1);
               loadClientes(false);
             }}>
               Cancelar
