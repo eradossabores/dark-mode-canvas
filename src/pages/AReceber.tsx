@@ -125,7 +125,7 @@ export default function AReceber() {
     } catch { y += 4; }
 
     doc.setFontSize(7);
-    doc.text(factoryName || "Gelos Saborizados", w / 2, y, { align: "center" });
+    doc.text(factoryName || "ICETECH", w / 2, y, { align: "center" });
     y += 5;
 
     doc.setLineWidth(0.3);
@@ -226,7 +226,8 @@ export default function AReceber() {
     const restante = p.total - p.valorPago;
     const statusLine = p.quitou ? "Pagamento Completo!" : (p.valorPago > 0 ? `Pagamento Parcial (Restante: R$ ${restante.toFixed(2)})` : `Valor Pendente: R$ ${restante.toFixed(2)}`);
     const pagoLine = p.valorPago > 0 ? `\nPago: R$ ${p.valorPago.toFixed(2)}` : "";
-    const msg = `*ERA DOS SABORES*\n\n${statusLine}\n\nCliente: ${p.clienteNome}\nValor: R$ ${p.total.toFixed(2)}${pagoLine}`;
+    const displayName = factoryName || "ICETECH";
+    const msg = `*${displayName}*\n\n${statusLine}\n\nCliente: ${p.clienteNome}\nValor: R$ ${p.total.toFixed(2)}${pagoLine}`;
 
     if (doc) {
       const pdfBlob = doc.output("blob");
@@ -469,7 +470,7 @@ export default function AReceber() {
     doc.setFontSize(6.5);
     doc.setTextColor(80, 80, 80);
     doc.setFont("helvetica", "italic");
-    doc.text(factoryName || "Gelos Saborizados", w / 2, y, { align: "center" });
+    doc.text(factoryName || "ICETECH", w / 2, y, { align: "center" });
     y += 4;
 
     // Decorative double line
@@ -693,7 +694,8 @@ export default function AReceber() {
     const fileName = `recibo-${clienteNome.replace(/\s+/g, "-")}.pdf`;
 
     const pagoLine = pago > 0 ? `\nPago: R$ ${pago.toFixed(2)}` : "";
-    const msg = `*A ERA DOS SABORES*\n\nOla ${clienteNome}, segue seu recibo.\n\nTotal: R$ ${total.toFixed(2)}${pagoLine}\nRestante: R$ ${restante.toFixed(2)}\nData: ${new Date(venda.created_at).toLocaleDateString("pt-BR")}\nPagamento: ${venda.forma_pagamento?.replace("_", " ") || "-"}`;
+    const displayName2 = factoryName || "ICETECH";
+    const msg = `*${displayName2}*\n\nOlá ${clienteNome}, segue seu recibo.\n\nTotal: R$ ${total.toFixed(2)}${pagoLine}\nRestante: R$ ${restante.toFixed(2)}\nData: ${new Date(venda.created_at).toLocaleDateString("pt-BR")}\nPagamento: ${venda.forma_pagamento?.replace("_", " ") || "-"}`;
 
     const pdfBlob = doc.output("blob");
     const file = new File([pdfBlob], fileName, { type: "application/pdf" });
