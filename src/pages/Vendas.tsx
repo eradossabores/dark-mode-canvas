@@ -1172,10 +1172,21 @@ export default function Vendas() {
                       className="w-20"
                       min={0}
                       value={item.quantidade}
-                      onChange={(e) => {
+                      onChange={async (e) => {
+                        const newQty = Number(e.target.value) || 0;
                         const updated = [...editItens];
-                        updated[i] = { ...updated[i], quantidade: Number(e.target.value) || 0 };
+                        updated[i] = { ...updated[i], quantidade: newQty };
                         setEditItens(updated);
+                        // Auto-recalculate price based on new total quantity
+                        if (editVenda?.cliente_id && item.sabor_id) {
+                          const totalQtd = updated.reduce((s: number, it: any) => s + (it.quantidade || 0), 0);
+                          const preco = await fetchPreco(editVenda.cliente_id, item.sabor_id, totalQtd);
+                          if (preco != null) {
+                            const u2 = [...updated];
+                            u2[i] = { ...u2[i], preco_unitario: preco };
+                            setEditItens(u2);
+                          }
+                        }
                       }}
                       placeholder="Qtd"
                     />
