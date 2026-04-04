@@ -609,7 +609,7 @@ export default function ContasAPagar() {
                   {chartData.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={entry.isCurrent ? "hsl(var(--primary))" : "hsl(var(--primary) / 0.4)"}
+                      fill={entry.isCurrent ? "hsl(var(--primary))" : entry.isFuture ? "hsl(var(--primary) / 0.25)" : "hsl(var(--primary) / 0.5)"}
                     />
                   ))}
                 </Bar>
@@ -618,12 +618,16 @@ export default function ContasAPagar() {
           </div>
           <div className="flex items-center justify-center gap-6 mt-2 text-xs text-muted-foreground">
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-sm bg-primary/40" />
+              <div className="w-3 h-3 rounded-sm bg-primary/50" />
               Meses anteriores
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-sm bg-primary" />
               Mês atual
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-sm bg-primary/25" />
+              Previsão
             </div>
           </div>
         </CardContent>
