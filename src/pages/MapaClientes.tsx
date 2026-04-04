@@ -562,6 +562,97 @@ export default function MapaClientes() {
           </div>
         </div>
       </div>
+
+      {/* Drag Confirmation Dialog */}
+      <AlertDialog open={confirmDragOpen} onOpenChange={(v) => {
+        if (!v) {
+          setConfirmDragOpen(false);
+          setPendingDrag(null);
+        }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar nova posição?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingDrag && (
+                <>
+                  Deseja mover <strong>{pendingDrag.name}</strong> para a nova localização?
+                  {pendingDrag.type === "factory" && " Isso atualizará o ponto de referência da fábrica para cálculo de distâncias."}
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setPendingDrag(null);
+              loadClientes(false);
+            }}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={async () => {
+              if (!pendingDrag) return;
+              setConfirmDragOpen(false);
+              const { type, id, name, oldPos, newPos } = pendingDrag;
+
+              try {
+                if (type === "factory") {
+                  const { error } = await (supabase as any)
+                    .from("factories")
+                    .update({ latitude: newPos[0], longitude: newPos[1] })
+                    .eq("id", id);
+                  if (error) throw error;
+                  setFactoryCenter(newPos);
+                } else {
+                  const { error } = await (supabase as any)
+                    .from("clientes")
+                    .update({ latitude: newPos[0], longitude: newPos[1] })
+                    .eq("id", id);
+                  if (error) throw error;
+                  await loadClientes(false);
+                }
+
+                // Show undo toast
+                const toastId = toast({
+                  title: `📍 ${name} reposicionado`,
+                  description: (
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs">Nova posição salva.</span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-6 text-xs gap-1"
+                        onClick={async () => {
+                          try {
+                            if (type === "factory") {
+                              await (supabase as any).from("factories").update({ latitude: oldPos[0], longitude: oldPos[1] }).eq("id", id);
+                              setFactoryCenter(oldPos);
+                            } else {
+                              await (supabase as any).from("clientes").update({ latitude: oldPos[0], longitude: oldPos[1] }).eq("id", id);
+                              await loadClientes(false);
+                            }
+                            toast({ title: "↩️ Posição restaurada", description: `${name} voltou à posição anterior.` });
+                          } catch (e: any) {
+                            toast({ title: "Erro ao desfazer", description: e.message, variant: "destructive" });
+                          }
+                        }}
+                      >
+                        <Undo2 className="h-3 w-3" /> Desfazer
+                      </Button>
+                    </div>
+                  ),
+                  duration: 8000,
+                });
+              } catch (e: any) {
+                toast({ title: "Erro ao salvar posição", description: e.message, variant: "destructive" });
+              }
+
+              setPendingDrag(null);
+            }}>
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
