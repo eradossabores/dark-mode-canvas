@@ -76,7 +76,17 @@ export default function MapaEntregas() {
         status: p.status,
         dataEntrega: p.data_entrega,
         itens: (p.pedido_producao_itens || []).reduce((s: number, i: any) => s + i.quantidade, 0),
+        latitude: p.clientes?.latitude ?? null,
+        longitude: p.clientes?.longitude ?? null,
       }));
+
+      // Also load factory location for map center
+      if (factoryId) {
+        const { data: fData } = await supabase.from("factories").select("latitude, longitude").eq("id", factoryId).single();
+        if (fData?.latitude && fData?.longitude) {
+          setFactoryCoords([fData.latitude, fData.longitude]);
+        }
+      }
 
       setPedidos(mapped);
     } catch (e) {
