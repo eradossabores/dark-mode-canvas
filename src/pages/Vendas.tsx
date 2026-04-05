@@ -107,6 +107,8 @@ export default function Vendas() {
   const [editDetalhePgto, setEditDetalhePgto] = useState<"pix" | "especie" | "misto">("especie");
   const [editDetalhePix, setEditDetalhePix] = useState("");
   const [editDetalheEspecie, setEditDetalheEspecie] = useState("");
+  const [editValorFrete, setEditValorFrete] = useState("");
+  const [editFretePagoPor, setEditFretePagoPor] = useState<"empresa" | "cliente" | "ambos">("cliente");
 
   // Detail state
   const [detailVenda, setDetailVenda] = useState<any>(null);
