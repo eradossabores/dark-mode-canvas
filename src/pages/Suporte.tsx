@@ -198,7 +198,72 @@ export default function Suporte() {
     setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
   }
 
-  useEffect(() => { loadTickets(); }, []);
+  useEffect(() => { loadTickets(); loadVideoAulas(); }, []);
+
+  async function loadVideoAulas() {
+    setLoadingVideos(true);
+    try {
+      const { data, error } = await (supabase as any)
+        .from("video_aulas")
+        .select("*")
+        .order("ordem", { ascending: true })
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      setVideoAulas(data || []);
+    } catch (e: any) {
+      console.error("Erro ao carregar vídeos:", e);
+    } finally {
+      setLoadingVideos(false);
+    }
+  }
+
+  async function handleAddVideo() {
+    if (!newVideo.titulo || !newVideo.url_video) {
+      toast({ title: "Preencha título e URL do vídeo", variant: "destructive" });
+      return;
+    }
+    try {
+      const { error } = await (supabase as any).from("video_aulas").insert({
+        titulo: newVideo.titulo,
+        descricao: newVideo.descricao || null,
+        url_video: newVideo.url_video,
+        categoria: newVideo.categoria,
+        ordem: videoAulas.length,
+      });
+      if (error) throw error;
+      toast({ title: "Videoaula adicionada!" });
+      setNewVideo({ titulo: "", descricao: "", url_video: "", categoria: "geral" });
+      setShowAddVideo(false);
+      loadVideoAulas();
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+  }
+
+  async function handleDeleteVideo(id: string) {
+    try {
+      await (supabase as any).from("video_aulas").delete().eq("id", id);
+      toast({ title: "Vídeo removido" });
+      loadVideoAulas();
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+  }
+
+  function getYoutubeEmbedUrl(url: string): string | null {
+    try {
+      let videoId = "";
+      if (url.includes("youtu.be/")) {
+        videoId = url.split("youtu.be/")[1]?.split(/[?&#]/)[0] || "";
+      } else if (url.includes("youtube.com")) {
+        const urlObj = new URL(url);
+        videoId = urlObj.searchParams.get("v") || "";
+      }
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+    } catch {
+      return url;
+    }
+  }
 
   useEffect(() => {
     if (!selectedTicket) return;
