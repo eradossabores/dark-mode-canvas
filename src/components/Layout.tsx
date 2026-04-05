@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Package, Users, ShoppingCart, Factory,
-  Warehouse, ClipboardList, UserCog, BarChart3, FileUp, DollarSign, Monitor, ShoppingBag, Database, LogOut, Shield, Brain, MapPin, Map, Target, HardDrive, UserCheck, Crown, MessageCircle, Settings, CalendarDays
+  Warehouse, ClipboardList, UserCog, BarChart3, FileUp, DollarSign, Monitor, ShoppingBag, Database, LogOut, Shield, Brain, MapPin, Map, Target, HardDrive, UserCheck, Crown, MessageCircle, Settings, CalendarDays, ChevronRight, ClipboardCheck
 } from "lucide-react";
 import PaymentBanner from "@/components/PaymentBanner";
 import { AnimatedMenuToggle } from "@/components/ui/animated-menu-toggle";
@@ -29,12 +29,13 @@ const menuGroups = [
   {
     label: "Produção",
     items: [
-      { path: "/painel/plano-producao", label: "Plano Diário", icon: Factory },
-      { path: "/painel/plano-semanal", label: "Plano Semanal", icon: CalendarDays },
+      { path: "/painel/plano-producao", label: "Plano de Produção", icon: ClipboardCheck, children: [
+        { path: "/painel/plano-producao", label: "Plano Diário", icon: Factory },
+        { path: "/painel/plano-semanal", label: "Plano Semanal", icon: CalendarDays },
+      ]},
       { path: "/painel/producao", label: "Produção", icon: Factory },
       { path: "/painel/monitor-producao", label: "Monitor Produção", icon: Monitor },
       { path: "/painel/presenca", label: "Presença", icon: UserCheck },
-      
       { path: "/painel/previsao-demanda", label: "Previsão Demanda", icon: Brain },
     ],
   },
@@ -80,7 +81,7 @@ const menuGroups = [
   },
 ];
 
-const menuItems = menuGroups.flatMap((g) => g.items);
+const menuItems = menuGroups.flatMap((g) => g.items.flatMap((item: any) => item.children ? item.children : [item]));
 
 const allCharacters = [
   { src: sidImg, alt: "Sid" },
@@ -219,7 +220,55 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 {group.label}
               </p>
             )}
-            {group.items.map((item) => {
+            {group.items.map((item: any) => {
+              // Has sub-items (expandable)
+              if (item.children) {
+                const childActive = item.children.some((c: any) => location.pathname === c.path);
+                return (
+                  <div key={item.label}>
+                    <div
+                      className={cn(
+                        "flex items-center gap-3 px-4 py-2 text-sm transition-colors rounded-md mx-2 cursor-default",
+                        childActive
+                          ? "text-sidebar-foreground font-semibold"
+                          : "text-sidebar-foreground/70"
+                      )}
+                    >
+                      <item.icon className="h-4 w-4 shrink-0" />
+                      {isExpanded && (
+                        <>
+                          <span className="flex-1">{item.label}</span>
+                          <ChevronRight className={cn("h-3 w-3 transition-transform", childActive && "rotate-90")} />
+                        </>
+                      )}
+                    </div>
+                    {isExpanded && (
+                      <div className="ml-4 border-l border-sidebar-border/40 pl-1 space-y-0.5">
+                        {item.children.map((child: any) => {
+                          const active = location.pathname === child.path;
+                          return (
+                            <Link
+                              key={child.path}
+                              to={child.path}
+                              onClick={() => setMobileOpen(false)}
+                              className={cn(
+                                "flex items-center gap-2.5 px-3 py-1.5 text-xs transition-colors rounded-md mx-1",
+                                active
+                                  ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold shadow-sm"
+                                  : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                              )}
+                            >
+                              <child.icon className="h-3.5 w-3.5 shrink-0" />
+                              <span>{child.label}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
               const active = location.pathname === item.path;
               return (
                 <Link
@@ -342,7 +391,44 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <p className="px-4 pt-1 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-white/40">
                     {group.label}
                   </p>
-                  {group.items.map((item) => {
+                  {group.items.map((item: any) => {
+                    if (item.children) {
+                      const childActive = item.children.some((c: any) => location.pathname === c.path);
+                      return (
+                        <div key={item.label}>
+                          <div className={cn(
+                            "flex items-center gap-3 px-4 py-2 text-sm rounded-md mx-2",
+                            childActive ? "text-white font-semibold" : "text-white/70"
+                          )}>
+                            <item.icon className="h-4 w-4 shrink-0" />
+                            <span className="flex-1">{item.label}</span>
+                            <ChevronRight className={cn("h-3 w-3 transition-transform", childActive && "rotate-90")} />
+                          </div>
+                          <div className="ml-5 border-l border-white/15 pl-1 space-y-0.5">
+                            {item.children.map((child: any) => {
+                              const active = location.pathname === child.path;
+                              return (
+                                <Link
+                                  key={child.path}
+                                  to={child.path}
+                                  onClick={() => setMobileOpen(false)}
+                                  className={cn(
+                                    "flex items-center gap-2.5 px-3 py-1.5 text-xs transition-colors rounded-md mx-1",
+                                    active
+                                      ? "bg-white/20 text-white font-semibold shadow-sm"
+                                      : "text-white/70 hover:bg-white/10 hover:text-white"
+                                  )}
+                                >
+                                  <child.icon className="h-3.5 w-3.5 shrink-0" />
+                                  <span>{child.label}</span>
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    }
+
                     const active = location.pathname === item.path;
                     return (
                       <Link
