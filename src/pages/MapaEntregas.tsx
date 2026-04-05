@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { MapPin, Truck, Package, Filter, Navigation, Undo2, Route, ArrowUpDown } from "lucide-react";
+import { MapPin, Truck, Package, Filter, Navigation, Undo2, Route, ArrowUpDown, ExternalLink } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
@@ -741,6 +741,24 @@ export default function MapaEntregas() {
                           <span className="font-medium text-foreground">{routeInfoMap[p.id].distanceKm} km</span>
                           <span>·</span>
                           <span>~{routeInfoMap[p.id].durationMin} min</span>
+                        </div>
+                      )}
+                      {/* Google Maps button */}
+                      {p.latitude != null && p.longitude != null && (
+                        <div className="pt-1 border-t border-border/50">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full h-7 text-xs gap-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const url = `https://www.google.com/maps/dir/?api=1&origin=${factoryCoords[0]},${factoryCoords[1]}&destination=${p.latitude},${p.longitude}&travelmode=driving`;
+                              window.open(url, "_blank");
+                            }}
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            Abrir no Google Maps
+                          </Button>
                         </div>
                       )}
                       {/* Frete info */}
