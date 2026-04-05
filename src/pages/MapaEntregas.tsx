@@ -746,23 +746,24 @@ export default function MapaEntregas() {
                       {/* Google Maps button */}
                       {p.latitude != null && p.longitude != null && (
                         <div className="pt-1 border-t border-border/50">
-                          <a
-                            href={`https://www.google.com/maps/dir/?api=1&origin=${factoryCoords[0]},${factoryCoords[1]}&destination=${p.latitude},${p.longitude}&travelmode=driving`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full h-7 text-xs gap-1"
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const url = `https://www.google.com/maps/dir/?api=1&origin=${factoryCoords[0]},${factoryCoords[1]}&destination=${p.latitude},${p.longitude}&travelmode=driving`;
+                              try {
+                                (window.top || window).open(url, "_blank", "noopener,noreferrer");
+                              } catch {
+                                window.open(url, "_blank", "noopener,noreferrer");
+                              }
+                            }}
                           >
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full h-7 text-xs gap-1"
-                              type="button"
-                              asChild={false}
-                            >
-                              <ExternalLink className="h-3 w-3" />
-                              Abrir no Google Maps
-                            </Button>
-                          </a>
+                            <ExternalLink className="h-3 w-3" />
+                            Abrir no Google Maps
+                          </Button>
                         </div>
                       )}
                       {/* Frete info */}
