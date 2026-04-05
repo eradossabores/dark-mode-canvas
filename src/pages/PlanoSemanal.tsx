@@ -15,7 +15,7 @@ import {
   Copy, BarChart3, Sparkles, Package, X, Check, ChevronLeft, ChevronRight,
   Bot, Loader2, Brain, Info, FileText, Share2
 } from "lucide-react";
-import { exportToPDF, type PDFBranding } from "@/lib/export-utils";
+import { exportToPDF } from "@/lib/export-utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -564,40 +564,152 @@ export default function PlanoSemanal() {
   }
 
   async function gerarRelatorioPDF(compartilhar = false) {
-    const headers = ["Dia", "Data", "Sabor", "Lotes", "Unidades"];
-    const rows: (string | number)[][] = [];
-    
+    const { default: jsPDF } = await import("jspdf");
+    const { default: autoTable } = await import("jspdf-autotable");
+
+    const doc = new jsPDF();
+    const PAGE_W = 210;
+    const PAGE_H = 297;
+    const MARGIN = 14;
+    const CONTENT_W = PAGE_W - MARGIN * 2;
+    const displayName = factoryName || "ICETECH";
+    const useLogo = branding?.logoUrl || null;
+
+    // ── Load logo ──
+    const loadImg = (url: string): Promise<string> => new Promise((res, rej) => {
+      const img = new Image(); img.crossOrigin = "anonymous";
+      img.onload = () => { const c = document.createElement("canvas"); c.width = img.width; c.height = img.height; c.getContext("2d")!.drawImage(img, 0, 0); res(c.toDataURL("image/png")); };
+      img.onerror = rej; img.src = url;
+    });
+
+    // ── Header ──
+    const ACCENT = [0, 100, 160] as const;
+    let logoLoaded = false;
+    if (useLogo) {
+      try {
+        const b64 = await loadImg(useLogo);
+        doc.addImage(b64, "PNG", MARGIN, 8, 26, 26);
+        logoLoaded = true;
+      } catch {}
+    }
+    if (!logoLoaded) {
+      try {
+        const { default: defaultLogo } = await import("@/assets/logo.png");
+        const b64 = await loadImg(defaultLogo);
+        doc.addImage(b64, "PNG", MARGIN, 8, 26, 26);
+        logoLoaded = true;
+      } catch {}
+    }
+
+    const textX = logoLoaded ? 46 : MARGIN;
+    doc.setFontSize(17); doc.setFont("helvetica", "bold"); doc.setTextColor(20, 20, 40);
+    doc.text(`Plano Semanal — ${semanaLabel}`, textX, 18);
+    doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.setTextColor(80);
+    doc.text(displayName, textX, 25);
+    doc.setFontSize(8); doc.setTextColor(130);
+    doc.text(`Gerado em: ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`, textX, 31);
+
+    // Accent bar
+    doc.setFillColor(...ACCENT);
+    doc.rect(MARGIN, 39, CONTENT_W, 1.8, "F");
+    let curY = 46;
+
+    // ── KPI Cards ──
+    const kpis = [
+      { label: "TOTAL SABORES", value: String(saboresUnicos), emoji: "🍧" },
+      { label: "TOTAL LOTES", value: String(totalLotes), emoji: "📦" },
+      { label: "TOTAL UNIDADES", value: totalGeral.toLocaleString("pt-BR"), emoji: "❄️" },
+      { label: "DIAS PRODUÇÃO", value: String(diasComProducao), emoji: "📅" },
+    ];
+    const cardW = CONTENT_W / 4;
+    const cardH = 20;
+    kpis.forEach((k, i) => {
+      const x = MARGIN + i * cardW;
+      doc.setFillColor(240, 244, 255); doc.roundedRect(x + 1, curY, cardW - 2, cardH, 3, 3, "F");
+      doc.setDrawColor(200, 210, 230); doc.setLineWidth(0.3); doc.roundedRect(x + 1, curY, cardW - 2, cardH, 3, 3, "S");
+      doc.setFontSize(6.5); doc.setFont("helvetica", "normal"); doc.setTextColor(110);
+      doc.text(k.label, x + 5, curY + 7);
+      doc.setFontSize(13); doc.setFont("helvetica", "bold"); doc.setTextColor(...ACCENT);
+      doc.text(k.value, x + 5, curY + 15);
+    });
+    curY += cardH + 8;
+
+    // ── Build table data grouped by day ──
+    const DAY_COLORS: [number, number, number][] = [
+      [235, 245, 255], [240, 255, 240], [255, 248, 235], [245, 240, 255], [255, 240, 240], [235, 255, 250], [255, 245, 245]
+    ];
+    const headers = [["Dia", "Data", "Sabor", "Lotes", "Unidades"]];
+    const body: { content: string; styles?: any }[][] = [];
+
+    let dayIdx = 0;
     DIAS_SEMANA.forEach(dia => {
       const diaItens = itensPorDia[dia.value] || [];
       if (diaItens.length === 0) return;
       const diaDate = getDateForDia(dia.value);
       const dateStr = diaDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
-      diaItens.forEach(item => {
+      const bgColor = DAY_COLORS[dayIdx % DAY_COLORS.length];
+      const diaLotes = diaItens.reduce((s, it) => s + Math.round(it.quantidade / (gelosPorLote[it.sabor_id] || 84)), 0);
+      const diaUnidades = diaItens.reduce((s, it) => s + it.quantidade, 0);
+
+      diaItens.forEach((item, ii) => {
         const nome = getSaborNome(item.sabor_id);
         const gpl = gelosPorLote[item.sabor_id] || 84;
         const lotes = Math.round(item.quantidade / gpl);
-        rows.push([dia.label, dateStr, nome, lotes, item.quantidade]);
+        body.push([
+          { content: ii === 0 ? dia.label : "", styles: { fillColor: bgColor, fontStyle: ii === 0 ? "bold" : "normal" } },
+          { content: ii === 0 ? dateStr : "", styles: { fillColor: bgColor } },
+          { content: nome, styles: { fillColor: bgColor } },
+          { content: String(lotes), styles: { fillColor: bgColor, halign: "center" } },
+          { content: String(item.quantidade), styles: { fillColor: bgColor, halign: "center" } },
+        ]);
       });
+      // Subtotal row
+      body.push([
+        { content: "", styles: { fillColor: [220, 230, 245] as any } },
+        { content: "", styles: { fillColor: [220, 230, 245] as any } },
+        { content: `Subtotal ${dia.label}`, styles: { fillColor: [220, 230, 245] as any, fontStyle: "bold", fontSize: 7.5 } },
+        { content: String(diaLotes), styles: { fillColor: [220, 230, 245] as any, halign: "center", fontStyle: "bold" } },
+        { content: String(diaUnidades), styles: { fillColor: [220, 230, 245] as any, halign: "center", fontStyle: "bold" } },
+      ]);
+      dayIdx++;
     });
 
-    const totals = [
-      { label: "Total Sabores", value: String(saboresUnicos) },
-      { label: "Total Lotes", value: String(totalLotes) },
-      { label: "Total Unidades", value: totalGeral.toLocaleString("pt-BR") },
-      { label: "Dias Produção", value: String(diasComProducao) },
-    ];
+    // Total row
+    body.push([
+      { content: "", styles: { fillColor: [...ACCENT] as any, textColor: [255, 255, 255] } },
+      { content: "", styles: { fillColor: [...ACCENT] as any, textColor: [255, 255, 255] } },
+      { content: "TOTAL GERAL", styles: { fillColor: [...ACCENT] as any, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 9 } },
+      { content: String(totalLotes), styles: { fillColor: [...ACCENT] as any, textColor: [255, 255, 255], halign: "center", fontStyle: "bold", fontSize: 9 } },
+      { content: totalGeral.toLocaleString("pt-BR"), styles: { fillColor: [...ACCENT] as any, textColor: [255, 255, 255], halign: "center", fontStyle: "bold", fontSize: 9 } },
+    ]);
 
-    const pdfBranding: PDFBranding = {
-      factoryName: factoryName || undefined,
-      factoryLogoUrl: branding?.logoUrl || undefined,
-    };
+    autoTable(doc, {
+      head: headers,
+      body: body as any,
+      startY: curY,
+      margin: { left: MARGIN, right: MARGIN },
+      styles: { fontSize: 8.5, cellPadding: 3.5, lineColor: [210, 215, 225], lineWidth: 0.2 },
+      headStyles: { fillColor: [...ACCENT], textColor: 255, fontStyle: "bold", fontSize: 9, cellPadding: 4.5 },
+      columnStyles: {
+        0: { cellWidth: 28 },
+        1: { cellWidth: 28 },
+        3: { halign: "center", cellWidth: 22 },
+        4: { halign: "center", cellWidth: 26 },
+      },
+    });
 
-    const filename = `plano-semanal-${mondayOfWeek.toISOString().slice(0, 10)}`;
+    // ── Footer ──
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setDrawColor(200); doc.setLineWidth(0.2);
+      doc.line(MARGIN, PAGE_H - 14, MARGIN + CONTENT_W, PAGE_H - 14);
+      doc.setFontSize(7); doc.setTextColor(140);
+      doc.text(`${displayName} — Sistema de Gestão`, MARGIN, PAGE_H - 9);
+      doc.text(`Página ${i} de ${pageCount}`, MARGIN + CONTENT_W, PAGE_H - 9, { align: "right" });
+    }
 
-    await exportToPDF(
-      `Plano Semanal - ${semanaLabel}`,
-      headers, rows, filename, totals, undefined, pdfBranding
-    );
+    doc.save(`plano-semanal-${mondayOfWeek.toISOString().slice(0, 10)}.pdf`);
 
     if (compartilhar) {
       const texto = encodeURIComponent(
