@@ -105,6 +105,7 @@ export default function MapaEntregas() {
   const [filtroBairro, setFiltroBairro] = useState<string>("todos");
   const [factoryCoords, setFactoryCoords] = useState<[number, number]>([2.8195, -60.6714]);
   const [factoryName, setFactoryName] = useState("Fábrica");
+  const [factoryAddress, setFactoryAddress] = useState("");
   const [hasFactoryCoords, setHasFactoryCoords] = useState(false);
   const [savingFactoryPosition, setSavingFactoryPosition] = useState(false);
   const [routePolylines, setRoutePolylines] = useState<MapPolyline[]>([]);
@@ -152,7 +153,7 @@ export default function MapaEntregas() {
       if (factoryId) {
         const { data: fData } = await supabase
           .from("factories")
-          .select("latitude, longitude, name")
+          .select("latitude, longitude, name, endereco, bairro, cidade, estado")
           .eq("id", factoryId)
           .single();
 
@@ -164,6 +165,9 @@ export default function MapaEntregas() {
         }
 
         setFactoryName(fData?.name || "Fábrica");
+        
+        const parts = [fData?.endereco, fData?.bairro, fData?.cidade, fData?.estado].filter(Boolean);
+        setFactoryAddress(parts.join(", "));
       }
 
       setPedidos(mapped);
@@ -753,7 +757,10 @@ export default function MapaEntregas() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              const url = `https://www.google.com/maps/dir/?api=1&origin=${factoryCoords[0]},${factoryCoords[1]}&destination=${p.latitude},${p.longitude}&travelmode=driving`;
+                              const clientAddr = [p.endereco, p.bairro, p.cidade].filter(Boolean).join(", ");
+                              const originParam = factoryAddress ? encodeURIComponent(factoryAddress) : `${factoryCoords[0]},${factoryCoords[1]}`;
+                              const destParam = clientAddr ? encodeURIComponent(clientAddr) : `${p.latitude},${p.longitude}`;
+                              const url = `https://www.google.com/maps/dir/?api=1&origin=${originParam}&destination=${destParam}&travelmode=driving`;
                               try {
                                 (window.top || window).open(url, "_blank", "noopener,noreferrer");
                               } catch {
