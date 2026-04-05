@@ -246,47 +246,83 @@ export default function MapaEntregas() {
     }
   }
 
+  // Route cache to avoid repeated API calls
+  const routeCacheRef = useMemo(() => new Map<string, { coords: [number, number][]; distanceKm: number; durationMin: number }>(), []);
+
   async function fetchRoute(
     from: [number, number],
     to: [number, number]
   ): Promise<{ coords: [number, number][]; distanceKm: number; durationMin: number }> {
+    const cacheKey = `${from[0].toFixed(5)},${from[1].toFixed(5)}-${to[0].toFixed(5)},${to[1].toFixed(5)}`;
+    if (routeCacheRef.has(cacheKey)) return routeCacheRef.get(cacheKey)!;
+
+    const coords_str = `${from[1]},${from[0]};${to[1]},${to[0]}`;
     const OSRM_SERVERS = [
-      `https://router.project-osrm.org/route/v1/driving/${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson`,
-      `https://routing.openstreetmap.de/routed-car/route/v1/driving/${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson`,
+      `https://router.project-osrm.org/route/v1/driving/${coords_str}?overview=full&geometries=geojson`,
+      `https://routing.openstreetmap.de/routed-car/route/v1/driving/${coords_str}?overview=full&geometries=geojson`,
+      `https://osrm.mapzen.com/route/v1/driving/${coords_str}?overview=full&geometries=geojson`,
     ];
 
     for (const url of OSRM_SERVERS) {
       try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 8000);
-        const res = await fetch(url, { signal: controller.signal });
+        const timeout = setTimeout(() => controller.abort(), 12000);
+        const res = await fetch(url, { 
+          signal: controller.signal,
+          headers: { 'Accept': 'application/json' },
+        });
         clearTimeout(timeout);
         if (!res.ok) continue;
         const data = await res.json();
 
-        if (data.routes?.[0]) {
+        if (data.code === "Ok" && data.routes?.[0]) {
           const route = data.routes[0];
-          const coords = route.geometry.coordinates.map((c: number[]) => [c[1], c[0]] as [number, number]);
-          if (coords.length > 2) {
-            return {
-              coords,
+          const routeCoords = route.geometry.coordinates.map((c: number[]) => [c[1], c[0]] as [number, number]);
+          if (routeCoords.length >= 2) {
+            const result = {
+              coords: routeCoords,
               distanceKm: Math.round((route.distance / 1000) * 10) / 10,
               durationMin: Math.round(route.duration / 60),
             };
+            routeCacheRef.set(cacheKey, result);
+            return result;
           }
         }
       } catch (e) {
-        console.warn("OSRM route attempt failed:", e);
+        console.warn("OSRM attempt failed:", url.split('/route')[0], e);
       }
     }
 
-    // Fallback: straight line with haversine distance
+    // Fallback: curved arc with haversine distance (looks better than straight line)
     const dist = haversineDistance(from, to);
-    return {
-      coords: [from, to],
+    const midLat = (from[0] + to[0]) / 2;
+    const midLng = (from[1] + to[1]) / 2;
+    // Add perpendicular offset for visual curve
+    const dLat = to[0] - from[0];
+    const dLng = to[1] - from[1];
+    const offsetScale = 0.15;
+    const curvePoints: [number, number][] = [from];
+    const steps = 8;
+    for (let i = 1; i < steps; i++) {
+      const t = i / steps;
+      const lat = from[0] + dLat * t;
+      const lng = from[1] + dLng * t;
+      // Bell-curve offset perpendicular to route
+      const perpFactor = Math.sin(t * Math.PI) * offsetScale;
+      curvePoints.push([
+        lat + (-dLng) * perpFactor,
+        lng + dLat * perpFactor,
+      ]);
+    }
+    curvePoints.push(to);
+
+    const result = {
+      coords: curvePoints,
       distanceKm: Math.round(dist * 10) / 10,
       durationMin: Math.round((dist / 30) * 60),
     };
+    routeCacheRef.set(cacheKey, result);
+    return result;
   }
 
   const bairros = useMemo(() => {
@@ -337,6 +373,9 @@ export default function MapaEntregas() {
           ? [pedidosComCoords[i - 1].latitude!, pedidosComCoords[i - 1].longitude!] as [number, number]
           : factoryCoords;
 
+        // Small delay between requests to avoid rate limiting
+        if (i > 0) await new Promise(r => setTimeout(r, 300));
+
         const result = await fetchRoute(from, [p.latitude!, p.longitude!]);
         infoMap[p.id] = { distanceKm: result.distanceKm, durationMin: result.durationMin };
         lines.push({
@@ -346,7 +385,6 @@ export default function MapaEntregas() {
             color: selectedRoute === p.id ? "#2563eb" : ROUTE_COLORS[i % ROUTE_COLORS.length],
             weight: selectedRoute === p.id ? 6 : 4,
             opacity: selectedRoute ? (selectedRoute === p.id ? 1 : 0.25) : 0.8,
-            dashArray: otimizarRota ? undefined : undefined,
           },
         });
       }
