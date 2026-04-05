@@ -1286,9 +1286,34 @@ export default function Vendas() {
                 ))}
                 <div className="flex justify-between items-center mt-2 pt-2 border-t font-semibold text-sm">
                   <span>Novo Total:</span>
-                  <span>R$ {editItens.filter((it) => it.sabor_id && it.quantidade > 0).reduce((sum, it) => sum + Number(it.preco_unitario) * (it.quantidade || 0), 0).toFixed(2)}</span>
+                  <span>R$ {(editItens.filter((it) => it.sabor_id && it.quantidade > 0).reduce((sum, it) => sum + Number(it.preco_unitario) * (it.quantidade || 0), 0) + (parseFloat((editValorFrete || "0").replace(",", ".")) || 0)).toFixed(2)}</span>
                 </div>
               </div>
+            {/* Frete na Edição */}
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">🚚 Frete (opcional)</Label>
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
+                  <Input type="text" inputMode="decimal" className="pl-7" value={editValorFrete} onChange={(e) => setEditValorFrete(formatDecimalInput(e.target.value))} placeholder="0,00" />
+                </div>
+                <div className="flex items-center gap-3">
+                  <Label className="text-xs text-muted-foreground whitespace-nowrap">Pago por:</Label>
+                  <div className="flex items-center gap-1">
+                    <Checkbox id="edit-frete-empresa" checked={editFretePagoPor === "empresa"} onCheckedChange={() => setEditFretePagoPor("empresa")} />
+                    <Label htmlFor="edit-frete-empresa" className="text-xs cursor-pointer">🏭 Empresa</Label>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Checkbox id="edit-frete-cliente" checked={editFretePagoPor === "cliente"} onCheckedChange={() => setEditFretePagoPor("cliente")} />
+                    <Label htmlFor="edit-frete-cliente" className="text-xs cursor-pointer">👤 Cliente</Label>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Checkbox id="edit-frete-ambos" checked={editFretePagoPor === "ambos"} onCheckedChange={() => setEditFretePagoPor("ambos")} />
+                    <Label htmlFor="edit-frete-ambos" className="text-xs cursor-pointer">🤝 Ambos</Label>
+                  </div>
+                </div>
+              </div>
+            </div>
             <div><Label>Observações</Label><Input value={editObs} onChange={(e) => setEditObs(e.target.value)} /></div>
             <div><Label>Nº NF</Label><Input value={editNf} onChange={(e) => setEditNf(e.target.value)} placeholder="Número da nota fiscal" /></div>
             <div className="flex items-center space-x-2">
