@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { toast } from "@/hooks/use-toast";
-import { Plus, MessageCircle, Send, HelpCircle, Ticket, Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { Plus, MessageCircle, Send, HelpCircle, Ticket, Clock, CheckCircle, AlertCircle, PlayCircle, Trash2, GripVertical } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ScrollArea } from "@/components/ui/scroll-area";
