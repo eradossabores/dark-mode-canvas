@@ -30,6 +30,7 @@ const menuGroups = [
     label: "Produção",
     items: [
       { path: "/painel/plano-producao", label: "Plano Diário", icon: Factory },
+      { path: "/painel/plano-semanal", label: "Plano Semanal", icon: CalendarDays },
       { path: "/painel/producao", label: "Produção", icon: Factory },
       { path: "/painel/monitor-producao", label: "Monitor Produção", icon: Monitor },
       { path: "/painel/presenca", label: "Presença", icon: UserCheck },
