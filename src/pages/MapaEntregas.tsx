@@ -1,10 +1,10 @@
-import { useEffect, useState, useMemo, lazy, Suspense } from "react";
+import { useEffect, useState, useMemo, lazy, Suspense, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { MapPin, Truck, Package, Filter, Navigation, Undo2 } from "lucide-react";
+import { MapPin, Truck, Package, Filter, Navigation, Undo2, Route, Clock, ArrowUpDown } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
@@ -51,6 +51,50 @@ interface PedidoEntrega {
   itens: number;
   latitude: number | null;
   longitude: number | null;
+  valorFrete: number;
+  fretePagoPor: string;
+  ordem?: number;
+}
+
+function haversineDistance(a: [number, number], b: [number, number]): number {
+  const R = 6371;
+  const dLat = ((b[0] - a[0]) * Math.PI) / 180;
+  const dLon = ((b[1] - a[1]) * Math.PI) / 180;
+  const x =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((a[0] * Math.PI) / 180) *
+      Math.cos((b[0] * Math.PI) / 180) *
+      Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+}
+
+/** Nearest-neighbor ordering starting from origin */
+function optimizeOrder(origin: [number, number], points: PedidoEntrega[]): PedidoEntrega[] {
+  const withCoords = points.filter(p => p.latitude != null && p.longitude != null);
+  const withoutCoords = points.filter(p => p.latitude == null || p.longitude == null);
+
+  if (withCoords.length <= 1) return [...withCoords, ...withoutCoords];
+
+  const ordered: PedidoEntrega[] = [];
+  const remaining = [...withCoords];
+  let current = origin;
+
+  while (remaining.length > 0) {
+    let nearestIdx = 0;
+    let nearestDist = Infinity;
+    for (let i = 0; i < remaining.length; i++) {
+      const d = haversineDistance(current, [remaining[i].latitude!, remaining[i].longitude!]);
+      if (d < nearestDist) {
+        nearestDist = d;
+        nearestIdx = i;
+      }
+    }
+    const next = remaining.splice(nearestIdx, 1)[0];
+    ordered.push({ ...next, ordem: ordered.length + 1 });
+    current = [next.latitude!, next.longitude!];
+  }
+
+  return [...ordered, ...withoutCoords];
 }
 
 export default function MapaEntregas() {
@@ -68,6 +112,7 @@ export default function MapaEntregas() {
   const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
   const [pendingPosition, setPendingPosition] = useState<[number, number] | null>(null);
   const [previousSavedPosition, setPreviousSavedPosition] = useState<[number, number] | null>(null);
+  const [otimizarRota, setOtimizarRota] = useState(true);
 
   useEffect(() => {
     if (role !== "super_admin" && !factoryId) {
@@ -81,7 +126,7 @@ export default function MapaEntregas() {
     try {
       let q = (supabase as any)
         .from("pedidos_producao")
-        .select("*, clientes(nome, bairro, endereco, cidade, latitude, longitude), pedido_producao_itens(quantidade)")
+        .select("*, clientes(nome, bairro, endereco, cidade, latitude, longitude), pedido_producao_itens(quantidade), vendas(valor_frete, frete_pago_por)")
         .in("status", ["separado_para_entrega", "em_producao", "aguardando_producao"])
         .eq("tipo_pedido", "entrega")
         .order("data_entrega");
@@ -100,6 +145,8 @@ export default function MapaEntregas() {
         itens: (p.pedido_producao_itens || []).reduce((s: number, i: any) => s + i.quantidade, 0),
         latitude: p.clientes?.latitude ?? null,
         longitude: p.clientes?.longitude ?? null,
+        valorFrete: p.vendas?.valor_frete ?? 0,
+        fretePagoPor: p.vendas?.frete_pago_por ?? "cliente",
       }));
 
       if (factoryId) {
@@ -234,16 +281,7 @@ export default function MapaEntregas() {
     }
 
     // Fallback: straight line with haversine distance
-    const R = 6371;
-    const dLat = ((to[0] - from[0]) * Math.PI) / 180;
-    const dLon = ((to[1] - from[1]) * Math.PI) / 180;
-    const a =
-      Math.sin(dLat / 2) ** 2 +
-      Math.cos((from[0] * Math.PI) / 180) *
-        Math.cos((to[0] * Math.PI) / 180) *
-        Math.sin(dLon / 2) ** 2;
-    const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
+    const dist = haversineDistance(from, to);
     return {
       coords: [from, to],
       distanceKm: Math.round(dist * 10) / 10,
@@ -264,14 +302,20 @@ export default function MapaEntregas() {
     });
   }, [pedidos, filtroStatus, filtroBairro]);
 
+  // Optimized ordering
+  const orderedPedidos = useMemo(() => {
+    if (!otimizarRota || !hasFactoryCoords) return filtered;
+    return optimizeOrder(factoryCoords, filtered);
+  }, [filtered, otimizarRota, factoryCoords, hasFactoryCoords]);
+
   useEffect(() => {
-    if (!hasFactoryCoords || filtered.length === 0) {
+    if (!hasFactoryCoords || orderedPedidos.length === 0) {
       setRoutePolylines([]);
       setRouteInfoMap({});
       return;
     }
 
-    const pedidosComCoords = filtered.filter(p => p.latitude != null && p.longitude != null);
+    const pedidosComCoords = orderedPedidos.filter(p => p.latitude != null && p.longitude != null);
     if (pedidosComCoords.length === 0) {
       setRoutePolylines([]);
       setRouteInfoMap({});
@@ -288,7 +332,12 @@ export default function MapaEntregas() {
       for (let i = 0; i < pedidosComCoords.length; i++) {
         if (cancelled) return;
         const p = pedidosComCoords[i];
-        const result = await fetchRoute(factoryCoords, [p.latitude!, p.longitude!]);
+        // When optimized, chain routes: factory -> 1st -> 2nd -> ...
+        const from = otimizarRota && i > 0
+          ? [pedidosComCoords[i - 1].latitude!, pedidosComCoords[i - 1].longitude!] as [number, number]
+          : factoryCoords;
+
+        const result = await fetchRoute(from, [p.latitude!, p.longitude!]);
         infoMap[p.id] = { distanceKm: result.distanceKm, durationMin: result.durationMin };
         lines.push({
           id: `route-${p.id}`,
@@ -297,6 +346,7 @@ export default function MapaEntregas() {
             color: selectedRoute === p.id ? "#2563eb" : ROUTE_COLORS[i % ROUTE_COLORS.length],
             weight: selectedRoute === p.id ? 6 : 4,
             opacity: selectedRoute ? (selectedRoute === p.id ? 1 : 0.25) : 0.8,
+            dashArray: otimizarRota ? undefined : undefined,
           },
         });
       }
@@ -311,16 +361,16 @@ export default function MapaEntregas() {
     return () => {
       cancelled = true;
     };
-  }, [filtered, factoryCoords, hasFactoryCoords, selectedRoute]);
+  }, [orderedPedidos, factoryCoords, hasFactoryCoords, selectedRoute, otimizarRota]);
 
   const grouped = useMemo(() => {
     const map: Record<string, PedidoEntrega[]> = {};
-    filtered.forEach(p => {
+    orderedPedidos.forEach(p => {
       if (!map[p.bairro]) map[p.bairro] = [];
       map[p.bairro].push(p);
     });
     return Object.entries(map).sort((a, b) => b[1].length - a[1].length);
-  }, [filtered]);
+  }, [orderedPedidos]);
 
   const STATUS_MARKER_COLORS: Record<string, string> = {
     aguardando_producao: "#f59e0b",
@@ -329,24 +379,35 @@ export default function MapaEntregas() {
   };
 
   const mapMarkers: MapMarker[] = useMemo(() => {
-    const clientMarkers = filtered
+    const clientMarkers = orderedPedidos
       .filter(p => p.latitude != null && p.longitude != null)
-      .map(p => {
+      .map((p, idx) => {
         const info = routeInfoMap[p.id];
-        const routeText = info ? `\n🛣️ ${info.distanceKm} km · ~${info.durationMin} min` : "";
         const isSelected = selectedRoute === p.id;
+        const orderLabel = p.ordem ? `${p.ordem}° ` : "";
 
         return {
           id: p.id,
           position: [p.latitude!, p.longitude!] as [number, number],
           icon: createLabeledSvgIcon(
             isSelected ? "#dc2626" : (STATUS_MARKER_COLORS[p.status] || "#6b7280"),
-            `${p.clienteNome}`,
+            `${orderLabel}${p.clienteNome}`,
             isSelected ? "large" : "medium"
           ),
           popup: {
-            title: `📍 Destino: ${p.clienteNome}`,
-            content: `📦 ${p.itens} un · ${p.bairro}\n📅 ${new Date(p.dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}${routeText}\n🗺️ Clique para ver a rota`,
+            title: `📍 ${orderLabel}${p.clienteNome}`,
+            content: (
+              <div className="space-y-1 min-w-[180px]">
+                <p className="text-xs">📦 {p.itens} un · {p.bairro}</p>
+                <p className="text-xs">📅 {new Date(p.dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}</p>
+                {info && (
+                  <p className="text-xs font-medium text-primary">🛣️ {info.distanceKm} km · ~{info.durationMin} min</p>
+                )}
+                {p.valorFrete > 0 && (
+                  <p className="text-xs">🚚 Frete: R$ {p.valorFrete.toFixed(2)} ({p.fretePagoPor === "empresa" ? "Empresa" : p.fretePagoPor === "ambos" ? "Dividido" : "Cliente"})</p>
+                )}
+              </div>
+            ),
           },
         } satisfies MapMarker;
       });
@@ -360,8 +421,8 @@ export default function MapaEntregas() {
         title: `🏭 Origem: ${factoryName}`,
         content: (
           <div className="space-y-1">
-            <p className="text-xs font-semibold text-emerald-600">📍 Ponto A — Origem das entregas</p>
-            <p className="text-xs text-muted-foreground">Arraste o marcador para reposicionar a fábrica</p>
+            <p className="text-xs font-semibold text-emerald-600">📍 Ponto de partida das entregas</p>
+            <p className="text-xs text-muted-foreground">Arraste o marcador para reposicionar</p>
             {savingFactoryPosition && (
               <p className="text-xs text-muted-foreground">Salvando nova posição...</p>
             )}
@@ -371,9 +432,12 @@ export default function MapaEntregas() {
     };
 
     return [factoryMarker, ...clientMarkers];
-  }, [factoryCoords, factoryName, filtered, routeInfoMap, savingFactoryPosition, selectedRoute]);
+  }, [factoryCoords, factoryName, orderedPedidos, routeInfoMap, savingFactoryPosition, selectedRoute]);
 
   const totalItens = filtered.reduce((s, p) => s + p.itens, 0);
+  const totalFrete = filtered.reduce((s, p) => s + p.valorFrete, 0);
+  const totalDistancia = Object.values(routeInfoMap).reduce((s, r) => s + r.distanceKm, 0);
+  const totalTempo = Object.values(routeInfoMap).reduce((s, r) => s + r.durationMin, 0);
 
   const statusLabel: Record<string, string> = {
     aguardando_producao: "Aguardando",
@@ -385,6 +449,12 @@ export default function MapaEntregas() {
     if (s === "separado_para_entrega") return "default" as const;
     if (s === "em_producao") return "secondary" as const;
     return "outline" as const;
+  };
+
+  const freteLabel = (pago: string) => {
+    if (pago === "empresa") return "Empresa";
+    if (pago === "ambos") return "Dividido";
+    return "Cliente";
   };
 
   return (
@@ -403,6 +473,7 @@ export default function MapaEntregas() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <MapPin className="h-6 w-6 text-primary" />
@@ -413,7 +484,8 @@ export default function MapaEntregas() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
         <Card>
           <CardContent className="pt-4 text-center">
             <p className="text-2xl font-bold">{filtered.length}</p>
@@ -435,11 +507,42 @@ export default function MapaEntregas() {
         <Card>
           <CardContent className="pt-4 text-center">
             <p className="text-2xl font-bold">{filtered.filter(p => p.status === "separado_para_entrega").length}</p>
-            <p className="text-xs text-muted-foreground">Prontos p/ entrega</p>
+            <p className="text-xs text-muted-foreground">Prontos</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 text-center">
+            <p className="text-2xl font-bold text-primary">{totalDistancia > 0 ? `${Math.round(totalDistancia)}km` : "—"}</p>
+            <p className="text-xs text-muted-foreground">Distância total</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 text-center">
+            <p className="text-2xl font-bold text-primary">{totalTempo > 0 ? `${totalTempo}min` : "—"}</p>
+            <p className="text-xs text-muted-foreground">Tempo estimado</p>
           </CardContent>
         </Card>
       </div>
 
+      {/* Frete summary */}
+      {totalFrete > 0 && (
+        <Card className="mb-6 border-primary/20">
+          <CardContent className="pt-4 flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Truck className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold">Frete total:</span>
+              <span className="text-sm font-bold text-primary">R$ {totalFrete.toFixed(2)}</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>Empresa: R$ {filtered.filter(p => p.fretePagoPor === "empresa").reduce((s, p) => s + p.valorFrete, 0).toFixed(2)}</span>
+              <span>·</span>
+              <span>Cliente: R$ {filtered.filter(p => p.fretePagoPor === "cliente").reduce((s, p) => s + p.valorFrete, 0).toFixed(2)}</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-6">
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-muted-foreground" />
@@ -468,8 +571,18 @@ export default function MapaEntregas() {
             ))}
           </SelectContent>
         </Select>
+        <Button
+          variant={otimizarRota ? "default" : "outline"}
+          size="sm"
+          className="gap-1"
+          onClick={() => setOtimizarRota(!otimizarRota)}
+        >
+          <ArrowUpDown className="h-4 w-4" />
+          {otimizarRota ? "Rota otimizada" : "Otimizar rota"}
+        </Button>
       </div>
 
+      {/* Map */}
       {mapMarkers.length > 0 && (
         <Card className="mb-6">
           <CardHeader className="pb-2">
@@ -484,12 +597,20 @@ export default function MapaEntregas() {
             </CardTitle>
             <div className="flex flex-wrap items-center gap-3 mt-1">
               <span className="flex items-center gap-1 text-xs">
-                <span className="inline-block w-3 h-3 rounded-full" style={{ background: "#16a34a" }} />
-                <span className="font-medium">A</span> Fábrica (origem)
+                <span className="inline-block w-3 h-3 rounded-full" style={{ background: "#ea580c" }} />
+                🏭 Fábrica (origem)
               </span>
               <span className="flex items-center gap-1 text-xs">
-                <span className="inline-block w-3 h-3 rounded-full" style={{ background: "#dc2626" }} />
-                <span className="font-medium">B</span> Cliente (destino)
+                <span className="inline-block w-3 h-3 rounded-full" style={{ background: "#16a34a" }} />
+                Separado
+              </span>
+              <span className="flex items-center gap-1 text-xs">
+                <span className="inline-block w-3 h-3 rounded-full" style={{ background: "#3b82f6" }} />
+                Em Produção
+              </span>
+              <span className="flex items-center gap-1 text-xs">
+                <span className="inline-block w-3 h-3 rounded-full" style={{ background: "#f59e0b" }} />
+                Aguardando
               </span>
             </div>
           </CardHeader>
@@ -521,8 +642,13 @@ export default function MapaEntregas() {
       {routePolylines.length > 0 && (
         <div className="flex flex-wrap items-center gap-3 mb-4 px-1">
           <span className="text-xs text-muted-foreground flex items-center gap-1">
-            <Navigation className="h-3 w-3" /> Rotas traçadas: {routePolylines.length}
+            <Navigation className="h-3 w-3" /> Rotas: {routePolylines.length}
           </span>
+          {otimizarRota && (
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <Route className="h-3 w-3 text-primary" /> Sequência otimizada por proximidade
+            </span>
+          )}
           {selectedRoute && (
             <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => setSelectedRoute(null)}>
               Mostrar todas
@@ -531,6 +657,7 @@ export default function MapaEntregas() {
         </div>
       )}
 
+      {/* Pedidos list */}
       {grouped.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
@@ -550,10 +677,17 @@ export default function MapaEntregas() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {pedidosBairro.map(p => (
-                  <Card key={p.id} className={`border-l-4 ${getBairroColor(bairro)}`}>
+                  <Card
+                    key={p.id}
+                    className={`border-l-4 ${getBairroColor(bairro)} cursor-pointer transition-shadow hover:shadow-md ${selectedRoute === p.id ? "ring-2 ring-primary" : ""}`}
+                    onClick={() => setSelectedRoute(prev => (prev === p.id ? null : p.id))}
+                  >
                     <CardContent className="pt-3 pb-3 space-y-1">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-bold text-sm truncate">{p.clienteNome}</span>
+                        <span className="font-bold text-sm truncate">
+                          {p.ordem && <span className="text-primary mr-1">{p.ordem}°</span>}
+                          {p.clienteNome}
+                        </span>
                         <Badge variant={statusVariant(p.status)} className="text-[10px] shrink-0">
                           {statusLabel[p.status] || p.status}
                         </Badge>
@@ -567,12 +701,21 @@ export default function MapaEntregas() {
                           Entrega: {new Date(p.dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}
                         </span>
                       </div>
+                      {/* Route info */}
                       {routeInfoMap[p.id] && (
                         <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1 border-t border-border/50">
                           <Navigation className="h-3 w-3 text-primary" />
                           <span className="font-medium text-foreground">{routeInfoMap[p.id].distanceKm} km</span>
                           <span>·</span>
                           <span>~{routeInfoMap[p.id].durationMin} min</span>
+                        </div>
+                      )}
+                      {/* Frete info */}
+                      {p.valorFrete > 0 && (
+                        <div className="flex items-center gap-2 text-xs pt-1 border-t border-border/50">
+                          <Truck className="h-3 w-3 text-muted-foreground" />
+                          <span className="font-medium">R$ {p.valorFrete.toFixed(2)}</span>
+                          <Badge variant="outline" className="text-[9px] h-4">{freteLabel(p.fretePagoPor)}</Badge>
                         </div>
                       )}
                     </CardContent>
