@@ -331,8 +331,8 @@ export default function Vendas() {
         : toLocalDateStr(new Date(dataVenda.getTime() + 30 * 86400000));
       const parcelasData = formaPagamento === "parcelado" && valorEntrada
         ? [
-            { valor: Number(valorEntrada), vencimento: toLocalDateStr(dataVenda) },
-            ...(Number(valorRestante) > 0 ? [{ valor: Number(valorRestante), vencimento: vencimentoStr }] : []),
+            { valor: parseDecimal(valorEntrada), vencimento: toLocalDateStr(dataVenda) },
+            ...(parseDecimal(valorRestante) > 0 ? [{ valor: parseDecimal(valorRestante), vencimento: vencimentoStr }] : []),
           ]
         : formaPagamento === "boleto"
         ? [{ valor: itensValidos.reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0), vencimento: vencimentoStr }]
