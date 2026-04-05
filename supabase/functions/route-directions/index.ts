@@ -1,4 +1,4 @@
-import { corsHeaders } from "@supabase/supabase-js/cors";
+import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
 const OSRM_SERVERS = [
   "https://router.project-osrm.org",
@@ -6,9 +6,10 @@ const OSRM_SERVERS = [
 ];
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  const corsResponse = handleCors(req);
+  if (corsResponse) return corsResponse;
+
+  const headers = getCorsHeaders(req);
 
   try {
     const { from, to } = await req.json();
@@ -20,7 +21,7 @@ Deno.serve(async (req) => {
     ) {
       return new Response(
         JSON.stringify({ error: "Invalid coordinates. Expected {from: [lat,lng], to: [lat,lng]}" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...headers, "Content-Type": "application/json" } }
       );
     }
 
@@ -53,7 +54,7 @@ Deno.serve(async (req) => {
               durationMin: Math.round(route.duration / 60),
               source: "osrm",
             }),
-            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            { headers: { ...headers, "Content-Type": "application/json" } }
           );
         }
       } catch (e) {
@@ -61,15 +62,14 @@ Deno.serve(async (req) => {
       }
     }
 
-    // All servers failed - return error so client knows to retry or show fallback
     return new Response(
       JSON.stringify({ error: "routing_unavailable", message: "All routing servers are currently unavailable" }),
-      { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 503, headers: { ...headers, "Content-Type": "application/json" } }
     );
   } catch (e) {
     return new Response(
       JSON.stringify({ error: e.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...headers, "Content-Type": "application/json" } }
     );
   }
 });
