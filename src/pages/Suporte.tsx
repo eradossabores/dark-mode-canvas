@@ -489,6 +489,88 @@ export default function Suporte() {
           )}
         </TabsContent>
 
+        {/* VIDEOAULAS TAB */}
+        <TabsContent value="videoaulas" className="mt-4 space-y-4">
+          {isSuperAdmin && (
+            <div className="flex justify-end">
+              <Dialog open={showAddVideo} onOpenChange={setShowAddVideo}>
+                <DialogTrigger asChild>
+                  <Button className="gap-2"><Plus className="h-4 w-4" /> Adicionar Videoaula</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader><DialogTitle>Nova Videoaula</DialogTitle></DialogHeader>
+                  <div className="space-y-4 pt-2">
+                    <div>
+                      <Label>Título</Label>
+                      <Input placeholder="Ex: Como registrar uma venda" value={newVideo.titulo} onChange={e => setNewVideo({ ...newVideo, titulo: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label>URL do Vídeo (YouTube)</Label>
+                      <Input placeholder="https://www.youtube.com/watch?v=..." value={newVideo.url_video} onChange={e => setNewVideo({ ...newVideo, url_video: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label>Categoria</Label>
+                      <Select value={newVideo.categoria} onValueChange={v => setNewVideo({ ...newVideo, categoria: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Descrição (opcional)</Label>
+                      <Textarea placeholder="Breve descrição do conteúdo..." rows={3} value={newVideo.descricao} onChange={e => setNewVideo({ ...newVideo, descricao: e.target.value })} />
+                    </div>
+                    <Button className="w-full" onClick={handleAddVideo}>Adicionar Vídeo</Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          )}
+
+          {loadingVideos ? (
+            <p className="text-center text-muted-foreground animate-pulse py-8">Carregando videoaulas...</p>
+          ) : videoAulas.length === 0 ? (
+            <Card><CardContent className="p-8 text-center">
+              <PlayCircle className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+              <p className="text-muted-foreground">Nenhuma videoaula disponível ainda.</p>
+            </CardContent></Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {videoAulas.map(video => {
+                const embedUrl = getYoutubeEmbedUrl(video.url_video);
+                return (
+                  <Card key={video.id} className="overflow-hidden">
+                    <div className="aspect-video bg-muted">
+                      <iframe
+                        src={embedUrl || ""}
+                        title={video.titulo}
+                        className="w-full h-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <h3 className="font-semibold text-sm">{video.titulo}</h3>
+                          {video.descricao && <p className="text-xs text-muted-foreground mt-1">{video.descricao}</p>}
+                          <Badge variant="outline" className="text-[10px] mt-2">{CATEGORIES.find(c => c.value === video.categoria)?.label || video.categoria}</Badge>
+                        </div>
+                        {isSuperAdmin && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 hover:bg-destructive/10" onClick={() => handleDeleteVideo(video.id)}>
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+
         {/* FAQ TAB */}
         <TabsContent value="faq" className="mt-4">
           <Card>
