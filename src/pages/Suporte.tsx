@@ -131,6 +131,16 @@ function getStatusBadge(status: string) {
   }
 }
 
+interface VideoAula {
+  id: string;
+  titulo: string;
+  descricao: string | null;
+  url_video: string;
+  categoria: string;
+  ordem: number;
+  created_at: string;
+}
+
 export default function Suporte() {
   const { user, role, factoryId } = useAuth();
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
@@ -144,6 +154,12 @@ export default function Suporte() {
   const [userName, setUserName] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isSuperAdmin = role === "super_admin";
+
+  // Video aulas state
+  const [videoAulas, setVideoAulas] = useState<VideoAula[]>([]);
+  const [loadingVideos, setLoadingVideos] = useState(false);
+  const [showAddVideo, setShowAddVideo] = useState(false);
+  const [newVideo, setNewVideo] = useState({ titulo: "", descricao: "", url_video: "", categoria: "geral" });
 
   useEffect(() => {
     if (user?.id) {
