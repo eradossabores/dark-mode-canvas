@@ -291,6 +291,11 @@ export default function RelatorioVendas() {
                       <TableCell>{v.clientes?.nome}</TableCell>
                       <TableCell>R$ {Number(v.total).toFixed(2)}</TableCell>
                       <TableCell>
+                        {Number(v.valor_frete || 0) > 0 
+                          ? <span className="text-xs">R$ {Number(v.valor_frete).toFixed(2)} <span className="text-muted-foreground">({v.frete_pago_por || "cliente"})</span></span>
+                          : "-"}
+                      </TableCell>
+                      <TableCell>
                         <Badge variant="outline" className="capitalize">{v.forma_pagamento || "-"}</Badge>
                       </TableCell>
                       <TableCell>
