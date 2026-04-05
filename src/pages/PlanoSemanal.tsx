@@ -947,10 +947,55 @@ export default function PlanoSemanal() {
             <Copy className="h-4 w-4 mr-1.5" /> Duplicar
           </Button>
           <Button size="sm" className="rounded-full shadow-sm" onClick={() => setShowSaveDialog(true)} disabled={itens.length === 0}>
-            <Save className="h-4 w-4 mr-1.5" /> Salvar Plano
+            <Save className="h-4 w-4 mr-1.5" /> Salvar
+          </Button>
+          <Button 
+            size="sm" 
+            className="rounded-full shadow-sm bg-emerald-600 hover:bg-emerald-700 text-white"
+            onClick={() => setShowAutorizarConfirm(true)} 
+            disabled={itens.length === 0 || autorizando || planoStatus === "autorizado"}
+          >
+            {autorizando ? (
+              <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> Autorizando...</>
+            ) : planoStatus === "autorizado" ? (
+              <><CheckCircle2 className="h-4 w-4 mr-1.5" /> Autorizado</>
+            ) : (
+              <><Check className="h-4 w-4 mr-1.5" /> Autorizar</>
+            )}
           </Button>
         </motion.div>
       </div>
+
+      {/* Autorizar confirmation dialog */}
+      <AlertDialog open={showAutorizarConfirm} onOpenChange={setShowAutorizarConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Autorizar Plano Semanal?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>Ao autorizar, serão criadas decisões de produção para cada dia da semana. Elas aparecerão automaticamente no <strong>Plano Diário</strong> de cada data correspondente.</p>
+              <div className="mt-3 p-3 rounded-lg bg-muted/50 text-sm space-y-1">
+                {DIAS_SEMANA.filter(d => (itensPorDia[d.value] || []).length > 0).map(dia => {
+                  const diaDate = getDateForDia(dia.value);
+                  const diaItens = itensPorDia[dia.value] || [];
+                  const totalDia = diaItens.reduce((s, i) => s + i.quantidade, 0);
+                  return (
+                    <p key={dia.value} className="flex justify-between">
+                      <span className="font-medium">{dia.label} {diaDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}</span>
+                      <span className="text-muted-foreground">{diaItens.length} sabor(es) · {totalDia} un</span>
+                    </p>
+                  );
+                })}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={autorizarPlanoSemanal} className="bg-emerald-600 hover:bg-emerald-700">
+              Autorizar Produção
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Save dialog */}
       <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
