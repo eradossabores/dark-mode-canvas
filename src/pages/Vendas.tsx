@@ -1319,7 +1319,12 @@ export default function Vendas() {
                 ))}
                 <div className="flex justify-between items-center mt-2 pt-2 border-t font-semibold text-sm">
                   <span>Novo Total:</span>
-                  <span>R$ {(editItens.filter((it) => it.sabor_id && it.quantidade > 0).reduce((sum, it) => sum + Number(it.preco_unitario) * (it.quantidade || 0), 0) + (parseFloat((editValorFrete || "0").replace(",", ".")) || 0)).toFixed(2)}</span>
+                  <span>R$ {(() => {
+                    const subtotal = editItens.filter((it) => it.sabor_id && it.quantidade > 0).reduce((sum, it) => sum + Number(it.preco_unitario) * (it.quantidade || 0), 0);
+                    const frete = parseFloat((editValorFrete || "0").replace(",", ".")) || 0;
+                    const freteNaComanda = editFretePagoPor === "cliente" ? frete : editFretePagoPor === "ambos" ? Math.round(frete / 2 * 100) / 100 : 0;
+                    return (subtotal + freteNaComanda).toFixed(2);
+                  })()}</span>
                 </div>
               </div>
             {/* Frete na Edição */}
