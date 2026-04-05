@@ -1063,7 +1063,7 @@ export default function Vendas() {
                       </div>
                       <div>
                         <Label>Valor Restante (R$)</Label>
-                        <Input type="number" step="0.01" value={valorRestante} readOnly className="bg-muted" />
+                        <Input type="text" inputMode="decimal" value={valorRestante} readOnly className="bg-muted" />
                       </div>
                     </>
                   )}
