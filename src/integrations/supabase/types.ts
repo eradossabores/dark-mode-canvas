@@ -2056,6 +2056,7 @@ export type Database = {
           enviado_producao: boolean
           factory_id: string | null
           forma_pagamento: string
+          frete_pago_por: string
           id: string
           numero_nf: string | null
           numero_pedido: number | null
@@ -2065,6 +2066,7 @@ export type Database = {
           total: number
           updated_at: string
           valor_especie: number
+          valor_frete: number
           valor_pago: number
           valor_pix: number
         }
@@ -2074,6 +2076,7 @@ export type Database = {
           enviado_producao?: boolean
           factory_id?: string | null
           forma_pagamento?: string
+          frete_pago_por?: string
           id?: string
           numero_nf?: string | null
           numero_pedido?: number | null
@@ -2083,6 +2086,7 @@ export type Database = {
           total?: number
           updated_at?: string
           valor_especie?: number
+          valor_frete?: number
           valor_pago?: number
           valor_pix?: number
         }
@@ -2092,6 +2096,7 @@ export type Database = {
           enviado_producao?: boolean
           factory_id?: string | null
           forma_pagamento?: string
+          frete_pago_por?: string
           id?: string
           numero_nf?: string | null
           numero_pedido?: number | null
@@ -2101,6 +2106,7 @@ export type Database = {
           total?: number
           updated_at?: string
           valor_especie?: number
+          valor_frete?: number
           valor_pago?: number
           valor_pix?: number
         }

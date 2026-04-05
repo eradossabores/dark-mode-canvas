@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
-import { DollarSign, ShoppingCart, TrendingUp, Target } from "lucide-react";
+import { DollarSign, ShoppingCart, TrendingUp, Target, Truck } from "lucide-react";
 import DateRangeFilter from "./DateRangeFilter";
 import KpiCard from "./KpiCard";
 import ExportButtons from "./ExportButtons";
@@ -81,6 +81,7 @@ export default function RelatorioVendas() {
   const filteredItens = itens.filter((i) => filteredIds.has(i.venda_id));
 
   const faturamento = filtered.reduce((s, v) => s + Number(v.total), 0);
+  const totalFrete = filtered.reduce((s, v) => s + Number(v.valor_frete || 0), 0);
   const totalVendas = filtered.length;
   const ticketMedio = totalVendas > 0 ? faturamento / totalVendas : 0;
   const totalUnidades = filteredItens.reduce((s, i) => s + i.quantidade, 0);
@@ -121,11 +122,12 @@ export default function RelatorioVendas() {
     return Object.entries(map).map(([name, value]) => ({ name, value })).reverse();
   }, [filtered]);
 
-  const headers = ["Data", "Cliente", "Total", "Pagamento", "Status", "Operador"];
+  const headers = ["Data", "Cliente", "Total", "Frete", "Pagamento", "Status", "Operador"];
   const rows = filtered.map((v) => [
     new Date(v.created_at).toLocaleDateString("pt-BR"),
     v.clientes?.nome || "-",
     `R$ ${Number(v.total).toFixed(2)}`,
+    Number(v.valor_frete || 0) > 0 ? `R$ ${Number(v.valor_frete).toFixed(2)} (${v.frete_pago_por || "cliente"})` : "-",
     v.forma_pagamento || "-",
     v.status,
     v.operador,
@@ -176,6 +178,7 @@ export default function RelatorioVendas() {
             { label: "Total de Vendas", value: totalVendas.toString() },
             { label: "Ticket Médio", value: `R$ ${ticketMedio.toFixed(2)}` },
             { label: "Unidades Vendidas", value: totalUnidades.toLocaleString("pt-BR") },
+            { label: "Total Frete", value: `R$ ${totalFrete.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
             { label: "Período", value: periodoLabel },
             ...(filtroPagamento !== "todos" ? [{ label: "Filtro Pagamento", value: filtroPagamento.toUpperCase() }] : []),
             ...(filtroStatus !== "todos" ? [{ label: "Filtro Status", value: filtroStatus }] : []),
@@ -208,11 +211,12 @@ export default function RelatorioVendas() {
             {filtroOperador !== "todos" && <Badge variant="outline" className="ml-2">Op: {filtroOperador}</Badge>}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <KpiCard title="Faturamento" value={`R$ ${faturamento.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={DollarSign} />
             <KpiCard title="Total de Vendas" value={totalVendas.toString()} icon={ShoppingCart} />
             <KpiCard title="Ticket Médio" value={`R$ ${ticketMedio.toFixed(2)}`} icon={Target} />
             <KpiCard title="Unidades Vendidas" value={totalUnidades.toLocaleString("pt-BR")} icon={TrendingUp} />
+            <KpiCard title="Total Frete" value={`R$ ${totalFrete.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={Truck} />
           </div>
 
           <div id="charts-vendas" className="space-y-6">
@@ -288,6 +292,11 @@ export default function RelatorioVendas() {
                       <TableCell>{new Date(v.created_at).toLocaleDateString("pt-BR")}</TableCell>
                       <TableCell>{v.clientes?.nome}</TableCell>
                       <TableCell>R$ {Number(v.total).toFixed(2)}</TableCell>
+                      <TableCell>
+                        {Number(v.valor_frete || 0) > 0 
+                          ? <span className="text-xs">R$ {Number(v.valor_frete).toFixed(2)} <span className="text-muted-foreground">({v.frete_pago_por || "cliente"})</span></span>
+                          : "-"}
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="capitalize">{v.forma_pagamento || "-"}</Badge>
                       </TableCell>
