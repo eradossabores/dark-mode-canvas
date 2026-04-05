@@ -12,8 +12,10 @@ import { toast } from "@/hooks/use-toast";
 import {
   CalendarDays, Plus, Trash2, Save, ArrowLeft, Pencil,
   TrendingDown, AlertTriangle, CheckCircle2,
-  Copy, BarChart3, Sparkles, Package, X, Check, ChevronLeft, ChevronRight
+  Copy, BarChart3, Sparkles, Package, X, Check, ChevronLeft, ChevronRight,
+  Bot, Loader2, Brain, Info
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { motion, AnimatePresence } from "framer-motion";
@@ -81,6 +83,10 @@ export default function PlanoSemanal() {
   const [gelosPorLote, setGelosPorLote] = useState<Record<string, number>>({});
   const [sugestaoGerada, setSugestaoGerada] = useState(false);
   const [vendasPorDia, setVendasPorDia] = useState<Record<number, Record<string, number>>>({});
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResumo, setAiResumo] = useState<string | null>(null);
+  const [aiAtivo, setAiAtivo] = useState(false);
+  const [aiJustificativas, setAiJustificativas] = useState<Record<string, Record<number, { confianca: string; justificativa: string }>>>({});
 
   const mondayOfWeek = useMemo(() => {
     const now = new Date();
@@ -246,7 +252,77 @@ export default function PlanoSemanal() {
     const suggested = gerarSugestao(sabores, estoque, mediaDiaria, gelosPorLote, vendasPorDia);
     setItens(suggested);
     setPlanoId(null);
+    setAiAtivo(false);
+    setAiResumo(null);
+    setAiJustificativas({});
     toast({ title: "Sugestão regenerada! ✨" });
+  }
+
+  async function consultarIA() {
+    setAiLoading(true);
+    setAiResumo(null);
+    setAiJustificativas({});
+    try {
+      const saboresPayload = sabores.map(s => ({
+        id: s.id,
+        nome: s.nome,
+        estoqueAtual: estoque[s.id] || 0,
+        vendas7d: vendas7d[s.id] || 0,
+        mediaDiaria: mediaDiaria[s.id] || 0,
+        gelosPorLote: gelosPorLote[s.id] || 84,
+      }));
+
+      const { data, error } = await supabase.functions.invoke("suggest-producao-semanal", {
+        body: { sabores_analise: saboresPayload, factory_id: factoryId },
+      });
+
+      if (error) throw error;
+
+      if (data?.error) {
+        toast({ title: "Erro da IA", description: data.error, variant: "destructive" });
+        return;
+      }
+
+      const plano: any[] = data?.plano || [];
+      setAiResumo(data?.resumo || null);
+      setAiAtivo(true);
+
+      // Convert AI plan to PlanItems
+      const newItens: PlanItem[] = [];
+      const justMap: Record<string, Record<number, { confianca: string; justificativa: string }>> = {};
+
+      plano.forEach((item: any) => {
+        if (item.lotes <= 0) return;
+        const sabor = sabores.find(s => 
+          s.nome.toLowerCase() === item.sabor_nome?.toLowerCase() ||
+          s.nome.toLowerCase().includes(item.sabor_nome?.toLowerCase() || "___")
+        );
+        if (!sabor) return;
+        const gpl = gelosPorLote[sabor.id] || 84;
+        newItens.push({
+          id: crypto.randomUUID(),
+          sabor_id: sabor.id,
+          dia_semana: item.dia_semana,
+          quantidade: item.lotes * gpl,
+        });
+        if (!justMap[sabor.id]) justMap[sabor.id] = {};
+        justMap[sabor.id][item.dia_semana] = {
+          confianca: item.confianca || "media",
+          justificativa: item.justificativa || "",
+        };
+      });
+
+      setItens(newItens);
+      setAiJustificativas(justMap);
+      setPlanoId(null);
+
+      toast({ title: "🤖 Plano semanal da IA aplicado!", description: data?.resumo });
+    } catch (e: any) {
+      console.error("Erro ao consultar IA:", e);
+      toast({ title: "Erro ao consultar IA", description: e.message, variant: "destructive" });
+    } finally {
+      setAiLoading(false);
+    }
   }
 
   const totalPorSabor = useMemo(() => {
@@ -414,11 +490,45 @@ export default function PlanoSemanal() {
       )}
 
       {/* Action buttons */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2 items-center">
         <Button variant="outline" size="sm" className="rounded-full" onClick={regenerarSugestao}>
-          <Sparkles className="h-4 w-4 mr-1.5" /> Regenerar Sugestão
+          <Sparkles className="h-4 w-4 mr-1.5" /> Sugestão Automática
         </Button>
+        <Button
+          size="sm"
+          className="rounded-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-md"
+          onClick={consultarIA}
+          disabled={aiLoading || sabores.length === 0}
+        >
+          {aiLoading ? (
+            <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> Consultando IA...</>
+          ) : (
+            <><Brain className="h-4 w-4 mr-1.5" /> Sugestão com IA</>
+          )}
+        </Button>
+        {aiAtivo && (
+          <Badge className="bg-violet-500/10 text-violet-600 border-violet-500/20 gap-1">
+            <Bot className="h-3 w-3" /> IA ativa
+          </Badge>
+        )}
       </div>
+
+      {/* AI Resume */}
+      {aiResumo && (
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
+          <Card className="bg-gradient-to-r from-violet-500/5 to-purple-500/5 border-violet-500/20">
+            <CardContent className="py-3 px-4 flex items-start gap-3">
+              <div className="h-8 w-8 rounded-full bg-violet-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                <Bot className="h-4 w-4 text-violet-600" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-violet-600 mb-0.5">Análise da IA</p>
+                <p className="text-sm text-foreground">{aiResumo}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Weekly grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
@@ -488,12 +598,36 @@ export default function PlanoSemanal() {
                         );
                       }
 
+                      const aiInfo = aiJustificativas[item.sabor_id]?.[item.dia_semana];
+
                       return (
                         <motion.div key={item.id} layout initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 8 }}
-                          className="flex items-center gap-2.5 rounded-xl px-3 py-2 bg-muted/40 group hover:bg-muted/60 transition-all cursor-default">
+                          className={`flex items-center gap-2.5 rounded-xl px-3 py-2 group hover:bg-muted/60 transition-all cursor-default ${aiInfo ? "bg-violet-500/5 border border-violet-500/10" : "bg-muted/40"}`}>
                           <div className="h-3 w-3 rounded-full shrink-0 ring-2 ring-offset-1 ring-offset-background" style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}40` }} />
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold truncate leading-tight">{nome}</p>
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-sm font-semibold truncate leading-tight">{nome}</p>
+                              {aiInfo && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className={`inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                                        aiInfo.confianca === "alta" ? "bg-emerald-500/10 text-emerald-600" :
+                                        aiInfo.confianca === "media" ? "bg-amber-500/10 text-amber-600" :
+                                        "bg-red-500/10 text-red-500"
+                                      }`}>
+                                        <Bot className="h-2.5 w-2.5" />
+                                        {aiInfo.confianca === "alta" ? "🟢" : aiInfo.confianca === "media" ? "🟡" : "🔴"}
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="max-w-[200px]">
+                                      <p className="text-xs font-medium">{aiInfo.justificativa}</p>
+                                      <p className="text-[10px] text-muted-foreground mt-0.5">Confiança: {aiInfo.confianca}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                            </div>
                             <p className="text-[11px] text-muted-foreground">{lotes} lote(s) · {item.quantidade} un</p>
                           </div>
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
