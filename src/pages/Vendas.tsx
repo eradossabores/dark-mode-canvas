@@ -341,7 +341,7 @@ export default function Vendas() {
       const vencInfo = (formaPagamento === "boleto" || formaPagamento === "parcelado") && dataVencimento
         ? ` | Vencimento: ${format(dataVencimento, "dd/MM/yyyy")}`
         : "";
-      const freteInfo = Number(valorFrete) > 0 ? ` | Frete: R$${Number(valorFrete).toFixed(2)} (${fretePagoPor === "empresa" ? "empresa" : "cliente"})` : "";
+      const freteInfo = parseDecimal(valorFrete) > 0 ? ` | Frete: R$${parseDecimal(valorFrete).toFixed(2)} (${fretePagoPor === "empresa" ? "empresa" : "cliente"})` : "";
       const brindeInfo = brindes.filter(b => Number(b.quantidade) > 0 && b.sabor_id).length > 0 
         ? ` | Brindes: ${brindes.filter(b => Number(b.quantidade) > 0 && b.sabor_id).map(b => `${b.quantidade}un`).join(", ")}` 
         : "";
