@@ -107,7 +107,7 @@ export default function PlanoSemanal() {
 
   const mondayOfWeek = useMemo(() => {
     const now = new Date();
-    const mon = getMonday(now);
+    const mon = getNextMonday(now);
     mon.setDate(mon.getDate() + weekOffset * 7);
     return mon;
   }, [weekOffset]);
