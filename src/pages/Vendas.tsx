@@ -1092,9 +1092,9 @@ export default function Vendas() {
                     <Label htmlFor="frete-ambos" className="text-xs cursor-pointer font-medium">🤝 Ambos (50/50)</Label>
                   </div>
                 </div>
-                {fretePagoPor === "ambos" && valorFrete && Number(valorFrete) > 0 && (
+                {fretePagoPor === "ambos" && valorFrete && parseDecimal(valorFrete) > 0 && (
                   <div className="text-xs text-muted-foreground mt-1 p-2 rounded bg-background border">
-                    Empresa: <span className="font-semibold">R$ {(Number(valorFrete) / 2).toFixed(2)}</span> · Cliente: <span className="font-semibold">R$ {(Number(valorFrete) / 2).toFixed(2)}</span>
+                    Empresa: <span className="font-semibold">R$ {(parseDecimal(valorFrete) / 2).toFixed(2)}</span> · Cliente: <span className="font-semibold">R$ {(parseDecimal(valorFrete) / 2).toFixed(2)}</span>
                   </div>
                 )}
               </div>
