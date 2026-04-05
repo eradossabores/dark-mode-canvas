@@ -373,6 +373,9 @@ export default function MapaEntregas() {
           ? [pedidosComCoords[i - 1].latitude!, pedidosComCoords[i - 1].longitude!] as [number, number]
           : factoryCoords;
 
+        // Small delay between requests to avoid rate limiting
+        if (i > 0) await new Promise(r => setTimeout(r, 300));
+
         const result = await fetchRoute(from, [p.latitude!, p.longitude!]);
         infoMap[p.id] = { distanceKm: result.distanceKm, durationMin: result.durationMin };
         lines.push({
@@ -382,7 +385,6 @@ export default function MapaEntregas() {
             color: selectedRoute === p.id ? "#2563eb" : ROUTE_COLORS[i % ROUTE_COLORS.length],
             weight: selectedRoute === p.id ? 6 : 4,
             opacity: selectedRoute ? (selectedRoute === p.id ? 1 : 0.25) : 0.8,
-            dashArray: otimizarRota ? undefined : undefined,
           },
         });
       }
