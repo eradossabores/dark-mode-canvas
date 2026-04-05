@@ -625,7 +625,7 @@ export default function PlanoSemanal() {
       <Card className="bg-gradient-to-r from-rose-500/5 to-orange-500/5 border-border/40">
         <CardContent className="py-3 px-4">
           <p className="text-xs font-bold text-muted-foreground mb-2 flex items-center gap-1.5">
-            ❄️ ESTOQUE PROJETADO (ATUAL + PLANO − VENDAS 7D)
+            ❄️ ESTOQUE PROJETADO (ATUAL + PLANO)
           </p>
           <div className="flex flex-wrap gap-1.5">
             {sabores
