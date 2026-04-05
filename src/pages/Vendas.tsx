@@ -1043,12 +1043,13 @@ export default function Vendas() {
                     <>
                       <div>
                         <Label>Valor Total (R$)</Label>
-                        <Input type="number" step="0.01" min="0" value={valorTotal} onChange={(e) => {
-                          setValorTotal(e.target.value);
-                          const total = Number(e.target.value) || 0;
-                          const entrada = Number(valorEntrada) || 0;
+                        <Input type="text" inputMode="decimal" value={valorTotal} onChange={(e) => {
+                          const v = formatDecimalInput(e.target.value);
+                          setValorTotal(v);
+                          const total = parseDecimal(v);
+                          const entrada = parseDecimal(valorEntrada);
                           setValorRestante((total - entrada).toFixed(2));
-                        }} placeholder="0.00" />
+                        }} placeholder="0,00" />
                       </div>
                       <div>
                         <Label>Valor da Entrada (R$)</Label>
