@@ -375,14 +375,36 @@ export default function Vendas() {
         }
 
         // Recalculate total excluding brindes
-        const totalVendaCalc = itensValidos
+        const totalProdutos = itensValidos
           .filter(i => !brindeSaborIds.includes(i.sabor_id))
-          .reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0) + (parseDecimal(valorFrete) || 0);
+          .reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0);
+        const freteTotal = parseDecimal(valorFrete) || 0;
+        // Frete: cliente paga → soma no total; empresa paga → despesa; ambos → 50/50
+        const freteCliente = fretePagoPor === "cliente" ? freteTotal : fretePagoPor === "ambos" ? Math.round(freteTotal / 2 * 100) / 100 : 0;
+        const freteEmpresa = fretePagoPor === "empresa" ? freteTotal : fretePagoPor === "ambos" ? Math.round(freteTotal / 2 * 100) / 100 : 0;
+        const totalVendaCalc = totalProdutos + freteCliente;
         const vPix = detalhePgto === "pix" ? totalVendaCalc : detalhePgto === "misto" ? (parseFloat(detalhePix.replace(",", ".")) || 0) : 0;
         const vEsp = detalhePgto === "especie" ? totalVendaCalc : detalhePgto === "misto" ? (parseFloat(detalheEspecie.replace(",", ".")) || 0) : 0;
-        const updateData: any = { forma_pagamento: formaPagamento, status: statusVenda, valor_pix: vPix, valor_especie: vEsp, total: totalVendaCalc, valor_frete: parseDecimal(valorFrete) || 0, frete_pago_por: fretePagoPor };
+        const updateData: any = { forma_pagamento: formaPagamento, status: statusVenda, valor_pix: vPix, valor_especie: vEsp, total: totalVendaCalc, valor_frete: freteTotal, frete_pago_por: fretePagoPor };
         if (numeroNf.trim()) updateData.numero_nf = numeroNf.trim();
         await (supabase as any).from("vendas").update(updateData).eq("id", vendaId);
+
+        // Se empresa paga frete (total ou parcial), registrar despesa
+        if (freteEmpresa > 0) {
+          const clienteNomeFrete = clientes.find(c => c.id === clienteId)?.nome || "?";
+          await (supabase as any).from("contas_a_pagar").insert({
+            descricao: `Frete - Venda para ${clienteNomeFrete}`,
+            tipo: "avulso",
+            valor_parcela: freteEmpresa,
+            valor_total: freteEmpresa,
+            total_parcelas: 1,
+            parcela_atual: 1,
+            pago_mes: true,
+            ativa: false,
+            responsavel: "Frete",
+            factory_id: factoryId,
+          });
+        }
       }
 
       // Atualizar a data se diferente de hoje
