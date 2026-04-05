@@ -81,7 +81,7 @@ const menuGroups = [
   },
 ];
 
-const menuItems = menuGroups.flatMap((g) => g.items);
+const menuItems = menuGroups.flatMap((g) => g.items.flatMap((item: any) => item.children ? item.children : [item]));
 
 const allCharacters = [
   { src: sidImg, alt: "Sid" },
