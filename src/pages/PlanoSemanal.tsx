@@ -80,7 +80,7 @@ function getMonday(d: Date): Date {
 }
 
 export default function PlanoSemanal() {
-  const { factoryId, factoryName, factoryLogoUrl } = useAuth();
+  const { factoryId, factoryName, branding } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
