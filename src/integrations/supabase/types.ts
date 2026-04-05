@@ -2294,6 +2294,42 @@ export type Database = {
           },
         ]
       }
+      video_aulas: {
+        Row: {
+          categoria: string
+          created_at: string
+          descricao: string | null
+          factory_id: string | null
+          id: string
+          ordem: number
+          titulo: string
+          updated_at: string
+          url_video: string
+        }
+        Insert: {
+          categoria?: string
+          created_at?: string
+          descricao?: string | null
+          factory_id?: string | null
+          id?: string
+          ordem?: number
+          titulo: string
+          updated_at?: string
+          url_video: string
+        }
+        Update: {
+          categoria?: string
+          created_at?: string
+          descricao?: string | null
+          factory_id?: string | null
+          id?: string
+          ordem?: number
+          titulo?: string
+          updated_at?: string
+          url_video?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

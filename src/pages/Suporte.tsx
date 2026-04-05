@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { toast } from "@/hooks/use-toast";
-import { Plus, MessageCircle, Send, HelpCircle, Ticket, Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { Plus, MessageCircle, Send, HelpCircle, Ticket, Clock, CheckCircle, AlertCircle, PlayCircle, Trash2, GripVertical } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -131,6 +131,16 @@ function getStatusBadge(status: string) {
   }
 }
 
+interface VideoAula {
+  id: string;
+  titulo: string;
+  descricao: string | null;
+  url_video: string;
+  categoria: string;
+  ordem: number;
+  created_at: string;
+}
+
 export default function Suporte() {
   const { user, role, factoryId } = useAuth();
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
@@ -144,6 +154,12 @@ export default function Suporte() {
   const [userName, setUserName] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isSuperAdmin = role === "super_admin";
+
+  // Video aulas state
+  const [videoAulas, setVideoAulas] = useState<VideoAula[]>([]);
+  const [loadingVideos, setLoadingVideos] = useState(false);
+  const [showAddVideo, setShowAddVideo] = useState(false);
+  const [newVideo, setNewVideo] = useState({ titulo: "", descricao: "", url_video: "", categoria: "geral" });
 
   useEffect(() => {
     if (user?.id) {
@@ -182,7 +198,72 @@ export default function Suporte() {
     setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
   }
 
-  useEffect(() => { loadTickets(); }, []);
+  useEffect(() => { loadTickets(); loadVideoAulas(); }, []);
+
+  async function loadVideoAulas() {
+    setLoadingVideos(true);
+    try {
+      const { data, error } = await (supabase as any)
+        .from("video_aulas")
+        .select("*")
+        .order("ordem", { ascending: true })
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      setVideoAulas(data || []);
+    } catch (e: any) {
+      console.error("Erro ao carregar vídeos:", e);
+    } finally {
+      setLoadingVideos(false);
+    }
+  }
+
+  async function handleAddVideo() {
+    if (!newVideo.titulo || !newVideo.url_video) {
+      toast({ title: "Preencha título e URL do vídeo", variant: "destructive" });
+      return;
+    }
+    try {
+      const { error } = await (supabase as any).from("video_aulas").insert({
+        titulo: newVideo.titulo,
+        descricao: newVideo.descricao || null,
+        url_video: newVideo.url_video,
+        categoria: newVideo.categoria,
+        ordem: videoAulas.length,
+      });
+      if (error) throw error;
+      toast({ title: "Videoaula adicionada!" });
+      setNewVideo({ titulo: "", descricao: "", url_video: "", categoria: "geral" });
+      setShowAddVideo(false);
+      loadVideoAulas();
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+  }
+
+  async function handleDeleteVideo(id: string) {
+    try {
+      await (supabase as any).from("video_aulas").delete().eq("id", id);
+      toast({ title: "Vídeo removido" });
+      loadVideoAulas();
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+  }
+
+  function getYoutubeEmbedUrl(url: string): string | null {
+    try {
+      let videoId = "";
+      if (url.includes("youtu.be/")) {
+        videoId = url.split("youtu.be/")[1]?.split(/[?&#]/)[0] || "";
+      } else if (url.includes("youtube.com")) {
+        const urlObj = new URL(url);
+        videoId = urlObj.searchParams.get("v") || "";
+      }
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+    } catch {
+      return url;
+    }
+  }
 
   useEffect(() => {
     if (!selectedTicket) return;
@@ -305,9 +386,10 @@ export default function Suporte() {
       </div>
 
       <Tabs defaultValue="tickets" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="tickets" className="gap-1.5"><Ticket className="h-4 w-4" />Tickets</TabsTrigger>
           <TabsTrigger value="chat" className="gap-1.5"><MessageCircle className="h-4 w-4" />Chat</TabsTrigger>
+          <TabsTrigger value="videoaulas" className="gap-1.5"><PlayCircle className="h-4 w-4" />Videoaulas</TabsTrigger>
           <TabsTrigger value="faq" className="gap-1.5"><HelpCircle className="h-4 w-4" />FAQ</TabsTrigger>
         </TabsList>
 
@@ -404,6 +486,88 @@ export default function Suporte() {
                 </div>
               )}
             </Card>
+          )}
+        </TabsContent>
+
+        {/* VIDEOAULAS TAB */}
+        <TabsContent value="videoaulas" className="mt-4 space-y-4">
+          {isSuperAdmin && (
+            <div className="flex justify-end">
+              <Dialog open={showAddVideo} onOpenChange={setShowAddVideo}>
+                <DialogTrigger asChild>
+                  <Button className="gap-2"><Plus className="h-4 w-4" /> Adicionar Videoaula</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader><DialogTitle>Nova Videoaula</DialogTitle></DialogHeader>
+                  <div className="space-y-4 pt-2">
+                    <div>
+                      <Label>Título</Label>
+                      <Input placeholder="Ex: Como registrar uma venda" value={newVideo.titulo} onChange={e => setNewVideo({ ...newVideo, titulo: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label>URL do Vídeo (YouTube)</Label>
+                      <Input placeholder="https://www.youtube.com/watch?v=..." value={newVideo.url_video} onChange={e => setNewVideo({ ...newVideo, url_video: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label>Categoria</Label>
+                      <Select value={newVideo.categoria} onValueChange={v => setNewVideo({ ...newVideo, categoria: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Descrição (opcional)</Label>
+                      <Textarea placeholder="Breve descrição do conteúdo..." rows={3} value={newVideo.descricao} onChange={e => setNewVideo({ ...newVideo, descricao: e.target.value })} />
+                    </div>
+                    <Button className="w-full" onClick={handleAddVideo}>Adicionar Vídeo</Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          )}
+
+          {loadingVideos ? (
+            <p className="text-center text-muted-foreground animate-pulse py-8">Carregando videoaulas...</p>
+          ) : videoAulas.length === 0 ? (
+            <Card><CardContent className="p-8 text-center">
+              <PlayCircle className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+              <p className="text-muted-foreground">Nenhuma videoaula disponível ainda.</p>
+            </CardContent></Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {videoAulas.map(video => {
+                const embedUrl = getYoutubeEmbedUrl(video.url_video);
+                return (
+                  <Card key={video.id} className="overflow-hidden">
+                    <div className="aspect-video bg-muted">
+                      <iframe
+                        src={embedUrl || ""}
+                        title={video.titulo}
+                        className="w-full h-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <h3 className="font-semibold text-sm">{video.titulo}</h3>
+                          {video.descricao && <p className="text-xs text-muted-foreground mt-1">{video.descricao}</p>}
+                          <Badge variant="outline" className="text-[10px] mt-2">{CATEGORIES.find(c => c.value === video.categoria)?.label || video.categoria}</Badge>
+                        </div>
+                        {isSuperAdmin && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 hover:bg-destructive/10" onClick={() => handleDeleteVideo(video.id)}>
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           )}
         </TabsContent>
 
