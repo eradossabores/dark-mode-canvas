@@ -952,10 +952,10 @@ export default function Vendas() {
                         return sum + (Number(item.preco_unitario) || 0) * qty;
                       }, 0).toFixed(2)}</span>
                     </div>
-                    {Number(valorFrete) > 0 && (
+                    {parseDecimal(valorFrete) > 0 && (
                       <div className="flex justify-between items-center text-sm">
                         <span>Frete ({fretePagoPor === "empresa" ? "empresa" : "cliente"}):</span>
-                        <span>R$ {Number(valorFrete).toFixed(2)}</span>
+                        <span>R$ {parseDecimal(valorFrete).toFixed(2)}</span>
                       </div>
                     )}
                     <div className="flex justify-between items-center">
@@ -963,7 +963,7 @@ export default function Vendas() {
                       <span className="text-lg">R$ {(itens.reduce((sum, item) => {
                         const qty = vendaPorPacote ? (item.quantidade || 0) * factoryUnidadesPorSaco : (item.quantidade || 0);
                         return sum + (Number(item.preco_unitario) || 0) * qty;
-                      }, 0) + (Number(valorFrete) || 0)).toFixed(2)}</span>
+                      }, 0) + (parseDecimal(valorFrete) || 0)).toFixed(2)}</span>
                     </div>
                     {brindes.filter(b => Number(b.quantidade) > 0 && b.sabor_id).map((b, i) => (
                       <div key={i} className="flex justify-between items-center text-sm text-primary">
