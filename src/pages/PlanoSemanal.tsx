@@ -19,13 +19,13 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { motion, AnimatePresence } from "framer-motion";
 
 const DIAS_SEMANA = [
-  { value: 1, label: "Segunda", short: "Seg" },
-  { value: 2, label: "Terça", short: "Ter" },
-  { value: 3, label: "Quarta", short: "Qua" },
-  { value: 4, label: "Quinta", short: "Qui" },
-  { value: 5, label: "Sexta", short: "Sex" },
-  { value: 6, label: "Sábado", short: "Sáb" },
-  { value: 0, label: "Domingo", short: "Dom" },
+  { value: 1, label: "Segunda", short: "Seg", gradient: "from-blue-500/15 to-blue-600/5", border: "border-blue-500/25", headerBg: "bg-blue-500/10" },
+  { value: 2, label: "Terça", short: "Ter", gradient: "from-violet-500/15 to-violet-600/5", border: "border-violet-500/25", headerBg: "bg-violet-500/10" },
+  { value: 3, label: "Quarta", short: "Qua", gradient: "from-emerald-500/15 to-emerald-600/5", border: "border-emerald-500/25", headerBg: "bg-emerald-500/10" },
+  { value: 4, label: "Quinta", short: "Qui", gradient: "from-amber-500/15 to-amber-600/5", border: "border-amber-500/25", headerBg: "bg-amber-500/10" },
+  { value: 5, label: "Sexta", short: "Sex", gradient: "from-rose-500/15 to-rose-600/5", border: "border-rose-500/25", headerBg: "bg-rose-500/10" },
+  { value: 6, label: "Sábado", short: "Sáb", gradient: "from-cyan-500/15 to-cyan-600/5", border: "border-cyan-500/25", headerBg: "bg-cyan-500/10" },
+  { value: 0, label: "Domingo", short: "Dom", gradient: "from-orange-500/15 to-orange-600/5", border: "border-orange-500/25", headerBg: "bg-orange-500/10" },
 ];
 
 const PRIORIDADE_SABORES = ["melancia", "maçã verde", "morango", "maracujá", "água de coco"];
