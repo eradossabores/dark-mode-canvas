@@ -13,8 +13,9 @@ import {
   CalendarDays, Plus, Trash2, Save, ArrowLeft, Pencil,
   TrendingDown, AlertTriangle, CheckCircle2,
   Copy, BarChart3, Sparkles, Package, X, Check, ChevronLeft, ChevronRight,
-  Bot, Loader2, Brain, Info
+  Bot, Loader2, Brain, Info, FileText, Share2
 } from "lucide-react";
+import { exportToPDF, type PDFBranding } from "@/lib/export-utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
