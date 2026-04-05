@@ -153,7 +153,7 @@ export default function MapaEntregas() {
       if (factoryId) {
         const { data: fData } = await supabase
           .from("factories")
-          .select("latitude, longitude, name")
+          .select("latitude, longitude, name, endereco, bairro, cidade, estado")
           .eq("id", factoryId)
           .single();
 
@@ -165,6 +165,9 @@ export default function MapaEntregas() {
         }
 
         setFactoryName(fData?.name || "Fábrica");
+        
+        const parts = [fData?.endereco, fData?.bairro, fData?.cidade, fData?.estado].filter(Boolean);
+        setFactoryAddress(parts.join(", "));
       }
 
       setPedidos(mapped);
