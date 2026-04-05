@@ -576,7 +576,7 @@ export default function Vendas() {
           }
         }
       }
-      await (supabase as any).from("vendas").update({ total: newTotal }).eq("id", editVenda.id);
+      await (supabase as any).from("vendas").update({ total: newTotal + editFreteVal }).eq("id", editVenda.id);
 
       toast({ title: "Venda atualizada!" });
       setEditOpen(false);
