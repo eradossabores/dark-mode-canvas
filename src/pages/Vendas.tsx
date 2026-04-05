@@ -506,10 +506,11 @@ export default function Vendas() {
       const editTotal = itensValidos.reduce((sum: number, it: any) => sum + Number(it.preco_unitario) * (it.quantidade || 0), 0);
       const eVPix = editDetalhePgto === "pix" ? editTotal : editDetalhePgto === "misto" ? (parseFloat(editDetalhePix.replace(",", ".")) || 0) : 0;
       const eVEsp = editDetalhePgto === "especie" ? editTotal : editDetalhePgto === "misto" ? (parseFloat(editDetalheEspecie.replace(",", ".")) || 0) : 0;
+      const editFreteVal = parseFloat((editValorFrete || "0").replace(",", ".")) || 0;
       const updateData: any = {
         status: editStatus, forma_pagamento: editForma, observacoes: editObs, numero_nf: editNf.trim() || null,
         created_at: `${editData.getFullYear()}-${String(editData.getMonth() + 1).padStart(2, "0")}-${String(editData.getDate()).padStart(2, "0")}T12:00:00`,
-        valor_pix: eVPix, valor_especie: eVEsp,
+        valor_pix: eVPix, valor_especie: eVEsp, valor_frete: editFreteVal, frete_pago_por: editFretePagoPor,
       };
       if (editStatus === "pendente" && editVenda.status !== "pendente") {
         updateData.valor_pago = 0;
