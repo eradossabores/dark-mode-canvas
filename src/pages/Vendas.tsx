@@ -1418,6 +1418,14 @@ export default function Vendas() {
                         </span>
                       </div>
                     )}
+                    {Number(detailVenda.valor_frete || 0) > 0 && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground flex items-center gap-1">
+                          <Truck className="h-3.5 w-3.5" /> Frete ({detailVenda.frete_pago_por === "empresa" ? "Empresa" : detailVenda.frete_pago_por === "ambos" ? "50/50" : "Cliente"})
+                        </span>
+                        <span className="font-bold text-sm">R$ {Number(detailVenda.valor_frete).toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between items-center pt-2 border-t border-primary/20">
                       <span className="font-semibold">Total</span>
                       <span className="font-bold text-lg text-primary">R$ {Number(detailVenda.total).toFixed(2)}</span>
