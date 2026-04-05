@@ -491,7 +491,7 @@ export default function PlanoSemanal() {
                       return (
                         <motion.div key={item.id} layout initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 8 }}
                           className="flex items-center gap-2.5 rounded-xl px-3 py-2 bg-muted/40 group hover:bg-muted/60 transition-all cursor-default">
-                          <div className="h-3 w-3 rounded-full shrink-0 ring-2 ring-offset-1 ring-offset-background" style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}40`, ringColor: color }} />
+                          <div className="h-3 w-3 rounded-full shrink-0 ring-2 ring-offset-1 ring-offset-background" style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}40` }} />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold truncate leading-tight">{nome}</p>
                             <p className="text-[11px] text-muted-foreground">{lotes} lote(s) · {item.quantidade} un</p>
