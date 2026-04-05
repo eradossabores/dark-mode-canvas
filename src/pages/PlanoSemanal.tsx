@@ -670,7 +670,6 @@ export default function PlanoSemanal() {
                         <p><strong>{s.nome}</strong></p>
                         <p>Estoque atual: {s.atual}</p>
                         <p>+ Produção plano: {s.prodPlano}</p>
-                        <p>− Vendas projetadas (7d): {(mediaDiaria[s.id] || 0) * 7}</p>
                         <p className="font-bold mt-1">= Projetado: {s.projetado}</p>
                       </TooltipContent>
                     </Tooltip>
