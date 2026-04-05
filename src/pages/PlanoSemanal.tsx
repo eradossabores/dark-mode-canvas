@@ -728,7 +728,7 @@ export default function PlanoSemanal() {
                 {/* Day header */}
                 <div className={`flex items-center justify-between px-4 pt-3 pb-1 ${dia.headerBg} rounded-t-lg`}>
                   <div>
-                    <h3 className="font-bold text-base">{dia.label}</h3>
+                    <h3 className="font-bold text-base">{dia.label} <span className="text-sm font-normal text-muted-foreground">{diaDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })}</span></h3>
                     {!isEmpty && (
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {lotesDia} lote(s) · <span className="font-semibold text-foreground">{totalDia} un</span>
@@ -743,9 +743,6 @@ export default function PlanoSemanal() {
                         <Trash2 className="h-3 w-3 text-destructive" />
                       </Button>
                     )}
-                    <span className="text-xs text-muted-foreground font-medium">
-                      {diaDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
-                    </span>
                   </div>
                 </div>
 
