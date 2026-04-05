@@ -244,6 +244,8 @@ export default function Vendas() {
     setVendas((v.data || []).map((vd: any) => ({ ...vd, totalUnidades: unitsMap[vd.id] || 0, pedido_status: pedidoStatusMap[vd.id] || null, pedido_tipo: pedidoTipoMap[vd.id] || null })));
   }
 
+  function parseDecimal(v: string): number { return Number(v.replace(",", ".")) || 0; }
+  function formatDecimalInput(v: string): string { return v.replace(/[^0-9.,]/g, ""); }
   function addItem() { setItens([...itens, { sabor_id: "", quantidade: 1, preco_unitario: "", preco_auto: false }]); }
   function removeItem(i: number) { setItens(itens.filter((_, idx) => idx !== i)); }
   function updateItem(i: number, field: string, val: any) {
@@ -329,8 +331,8 @@ export default function Vendas() {
         : toLocalDateStr(new Date(dataVenda.getTime() + 30 * 86400000));
       const parcelasData = formaPagamento === "parcelado" && valorEntrada
         ? [
-            { valor: Number(valorEntrada), vencimento: toLocalDateStr(dataVenda) },
-            ...(Number(valorRestante) > 0 ? [{ valor: Number(valorRestante), vencimento: vencimentoStr }] : []),
+            { valor: parseDecimal(valorEntrada), vencimento: toLocalDateStr(dataVenda) },
+            ...(parseDecimal(valorRestante) > 0 ? [{ valor: parseDecimal(valorRestante), vencimento: vencimentoStr }] : []),
           ]
         : formaPagamento === "boleto"
         ? [{ valor: itensValidos.reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0), vencimento: vencimentoStr }]
@@ -339,7 +341,7 @@ export default function Vendas() {
       const vencInfo = (formaPagamento === "boleto" || formaPagamento === "parcelado") && dataVencimento
         ? ` | Vencimento: ${format(dataVencimento, "dd/MM/yyyy")}`
         : "";
-      const freteInfo = Number(valorFrete) > 0 ? ` | Frete: R$${Number(valorFrete).toFixed(2)} (${fretePagoPor === "empresa" ? "empresa" : "cliente"})` : "";
+      const freteInfo = parseDecimal(valorFrete) > 0 ? ` | Frete: R$${parseDecimal(valorFrete).toFixed(2)} (${fretePagoPor === "empresa" ? "empresa" : "cliente"})` : "";
       const brindeInfo = brindes.filter(b => Number(b.quantidade) > 0 && b.sabor_id).length > 0 
         ? ` | Brindes: ${brindes.filter(b => Number(b.quantidade) > 0 && b.sabor_id).map(b => `${b.quantidade}un`).join(", ")}` 
         : "";
@@ -373,7 +375,7 @@ export default function Vendas() {
         // Recalculate total excluding brindes
         const totalVendaCalc = itensValidos
           .filter(i => !brindeSaborIds.includes(i.sabor_id))
-          .reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0) + (Number(valorFrete) || 0);
+          .reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0) + (parseDecimal(valorFrete) || 0);
         const vPix = detalhePgto === "pix" ? totalVendaCalc : detalhePgto === "misto" ? (parseFloat(detalhePix.replace(",", ".")) || 0) : 0;
         const vEsp = detalhePgto === "especie" ? totalVendaCalc : detalhePgto === "misto" ? (parseFloat(detalheEspecie.replace(",", ".")) || 0) : 0;
         const updateData: any = { forma_pagamento: formaPagamento, status: statusVenda, valor_pix: vPix, valor_especie: vEsp, total: totalVendaCalc };
@@ -921,13 +923,12 @@ export default function Vendas() {
                     <div className="relative w-24">
                       <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
                       <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
+                        type="text"
+                        inputMode="decimal"
                         className={cn("pl-7 text-xs", item.preco_auto && "bg-muted/50")}
                         value={item.preco_unitario}
-                        onChange={(e) => updateItem(i, "preco_unitario", e.target.value)}
-                        placeholder="0.00"
+                        onChange={(e) => updateItem(i, "preco_unitario", formatDecimalInput(e.target.value))}
+                        placeholder="0,00"
                       />
                     </div>
                     <Button size="icon" variant="ghost" onClick={() => removeItem(i)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
@@ -948,21 +949,21 @@ export default function Vendas() {
                       <span>Subtotal Produtos:</span>
                       <span>R$ {itens.reduce((sum, item) => {
                         const qty = vendaPorPacote ? (item.quantidade || 0) * factoryUnidadesPorSaco : (item.quantidade || 0);
-                        return sum + (Number(item.preco_unitario) || 0) * qty;
+                        return sum + (parseDecimal(String(item.preco_unitario)) || 0) * qty;
                       }, 0).toFixed(2)}</span>
                     </div>
-                    {Number(valorFrete) > 0 && (
+                    {parseDecimal(valorFrete) > 0 && (
                       <div className="flex justify-between items-center text-sm">
                         <span>Frete ({fretePagoPor === "empresa" ? "empresa" : "cliente"}):</span>
-                        <span>R$ {Number(valorFrete).toFixed(2)}</span>
+                        <span>R$ {parseDecimal(valorFrete).toFixed(2)}</span>
                       </div>
                     )}
                     <div className="flex justify-between items-center">
                       <span>Total da Venda:</span>
                       <span className="text-lg">R$ {(itens.reduce((sum, item) => {
                         const qty = vendaPorPacote ? (item.quantidade || 0) * factoryUnidadesPorSaco : (item.quantidade || 0);
-                        return sum + (Number(item.preco_unitario) || 0) * qty;
-                      }, 0) + (Number(valorFrete) || 0)).toFixed(2)}</span>
+                        return sum + (parseDecimal(String(item.preco_unitario)) || 0) * qty;
+                      }, 0) + (parseDecimal(valorFrete) || 0)).toFixed(2)}</span>
                     </div>
                     {brindes.filter(b => Number(b.quantidade) > 0 && b.sabor_id).map((b, i) => (
                       <div key={i} className="flex justify-between items-center text-sm text-primary">
@@ -1042,25 +1043,27 @@ export default function Vendas() {
                     <>
                       <div>
                         <Label>Valor Total (R$)</Label>
-                        <Input type="number" step="0.01" min="0" value={valorTotal} onChange={(e) => {
-                          setValorTotal(e.target.value);
-                          const total = Number(e.target.value) || 0;
-                          const entrada = Number(valorEntrada) || 0;
+                        <Input type="text" inputMode="decimal" value={valorTotal} onChange={(e) => {
+                          const v = formatDecimalInput(e.target.value);
+                          setValorTotal(v);
+                          const total = parseDecimal(v);
+                          const entrada = parseDecimal(valorEntrada);
                           setValorRestante((total - entrada).toFixed(2));
-                        }} placeholder="0.00" />
+                        }} placeholder="0,00" />
                       </div>
                       <div>
                         <Label>Valor da Entrada (R$)</Label>
-                        <Input type="number" step="0.01" min="0" value={valorEntrada} onChange={(e) => {
-                          setValorEntrada(e.target.value);
-                          const total = Number(valorTotal) || 0;
-                          const entrada = Number(e.target.value) || 0;
+                        <Input type="text" inputMode="decimal" value={valorEntrada} onChange={(e) => {
+                          const v = formatDecimalInput(e.target.value);
+                          setValorEntrada(v);
+                          const total = parseDecimal(valorTotal);
+                          const entrada = parseDecimal(v);
                           setValorRestante((total - entrada).toFixed(2));
-                        }} placeholder="0.00" />
+                        }} placeholder="0,00" />
                       </div>
                       <div>
                         <Label>Valor Restante (R$)</Label>
-                        <Input type="number" step="0.01" value={valorRestante} readOnly className="bg-muted" />
+                        <Input type="text" inputMode="decimal" value={valorRestante} readOnly className="bg-muted" />
                       </div>
                     </>
                   )}
@@ -1072,7 +1075,7 @@ export default function Vendas() {
                 <Label className="text-xs font-medium">🚚 Frete (opcional)</Label>
                 <div className="relative">
                   <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
-                  <Input type="number" step="0.01" min="0" className="pl-7" value={valorFrete} onChange={(e) => setValorFrete(e.target.value)} placeholder="0.00" />
+                  <Input type="text" inputMode="decimal" className="pl-7" value={valorFrete} onChange={(e) => setValorFrete(formatDecimalInput(e.target.value))} placeholder="0,00" />
                 </div>
                 <div className="flex items-center gap-4 mt-2 p-2 rounded-md bg-background border">
                   <Label className="text-xs text-muted-foreground whitespace-nowrap">Frete pago por:</Label>
@@ -1089,9 +1092,9 @@ export default function Vendas() {
                     <Label htmlFor="frete-ambos" className="text-xs cursor-pointer font-medium">🤝 Ambos (50/50)</Label>
                   </div>
                 </div>
-                {fretePagoPor === "ambos" && valorFrete && Number(valorFrete) > 0 && (
+                {fretePagoPor === "ambos" && valorFrete && parseDecimal(valorFrete) > 0 && (
                   <div className="text-xs text-muted-foreground mt-1 p-2 rounded bg-background border">
-                    Empresa: <span className="font-semibold">R$ {(Number(valorFrete) / 2).toFixed(2)}</span> · Cliente: <span className="font-semibold">R$ {(Number(valorFrete) / 2).toFixed(2)}</span>
+                    Empresa: <span className="font-semibold">R$ {(parseDecimal(valorFrete) / 2).toFixed(2)}</span> · Cliente: <span className="font-semibold">R$ {(parseDecimal(valorFrete) / 2).toFixed(2)}</span>
                   </div>
                 )}
               </div>
@@ -1236,14 +1239,14 @@ export default function Vendas() {
                     <div className="relative w-24">
                       <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
                       <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
+                        type="text"
+                        inputMode="decimal"
                         className="pl-7 text-xs"
                         value={item.preco_unitario}
                         onChange={(e) => {
+                          const v = formatDecimalInput(e.target.value);
                           const updated = [...editItens];
-                          updated[i] = { ...updated[i], preco_unitario: Number(e.target.value) || 0 };
+                          updated[i] = { ...updated[i], preco_unitario: parseDecimal(v) };
                           setEditItens(updated);
                         }}
                         placeholder="Unit."
@@ -1252,13 +1255,13 @@ export default function Vendas() {
                     <div className="relative w-28">
                       <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
                       <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
+                        type="text"
+                        inputMode="decimal"
                         className="pl-7 text-xs"
                         value={(Number(item.preco_unitario) * (item.quantidade || 0)).toFixed(2)}
                         onChange={(e) => {
-                          const totalItem = Number(e.target.value) || 0;
+                          const v = formatDecimalInput(e.target.value);
+                          const totalItem = parseDecimal(v);
                           const qty = item.quantidade || 1;
                           const newUnit = qty > 0 ? totalItem / qty : 0;
                           const updated = [...editItens];
