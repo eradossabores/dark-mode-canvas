@@ -171,7 +171,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
       doc.setFontSize(6.5);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(200, 120, 0);
-      doc.text("🎁 BRINDES", w / 2, y + 2.5, { align: "center" });
+      doc.text("BRINDES", w / 2, y + 2.5, { align: "center" });
       y += 6;
 
       giftItems.forEach(i => {
