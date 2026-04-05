@@ -949,7 +949,7 @@ export default function Vendas() {
                       <span>Subtotal Produtos:</span>
                       <span>R$ {itens.reduce((sum, item) => {
                         const qty = vendaPorPacote ? (item.quantidade || 0) * factoryUnidadesPorSaco : (item.quantidade || 0);
-                        return sum + (Number(item.preco_unitario) || 0) * qty;
+                        return sum + (parseDecimal(String(item.preco_unitario)) || 0) * qty;
                       }, 0).toFixed(2)}</span>
                     </div>
                     {parseDecimal(valorFrete) > 0 && (
