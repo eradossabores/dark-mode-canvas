@@ -244,6 +244,8 @@ export default function Vendas() {
     setVendas((v.data || []).map((vd: any) => ({ ...vd, totalUnidades: unitsMap[vd.id] || 0, pedido_status: pedidoStatusMap[vd.id] || null, pedido_tipo: pedidoTipoMap[vd.id] || null })));
   }
 
+  function parseDecimal(v: string): number { return Number(v.replace(",", ".")) || 0; }
+  function formatDecimalInput(v: string): string { return v.replace(/[^0-9.,]/g, ""); }
   function addItem() { setItens([...itens, { sabor_id: "", quantidade: 1, preco_unitario: "", preco_auto: false }]); }
   function removeItem(i: number) { setItens(itens.filter((_, idx) => idx !== i)); }
   function updateItem(i: number, field: string, val: any) {
