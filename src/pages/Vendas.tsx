@@ -529,6 +529,7 @@ export default function Vendas() {
       const eVPix = editDetalhePgto === "pix" ? editTotal : editDetalhePgto === "misto" ? (parseFloat(editDetalhePix.replace(",", ".")) || 0) : 0;
       const eVEsp = editDetalhePgto === "especie" ? editTotal : editDetalhePgto === "misto" ? (parseFloat(editDetalheEspecie.replace(",", ".")) || 0) : 0;
       const editFreteVal = parseFloat((editValorFrete || "0").replace(",", ".")) || 0;
+      const editFreteCliente = editFretePagoPor === "cliente" ? editFreteVal : editFretePagoPor === "ambos" ? Math.round(editFreteVal / 2 * 100) / 100 : 0;
       const updateData: any = {
         status: editStatus, forma_pagamento: editForma, observacoes: editObs, numero_nf: editNf.trim() || null,
         created_at: `${editData.getFullYear()}-${String(editData.getMonth() + 1).padStart(2, "0")}-${String(editData.getDate()).padStart(2, "0")}T12:00:00`,
