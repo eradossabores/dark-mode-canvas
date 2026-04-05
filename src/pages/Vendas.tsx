@@ -1255,13 +1255,13 @@ export default function Vendas() {
                     <div className="relative w-28">
                       <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
                       <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
+                        type="text"
+                        inputMode="decimal"
                         className="pl-7 text-xs"
                         value={(Number(item.preco_unitario) * (item.quantidade || 0)).toFixed(2)}
                         onChange={(e) => {
-                          const totalItem = Number(e.target.value) || 0;
+                          const v = formatDecimalInput(e.target.value);
+                          const totalItem = parseDecimal(v);
                           const qty = item.quantidade || 1;
                           const newUnit = qty > 0 ? totalItem / qty : 0;
                           const updated = [...editItens];
