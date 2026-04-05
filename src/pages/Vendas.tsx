@@ -358,12 +358,27 @@ export default function Vendas() {
         .eq("factory_id", factoryId)
         .order("created_at", { ascending: false }).limit(1);
       if (latestVenda?.[0]) {
-        const totalVendaCalc = itensValidos.reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0) + (Number(valorFrete) || 0);
+        const vendaId = latestVenda[0].id;
+
+        // Fix brinde items: set preco_unitario and subtotal to 0
+        const brindeSaborIds = brindes.filter(b => Number(b.quantidade) > 0 && b.sabor_id).map(b => b.sabor_id);
+        if (brindeSaborIds.length > 0) {
+          await (supabase as any)
+            .from("venda_itens")
+            .update({ preco_unitario: 0, subtotal: 0 })
+            .eq("venda_id", vendaId)
+            .in("sabor_id", brindeSaborIds);
+        }
+
+        // Recalculate total excluding brindes
+        const totalVendaCalc = itensValidos
+          .filter(i => !brindeSaborIds.includes(i.sabor_id))
+          .reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0) + (Number(valorFrete) || 0);
         const vPix = detalhePgto === "pix" ? totalVendaCalc : detalhePgto === "misto" ? (parseFloat(detalhePix.replace(",", ".")) || 0) : 0;
         const vEsp = detalhePgto === "especie" ? totalVendaCalc : detalhePgto === "misto" ? (parseFloat(detalheEspecie.replace(",", ".")) || 0) : 0;
-        const updateData: any = { forma_pagamento: formaPagamento, status: statusVenda, valor_pix: vPix, valor_especie: vEsp };
+        const updateData: any = { forma_pagamento: formaPagamento, status: statusVenda, valor_pix: vPix, valor_especie: vEsp, total: totalVendaCalc };
         if (numeroNf.trim()) updateData.numero_nf = numeroNf.trim();
-        await (supabase as any).from("vendas").update(updateData).eq("id", latestVenda[0].id);
+        await (supabase as any).from("vendas").update(updateData).eq("id", vendaId);
       }
 
       // Atualizar a data se diferente de hoje
@@ -381,7 +396,8 @@ export default function Vendas() {
 
       // Auditoria - lançamento de venda
       const clienteNome = clientes.find(c => c.id === clienteId)?.nome || "?";
-      const totalVenda = itensValidos.reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0);
+      const brindeSaborIdsAudit = brindes.filter(b => Number(b.quantidade) > 0 && b.sabor_id).map(b => b.sabor_id);
+      const totalVenda = itensValidos.filter(i => !brindeSaborIdsAudit.includes(i.sabor_id)).reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0);
       await (supabase as any).from("auditoria").insert({
         usuario_nome: "sistema",
         modulo: "vendas",
