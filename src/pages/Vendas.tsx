@@ -1239,14 +1239,14 @@ export default function Vendas() {
                     <div className="relative w-24">
                       <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
                       <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
+                        type="text"
+                        inputMode="decimal"
                         className="pl-7 text-xs"
                         value={item.preco_unitario}
                         onChange={(e) => {
+                          const v = formatDecimalInput(e.target.value);
                           const updated = [...editItens];
-                          updated[i] = { ...updated[i], preco_unitario: Number(e.target.value) || 0 };
+                          updated[i] = { ...updated[i], preco_unitario: parseDecimal(v) };
                           setEditItens(updated);
                         }}
                         placeholder="Unit."
