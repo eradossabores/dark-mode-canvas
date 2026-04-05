@@ -396,7 +396,8 @@ export default function Vendas() {
 
       // Auditoria - lançamento de venda
       const clienteNome = clientes.find(c => c.id === clienteId)?.nome || "?";
-      const totalVenda = itensValidos.reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0);
+      const brindeSaborIdsAudit = brindes.filter(b => Number(b.quantidade) > 0 && b.sabor_id).map(b => b.sabor_id);
+      const totalVenda = itensValidos.filter(i => !brindeSaborIdsAudit.includes(i.sabor_id)).reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0);
       await (supabase as any).from("auditoria").insert({
         usuario_nome: "sistema",
         modulo: "vendas",
