@@ -87,6 +87,9 @@ export default function PlanoSemanal() {
   const [aiResumo, setAiResumo] = useState<string | null>(null);
   const [aiAtivo, setAiAtivo] = useState(false);
   const [aiJustificativas, setAiJustificativas] = useState<Record<string, Record<number, { confianca: string; justificativa: string }>>>({});
+  const [autorizando, setAutorizando] = useState(false);
+  const [showAutorizarConfirm, setShowAutorizarConfirm] = useState(false);
+  const [planoStatus, setPlanoStatus] = useState<string>("rascunho");
 
   const mondayOfWeek = useMemo(() => {
     const now = new Date();
