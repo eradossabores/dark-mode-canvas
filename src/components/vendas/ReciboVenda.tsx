@@ -69,7 +69,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
 
   function gerarPDFDoc(): jsPDF | null {
     if (!data) return null;
-    const doc = new jsPDF({ unit: "mm", format: [80, 240] });
+    const doc = new jsPDF({ unit: "mm", format: [80, 280] });
     const w = 80;
     let y = 4;
 
