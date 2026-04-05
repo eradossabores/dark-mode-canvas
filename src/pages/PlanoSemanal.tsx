@@ -252,7 +252,77 @@ export default function PlanoSemanal() {
     const suggested = gerarSugestao(sabores, estoque, mediaDiaria, gelosPorLote, vendasPorDia);
     setItens(suggested);
     setPlanoId(null);
+    setAiAtivo(false);
+    setAiResumo(null);
+    setAiJustificativas({});
     toast({ title: "Sugestão regenerada! ✨" });
+  }
+
+  async function consultarIA() {
+    setAiLoading(true);
+    setAiResumo(null);
+    setAiJustificativas({});
+    try {
+      const saboresPayload = sabores.map(s => ({
+        id: s.id,
+        nome: s.nome,
+        estoqueAtual: estoque[s.id] || 0,
+        vendas7d: vendas7d[s.id] || 0,
+        mediaDiaria: mediaDiaria[s.id] || 0,
+        gelosPorLote: gelosPorLote[s.id] || 84,
+      }));
+
+      const { data, error } = await supabase.functions.invoke("suggest-producao-semanal", {
+        body: { sabores_analise: saboresPayload, factory_id: factoryId },
+      });
+
+      if (error) throw error;
+
+      if (data?.error) {
+        toast({ title: "Erro da IA", description: data.error, variant: "destructive" });
+        return;
+      }
+
+      const plano: any[] = data?.plano || [];
+      setAiResumo(data?.resumo || null);
+      setAiAtivo(true);
+
+      // Convert AI plan to PlanItems
+      const newItens: PlanItem[] = [];
+      const justMap: Record<string, Record<number, { confianca: string; justificativa: string }>> = {};
+
+      plano.forEach((item: any) => {
+        if (item.lotes <= 0) return;
+        const sabor = sabores.find(s => 
+          s.nome.toLowerCase() === item.sabor_nome?.toLowerCase() ||
+          s.nome.toLowerCase().includes(item.sabor_nome?.toLowerCase() || "___")
+        );
+        if (!sabor) return;
+        const gpl = gelosPorLote[sabor.id] || 84;
+        newItens.push({
+          id: crypto.randomUUID(),
+          sabor_id: sabor.id,
+          dia_semana: item.dia_semana,
+          quantidade: item.lotes * gpl,
+        });
+        if (!justMap[sabor.id]) justMap[sabor.id] = {};
+        justMap[sabor.id][item.dia_semana] = {
+          confianca: item.confianca || "media",
+          justificativa: item.justificativa || "",
+        };
+      });
+
+      setItens(newItens);
+      setAiJustificativas(justMap);
+      setPlanoId(null);
+
+      toast({ title: "🤖 Plano semanal da IA aplicado!", description: data?.resumo });
+    } catch (e: any) {
+      console.error("Erro ao consultar IA:", e);
+      toast({ title: "Erro ao consultar IA", description: e.message, variant: "destructive" });
+    } finally {
+      setAiLoading(false);
+    }
   }
 
   const totalPorSabor = useMemo(() => {
