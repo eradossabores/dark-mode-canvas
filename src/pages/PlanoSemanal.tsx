@@ -563,6 +563,62 @@ export default function PlanoSemanal() {
     return { label: "OK", icon: CheckCircle2, className: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" };
   }
 
+  async function gerarRelatorioPDF(compartilhar = false) {
+    const headers = ["Dia", "Data", "Sabor", "Lotes", "Unidades"];
+    const rows: (string | number)[][] = [];
+    
+    DIAS_SEMANA.forEach(dia => {
+      const diaItens = itensPorDia[dia.value] || [];
+      if (diaItens.length === 0) return;
+      const diaDate = getDateForDia(dia.value);
+      const dateStr = diaDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+      diaItens.forEach(item => {
+        const nome = getSaborNome(item.sabor_id);
+        const gpl = gelosPorLote[item.sabor_id] || 84;
+        const lotes = Math.round(item.quantidade / gpl);
+        rows.push([dia.label, dateStr, nome, lotes, item.quantidade]);
+      });
+    });
+
+    const totals = [
+      { label: "Total Sabores", value: String(saboresUnicos) },
+      { label: "Total Lotes", value: String(totalLotes) },
+      { label: "Total Unidades", value: totalGeral.toLocaleString("pt-BR") },
+      { label: "Dias Produção", value: String(diasComProducao) },
+    ];
+
+    const pdfBranding: PDFBranding = {
+      factoryName: factoryName || undefined,
+      factoryLogoUrl: branding?.logoUrl || undefined,
+    };
+
+    const filename = `plano-semanal-${mondayOfWeek.toISOString().slice(0, 10)}`;
+
+    await exportToPDF(
+      `Plano Semanal - ${semanaLabel}`,
+      headers, rows, filename, totals, undefined, pdfBranding
+    );
+
+    if (compartilhar) {
+      const texto = encodeURIComponent(
+        `📋 *Plano Semanal de Produção*\n${semanaLabel}\n\n` +
+        `📦 ${totalLotes} lotes | ❄️ ${totalGeral.toLocaleString("pt-BR")} unidades | 🍧 ${saboresUnicos} sabores\n\n` +
+        DIAS_SEMANA.filter(d => (itensPorDia[d.value] || []).length > 0).map(dia => {
+          const diaItens = itensPorDia[dia.value] || [];
+          const diaDate = getDateForDia(dia.value);
+          const items = diaItens.map(item => {
+            const nome = getSaborNome(item.sabor_id);
+            const gpl = gelosPorLote[item.sabor_id] || 84;
+            return `  • ${nome}: ${Math.round(item.quantidade / gpl)} lote(s) (${item.quantidade} un)`;
+          }).join("\n");
+          return `*${dia.label} ${diaDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}*\n${items}`;
+        }).join("\n\n") +
+        `\n\n_${factoryName || "ICETECH"} - Sistema de Gestão_`
+      );
+      window.open(`https://wa.me/?text=${texto}`, "_blank");
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
