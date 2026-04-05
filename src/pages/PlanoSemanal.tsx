@@ -83,6 +83,10 @@ export default function PlanoSemanal() {
   const [gelosPorLote, setGelosPorLote] = useState<Record<string, number>>({});
   const [sugestaoGerada, setSugestaoGerada] = useState(false);
   const [vendasPorDia, setVendasPorDia] = useState<Record<number, Record<string, number>>>({});
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResumo, setAiResumo] = useState<string | null>(null);
+  const [aiAtivo, setAiAtivo] = useState(false);
+  const [aiJustificativas, setAiJustificativas] = useState<Record<string, Record<number, { confianca: string; justificativa: string }>>>({});
 
   const mondayOfWeek = useMemo(() => {
     const now = new Date();
