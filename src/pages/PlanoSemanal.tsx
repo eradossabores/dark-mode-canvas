@@ -413,9 +413,6 @@ export default function PlanoSemanal() {
     }
   }
 
-  const [autorizando, setAutorizando] = useState(false);
-  const [showAutorizarConfirm, setShowAutorizarConfirm] = useState(false);
-  const [planoStatus, setPlanoStatus] = useState<string>("rascunho");
 
   // Track plan status
   useEffect(() => {
