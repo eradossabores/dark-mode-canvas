@@ -386,9 +386,10 @@ export default function Suporte() {
       </div>
 
       <Tabs defaultValue="tickets" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="tickets" className="gap-1.5"><Ticket className="h-4 w-4" />Tickets</TabsTrigger>
           <TabsTrigger value="chat" className="gap-1.5"><MessageCircle className="h-4 w-4" />Chat</TabsTrigger>
+          <TabsTrigger value="videoaulas" className="gap-1.5"><PlayCircle className="h-4 w-4" />Videoaulas</TabsTrigger>
           <TabsTrigger value="faq" className="gap-1.5"><HelpCircle className="h-4 w-4" />FAQ</TabsTrigger>
         </TabsList>
 
