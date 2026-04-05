@@ -982,16 +982,26 @@ export default function Vendas() {
                     </div>
                     {parseDecimal(valorFrete) > 0 && (
                       <div className="flex justify-between items-center text-sm">
-                        <span>Frete ({fretePagoPor === "empresa" ? "empresa" : "cliente"}):</span>
+                        <span>Frete ({fretePagoPor === "empresa" ? "🏭 empresa" : fretePagoPor === "ambos" ? "🤝 50/50" : "👤 cliente"}):</span>
                         <span>R$ {parseDecimal(valorFrete).toFixed(2)}</span>
+                      </div>
+                    )}
+                    {parseDecimal(valorFrete) > 0 && fretePagoPor !== "cliente" && (
+                      <div className="flex justify-between items-center text-xs text-muted-foreground">
+                        <span>{fretePagoPor === "empresa" ? "Frete cobrado da empresa (despesa)" : `Cliente paga R$ ${(parseDecimal(valorFrete) / 2).toFixed(2)} · Empresa paga R$ ${(parseDecimal(valorFrete) / 2).toFixed(2)}`}</span>
                       </div>
                     )}
                     <div className="flex justify-between items-center">
                       <span>Total da Venda:</span>
-                      <span className="text-lg">R$ {(itens.reduce((sum, item) => {
-                        const qty = vendaPorPacote ? (item.quantidade || 0) * factoryUnidadesPorSaco : (item.quantidade || 0);
-                        return sum + (parseDecimal(String(item.preco_unitario)) || 0) * qty;
-                      }, 0) + (parseDecimal(valorFrete) || 0)).toFixed(2)}</span>
+                      <span className="text-lg">R$ {(() => {
+                        const subtotalProd = itens.reduce((sum, item) => {
+                          const qty = vendaPorPacote ? (item.quantidade || 0) * factoryUnidadesPorSaco : (item.quantidade || 0);
+                          return sum + (parseDecimal(String(item.preco_unitario)) || 0) * qty;
+                        }, 0);
+                        const frete = parseDecimal(valorFrete) || 0;
+                        const freteNaComanda = fretePagoPor === "cliente" ? frete : fretePagoPor === "ambos" ? Math.round(frete / 2 * 100) / 100 : 0;
+                        return (subtotalProd + freteNaComanda).toFixed(2);
+                      })()}</span>
                     </div>
                     {brindes.filter(b => Number(b.quantidade) > 0 && b.sabor_id).map((b, i) => (
                       <div key={i} className="flex justify-between items-center text-sm text-primary">
