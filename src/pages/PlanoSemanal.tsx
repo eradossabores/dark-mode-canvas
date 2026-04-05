@@ -598,12 +598,36 @@ export default function PlanoSemanal() {
                         );
                       }
 
+                      const aiInfo = aiJustificativas[item.sabor_id]?.[item.dia_semana];
+
                       return (
                         <motion.div key={item.id} layout initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 8 }}
-                          className="flex items-center gap-2.5 rounded-xl px-3 py-2 bg-muted/40 group hover:bg-muted/60 transition-all cursor-default">
+                          className={`flex items-center gap-2.5 rounded-xl px-3 py-2 group hover:bg-muted/60 transition-all cursor-default ${aiInfo ? "bg-violet-500/5 border border-violet-500/10" : "bg-muted/40"}`}>
                           <div className="h-3 w-3 rounded-full shrink-0 ring-2 ring-offset-1 ring-offset-background" style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}40` }} />
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold truncate leading-tight">{nome}</p>
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-sm font-semibold truncate leading-tight">{nome}</p>
+                              {aiInfo && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className={`inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                                        aiInfo.confianca === "alta" ? "bg-emerald-500/10 text-emerald-600" :
+                                        aiInfo.confianca === "media" ? "bg-amber-500/10 text-amber-600" :
+                                        "bg-red-500/10 text-red-500"
+                                      }`}>
+                                        <Bot className="h-2.5 w-2.5" />
+                                        {aiInfo.confianca === "alta" ? "🟢" : aiInfo.confianca === "media" ? "🟡" : "🔴"}
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="max-w-[200px]">
+                                      <p className="text-xs font-medium">{aiInfo.justificativa}</p>
+                                      <p className="text-[10px] text-muted-foreground mt-0.5">Confiança: {aiInfo.confianca}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                            </div>
                             <p className="text-[11px] text-muted-foreground">{lotes} lote(s) · {item.quantidade} un</p>
                           </div>
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
