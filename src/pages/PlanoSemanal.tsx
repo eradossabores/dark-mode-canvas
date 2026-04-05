@@ -490,11 +490,45 @@ export default function PlanoSemanal() {
       )}
 
       {/* Action buttons */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2 items-center">
         <Button variant="outline" size="sm" className="rounded-full" onClick={regenerarSugestao}>
-          <Sparkles className="h-4 w-4 mr-1.5" /> Regenerar Sugestão
+          <Sparkles className="h-4 w-4 mr-1.5" /> Sugestão Automática
         </Button>
+        <Button
+          size="sm"
+          className="rounded-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-md"
+          onClick={consultarIA}
+          disabled={aiLoading || sabores.length === 0}
+        >
+          {aiLoading ? (
+            <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> Consultando IA...</>
+          ) : (
+            <><Brain className="h-4 w-4 mr-1.5" /> Sugestão com IA</>
+          )}
+        </Button>
+        {aiAtivo && (
+          <Badge className="bg-violet-500/10 text-violet-600 border-violet-500/20 gap-1">
+            <Bot className="h-3 w-3" /> IA ativa
+          </Badge>
+        )}
       </div>
+
+      {/* AI Resume */}
+      {aiResumo && (
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
+          <Card className="bg-gradient-to-r from-violet-500/5 to-purple-500/5 border-violet-500/20">
+            <CardContent className="py-3 px-4 flex items-start gap-3">
+              <div className="h-8 w-8 rounded-full bg-violet-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                <Bot className="h-4 w-4 text-violet-600" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-violet-600 mb-0.5">Análise da IA</p>
+                <p className="text-sm text-foreground">{aiResumo}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Weekly grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
