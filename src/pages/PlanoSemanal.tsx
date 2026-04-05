@@ -782,10 +782,13 @@ export default function PlanoSemanal() {
                               </SelectContent>
                             </Select>
                             <div className="flex items-center gap-2">
-                              <Input type="number" min={0} value={item.quantidade}
-                                onChange={e => updateItem(item.id, "quantidade", parseInt(e.target.value) || 0)}
+                              <Input type="number" min={1} value={Math.round(item.quantidade / gpl) || 1}
+                                onChange={e => {
+                                  const lotes = parseInt(e.target.value) || 1;
+                                  updateItem(item.id, "quantidade", lotes * gpl);
+                                }}
                                 className="h-8 text-xs text-center flex-1 rounded-lg" />
-                              <span className="text-[10px] text-muted-foreground">un</span>
+                              <span className="text-[10px] text-muted-foreground">lote(s)</span>
                               <Button variant="default" size="icon" className="h-7 w-7 rounded-full" onClick={() => toggleEditing(item.id)}>
                                 <Check className="h-3.5 w-3.5" />
                               </Button>
