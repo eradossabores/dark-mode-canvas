@@ -21,13 +21,13 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { motion, AnimatePresence } from "framer-motion";
 
 const DIAS_SEMANA = [
-  { value: 1, label: "Segunda", short: "Seg" },
-  { value: 2, label: "Terça", short: "Ter" },
-  { value: 3, label: "Quarta", short: "Qua" },
-  { value: 4, label: "Quinta", short: "Qui" },
-  { value: 5, label: "Sexta", short: "Sex" },
-  { value: 6, label: "Sábado", short: "Sáb" },
-  { value: 0, label: "Domingo", short: "Dom" },
+  { value: 1, label: "Segunda", short: "Seg", gradient: "from-blue-500/15 to-blue-600/5", border: "border-blue-500/25", headerBg: "bg-blue-500/10" },
+  { value: 2, label: "Terça", short: "Ter", gradient: "from-violet-500/15 to-violet-600/5", border: "border-violet-500/25", headerBg: "bg-violet-500/10" },
+  { value: 3, label: "Quarta", short: "Qua", gradient: "from-emerald-500/15 to-emerald-600/5", border: "border-emerald-500/25", headerBg: "bg-emerald-500/10" },
+  { value: 4, label: "Quinta", short: "Qui", gradient: "from-amber-500/15 to-amber-600/5", border: "border-amber-500/25", headerBg: "bg-amber-500/10" },
+  { value: 5, label: "Sexta", short: "Sex", gradient: "from-rose-500/15 to-rose-600/5", border: "border-rose-500/25", headerBg: "bg-rose-500/10" },
+  { value: 6, label: "Sábado", short: "Sáb", gradient: "from-cyan-500/15 to-cyan-600/5", border: "border-cyan-500/25", headerBg: "bg-cyan-500/10" },
+  { value: 0, label: "Domingo", short: "Dom", gradient: "from-orange-500/15 to-orange-600/5", border: "border-orange-500/25", headerBg: "bg-orange-500/10" },
 ];
 
 const PRIORIDADE_SABORES = ["melancia", "maçã verde", "morango", "maracujá", "água de coco"];
@@ -543,9 +543,9 @@ export default function PlanoSemanal() {
 
           return (
             <motion.div key={dia.value} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}>
-              <Card className={`overflow-hidden transition-shadow hover:shadow-md ${isEmpty ? "border-dashed border-border/50" : "border-border/60"}`}>
+              <Card className={`overflow-hidden transition-shadow hover:shadow-md bg-gradient-to-b ${dia.gradient} ${isEmpty ? "border-dashed border-border/50" : dia.border}`}>
                 {/* Day header */}
-                <div className="flex items-center justify-between px-4 pt-3 pb-1">
+                <div className={`flex items-center justify-between px-4 pt-3 pb-1 ${dia.headerBg} rounded-t-lg`}>
                   <div>
                     <h3 className="font-bold text-base">{dia.label}</h3>
                     {!isEmpty && (
@@ -554,9 +554,18 @@ export default function PlanoSemanal() {
                       </p>
                     )}
                   </div>
-                  <span className="text-xs text-muted-foreground font-medium">
-                    {diaDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    {!isEmpty && (
+                      <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full hover:bg-destructive/10"
+                        onClick={() => setItens(prev => prev.filter(i => i.dia_semana !== dia.value))}
+                        title="Limpar dia">
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </Button>
+                    )}
+                    <span className="text-xs text-muted-foreground font-medium">
+                      {diaDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Items */}
