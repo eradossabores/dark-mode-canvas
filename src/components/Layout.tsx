@@ -220,7 +220,55 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 {group.label}
               </p>
             )}
-            {group.items.map((item) => {
+            {group.items.map((item: any) => {
+              // Has sub-items (expandable)
+              if (item.children) {
+                const childActive = item.children.some((c: any) => location.pathname === c.path);
+                return (
+                  <div key={item.label}>
+                    <div
+                      className={cn(
+                        "flex items-center gap-3 px-4 py-2 text-sm transition-colors rounded-md mx-2 cursor-default",
+                        childActive
+                          ? "text-sidebar-foreground font-semibold"
+                          : "text-sidebar-foreground/70"
+                      )}
+                    >
+                      <item.icon className="h-4 w-4 shrink-0" />
+                      {isExpanded && (
+                        <>
+                          <span className="flex-1">{item.label}</span>
+                          <ChevronRight className={cn("h-3 w-3 transition-transform", childActive && "rotate-90")} />
+                        </>
+                      )}
+                    </div>
+                    {isExpanded && (
+                      <div className="ml-4 border-l border-sidebar-border/40 pl-1 space-y-0.5">
+                        {item.children.map((child: any) => {
+                          const active = location.pathname === child.path;
+                          return (
+                            <Link
+                              key={child.path}
+                              to={child.path}
+                              onClick={() => setMobileOpen(false)}
+                              className={cn(
+                                "flex items-center gap-2.5 px-3 py-1.5 text-xs transition-colors rounded-md mx-1",
+                                active
+                                  ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold shadow-sm"
+                                  : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                              )}
+                            >
+                              <child.icon className="h-3.5 w-3.5 shrink-0" />
+                              <span>{child.label}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
               const active = location.pathname === item.path;
               return (
                 <Link
