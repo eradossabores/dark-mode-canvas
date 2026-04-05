@@ -746,19 +746,23 @@ export default function MapaEntregas() {
                       {/* Google Maps button */}
                       {p.latitude != null && p.longitude != null && (
                         <div className="pt-1 border-t border-border/50">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full h-7 text-xs gap-1"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const url = `https://www.google.com/maps/dir/?api=1&origin=${factoryCoords[0]},${factoryCoords[1]}&destination=${p.latitude},${p.longitude}&travelmode=driving`;
-                              window.open(url, "_blank");
-                            }}
+                          <a
+                            href={`https://www.google.com/maps/dir/?api=1&origin=${factoryCoords[0]},${factoryCoords[1]}&destination=${p.latitude},${p.longitude}&travelmode=driving`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
                           >
-                            <ExternalLink className="h-3 w-3" />
-                            Abrir no Google Maps
-                          </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full h-7 text-xs gap-1"
+                              type="button"
+                              asChild={false}
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                              Abrir no Google Maps
+                            </Button>
+                          </a>
                         </div>
                       )}
                       {/* Frete info */}
