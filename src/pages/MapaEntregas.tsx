@@ -105,6 +105,7 @@ export default function MapaEntregas() {
   const [filtroBairro, setFiltroBairro] = useState<string>("todos");
   const [factoryCoords, setFactoryCoords] = useState<[number, number]>([2.8195, -60.6714]);
   const [factoryName, setFactoryName] = useState("Fábrica");
+  const [factoryAddress, setFactoryAddress] = useState("");
   const [hasFactoryCoords, setHasFactoryCoords] = useState(false);
   const [savingFactoryPosition, setSavingFactoryPosition] = useState(false);
   const [routePolylines, setRoutePolylines] = useState<MapPolyline[]>([]);
