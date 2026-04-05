@@ -757,9 +757,8 @@ export default function MapaEntregas() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              const clientAddr = [p.endereco, p.bairro, p.cidade].filter(Boolean).join(", ");
-                              const originParam = factoryAddress ? encodeURIComponent(factoryAddress) : `${factoryCoords[0]},${factoryCoords[1]}`;
-                              const destParam = clientAddr ? encodeURIComponent(clientAddr) : `${p.latitude},${p.longitude}`;
+                              const originParam = `${factoryCoords[0]},${factoryCoords[1]}`;
+                              const destParam = `${p.latitude},${p.longitude}`;
                               const url = `https://www.google.com/maps/dir/?api=1&origin=${originParam}&destination=${destParam}&travelmode=driving`;
                               try {
                                 (window.top || window).open(url, "_blank", "noopener,noreferrer");
