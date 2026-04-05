@@ -55,6 +55,20 @@ interface PlanItem {
   editing?: boolean;
 }
 
+function getNextMonday(d: Date): Date {
+  const date = new Date(d);
+  const day = date.getDay();
+  // If today is Monday (day===1), use today. Otherwise, advance to next Monday.
+  if (day === 1) {
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }
+  const daysUntilMonday = day === 0 ? 1 : 8 - day;
+  date.setDate(date.getDate() + daysUntilMonday);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
 function getMonday(d: Date): Date {
   const date = new Date(d);
   const day = date.getDay();
@@ -93,7 +107,7 @@ export default function PlanoSemanal() {
 
   const mondayOfWeek = useMemo(() => {
     const now = new Date();
-    const mon = getMonday(now);
+    const mon = getNextMonday(now);
     mon.setDate(mon.getDate() + weekOffset * 7);
     return mon;
   }, [weekOffset]);
