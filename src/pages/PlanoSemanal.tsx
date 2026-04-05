@@ -433,9 +433,9 @@ export default function PlanoSemanal() {
 
           return (
             <motion.div key={dia.value} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}>
-              <Card className={`overflow-hidden transition-shadow hover:shadow-md ${isEmpty ? "border-dashed border-border/50" : "border-border/60"}`}>
+              <Card className={`overflow-hidden transition-shadow hover:shadow-md bg-gradient-to-b ${dia.gradient} ${isEmpty ? "border-dashed border-border/50" : dia.border}`}>
                 {/* Day header */}
-                <div className="flex items-center justify-between px-4 pt-3 pb-1">
+                <div className={`flex items-center justify-between px-4 pt-3 pb-1 ${dia.headerBg} rounded-t-lg`}>
                   <div>
                     <h3 className="font-bold text-base">{dia.label}</h3>
                     {!isEmpty && (
@@ -444,9 +444,18 @@ export default function PlanoSemanal() {
                       </p>
                     )}
                   </div>
-                  <span className="text-xs text-muted-foreground font-medium">
-                    {diaDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    {!isEmpty && (
+                      <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full hover:bg-destructive/10"
+                        onClick={() => setItens(prev => prev.filter(i => i.dia_semana !== dia.value))}
+                        title="Limpar dia">
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </Button>
+                    )}
+                    <span className="text-xs text-muted-foreground font-medium">
+                      {diaDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Items */}
