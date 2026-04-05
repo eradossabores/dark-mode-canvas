@@ -366,6 +366,17 @@ export default function PlanoSemanal() {
   const saboresUnicos = useMemo(() => new Set(itens.map(i => i.sabor_id)).size, [itens]);
   const diasComProducao = DIAS_SEMANA.filter(d => (itensPorDia[d.value] || []).length > 0).length;
 
+  function getDateForDia(diaSemana: number): Date {
+    const date = new Date(mondayOfWeek);
+    const offset = diaSemana === 0 ? 6 : diaSemana - 1;
+    date.setDate(mondayOfWeek.getDate() + offset);
+    return date;
+  }
+
+  function formatDateISO(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+
   async function salvarPlano() {
     setSaving(true);
     try {
@@ -396,6 +407,114 @@ export default function PlanoSemanal() {
       toast({ title: "Erro ao salvar", description: e.message, variant: "destructive" });
     } finally {
       setSaving(false);
+    }
+  }
+
+  const [autorizando, setAutorizando] = useState(false);
+  const [showAutorizarConfirm, setShowAutorizarConfirm] = useState(false);
+  const [planoStatus, setPlanoStatus] = useState<string>("rascunho");
+
+  // Track plan status
+  useEffect(() => {
+    const currentPlan = planosExistentes.find((p: any) => p.id === planoId);
+    setPlanoStatus(currentPlan?.status || "rascunho");
+  }, [planoId, planosExistentes]);
+
+  async function autorizarPlanoSemanal() {
+    if (itens.length === 0) return;
+    setAutorizando(true);
+    try {
+      // First save the plan if not saved yet
+      const mondayStr = mondayOfWeek.toISOString().slice(0, 10);
+      let currentPlanoId = planoId;
+      if (!currentPlanoId) {
+        const { data, error } = await (supabase as any).from("planos_semanais").insert({
+          factory_id: factoryId, nome: planoNome, semana_inicio: mondayStr, status: "autorizado",
+        }).select().single();
+        if (error) throw error;
+        currentPlanoId = data.id;
+        setPlanoId(data.id);
+      } else {
+        await (supabase as any).from("planos_semanais").update({ status: "autorizado", nome: planoNome }).eq("id", currentPlanoId);
+        await (supabase as any).from("plano_semanal_itens").delete().eq("plano_id", currentPlanoId);
+      }
+
+      // Save plan items
+      if (itens.length > 0) {
+        const rows = itens.map(i => ({
+          plano_id: currentPlanoId, factory_id: factoryId,
+          sabor_id: i.sabor_id, dia_semana: i.dia_semana, quantidade: i.quantidade,
+        }));
+        await (supabase as any).from("plano_semanal_itens").insert(rows);
+      }
+
+      // Group items by day and sabor (merge same sabor on same day)
+      const grouped: Record<string, { sabor_id: string; dia_semana: number; quantidade: number }> = {};
+      itens.forEach(i => {
+        const key = `${i.dia_semana}-${i.sabor_id}`;
+        if (!grouped[key]) grouped[key] = { sabor_id: i.sabor_id, dia_semana: i.dia_semana, quantidade: 0 };
+        grouped[key].quantidade += i.quantidade;
+      });
+
+      // Create decisoes_producao for each day
+      const decisoesRows = Object.values(grouped).map(item => {
+        const diaDate = getDateForDia(item.dia_semana);
+        const dateStr = formatDateISO(diaDate);
+        const alvoIso = `${dateStr}T08:00:00-03:00`;
+        const gpl = gelosPorLote[item.sabor_id] || 84;
+        const lotes = Math.max(1, Math.round(item.quantidade / gpl));
+        const saborNome = getSaborNome(item.sabor_id);
+
+        return {
+          dia_semana: item.dia_semana,
+          sabor_id: item.sabor_id,
+          sabor_nome: saborNome,
+          estoque_no_momento: estoque[item.sabor_id] || 0,
+          vendas_7d: vendas7d[item.sabor_id] || 0,
+          media_diaria: mediaDiaria[item.sabor_id] || 0,
+          dias_cobertura: mediaDiaria[item.sabor_id] ? Math.round((estoque[item.sabor_id] || 0) / mediaDiaria[item.sabor_id]) : 0,
+          lotes_sugeridos: lotes,
+          lotes_autorizados: lotes,
+          operador: "Plano Semanal",
+          created_at: alvoIso,
+          ...(factoryId ? { factory_id: factoryId } : {}),
+        };
+      });
+
+      // Delete any existing decisoes for these dates (to avoid duplicates)
+      const uniqueDates = [...new Set(Object.values(grouped).map(item => {
+        const diaDate = getDateForDia(item.dia_semana);
+        return formatDateISO(diaDate);
+      }))];
+
+      for (const dateStr of uniqueDates) {
+        const inicioHoje = `${dateStr}T00:00:00-03:00`;
+        const fimHoje = `${dateStr}T23:59:59-03:00`;
+        let delQ = (supabase as any)
+          .from("decisoes_producao")
+          .delete()
+          .gte("created_at", inicioHoje)
+          .lte("created_at", fimHoje)
+          .eq("operador", "Plano Semanal");
+        if (factoryId) delQ = delQ.eq("factory_id", factoryId);
+        await delQ;
+      }
+
+      // Insert all decisoes
+      const { error: decError } = await (supabase as any).from("decisoes_producao").insert(decisoesRows);
+      if (decError) throw decError;
+
+      setPlanoStatus("autorizado");
+      setShowAutorizarConfirm(false);
+      toast({ 
+        title: "✅ Plano semanal autorizado!", 
+        description: `${decisoesRows.length} decisões de produção criadas para ${uniqueDates.length} dia(s). Elas aparecerão no Plano Diário de cada data.`,
+      });
+      fetchData();
+    } catch (e: any) {
+      toast({ title: "Erro ao autorizar", description: e.message, variant: "destructive" });
+    } finally {
+      setAutorizando(false);
     }
   }
 
