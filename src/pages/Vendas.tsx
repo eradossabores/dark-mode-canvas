@@ -602,8 +602,8 @@ export default function Vendas() {
     setDataVenda(new Date());
     setStatusVenda("pendente");
     setIgnorarEstoque(false);
-    setValorFrete("");
-    setFretePagoPor("cliente");
+    setValorFrete(Number(v.valor_frete || 0) > 0 ? String(v.valor_frete) : "");
+    setFretePagoPor(v.frete_pago_por || "cliente");
     setBrindes([]);
     setVendaPorPacote(false);
     setDetalhePgto("especie");
