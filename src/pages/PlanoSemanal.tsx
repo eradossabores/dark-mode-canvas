@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,10 +12,11 @@ import { toast } from "@/hooks/use-toast";
 import {
   CalendarDays, Plus, Trash2, Save, ArrowLeft, Pencil,
   TrendingDown, AlertTriangle, CheckCircle2,
-  Copy, BarChart3, Sparkles, Snowflake, Package, X, Check
+  Copy, BarChart3, Sparkles, Package, X, Check, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { motion, AnimatePresence } from "framer-motion";
 
 const DIAS_SEMANA = [
   { value: 1, label: "Segunda", short: "Seg" },
@@ -33,6 +34,7 @@ const SABOR_COLORS: Record<string, string> = {
   melancia: "#ef4444", "maçã verde": "#22c55e", morango: "#f43f5e",
   maracujá: "#f59e0b", "água de coco": "#06b6d4", "bob marley": "#a3e635",
   abacaxi: "#eab308", limão: "#84cc16", pitaya: "#d946ef", "blue ice": "#3b82f6",
+  "gelo azul": "#3b82f6", "tadala": "#8b5cf6",
 };
 
 function getSaborColor(nome: string): string {
@@ -41,21 +43,6 @@ function getSaborColor(nome: string): string {
     if (lower.includes(key)) return color;
   }
   return "#8b5cf6";
-}
-
-function ProgressRing({ progress, color, size = 48 }: { progress: number; color: string; size?: number }) {
-  const stroke = 4;
-  const radius = (size - stroke) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (Math.min(progress, 100) / 100) * circumference;
-  return (
-    <svg width={size} height={size} className="transform -rotate-90">
-      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="hsl(var(--muted))" strokeWidth={stroke} />
-      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={color} strokeWidth={stroke}
-        strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={offset}
-        className="transition-all duration-700 ease-out" />
-    </svg>
-  );
 }
 
 interface PlanItem {
@@ -135,7 +122,6 @@ export default function PlanoSemanal() {
       (estoqueRes.data || []).forEach((e: any) => { estoqueMap[e.sabor_id] = e.quantidade; });
       setEstoque(estoqueMap);
 
-      // Gelos por lote map
       const gplMap: Record<string, number> = {};
       (receitasRes.data || []).forEach((r: any) => { gplMap[r.sabor_id] = r.gelos_por_lote; });
       setGelosPorLote(gplMap);
@@ -174,7 +160,6 @@ export default function PlanoSemanal() {
       } else {
         setPlanoId(null);
         setPlanoNome("Plano Semanal");
-        // Auto-suggest
         const suggested = gerarSugestao(saboresData, estoqueMap, md, gplMap, vpd);
         setItens(suggested);
         setSugestaoGerada(true);
@@ -187,17 +172,12 @@ export default function PlanoSemanal() {
   }
 
   function gerarSugestao(
-    saboresData: any[],
-    estoqueMap: Record<string, number>,
-    md: Record<string, number>,
-    gplMap: Record<string, number>,
+    saboresData: any[], estoqueMap: Record<string, number>,
+    md: Record<string, number>, gplMap: Record<string, number>,
     vpd: Record<number, Record<string, number>>
   ): PlanItem[] {
     const items: PlanItem[] = [];
-    // Production days: Mon-Fri (1-5)
     const diasProducao = [1, 2, 3, 4, 5];
-
-    // Sort sabores: priority first, then by demand
     const sorted = [...saboresData].sort((a, b) => {
       const aPri = PRIORIDADE_SABORES.findIndex(p => a.nome.toLowerCase().includes(p));
       const bPri = PRIORIDADE_SABORES.findIndex(p => b.nome.toLowerCase().includes(p));
@@ -206,46 +186,33 @@ export default function PlanoSemanal() {
       if (aIdx !== bIdx) return aIdx - bIdx;
       return (md[b.id] || 0) - (md[a.id] || 0);
     });
-
-    // For each sabor with demand, distribute across days
     sorted.forEach(sabor => {
       const media = md[sabor.id] || 0;
-      if (media === 0 && (estoqueMap[sabor.id] || 0) > 50) return; // Skip low-demand with high stock
-
+      if (media === 0 && (estoqueMap[sabor.id] || 0) > 50) return;
       const estoqueAtual = estoqueMap[sabor.id] || 0;
       const demandaSemanal = media * 7;
       const deficit = Math.max(0, demandaSemanal - estoqueAtual);
-
-      if (deficit <= 0 && estoqueAtual > demandaSemanal * 1.5) return; // Plenty of stock
-
+      if (deficit <= 0 && estoqueAtual > demandaSemanal * 1.5) return;
       const gpl = gplMap[sabor.id] || 84;
       const lotesNecessarios = Math.max(1, Math.ceil(deficit / gpl));
       const unidadesTotal = lotesNecessarios * gpl;
-
       if (unidadesTotal === 0) return;
-
-      // Find best days based on day-of-week sales pattern
       const diasComVendas = diasProducao
         .map(d => ({ dia: d, vendas: vpd[d]?.[sabor.id] || 0 }))
         .sort((a, b) => b.vendas - a.vendas);
-
-      // Distribute across 1-3 days depending on volume
       const numDias = lotesNecessarios <= 1 ? 1 : Math.min(3, lotesNecessarios);
       const lotesPorDia = Math.ceil(lotesNecessarios / numDias);
-
       let lotesRestantes = lotesNecessarios;
       for (let i = 0; i < numDias && lotesRestantes > 0; i++) {
         const lotes = Math.min(lotesPorDia, lotesRestantes);
         items.push({
-          id: crypto.randomUUID(),
-          sabor_id: sabor.id,
+          id: crypto.randomUUID(), sabor_id: sabor.id,
           dia_semana: diasComVendas[i % diasComVendas.length].dia,
           quantidade: lotes * gpl,
         });
         lotesRestantes -= lotes;
       }
     });
-
     return items;
   }
 
@@ -261,13 +228,11 @@ export default function PlanoSemanal() {
   function addItem(dia: number) {
     if (sabores.length === 0) return;
     setItens(prev => [...prev, {
-      id: crypto.randomUUID(), sabor_id: sabores[0].id, dia_semana: dia, quantidade: 84, editing: true,
+      id: crypto.randomUUID(), sabor_id: sabores[0].id, dia_semana: dia, quantidade: gelosPorLote[sabores[0].id] || 84, editing: true,
     }]);
   }
 
-  function removeItem(id: string) {
-    setItens(prev => prev.filter(i => i.id !== id));
-  }
+  function removeItem(id: string) { setItens(prev => prev.filter(i => i.id !== id)); }
 
   function updateItem(id: string, field: keyof PlanItem, value: any) {
     setItens(prev => prev.map(i => i.id === id ? { ...i, [field]: value } : i));
@@ -323,13 +288,13 @@ export default function PlanoSemanal() {
   }, [itens]);
 
   const saboresUnicos = useMemo(() => new Set(itens.map(i => i.sabor_id)).size, [itens]);
+  const diasComProducao = DIAS_SEMANA.filter(d => (itensPorDia[d.value] || []).length > 0).length;
 
   async function salvarPlano() {
     setSaving(true);
     try {
       const mondayStr = mondayOfWeek.toISOString().slice(0, 10);
       let currentPlanoId = planoId;
-
       if (!currentPlanoId) {
         const { data, error } = await (supabase as any).from("planos_semanais").insert({
           factory_id: factoryId, nome: planoNome, semana_inicio: mondayStr, status: "rascunho",
@@ -341,7 +306,6 @@ export default function PlanoSemanal() {
         await (supabase as any).from("planos_semanais").update({ nome: planoNome }).eq("id", currentPlanoId);
         await (supabase as any).from("plano_semanal_itens").delete().eq("plano_id", currentPlanoId);
       }
-
       if (itens.length > 0) {
         const rows = itens.map(i => ({
           plano_id: currentPlanoId, factory_id: factoryId,
@@ -350,7 +314,6 @@ export default function PlanoSemanal() {
         const { error } = await (supabase as any).from("plano_semanal_itens").insert(rows);
         if (error) throw error;
       }
-
       toast({ title: "Plano salvo com sucesso! ✅" });
       setShowSaveDialog(false);
     } catch (e: any) {
@@ -383,12 +346,12 @@ export default function PlanoSemanal() {
     return sabores.find(s => s.id === id)?.nome || "—";
   }
 
-  function getStatusBadge(projetado: number, media: number) {
+  function getStatusInfo(projetado: number, media: number) {
     if (media === 0) return null;
     const cobertura = projetado / media;
-    if (cobertura > 14) return <Badge variant="outline" className="bg-amber-500/10 text-amber-600 text-[10px]"><AlertTriangle className="h-3 w-3 mr-1" />Excesso</Badge>;
-    if (cobertura < 3) return <Badge variant="outline" className="bg-red-500/10 text-red-600 text-[10px]"><TrendingDown className="h-3 w-3 mr-1" />Risco</Badge>;
-    return <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 text-[10px]"><CheckCircle2 className="h-3 w-3 mr-1" />OK</Badge>;
+    if (cobertura > 14) return { label: "Excesso", icon: AlertTriangle, className: "text-amber-500 bg-amber-500/10 border-amber-500/20" };
+    if (cobertura < 3) return { label: "Risco", icon: TrendingDown, className: "text-red-500 bg-red-500/10 border-red-500/20" };
+    return { label: "OK", icon: CheckCircle2, className: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" };
   }
 
   if (loading) {
@@ -400,11 +363,11 @@ export default function PlanoSemanal() {
   }
 
   return (
-    <div className="space-y-4 pb-24">
+    <div className="space-y-5 pb-28">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/painel/plano-producao")}>
+          <Button variant="ghost" size="icon" className="rounded-full" onClick={() => navigate("/painel/plano-producao")}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
@@ -412,235 +375,241 @@ export default function PlanoSemanal() {
               <CalendarDays className="h-5 w-5 text-primary" />
               Plano Semanal
             </h1>
-            <p className="text-sm text-muted-foreground">Sugestão automática de produção por dia</p>
+            <p className="text-sm text-muted-foreground">Planeje a produção da semana</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button variant="outline" size="sm" onClick={() => setWeekOffset(prev => prev - 1)}>← Anterior</Button>
-          <Badge variant="secondary" className="text-sm px-3 py-1">{semanaLabel}</Badge>
-          <Button variant="outline" size="sm" onClick={() => setWeekOffset(prev => prev + 1)}>Próxima →</Button>
+        <div className="flex items-center gap-1.5">
+          <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => setWeekOffset(prev => prev - 1)}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Badge variant="secondary" className="text-sm px-4 py-1.5 font-medium">{semanaLabel}</Badge>
+          <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => setWeekOffset(prev => prev + 1)}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
-      {/* Summary card with progress ring - like the reference image */}
+      {/* Summary Stats */}
       {itens.length > 0 && (
-        <div className="flex flex-wrap gap-3">
-          <Card className="flex-1 min-w-[180px]">
-            <CardContent className="py-3 px-4 flex items-center gap-3">
-              <div className="relative">
-                <ProgressRing progress={Math.min(100, (saboresUnicos / Math.max(1, sabores.length)) * 100)} color="hsl(var(--primary))" size={48} />
-                <Snowflake className="h-4 w-4 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-              </div>
-              <div>
-                <p className="text-lg font-bold">{saboresUnicos} sabor(es)</p>
-                <p className="text-xs text-muted-foreground">{totalLotes} lotes · {totalGeral} un</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="flex-1 min-w-[140px]">
-            <CardContent className="py-3 px-4 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                <Package className="h-5 w-5 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-lg font-bold">{totalGeral}</p>
-                <p className="text-xs text-muted-foreground">Unidades totais</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="flex-1 min-w-[140px]">
-            <CardContent className="py-3 px-4 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <CalendarDays className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-lg font-bold">{DIAS_SEMANA.filter(d => (itensPorDia[d.value] || []).length > 0).length}</p>
-                <p className="text-xs text-muted-foreground">Dias com produção</p>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: "Sabores", value: saboresUnicos, icon: "🍧", color: "from-violet-500/10 to-purple-500/10" },
+            { label: "Lotes", value: totalLotes, icon: "📦", color: "from-blue-500/10 to-cyan-500/10" },
+            { label: "Unidades", value: totalGeral.toLocaleString("pt-BR"), icon: "❄️", color: "from-emerald-500/10 to-teal-500/10" },
+            { label: "Dias", value: diasComProducao, icon: "📅", color: "from-amber-500/10 to-orange-500/10" },
+          ].map((stat, i) => (
+            <motion.div key={stat.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+              <Card className={`bg-gradient-to-br ${stat.color} border-border/40`}>
+                <CardContent className="py-3 px-4 flex items-center gap-3">
+                  <span className="text-2xl">{stat.icon}</span>
+                  <div>
+                    <p className="text-xl font-bold leading-none">{stat.value}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
         </div>
       )}
 
-      {/* Regenerate button */}
+      {/* Action buttons */}
       <div className="flex gap-2">
-        <Button variant="outline" size="sm" onClick={regenerarSugestao}>
-          <Sparkles className="h-4 w-4 mr-1" /> Regenerar Sugestão
+        <Button variant="outline" size="sm" className="rounded-full" onClick={regenerarSugestao}>
+          <Sparkles className="h-4 w-4 mr-1.5" /> Regenerar Sugestão
         </Button>
       </div>
 
       {/* Weekly grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-        {DIAS_SEMANA.map(dia => {
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+        {DIAS_SEMANA.map((dia, idx) => {
           const diaItens = itensPorDia[dia.value] || [];
           const totalDia = diaItens.reduce((s, i) => s + i.quantidade, 0);
           const lotesDia = diaItens.reduce((s, i) => s + Math.round(i.quantidade / (gelosPorLote[i.sabor_id] || 84)), 0);
           const diaDate = new Date(mondayOfWeek);
           const offset = dia.value === 0 ? 6 : dia.value - 1;
           diaDate.setDate(mondayOfWeek.getDate() + offset);
+          const isEmpty = diaItens.length === 0;
 
           return (
-            <Card key={dia.value} className="border-border/50 overflow-hidden">
-              <CardHeader className="pb-1 pt-3 px-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-semibold">{dia.label}</CardTitle>
-                  <span className="text-xs text-muted-foreground">
+            <motion.div key={dia.value} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}>
+              <Card className={`overflow-hidden transition-shadow hover:shadow-md ${isEmpty ? "border-dashed border-border/50" : "border-border/60"}`}>
+                {/* Day header */}
+                <div className="flex items-center justify-between px-4 pt-3 pb-1">
+                  <div>
+                    <h3 className="font-bold text-base">{dia.label}</h3>
+                    {!isEmpty && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {lotesDia} lote(s) · <span className="font-semibold text-foreground">{totalDia} un</span>
+                      </p>
+                    )}
+                  </div>
+                  <span className="text-xs text-muted-foreground font-medium">
                     {diaDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
                   </span>
                 </div>
-                {totalDia > 0 && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>{lotesDia} lote(s)</span>
-                    <span>·</span>
-                    <span className="font-medium text-foreground">{totalDia} un</span>
-                  </div>
-                )}
-              </CardHeader>
-              <CardContent className="px-3 pb-3 space-y-1.5">
-                {diaItens.map(item => {
-                  const nome = getSaborNome(item.sabor_id);
-                  const color = getSaborColor(nome);
-                  const gpl = gelosPorLote[item.sabor_id] || 84;
-                  const lotes = Math.round(item.quantidade / gpl);
 
-                  if (item.editing) {
-                    return (
-                      <div key={item.id} className="rounded-lg p-2 border border-primary/30 bg-primary/5 space-y-1.5">
-                        <Select value={item.sabor_id} onValueChange={v => updateItem(item.id, "sabor_id", v)}>
-                          <SelectTrigger className="h-7 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {sabores.map(s => (
-                              <SelectItem key={s.id} value={s.id} className="text-xs">{s.nome}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <div className="flex items-center gap-1.5">
-                          <Input
-                            type="number" min={0} value={item.quantidade}
-                            onChange={e => updateItem(item.id, "quantidade", parseInt(e.target.value) || 0)}
-                            className="h-7 text-xs text-center flex-1"
-                          />
-                          <span className="text-[10px] text-muted-foreground whitespace-nowrap">un</span>
-                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => toggleEditing(item.id)}>
-                            <Check className="h-3 w-3 text-emerald-600" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeItem(item.id)}>
-                            <Trash2 className="h-3 w-3 text-destructive" />
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  }
+                {/* Items */}
+                <div className="px-3 pb-3 pt-1 space-y-1.5">
+                  <AnimatePresence mode="popLayout">
+                    {diaItens.map(item => {
+                      const nome = getSaborNome(item.sabor_id);
+                      const color = getSaborColor(nome);
+                      const gpl = gelosPorLote[item.sabor_id] || 84;
+                      const lotes = Math.round(item.quantidade / gpl);
 
-                  return (
-                    <div key={item.id} className="flex items-center gap-2 rounded-lg p-1.5 bg-muted/30 group hover:bg-muted/50 transition-colors">
-                      <div className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium truncate">{nome}</p>
-                        <p className="text-[10px] text-muted-foreground">{lotes} lote(s) · {item.quantidade} un</p>
-                      </div>
-                      <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => toggleEditing(item.id)}>
-                          <Pencil className="h-2.5 w-2.5" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => removeItem(item.id)}>
-                          <X className="h-2.5 w-2.5 text-destructive" />
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })}
-                <Button variant="ghost" size="sm" className="w-full h-7 text-xs" onClick={() => addItem(dia.value)}>
-                  <Plus className="h-3 w-3 mr-1" /> Adicionar
-                </Button>
-              </CardContent>
-            </Card>
+                      if (item.editing) {
+                        return (
+                          <motion.div key={item.id} layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+                            className="rounded-xl p-2.5 border-2 border-primary/40 bg-primary/5 space-y-2">
+                            <Select value={item.sabor_id} onValueChange={v => updateItem(item.id, "sabor_id", v)}>
+                              <SelectTrigger className="h-8 text-xs rounded-lg">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {sabores.map(s => (
+                                  <SelectItem key={s.id} value={s.id} className="text-xs">{s.nome}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <div className="flex items-center gap-2">
+                              <Input type="number" min={0} value={item.quantidade}
+                                onChange={e => updateItem(item.id, "quantidade", parseInt(e.target.value) || 0)}
+                                className="h-8 text-xs text-center flex-1 rounded-lg" />
+                              <span className="text-[10px] text-muted-foreground">un</span>
+                              <Button variant="default" size="icon" className="h-7 w-7 rounded-full" onClick={() => toggleEditing(item.id)}>
+                                <Check className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button variant="destructive" size="icon" className="h-7 w-7 rounded-full" onClick={() => removeItem(item.id)}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </motion.div>
+                        );
+                      }
+
+                      return (
+                        <motion.div key={item.id} layout initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 8 }}
+                          className="flex items-center gap-2.5 rounded-xl px-3 py-2 bg-muted/40 group hover:bg-muted/60 transition-all cursor-default">
+                          <div className="h-3 w-3 rounded-full shrink-0 ring-2 ring-offset-1 ring-offset-background" style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}40`, ringColor: color }} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold truncate leading-tight">{nome}</p>
+                            <p className="text-[11px] text-muted-foreground">{lotes} lote(s) · {item.quantidade} un</p>
+                          </div>
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                            <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full hover:bg-primary/10" onClick={() => toggleEditing(item.id)}>
+                              <Pencil className="h-3 w-3 text-primary" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full hover:bg-destructive/10" onClick={() => removeItem(item.id)}>
+                              <X className="h-3 w-3 text-destructive" />
+                            </Button>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
+
+                  <Button variant="ghost" size="sm" className="w-full h-8 text-xs rounded-xl border border-dashed border-border/50 hover:border-primary/40 hover:bg-primary/5 transition-colors mt-1"
+                    onClick={() => addItem(dia.value)}>
+                    <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
+                  </Button>
+                </div>
+              </Card>
+            </motion.div>
           );
         })}
       </div>
 
-      {/* Resumo / Projeção */}
+      {/* Stock projection */}
       {itens.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <Card className="overflow-hidden">
+            <div className="px-4 pt-4 pb-2 flex items-center gap-2">
               <BarChart3 className="h-4 w-4 text-primary" />
-              Projeção de Estoque
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-2 px-2 font-medium text-muted-foreground">Sabor</th>
-                    <th className="text-center py-2 px-1 font-medium text-muted-foreground text-xs">Estoque</th>
-                    <th className="text-center py-2 px-1 font-medium text-muted-foreground text-xs">+Produção</th>
-                    <th className="text-center py-2 px-1 font-medium text-muted-foreground text-xs">-Vendas (proj.)</th>
-                    <th className="text-center py-2 px-1 font-medium text-muted-foreground text-xs">= Projetado</th>
-                    <th className="text-center py-2 px-1 font-medium text-muted-foreground text-xs">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Object.entries(totalPorSabor)
-                    .sort(([, a], [, b]) => b - a)
-                    .map(([saborId, total]) => {
-                      const nome = getSaborNome(saborId);
-                      const estoqueAtual = estoque[saborId] || 0;
-                      const proj = estoqueProjetado[saborId] || 0;
-                      const media = mediaDiaria[saborId] || 0;
-                      const vendasProj = media * 7;
-
-                      return (
-                        <tr key={saborId} className="border-b border-border/30">
-                          <td className="py-2 px-2 flex items-center gap-2">
-                            <div className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: getSaborColor(nome) }} />
-                            <span className="font-medium truncate">{nome}</span>
-                          </td>
-                          <td className="text-center py-2 px-1 text-muted-foreground">{estoqueAtual}</td>
-                          <td className="text-center py-2 px-1"><span className="text-emerald-600 font-medium">+{total}</span></td>
-                          <td className="text-center py-2 px-1"><span className="text-red-500">-{Math.round(vendasProj)}</span></td>
-                          <td className="text-center py-2 px-1">
-                            <span className={`font-bold ${proj < 0 ? "text-red-600" : "text-foreground"}`}>{Math.round(proj)}</span>
-                          </td>
-                          <td className="text-center py-2 px-1">{getStatusBadge(proj, media)}</td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
+              <h3 className="font-bold text-base">Projeção de Estoque</h3>
             </div>
-          </CardContent>
-        </Card>
+            <CardContent className="px-0 pb-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/30">
+                      <th className="text-left py-2.5 px-4 font-medium text-muted-foreground text-xs">Sabor</th>
+                      <th className="text-center py-2.5 px-2 font-medium text-muted-foreground text-xs">Estoque</th>
+                      <th className="text-center py-2.5 px-2 font-medium text-muted-foreground text-xs">+ Produção</th>
+                      <th className="text-center py-2.5 px-2 font-medium text-muted-foreground text-xs">- Vendas</th>
+                      <th className="text-center py-2.5 px-2 font-medium text-muted-foreground text-xs">= Projetado</th>
+                      <th className="text-center py-2.5 px-2 font-medium text-muted-foreground text-xs">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(totalPorSabor)
+                      .sort(([, a], [, b]) => b - a)
+                      .map(([saborId, total]) => {
+                        const nome = getSaborNome(saborId);
+                        const color = getSaborColor(nome);
+                        const estoqueAtual = estoque[saborId] || 0;
+                        const proj = estoqueProjetado[saborId] || 0;
+                        const media = mediaDiaria[saborId] || 0;
+                        const vendasProj = media * 7;
+                        const status = getStatusInfo(proj, media);
+
+                        return (
+                          <tr key={saborId} className="border-b border-border/20 hover:bg-muted/20 transition-colors">
+                            <td className="py-2.5 px-4">
+                              <div className="flex items-center gap-2">
+                                <div className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                                <span className="font-medium text-sm">{nome}</span>
+                              </div>
+                            </td>
+                            <td className="text-center py-2.5 px-2 text-muted-foreground tabular-nums">{estoqueAtual}</td>
+                            <td className="text-center py-2.5 px-2 tabular-nums"><span className="text-emerald-600 font-semibold">+{total}</span></td>
+                            <td className="text-center py-2.5 px-2 tabular-nums"><span className="text-red-500 font-medium">-{Math.round(vendasProj)}</span></td>
+                            <td className="text-center py-2.5 px-2 tabular-nums">
+                              <span className={`font-bold ${proj < 0 ? "text-red-600" : "text-foreground"}`}>{Math.round(proj)}</span>
+                            </td>
+                            <td className="text-center py-2.5 px-2">
+                              {status && (
+                                <Badge variant="outline" className={`text-[10px] ${status.className}`}>
+                                  <status.icon className="h-3 w-3 mr-0.5" />{status.label}
+                                </Badge>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
       )}
 
-      {/* Planos salvos */}
+      {/* Saved plans */}
       {planosExistentes.length > 0 && (
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Planos Salvos</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
+          <div className="px-4 pt-4 pb-2">
+            <h3 className="font-bold text-sm text-muted-foreground uppercase tracking-wider">Planos Salvos</h3>
+          </div>
+          <CardContent className="space-y-2 pt-0">
             {planosExistentes.map(p => (
-              <div key={p.id} className={`flex items-center justify-between p-2 rounded-lg border ${p.id === planoId ? "border-primary bg-primary/5" : "border-border/50"}`}>
+              <div key={p.id} className={`flex items-center justify-between p-3 rounded-xl border transition-colors ${p.id === planoId ? "border-primary/50 bg-primary/5" : "border-border/40 hover:bg-muted/30"}`}>
                 <div>
-                  <p className="text-sm font-medium">{p.nome}</p>
+                  <p className="text-sm font-semibold">{p.nome}</p>
                   <p className="text-xs text-muted-foreground">
-                    Semana: {new Date(p.semana_inicio + "T00:00:00").toLocaleDateString("pt-BR")}
+                    {new Date(p.semana_inicio + "T00:00:00").toLocaleDateString("pt-BR")}
                     {" · "}<Badge variant="outline" className="text-[10px]">{p.status}</Badge>
                   </p>
                 </div>
-                <div className="flex gap-1">
-                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => {
+                <div className="flex gap-1.5">
+                  <Button variant="outline" size="sm" className="h-7 text-xs rounded-full" onClick={() => {
                     const mon = new Date(p.semana_inicio + "T00:00:00");
                     const currentMon = getMonday(new Date());
                     const diff = Math.round((mon.getTime() - currentMon.getTime()) / (7 * 24 * 60 * 60 * 1000));
                     setWeekOffset(diff);
                   }}>Carregar</Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDeleteConfirm(p.id)}>
-                    <Trash2 className="h-3 w-3 text-destructive" />
+                  <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full hover:bg-destructive/10" onClick={() => setDeleteConfirm(p.id)}>
+                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
                   </Button>
                 </div>
               </div>
@@ -649,14 +618,17 @@ export default function PlanoSemanal() {
         </Card>
       )}
 
-      {/* Floating bar */}
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-card border rounded-xl shadow-lg px-4 py-2">
-        <Button variant="outline" size="sm" onClick={duplicarPlano} disabled={itens.length === 0}>
-          <Copy className="h-4 w-4 mr-1" /> Duplicar
-        </Button>
-        <Button size="sm" onClick={() => setShowSaveDialog(true)} disabled={itens.length === 0}>
-          <Save className="h-4 w-4 mr-1" /> Salvar Plano
-        </Button>
+      {/* Floating action bar */}
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
+        <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }}
+          className="flex items-center gap-2 bg-card/95 backdrop-blur-md border border-border/50 rounded-2xl shadow-xl px-4 py-2.5">
+          <Button variant="outline" size="sm" className="rounded-full" onClick={duplicarPlano} disabled={itens.length === 0}>
+            <Copy className="h-4 w-4 mr-1.5" /> Duplicar
+          </Button>
+          <Button size="sm" className="rounded-full shadow-sm" onClick={() => setShowSaveDialog(true)} disabled={itens.length === 0}>
+            <Save className="h-4 w-4 mr-1.5" /> Salvar Plano
+          </Button>
+        </motion.div>
       </div>
 
       {/* Save dialog */}
@@ -666,10 +638,10 @@ export default function PlanoSemanal() {
           <div className="space-y-3">
             <div>
               <Label>Nome do plano</Label>
-              <Input value={planoNome} onChange={e => setPlanoNome(e.target.value)} />
+              <Input value={planoNome} onChange={e => setPlanoNome(e.target.value)} className="mt-1" />
             </div>
             <p className="text-sm text-muted-foreground">
-              Semana: {semanaLabel} · {totalGeral} unidades · {saboresUnicos} sabores
+              Semana: {semanaLabel} · {totalGeral} un · {saboresUnicos} sabores
             </p>
           </div>
           <DialogFooter>
