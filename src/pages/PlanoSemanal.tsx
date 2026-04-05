@@ -919,7 +919,7 @@ export default function PlanoSemanal() {
                   <p className="text-sm font-semibold">{p.nome}</p>
                   <p className="text-xs text-muted-foreground">
                     {new Date(p.semana_inicio + "T00:00:00").toLocaleDateString("pt-BR")}
-                    {" · "}<Badge variant="outline" className="text-[10px]">{p.status}</Badge>
+                    {" · "}<Badge variant="outline" className={`text-[10px] ${p.status === "autorizado" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : ""}`}>{p.status === "autorizado" ? "✅ Autorizado" : p.status}</Badge>
                   </p>
                 </div>
                 <div className="flex gap-1.5">
