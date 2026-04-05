@@ -923,13 +923,12 @@ export default function Vendas() {
                     <div className="relative w-24">
                       <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
                       <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
+                        type="text"
+                        inputMode="decimal"
                         className={cn("pl-7 text-xs", item.preco_auto && "bg-muted/50")}
                         value={item.preco_unitario}
-                        onChange={(e) => updateItem(i, "preco_unitario", e.target.value)}
-                        placeholder="0.00"
+                        onChange={(e) => updateItem(i, "preco_unitario", formatDecimalInput(e.target.value))}
+                        placeholder="0,00"
                       />
                     </div>
                     <Button size="icon" variant="ghost" onClick={() => removeItem(i)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
