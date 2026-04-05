@@ -364,11 +364,10 @@ export default function PlanoSemanal() {
     sabores.forEach(s => {
       const atual = estoque[s.id] || 0;
       const prod = totalPorSabor[s.id] || 0;
-      const vendasProjetadas = (mediaDiaria[s.id] || 0) * 7;
-      map[s.id] = atual + prod - vendasProjetadas;
+      map[s.id] = atual + prod;
     });
     return map;
-  }, [sabores, estoque, totalPorSabor, mediaDiaria]);
+  }, [sabores, estoque, totalPorSabor]);
 
   const itensPorDia = useMemo(() => {
     const map: Record<number, PlanItem[]> = {};
