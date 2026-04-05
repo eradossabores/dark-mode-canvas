@@ -364,11 +364,10 @@ export default function PlanoSemanal() {
     sabores.forEach(s => {
       const atual = estoque[s.id] || 0;
       const prod = totalPorSabor[s.id] || 0;
-      const vendasProjetadas = (mediaDiaria[s.id] || 0) * 7;
-      map[s.id] = atual + prod - vendasProjetadas;
+      map[s.id] = atual + prod;
     });
     return map;
-  }, [sabores, estoque, totalPorSabor, mediaDiaria]);
+  }, [sabores, estoque, totalPorSabor]);
 
   const itensPorDia = useMemo(() => {
     const map: Record<number, PlanItem[]> = {};
@@ -626,7 +625,7 @@ export default function PlanoSemanal() {
       <Card className="bg-gradient-to-r from-rose-500/5 to-orange-500/5 border-border/40">
         <CardContent className="py-3 px-4">
           <p className="text-xs font-bold text-muted-foreground mb-2 flex items-center gap-1.5">
-            ❄️ ESTOQUE PROJETADO (ATUAL + PLANO − VENDAS 7D)
+            ❄️ ESTOQUE PROJETADO (ATUAL + PLANO)
           </p>
           <div className="flex flex-wrap gap-1.5">
             {sabores
@@ -671,7 +670,6 @@ export default function PlanoSemanal() {
                         <p><strong>{s.nome}</strong></p>
                         <p>Estoque atual: {s.atual}</p>
                         <p>+ Produção plano: {s.prodPlano}</p>
-                        <p>− Vendas projetadas (7d): {(mediaDiaria[s.id] || 0) * 7}</p>
                         <p className="font-bold mt-1">= Projetado: {s.projetado}</p>
                       </TooltipContent>
                     </Tooltip>
