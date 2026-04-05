@@ -122,11 +122,12 @@ export default function RelatorioVendas() {
     return Object.entries(map).map(([name, value]) => ({ name, value })).reverse();
   }, [filtered]);
 
-  const headers = ["Data", "Cliente", "Total", "Pagamento", "Status", "Operador"];
+  const headers = ["Data", "Cliente", "Total", "Frete", "Pagamento", "Status", "Operador"];
   const rows = filtered.map((v) => [
     new Date(v.created_at).toLocaleDateString("pt-BR"),
     v.clientes?.nome || "-",
     `R$ ${Number(v.total).toFixed(2)}`,
+    Number(v.valor_frete || 0) > 0 ? `R$ ${Number(v.valor_frete).toFixed(2)} (${v.frete_pago_por || "cliente"})` : "-",
     v.forma_pagamento || "-",
     v.status,
     v.operador,
