@@ -489,7 +489,69 @@ export default function PlanoSemanal() {
         </div>
       )}
 
-      {/* Action buttons */}
+      {/* Estoque Projetado Bar - like the stock summary from Estoque page */}
+      <Card className="bg-gradient-to-r from-rose-500/5 to-orange-500/5 border-border/40">
+        <CardContent className="py-3 px-4">
+          <p className="text-xs font-bold text-muted-foreground mb-2 flex items-center gap-1.5">
+            ❄️ ESTOQUE PROJETADO (ATUAL + PLANO − VENDAS 7D)
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {sabores
+              .map(s => ({
+                id: s.id,
+                nome: s.nome,
+                atual: estoque[s.id] || 0,
+                prodPlano: totalPorSabor[s.id] || 0,
+                projetado: estoqueProjetado[s.id] || 0,
+              }))
+              .sort((a, b) => b.projetado - a.projetado)
+              .map(s => {
+                const color = getSaborColor(s.nome);
+                const isZero = s.projetado <= 0;
+                const isLow = s.projetado > 0 && s.projetado < 50;
+                return (
+                  <TooltipProvider key={s.id}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge
+                          variant="outline"
+                          className={`text-xs font-semibold gap-1 px-2 py-0.5 cursor-default transition-all ${
+                            isZero ? "opacity-50 border-red-500/30 bg-red-500/5" : 
+                            isLow ? "border-amber-500/30 bg-amber-500/5" : 
+                            "border-border/50"
+                          }`}
+                        >
+                          <span
+                            className="h-2 w-2 rounded-full shrink-0"
+                            style={{ backgroundColor: color }}
+                          />
+                          <span className="truncate max-w-[80px]">{s.nome}</span>
+                          <span className={`font-bold ${isZero ? "text-red-500" : isLow ? "text-amber-500" : ""}`}>
+                            {s.projetado}
+                          </span>
+                          {s.prodPlano > 0 && (
+                            <span className="text-emerald-500 text-[10px]">+{s.prodPlano}</span>
+                          )}
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="text-xs">
+                        <p><strong>{s.nome}</strong></p>
+                        <p>Estoque atual: {s.atual}</p>
+                        <p>+ Produção plano: {s.prodPlano}</p>
+                        <p>− Vendas projetadas (7d): {(mediaDiaria[s.id] || 0) * 7}</p>
+                        <p className="font-bold mt-1">= Projetado: {s.projetado}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                );
+              })}
+            <Badge className="bg-primary/10 text-primary border-primary/20 font-bold px-3">
+              TOTAL {Object.values(estoqueProjetado).reduce((s, v) => s + Math.max(0, v), 0)}
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex flex-wrap gap-2 items-center">
         <Button variant="outline" size="sm" className="rounded-full" onClick={regenerarSugestao}>
           <Sparkles className="h-4 w-4 mr-1.5" /> Sugestão Automática
