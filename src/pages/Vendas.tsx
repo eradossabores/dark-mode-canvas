@@ -375,7 +375,7 @@ export default function Vendas() {
         // Recalculate total excluding brindes
         const totalVendaCalc = itensValidos
           .filter(i => !brindeSaborIds.includes(i.sabor_id))
-          .reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0) + (Number(valorFrete) || 0);
+          .reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0) + (parseDecimal(valorFrete) || 0);
         const vPix = detalhePgto === "pix" ? totalVendaCalc : detalhePgto === "misto" ? (parseFloat(detalhePix.replace(",", ".")) || 0) : 0;
         const vEsp = detalhePgto === "especie" ? totalVendaCalc : detalhePgto === "misto" ? (parseFloat(detalheEspecie.replace(",", ".")) || 0) : 0;
         const updateData: any = { forma_pagamento: formaPagamento, status: statusVenda, valor_pix: vPix, valor_especie: vEsp, total: totalVendaCalc };
