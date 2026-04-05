@@ -81,6 +81,7 @@ export default function RelatorioVendas() {
   const filteredItens = itens.filter((i) => filteredIds.has(i.venda_id));
 
   const faturamento = filtered.reduce((s, v) => s + Number(v.total), 0);
+  const totalFrete = filtered.reduce((s, v) => s + Number(v.valor_frete || 0), 0);
   const totalVendas = filtered.length;
   const ticketMedio = totalVendas > 0 ? faturamento / totalVendas : 0;
   const totalUnidades = filteredItens.reduce((s, i) => s + i.quantidade, 0);
