@@ -256,21 +256,37 @@ export default function MapaEntregas() {
     const cacheKey = `${from[0].toFixed(5)},${from[1].toFixed(5)}-${to[0].toFixed(5)},${to[1].toFixed(5)}`;
     if (routeCacheRef.has(cacheKey)) return routeCacheRef.get(cacheKey)!;
 
-    const coords_str = `${from[1]},${from[0]};${to[1]},${to[0]}`;
-    const OSRM_SERVERS = [
-      `https://router.project-osrm.org/route/v1/driving/${coords_str}?overview=full&geometries=geojson`,
-      `https://routing.openstreetmap.de/routed-car/route/v1/driving/${coords_str}?overview=full&geometries=geojson`,
-      `https://osrm.mapzen.com/route/v1/driving/${coords_str}?overview=full&geometries=geojson`,
+    // Try server-side proxy (edge function) first — avoids CORS and rate limiting
+    try {
+      const { data, error } = await supabase.functions.invoke("route-directions", {
+        body: { from, to },
+      });
+
+      if (!error && data?.coords?.length >= 2) {
+        const result = {
+          coords: data.coords as [number, number][],
+          distanceKm: data.distanceKm,
+          durationMin: data.durationMin,
+        };
+        routeCacheRef.set(cacheKey, result);
+        return result;
+      }
+    } catch (e) {
+      console.warn("Edge function route failed:", e);
+    }
+
+    // Client-side OSRM fallback
+    const coordsStr = `${from[1]},${from[0]};${to[1]},${to[0]}`;
+    const OSRM_URLS = [
+      `https://router.project-osrm.org/route/v1/driving/${coordsStr}?overview=full&geometries=geojson`,
+      `https://routing.openstreetmap.de/routed-car/route/v1/driving/${coordsStr}?overview=full&geometries=geojson`,
     ];
 
-    for (const url of OSRM_SERVERS) {
+    for (const url of OSRM_URLS) {
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 12000);
-        const res = await fetch(url, { 
-          signal: controller.signal,
-          headers: { 'Accept': 'application/json' },
-        });
+        const res = await fetch(url, { signal: controller.signal });
         clearTimeout(timeout);
         if (!res.ok) continue;
         const data = await res.json();
@@ -289,35 +305,14 @@ export default function MapaEntregas() {
           }
         }
       } catch (e) {
-        console.warn("OSRM attempt failed:", url.split('/route')[0], e);
+        console.warn("Client OSRM failed:", e);
       }
     }
 
-    // Fallback: curved arc with haversine distance (looks better than straight line)
+    // Final fallback: haversine straight line
     const dist = haversineDistance(from, to);
-    const midLat = (from[0] + to[0]) / 2;
-    const midLng = (from[1] + to[1]) / 2;
-    // Add perpendicular offset for visual curve
-    const dLat = to[0] - from[0];
-    const dLng = to[1] - from[1];
-    const offsetScale = 0.15;
-    const curvePoints: [number, number][] = [from];
-    const steps = 8;
-    for (let i = 1; i < steps; i++) {
-      const t = i / steps;
-      const lat = from[0] + dLat * t;
-      const lng = from[1] + dLng * t;
-      // Bell-curve offset perpendicular to route
-      const perpFactor = Math.sin(t * Math.PI) * offsetScale;
-      curvePoints.push([
-        lat + (-dLng) * perpFactor,
-        lng + dLat * perpFactor,
-      ]);
-    }
-    curvePoints.push(to);
-
     const result = {
-      coords: curvePoints,
+      coords: [from, to],
       distanceKm: Math.round(dist * 10) / 10,
       durationMin: Math.round((dist / 30) * 60),
     };
