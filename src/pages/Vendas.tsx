@@ -375,14 +375,36 @@ export default function Vendas() {
         }
 
         // Recalculate total excluding brindes
-        const totalVendaCalc = itensValidos
+        const totalProdutos = itensValidos
           .filter(i => !brindeSaborIds.includes(i.sabor_id))
-          .reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0) + (parseDecimal(valorFrete) || 0);
+          .reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0);
+        const freteTotal = parseDecimal(valorFrete) || 0;
+        // Frete: cliente paga → soma no total; empresa paga → despesa; ambos → 50/50
+        const freteCliente = fretePagoPor === "cliente" ? freteTotal : fretePagoPor === "ambos" ? Math.round(freteTotal / 2 * 100) / 100 : 0;
+        const freteEmpresa = fretePagoPor === "empresa" ? freteTotal : fretePagoPor === "ambos" ? Math.round(freteTotal / 2 * 100) / 100 : 0;
+        const totalVendaCalc = totalProdutos + freteCliente;
         const vPix = detalhePgto === "pix" ? totalVendaCalc : detalhePgto === "misto" ? (parseFloat(detalhePix.replace(",", ".")) || 0) : 0;
         const vEsp = detalhePgto === "especie" ? totalVendaCalc : detalhePgto === "misto" ? (parseFloat(detalheEspecie.replace(",", ".")) || 0) : 0;
-        const updateData: any = { forma_pagamento: formaPagamento, status: statusVenda, valor_pix: vPix, valor_especie: vEsp, total: totalVendaCalc, valor_frete: parseDecimal(valorFrete) || 0, frete_pago_por: fretePagoPor };
+        const updateData: any = { forma_pagamento: formaPagamento, status: statusVenda, valor_pix: vPix, valor_especie: vEsp, total: totalVendaCalc, valor_frete: freteTotal, frete_pago_por: fretePagoPor };
         if (numeroNf.trim()) updateData.numero_nf = numeroNf.trim();
         await (supabase as any).from("vendas").update(updateData).eq("id", vendaId);
+
+        // Se empresa paga frete (total ou parcial), registrar despesa
+        if (freteEmpresa > 0) {
+          const clienteNomeFrete = clientes.find(c => c.id === clienteId)?.nome || "?";
+          await (supabase as any).from("contas_a_pagar").insert({
+            descricao: `Frete - Venda para ${clienteNomeFrete}`,
+            tipo: "avulso",
+            valor_parcela: freteEmpresa,
+            valor_total: freteEmpresa,
+            total_parcelas: 1,
+            parcela_atual: 1,
+            pago_mes: true,
+            ativa: false,
+            responsavel: "Frete",
+            factory_id: factoryId,
+          });
+        }
       }
 
       // Atualizar a data se diferente de hoje
@@ -507,6 +529,7 @@ export default function Vendas() {
       const eVPix = editDetalhePgto === "pix" ? editTotal : editDetalhePgto === "misto" ? (parseFloat(editDetalhePix.replace(",", ".")) || 0) : 0;
       const eVEsp = editDetalhePgto === "especie" ? editTotal : editDetalhePgto === "misto" ? (parseFloat(editDetalheEspecie.replace(",", ".")) || 0) : 0;
       const editFreteVal = parseFloat((editValorFrete || "0").replace(",", ".")) || 0;
+      const editFreteCliente = editFretePagoPor === "cliente" ? editFreteVal : editFretePagoPor === "ambos" ? Math.round(editFreteVal / 2 * 100) / 100 : 0;
       const updateData: any = {
         status: editStatus, forma_pagamento: editForma, observacoes: editObs, numero_nf: editNf.trim() || null,
         created_at: `${editData.getFullYear()}-${String(editData.getMonth() + 1).padStart(2, "0")}-${String(editData.getDate()).padStart(2, "0")}T12:00:00`,
@@ -576,7 +599,7 @@ export default function Vendas() {
           }
         }
       }
-      await (supabase as any).from("vendas").update({ total: newTotal + editFreteVal }).eq("id", editVenda.id);
+      await (supabase as any).from("vendas").update({ total: newTotal + editFreteCliente }).eq("id", editVenda.id);
 
       toast({ title: "Venda atualizada!" });
       setEditOpen(false);
@@ -960,16 +983,26 @@ export default function Vendas() {
                     </div>
                     {parseDecimal(valorFrete) > 0 && (
                       <div className="flex justify-between items-center text-sm">
-                        <span>Frete ({fretePagoPor === "empresa" ? "empresa" : "cliente"}):</span>
+                        <span>Frete ({fretePagoPor === "empresa" ? "🏭 empresa" : fretePagoPor === "ambos" ? "🤝 50/50" : "👤 cliente"}):</span>
                         <span>R$ {parseDecimal(valorFrete).toFixed(2)}</span>
+                      </div>
+                    )}
+                    {parseDecimal(valorFrete) > 0 && fretePagoPor !== "cliente" && (
+                      <div className="flex justify-between items-center text-xs text-muted-foreground">
+                        <span>{fretePagoPor === "empresa" ? "Frete cobrado da empresa (despesa)" : `Cliente paga R$ ${(parseDecimal(valorFrete) / 2).toFixed(2)} · Empresa paga R$ ${(parseDecimal(valorFrete) / 2).toFixed(2)}`}</span>
                       </div>
                     )}
                     <div className="flex justify-between items-center">
                       <span>Total da Venda:</span>
-                      <span className="text-lg">R$ {(itens.reduce((sum, item) => {
-                        const qty = vendaPorPacote ? (item.quantidade || 0) * factoryUnidadesPorSaco : (item.quantidade || 0);
-                        return sum + (parseDecimal(String(item.preco_unitario)) || 0) * qty;
-                      }, 0) + (parseDecimal(valorFrete) || 0)).toFixed(2)}</span>
+                      <span className="text-lg">R$ {(() => {
+                        const subtotalProd = itens.reduce((sum, item) => {
+                          const qty = vendaPorPacote ? (item.quantidade || 0) * factoryUnidadesPorSaco : (item.quantidade || 0);
+                          return sum + (parseDecimal(String(item.preco_unitario)) || 0) * qty;
+                        }, 0);
+                        const frete = parseDecimal(valorFrete) || 0;
+                        const freteNaComanda = fretePagoPor === "cliente" ? frete : fretePagoPor === "ambos" ? Math.round(frete / 2 * 100) / 100 : 0;
+                        return (subtotalProd + freteNaComanda).toFixed(2);
+                      })()}</span>
                     </div>
                     {brindes.filter(b => Number(b.quantidade) > 0 && b.sabor_id).map((b, i) => (
                       <div key={i} className="flex justify-between items-center text-sm text-primary">
@@ -1286,7 +1319,12 @@ export default function Vendas() {
                 ))}
                 <div className="flex justify-between items-center mt-2 pt-2 border-t font-semibold text-sm">
                   <span>Novo Total:</span>
-                  <span>R$ {(editItens.filter((it) => it.sabor_id && it.quantidade > 0).reduce((sum, it) => sum + Number(it.preco_unitario) * (it.quantidade || 0), 0) + (parseFloat((editValorFrete || "0").replace(",", ".")) || 0)).toFixed(2)}</span>
+                  <span>R$ {(() => {
+                    const subtotal = editItens.filter((it) => it.sabor_id && it.quantidade > 0).reduce((sum, it) => sum + Number(it.preco_unitario) * (it.quantidade || 0), 0);
+                    const frete = parseFloat((editValorFrete || "0").replace(",", ".")) || 0;
+                    const freteNaComanda = editFretePagoPor === "cliente" ? frete : editFretePagoPor === "ambos" ? Math.round(frete / 2 * 100) / 100 : 0;
+                    return (subtotal + freteNaComanda).toFixed(2);
+                  })()}</span>
                 </div>
               </div>
             {/* Frete na Edição */}
