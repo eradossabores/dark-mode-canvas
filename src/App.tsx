@@ -31,6 +31,7 @@ import VerificacaoVendas from "@/pages/VerificacaoVendas";
 import GerenciarUsuarios from "@/pages/GerenciarUsuarios";
 import PrevisaoDemanda from "@/pages/PrevisaoDemanda";
 import PlanoProducaoDiario from "@/pages/PlanoProducaoDiario";
+import PlanoSemanal from "@/pages/PlanoSemanal";
 import MapaEntregas from "@/pages/MapaEntregas";
 import MapaClientes from "@/pages/MapaClientes";
 import Prospeccao from "@/pages/Prospeccao";
