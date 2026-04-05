@@ -485,6 +485,9 @@ export default function Vendas() {
       setEditDetalhePgto("especie");
       setEditDetalhePix(""); setEditDetalheEspecie("");
     }
+    // Frete
+    setEditValorFrete(Number(v.valor_frete || 0) > 0 ? String(v.valor_frete) : "");
+    setEditFretePagoPor(v.frete_pago_por || "cliente");
     // Load items
     const { data } = await (supabase as any).from("venda_itens").select("*, sabores(nome)").eq("venda_id", v.id);
     setEditItens((data || []).map((it: any) => ({ ...it, quantidade: it.quantidade })));
