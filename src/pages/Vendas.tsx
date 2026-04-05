@@ -962,7 +962,7 @@ export default function Vendas() {
                       <span>Total da Venda:</span>
                       <span className="text-lg">R$ {(itens.reduce((sum, item) => {
                         const qty = vendaPorPacote ? (item.quantidade || 0) * factoryUnidadesPorSaco : (item.quantidade || 0);
-                        return sum + (Number(item.preco_unitario) || 0) * qty;
+                        return sum + (parseDecimal(String(item.preco_unitario)) || 0) * qty;
                       }, 0) + (parseDecimal(valorFrete) || 0)).toFixed(2)}</span>
                     </div>
                     {brindes.filter(b => Number(b.quantidade) > 0 && b.sabor_id).map((b, i) => (
