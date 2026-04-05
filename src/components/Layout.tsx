@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Package, Users, ShoppingCart, Factory,
-  Warehouse, ClipboardList, UserCog, BarChart3, FileUp, DollarSign, Monitor, ShoppingBag, Database, LogOut, Shield, Brain, MapPin, Map, Target, HardDrive, UserCheck, Crown, MessageCircle, Settings
+  Warehouse, ClipboardList, UserCog, BarChart3, FileUp, DollarSign, Monitor, ShoppingBag, Database, LogOut, Shield, Brain, MapPin, Map, Target, HardDrive, UserCheck, Crown, MessageCircle, Settings, CalendarDays
 } from "lucide-react";
 import PaymentBanner from "@/components/PaymentBanner";
 import { AnimatedMenuToggle } from "@/components/ui/animated-menu-toggle";
@@ -30,6 +30,7 @@ const menuGroups = [
     label: "Produção",
     items: [
       { path: "/painel/plano-producao", label: "Plano Diário", icon: Factory },
+      { path: "/painel/plano-semanal", label: "Plano Semanal", icon: CalendarDays },
       { path: "/painel/producao", label: "Produção", icon: Factory },
       { path: "/painel/monitor-producao", label: "Monitor Produção", icon: Monitor },
       { path: "/painel/presenca", label: "Presença", icon: UserCheck },

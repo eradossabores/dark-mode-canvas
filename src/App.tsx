@@ -31,6 +31,7 @@ import VerificacaoVendas from "@/pages/VerificacaoVendas";
 import GerenciarUsuarios from "@/pages/GerenciarUsuarios";
 import PrevisaoDemanda from "@/pages/PrevisaoDemanda";
 import PlanoProducaoDiario from "@/pages/PlanoProducaoDiario";
+import PlanoSemanal from "@/pages/PlanoSemanal";
 import MapaEntregas from "@/pages/MapaEntregas";
 import MapaClientes from "@/pages/MapaClientes";
 import Prospeccao from "@/pages/Prospeccao";
@@ -102,6 +103,7 @@ const App = () => (
               <Route path="/painel/mapa-clientes" element={<AdminRoute><MapaClientes /></AdminRoute>} />
               <Route path="/painel/prospeccao" element={<AdminRoute><Prospeccao /></AdminRoute>} />
               <Route path="/painel/plano-producao" element={<AdminRoute><PlanoProducaoDiario /></AdminRoute>} />
+              <Route path="/painel/plano-semanal" element={<AdminRoute><PlanoSemanal /></AdminRoute>} />
                <Route path="/painel/backup" element={<AdminRoute><Backup /></AdminRoute>} />
                <Route path="/painel/configurar" element={<AdminRoute><ConfigurarFabrica /></AdminRoute>} />
                <Route path="/painel/suporte" element={<ProdRoute><Suporte /></ProdRoute>} />

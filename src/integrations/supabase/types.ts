@@ -1345,6 +1345,96 @@ export type Database = {
           },
         ]
       }
+      plano_semanal_itens: {
+        Row: {
+          created_at: string
+          dia_semana: number
+          factory_id: string | null
+          id: string
+          plano_id: string
+          quantidade: number
+          sabor_id: string
+        }
+        Insert: {
+          created_at?: string
+          dia_semana: number
+          factory_id?: string | null
+          id?: string
+          plano_id: string
+          quantidade?: number
+          sabor_id: string
+        }
+        Update: {
+          created_at?: string
+          dia_semana?: number
+          factory_id?: string | null
+          id?: string
+          plano_id?: string
+          quantidade?: number
+          sabor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plano_semanal_itens_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plano_semanal_itens_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "planos_semanais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plano_semanal_itens_sabor_id_fkey"
+            columns: ["sabor_id"]
+            isOneToOne: false
+            referencedRelation: "sabores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planos_semanais: {
+        Row: {
+          created_at: string
+          factory_id: string | null
+          id: string
+          nome: string
+          semana_inicio: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          factory_id?: string | null
+          id?: string
+          nome?: string
+          semana_inicio: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          factory_id?: string | null
+          id?: string
+          nome?: string
+          semana_inicio?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planos_semanais_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       presenca_producao: {
         Row: {
           confirmado_por: string | null
