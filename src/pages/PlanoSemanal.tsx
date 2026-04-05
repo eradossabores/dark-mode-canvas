@@ -1014,7 +1014,13 @@ export default function PlanoSemanal() {
       {/* Floating action bar */}
       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
         <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }}
-          className="flex items-center gap-2 bg-card/95 backdrop-blur-md border border-border/50 rounded-2xl shadow-xl px-4 py-2.5">
+          className="flex items-center gap-2 bg-card/95 backdrop-blur-md border border-border/50 rounded-2xl shadow-xl px-4 py-2.5 flex-wrap justify-center">
+          <Button variant="outline" size="sm" className="rounded-full" onClick={() => gerarRelatorioPDF(false)} disabled={itens.length === 0}>
+            <FileText className="h-4 w-4 mr-1.5" /> PDF
+          </Button>
+          <Button variant="outline" size="sm" className="rounded-full" onClick={() => gerarRelatorioPDF(true)} disabled={itens.length === 0}>
+            <Share2 className="h-4 w-4 mr-1.5" /> WhatsApp
+          </Button>
           <Button variant="outline" size="sm" className="rounded-full" onClick={duplicarPlano} disabled={itens.length === 0}>
             <Copy className="h-4 w-4 mr-1.5" /> Duplicar
           </Button>
