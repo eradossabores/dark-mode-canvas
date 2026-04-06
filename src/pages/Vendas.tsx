@@ -1348,7 +1348,7 @@ export default function Vendas() {
                           const preco = await fetchPreco(editVenda.cliente_id, item.sabor_id, totalQtd);
                           if (preco != null) {
                             const u2 = [...updated];
-                            u2[i] = { ...u2[i], preco_unitario: preco };
+                            u2[i] = { ...u2[i], preco_unitario: preco, preco_unitario_display: String(preco).replace(".", ",") };
                             setEditItens(u2);
                           }
                         }
