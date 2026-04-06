@@ -1307,7 +1307,7 @@ export default function Vendas() {
             <div>
                 <div className="flex items-center justify-between mb-2">
                   <Label className="text-base font-semibold">Itens da Venda</Label>
-                  <Button size="sm" variant="outline" onClick={() => setEditItens([...editItens, { id: null, sabor_id: "", sabores: null, quantidade: 1, preco_unitario: 0, isNew: true }])}>
+                  <Button size="sm" variant="outline" onClick={() => setEditItens([...editItens, { id: null, sabor_id: "", sabores: null, quantidade: 1, preco_unitario: 0, preco_unitario_display: "", isNew: true }])}>
                     <Plus className="h-3 w-3 mr-1" />Add Sabor
                   </Button>
                 </div>
