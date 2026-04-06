@@ -765,6 +765,7 @@ export type Database = {
           unidades_por_saco: number
           updated_at: string | null
           usa_sacos: boolean
+          vende_gelo_cubo: boolean
         }
         Insert: {
           bairro?: string | null
@@ -785,6 +786,7 @@ export type Database = {
           unidades_por_saco?: number
           updated_at?: string | null
           usa_sacos?: boolean
+          vende_gelo_cubo?: boolean
         }
         Update: {
           bairro?: string | null
@@ -805,6 +807,7 @@ export type Database = {
           unidades_por_saco?: number
           updated_at?: string | null
           usa_sacos?: boolean
+          vende_gelo_cubo?: boolean
         }
         Relationships: []
       }
@@ -1036,6 +1039,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "funcionarios_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gelo_cubo_precos: {
+        Row: {
+          created_at: string
+          factory_id: string
+          id: string
+          preco: number
+          tamanho: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          factory_id: string
+          id?: string
+          preco?: number
+          tamanho: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          factory_id?: string
+          id?: string
+          preco?: number
+          tamanho?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gelo_cubo_precos_factory_id_fkey"
             columns: ["factory_id"]
             isOneToOne: false
             referencedRelation: "factories"
@@ -2029,6 +2067,54 @@ export type Database = {
             columns: ["factory_id"]
             isOneToOne: false
             referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venda_gelo_cubo_itens: {
+        Row: {
+          created_at: string
+          factory_id: string | null
+          id: string
+          preco_unitario: number
+          quantidade: number
+          subtotal: number
+          tamanho: string
+          venda_id: string
+        }
+        Insert: {
+          created_at?: string
+          factory_id?: string | null
+          id?: string
+          preco_unitario: number
+          quantidade?: number
+          subtotal: number
+          tamanho: string
+          venda_id: string
+        }
+        Update: {
+          created_at?: string
+          factory_id?: string | null
+          id?: string
+          preco_unitario?: number
+          quantidade?: number
+          subtotal?: number
+          tamanho?: string
+          venda_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venda_gelo_cubo_itens_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venda_gelo_cubo_itens_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vendas"
             referencedColumns: ["id"]
           },
         ]
