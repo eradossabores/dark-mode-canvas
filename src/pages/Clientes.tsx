@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +24,8 @@ const emptyForm = {
   latitude: "", longitude: "",
 };
 
+const TAMANHOS_CUBO = ["2kg", "4kg", "5kg"] as const;
+
 export default function Clientes() {
   const navigate = useNavigate();
   const { factoryId } = useAuth();
@@ -37,11 +39,21 @@ export default function Clientes() {
   const [historicoCliente, setHistoricoCliente] = useState<{ id: string; nome: string } | null>(null);
   const PAGE_SIZE = 20;
 
+  // Gelo cubo config
+  const [vendeGeloCubo, setVendeGeloCubo] = useState(false);
+  const [geloCuboPrecos, setGeloCuboPrecos] = useState<Record<string, string>>({ "2kg": "", "4kg": "", "5kg": "" });
+
   const clientesFiltrados = clientes.filter((c) =>
     c.nome?.toLowerCase().includes(busca.toLowerCase())
   );
 
-  useEffect(() => { loadData(); }, [factoryId]);
+  useEffect(() => { loadData(); loadFactoryConfig(); }, [factoryId]);
+
+  async function loadFactoryConfig() {
+    if (!factoryId) return;
+    const { data } = await (supabase as any).from("factories").select("vende_gelo_cubo").eq("id", factoryId).single();
+    setVendeGeloCubo(data?.vende_gelo_cubo || false);
+  }
 
   async function loadData() {
     let q = (supabase as any).from("clientes").select("*").order("nome");
@@ -53,10 +65,11 @@ export default function Clientes() {
   function openNew() {
     setEditingId(null);
     setForm({ ...emptyForm });
+    setGeloCuboPrecos({ "2kg": "", "4kg": "", "5kg": "" });
     setOpen(true);
   }
 
-  function openEdit(c: any) {
+  async function openEdit(c: any) {
     setEditingId(c.id);
     setForm({
       nome: c.nome || "", telefone: c.telefone || "", email: c.email || "",
@@ -69,6 +82,22 @@ export default function Clientes() {
       latitude: c.latitude != null ? String(c.latitude) : "",
       longitude: c.longitude != null ? String(c.longitude) : "",
     });
+
+    // Load client cube prices
+    if (vendeGeloCubo) {
+      const { data: cuboPrecos } = await (supabase as any)
+        .from("cliente_gelo_cubo_preco")
+        .select("tamanho, preco")
+        .eq("cliente_id", c.id);
+      const map: Record<string, string> = { "2kg": "", "4kg": "", "5kg": "" };
+      if (cuboPrecos) {
+        cuboPrecos.forEach((p: any) => { map[p.tamanho] = String(p.preco).replace(".", ","); });
+      }
+      setGeloCuboPrecos(map);
+    } else {
+      setGeloCuboPrecos({ "2kg": "", "4kg": "", "5kg": "" });
+    }
+
     setOpen(true);
   }
 
@@ -82,7 +111,6 @@ export default function Clientes() {
       payload.latitude = payload.latitude ? Number(payload.latitude) : null;
       payload.longitude = payload.longitude ? Number(payload.longitude) : null;
 
-      // Sempre geocodificar quando tem endereço (novo ou editado)
       if (hasAddressForGeocoding(payload)) {
         const coords = await geocodeClienteAddress(payload);
         if (coords) {
@@ -94,18 +122,47 @@ export default function Clientes() {
         }
       }
 
+      let clienteId = editingId;
+
       if (editingId) {
         const { error } = await (supabase as any).from("clientes").update(payload).eq("id", editingId);
         if (error) throw error;
         toast({ title: "Cliente atualizado!" });
       } else {
         if (factoryId) payload.factory_id = factoryId;
-        await insertRow("clientes", payload);
+        const { data: newCliente, error } = await (supabase as any).from("clientes").insert(payload).select("id").single();
+        if (error) throw error;
+        clienteId = newCliente?.id;
         toast({ title: "Cliente cadastrado!" });
       }
+
+      // Save gelo cubo prices
+      if (vendeGeloCubo && clienteId) {
+        for (const tam of TAMANHOS_CUBO) {
+          const val = geloCuboPrecos[tam]?.replace(",", ".");
+          const preco = parseFloat(val);
+          if (val && !isNaN(preco) && preco > 0) {
+            await (supabase as any)
+              .from("cliente_gelo_cubo_preco")
+              .upsert(
+                { cliente_id: clienteId, factory_id: factoryId, tamanho: tam, preco },
+                { onConflict: "cliente_id,tamanho" }
+              );
+          } else {
+            // Remove if empty
+            await (supabase as any)
+              .from("cliente_gelo_cubo_preco")
+              .delete()
+              .eq("cliente_id", clienteId)
+              .eq("tamanho", tam);
+          }
+        }
+      }
+
       setOpen(false);
       setForm({ ...emptyForm });
       setEditingId(null);
+      setGeloCuboPrecos({ "2kg": "", "4kg": "", "5kg": "" });
       loadData();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
@@ -204,6 +261,36 @@ export default function Clientes() {
               <div><Label>ID do Freezer</Label><Input value={form.freezer_identificacao} onChange={(e) => setForm({ ...form, freezer_identificacao: e.target.value })} /></div>
             )}
             <div><Label>Preço Padrão Personalizado (R$)</Label><Input type="number" step="0.01" value={form.preco_padrao_personalizado} onChange={(e) => setForm({ ...form, preco_padrao_personalizado: e.target.value })} /></div>
+
+            {/* Gelo em Cubos - Preço por cliente */}
+            {vendeGeloCubo && (
+              <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">🧊</span>
+                  <div>
+                    <h4 className="text-sm font-semibold">Preço Gelo em Cubos</h4>
+                    <p className="text-xs text-muted-foreground">Deixe em branco para usar o preço padrão da fábrica</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  {TAMANHOS_CUBO.map((tam) => (
+                    <div key={tam} className="text-center space-y-1">
+                      <Badge variant="outline" className="text-xs">{tam}</Badge>
+                      <div className="flex items-center gap-1 justify-center">
+                        <span className="text-xs text-muted-foreground">R$</span>
+                        <Input
+                          className="h-8 w-20 text-center text-sm font-medium"
+                          placeholder="0,00"
+                          value={geloCuboPrecos[tam]}
+                          onChange={(e) => setGeloCuboPrecos(prev => ({ ...prev, [tam]: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-2">
               <div><Label>Latitude</Label><Input type="number" step="0.0001" placeholder="Ex: 2.8195" value={form.latitude} onChange={(e) => setForm({ ...form, latitude: e.target.value })} /></div>
               <div><Label>Longitude</Label><Input type="number" step="0.0001" placeholder="Ex: -60.6714" value={form.longitude} onChange={(e) => setForm({ ...form, longitude: e.target.value })} /></div>

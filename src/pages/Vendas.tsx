@@ -306,6 +306,29 @@ export default function Vendas() {
   // Recalcular preços quando cliente muda
   async function recalcPrecos(cId: string) {
     recalcPrecosTotalComanda(itens, cId);
+    // Load client-specific gelo cubo prices (override factory defaults)
+    if (factoryVendeGeloCubo && cId) {
+      try {
+        const { data: clienteCuboPrecos } = await (supabase as any)
+          .from("cliente_gelo_cubo_preco")
+          .select("tamanho, preco")
+          .eq("cliente_id", cId);
+        if (clienteCuboPrecos && clienteCuboPrecos.length > 0) {
+          const map: Record<string, number> = { ...geloCuboPrecos };
+          clienteCuboPrecos.forEach((p: any) => { map[p.tamanho] = Number(p.preco); });
+          setGeloCuboPrecos(map);
+        } else {
+          // Reset to factory defaults
+          const { data: factoryPrecos } = await (supabase as any)
+            .from("gelo_cubo_precos").select("tamanho, preco").eq("factory_id", factoryId);
+          if (factoryPrecos) {
+            const map: Record<string, number> = {};
+            factoryPrecos.forEach((p: any) => { map[p.tamanho] = Number(p.preco); });
+            setGeloCuboPrecos(map);
+          }
+        }
+      } catch { /* ignore */ }
+    }
   }
 
   async function handleSubmit() {
