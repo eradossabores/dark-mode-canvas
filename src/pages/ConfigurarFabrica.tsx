@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Settings, Save, Loader2, Package, MapPin, Users, DollarSign, Cog, Building2, Search } from "lucide-react";
+import { Settings, Save, Loader2, Package, MapPin, Users, DollarSign, Cog, Building2, Search, FileText, Eye, EyeOff, CheckCircle, XCircle, AlertTriangle, RefreshCw } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
