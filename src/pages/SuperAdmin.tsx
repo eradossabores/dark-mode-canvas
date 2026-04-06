@@ -921,6 +921,20 @@ export default function SuperAdmin() {
                         </div>
                       )}
 
+                      {/* NFE Toggle */}
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground flex items-center gap-1"><FileText className="h-3.5 w-3.5" /> Nota Fiscal</span>
+                        <Switch
+                          checked={!!factory.emite_nfe}
+                          onCheckedChange={async (checked) => {
+                            const { error } = await (supabase as any).from("factories").update({ emite_nfe: checked }).eq("id", factory.id);
+                            if (error) { toast({ title: "Erro ao atualizar NF-e", variant: "destructive" }); return; }
+                            setFactories(prev => prev.map(f => f.id === factory.id ? { ...f, emite_nfe: checked } : f));
+                            toast({ title: checked ? "NF-e habilitada" : "NF-e desabilitada" });
+                          }}
+                        />
+                      </div>
+
                       <div className="border-t my-1" />
 
                       <Button size="sm" variant="default" className="w-full" onClick={() => {
