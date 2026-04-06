@@ -140,6 +140,39 @@ export default function MonitorUsuarios() {
     .sort(([a], [b]) => b.localeCompare(a))
     .slice(0, 30);
 
+  // Factory usage summary
+  interface FactoryUsage {
+    factory_id: string;
+    factory_name: string;
+    total_minutes: number;
+    total_sessions: number;
+    unique_users: Set<string>;
+    last_seen: string;
+  }
+  const factoryUsage: (Omit<FactoryUsage, "unique_users"> & { unique_users: number })[] = Object.values(
+    sessions.reduce<Record<string, FactoryUsage>>((acc, s) => {
+      const key = s.factory_id || "unknown";
+      if (!acc[key]) {
+        acc[key] = {
+          factory_id: key,
+          factory_name: s.factory_name || "—",
+          total_minutes: 0,
+          total_sessions: 0,
+          unique_users: new Set(),
+          last_seen: s.last_seen_at,
+        };
+      }
+      acc[key].total_minutes += s.duration_minutes;
+      acc[key].total_sessions += 1;
+      acc[key].unique_users.add(s.user_id);
+      if (new Date(s.last_seen_at) > new Date(acc[key].last_seen)) {
+        acc[key].last_seen = s.last_seen_at;
+      }
+      return acc;
+    }, {})
+  ).map((f) => ({ ...f, unique_users: f.unique_users.size }))
+   .sort((a, b) => b.total_minutes - a.total_minutes);
+
   function formatMinutes(min: number) {
     if (min < 60) return `${min}min`;
     const h = Math.floor(min / 60);
@@ -148,6 +181,57 @@ export default function MonitorUsuarios() {
   }
 
   const totalMinutes = usageSummary.reduce((a, b) => a + b.total_minutes, 0);
+
+  async function exportPDF() {
+    const { default: jsPDF } = await import("jspdf");
+    const { default: autoTable } = await import("jspdf-autotable");
+    const doc = new jsPDF();
+    const title = `Relatório de Uso — Últimos ${period} dias`;
+    const date = format(new Date(), "dd/MM/yyyy HH:mm");
+
+    doc.setFontSize(16);
+    doc.text("ICETECH — Relatório de Uso", 14, 18);
+    doc.setFontSize(10);
+    doc.text(`Período: últimos ${period} dias | Gerado em: ${date}`, 14, 26);
+
+    // Factory table
+    doc.setFontSize(12);
+    doc.text("Uso por Fábrica", 14, 36);
+    autoTable(doc, {
+      startY: 40,
+      head: [["Fábrica", "Usuários", "Sessões", "Tempo Total", "Último Acesso"]],
+      body: factoryUsage.map((f) => [
+        f.factory_name,
+        f.unique_users.toString(),
+        f.total_sessions.toString(),
+        formatMinutes(f.total_minutes),
+        format(new Date(f.last_seen), "dd/MM/yyyy HH:mm"),
+      ]),
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [30, 58, 95] },
+    });
+
+    // User ranking table
+    const finalY = (doc as any).lastAutoTable?.finalY || 80;
+    doc.setFontSize(12);
+    doc.text("Ranking de Usuários", 14, finalY + 10);
+    autoTable(doc, {
+      startY: finalY + 14,
+      head: [["#", "Usuário", "Email", "Fábrica", "Sessões", "Tempo Total"]],
+      body: usageSummary.map((u, i) => [
+        (i + 1).toString(),
+        u.user_name,
+        u.user_email,
+        u.factory_name,
+        u.total_sessions.toString(),
+        formatMinutes(u.total_minutes),
+      ]),
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [30, 58, 95] },
+    });
+
+    doc.save(`relatorio-uso-${period}dias.pdf`);
+  }
 
   return (
     <div className="space-y-6">
