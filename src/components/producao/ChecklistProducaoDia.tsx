@@ -208,7 +208,14 @@ export default function ChecklistProducaoDia({ targetDate }: ChecklistProducaoDi
     localStorage.setItem(REGISTRADOS_KEY, JSON.stringify([...newSet]));
   }
 
-  useEffect(() => { fetchDecisoes(); loadReceitaMap(); }, [hojeStr, factoryId]);
+  useEffect(() => { fetchDecisoes(); loadReceitaMap(); loadAllSabores(); }, [hojeStr, factoryId]);
+
+  async function loadAllSabores() {
+    let q = (supabase as any).from("sabores").select("id, nome").eq("ativo", true).order("nome");
+    if (factoryId) q = q.eq("factory_id", factoryId);
+    const { data } = await q;
+    setAllSabores(data || []);
+  }
 
   async function loadReceitaMap() {
     let rQ = (supabase as any).from("sabor_receita").select("sabor_id, gelos_por_lote");
