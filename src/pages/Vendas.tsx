@@ -584,7 +584,12 @@ export default function Vendas() {
     setEditFretePagoPor(v.frete_pago_por || "cliente");
     // Load items
     const { data } = await (supabase as any).from("venda_itens").select("*, sabores(nome)").eq("venda_id", v.id);
-    setEditItens((data || []).map((it: any) => ({ ...it, quantidade: it.quantidade, preco_unitario_display: String(it.preco_unitario).replace(".", ",") })));
+    // Separate brindes (price = 0) from regular items
+    const allItems = data || [];
+    const regularItems = allItems.filter((it: any) => Number(it.preco_unitario) > 0);
+    const brindeItems = allItems.filter((it: any) => Number(it.preco_unitario) === 0 && it.quantidade > 0);
+    setEditItens(regularItems.map((it: any) => ({ ...it, quantidade: it.quantidade, preco_unitario_display: String(it.preco_unitario).replace(".", ",") })));
+    setEditBrindes(brindeItems.map((it: any) => ({ sabor_id: it.sabor_id, quantidade: String(it.quantidade), id: it.id })));
     setEditOpen(true);
   }
 
