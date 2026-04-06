@@ -218,10 +218,22 @@ export default function Vendas() {
     // Load factory saco config
     if (factoryId) {
       const { data: fConfig } = await (supabase as any)
-        .from("factories").select("usa_sacos, unidades_por_saco").eq("id", factoryId).single();
+        .from("factories").select("usa_sacos, unidades_por_saco, vende_gelo_cubo").eq("id", factoryId).single();
       if (fConfig) {
         setFactoryUsaSacos(fConfig.usa_sacos || false);
         setFactoryUnidadesPorSaco(fConfig.unidades_por_saco || 50);
+        setFactoryVendeGeloCubo(fConfig.vende_gelo_cubo || false);
+      }
+
+      // Load gelo cubo prices
+      if (fConfig?.vende_gelo_cubo) {
+        const { data: cuboPrecos } = await (supabase as any)
+          .from("gelo_cubo_precos").select("tamanho, preco").eq("factory_id", factoryId);
+        if (cuboPrecos) {
+          const map: Record<string, number> = {};
+          cuboPrecos.forEach((p: any) => { map[p.tamanho] = Number(p.preco); });
+          setGeloCuboPrecos(map);
+        }
       }
     }
 
