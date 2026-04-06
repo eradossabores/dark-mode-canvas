@@ -677,6 +677,38 @@ export type Database = {
           },
         ]
       }
+      estoque_gelo_cubo: {
+        Row: {
+          factory_id: string
+          id: string
+          quantidade: number
+          tamanho: string
+          updated_at: string
+        }
+        Insert: {
+          factory_id: string
+          id?: string
+          quantidade?: number
+          tamanho: string
+          updated_at?: string
+        }
+        Update: {
+          factory_id?: string
+          id?: string
+          quantidade?: number
+          tamanho?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estoque_gelo_cubo_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       estoque_gelos: {
         Row: {
           factory_id: string | null

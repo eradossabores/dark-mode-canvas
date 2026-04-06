@@ -26,6 +26,8 @@ export default function Estoque() {
   const [freezers, setFreezers] = useState<any[]>([]);
   const [clientes, setClientes] = useState<any[]>([]);
   const [sabores, setSabores] = useState<any[]>([]);
+  const [geloCuboEstoque, setGeloCuboEstoque] = useState<any[]>([]);
+  const [vendeGeloCubo, setVendeGeloCubo] = useState(false);
 
   // Freezer dialog
   const [openFreezer, setOpenFreezer] = useState(false);
@@ -130,6 +132,16 @@ export default function Estoque() {
     });
     setEmbalagens(sortedEmb);
     setMovimentacoes(mov.data || []);
+
+    // Load gelo cubo stock
+    if (factoryId) {
+      const { data: factoryConf } = await (supabase as any).from("factories").select("vende_gelo_cubo").eq("id", factoryId).single();
+      setVendeGeloCubo(factoryConf?.vende_gelo_cubo || false);
+      if (factoryConf?.vende_gelo_cubo) {
+        const { data: cuboData } = await (supabase as any).from("estoque_gelo_cubo").select("*").eq("factory_id", factoryId).order("tamanho");
+        setGeloCuboEstoque(cuboData || []);
+      }
+    }
   }
 
   async function addFreezerStock() {
@@ -555,6 +567,7 @@ export default function Estoque() {
         <div className="overflow-x-auto -mx-1 px-1 pb-1">
           <TabsList className="flex w-max min-w-full sm:w-auto sm:flex-wrap gap-0.5">
             <TabsTrigger value="gelos" className="text-xs sm:text-sm px-2 sm:px-3">Gelos</TabsTrigger>
+            {vendeGeloCubo && <TabsTrigger value="gelo_cubo" className="text-xs sm:text-sm px-2 sm:px-3 gap-1">🧊 Cubos</TabsTrigger>}
             <TabsTrigger value="sacos" className="text-xs sm:text-sm px-2 sm:px-3 gap-1">📦 Sacos</TabsTrigger>
             <TabsTrigger value="avarias" className="text-xs sm:text-sm px-2 sm:px-3 gap-1"><AlertTriangle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />Avarias</TabsTrigger>
             <TabsTrigger value="freezers" className="text-xs sm:text-sm px-2 sm:px-3 gap-1"><Snowflake className="h-3 w-3 sm:h-3.5 sm:w-3.5" />Freezers</TabsTrigger>
@@ -617,6 +630,31 @@ export default function Estoque() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {vendeGeloCubo && (
+          <TabsContent value="gelo_cubo">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">🧊 Gelo em Cubos Filtrados</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {geloCuboEstoque.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">Nenhum estoque de gelo em cubos cadastrado. Configure em <strong>Configurar Fábrica</strong>.</p>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {geloCuboEstoque.map((item: any) => (
+                      <div key={item.id} className="rounded-xl border bg-card p-5 text-center space-y-2 hover:shadow-md transition-shadow">
+                        <Badge variant="outline" className="text-sm font-semibold">{item.tamanho}</Badge>
+                        <p className="text-3xl font-bold text-foreground">{item.quantidade}</p>
+                        <p className="text-xs text-muted-foreground">unidades em estoque</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
 
         <TabsContent value="sacos">
           <SacosTab factoryId={factoryId} />

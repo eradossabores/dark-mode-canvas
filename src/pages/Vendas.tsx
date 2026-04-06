@@ -408,7 +408,7 @@ export default function Vendas() {
         if (numeroNf.trim()) updateData.numero_nf = numeroNf.trim();
         await (supabase as any).from("vendas").update(updateData).eq("id", vendaId);
 
-        // Save gelo cubo items
+        // Save gelo cubo items and deduct stock
         if (geloCuboItens.length > 0) {
           const cuboInserts = geloCuboItens.filter(it => it.quantidade > 0).map(it => ({
             venda_id: vendaId,
@@ -420,6 +420,20 @@ export default function Vendas() {
           }));
           if (cuboInserts.length > 0) {
             await (supabase as any).from("venda_gelo_cubo_itens").insert(cuboInserts);
+            // Deduct from estoque_gelo_cubo
+            for (const ci of cuboInserts) {
+              const { data: estCubo } = await (supabase as any)
+                .from("estoque_gelo_cubo")
+                .select("id, quantidade")
+                .eq("factory_id", factoryId)
+                .eq("tamanho", ci.tamanho)
+                .single();
+              if (estCubo) {
+                await (supabase as any).from("estoque_gelo_cubo")
+                  .update({ quantidade: estCubo.quantidade - ci.quantidade, updated_at: new Date().toISOString() })
+                  .eq("id", estCubo.id);
+              }
+            }
           }
         }
 
