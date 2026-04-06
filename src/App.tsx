@@ -44,7 +44,7 @@ import Suporte from "@/pages/Suporte";
 import ConfigurarFabrica from "@/pages/ConfigurarFabrica";
 import NotFound from "@/pages/NotFound";
 import Compras from "@/pages/Compras";
-import VendasLanding from "@/pages/VendasLanding";
+import LandingPage from "@/pages/LandingPage";
 
 const queryClient = new QueryClient();
 
