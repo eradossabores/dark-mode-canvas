@@ -365,7 +365,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="fixed inset-0 z-[60] md:hidden">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
           <aside className="absolute left-0 top-0 h-full w-72 bg-card border-r border-border flex flex-col shadow-2xl animate-in slide-in-from-left duration-200">
-            {/* Header */}
             <div className="flex items-center gap-3 px-4 h-14 border-b border-border shrink-0">
               <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
                 <Factory className="h-5 w-5 text-primary-foreground" />
@@ -376,9 +375,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
-            {sidebarNav}
+            {renderSidebarNav(false)}
 
-            {/* Footer */}
             <div className="border-t border-border p-3">
               <button
                 onClick={handleLogout}
@@ -393,33 +391,56 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       )}
 
       {/* ─── DESKTOP SIDEBAR ─── */}
-      <aside className="hidden md:flex flex-col w-64 bg-card border-r border-border shrink-0">
+      <aside
+        className={cn(
+          "hidden md:flex flex-col bg-card border-r border-border shrink-0 transition-all duration-300 ease-in-out",
+          collapsed ? "w-[68px]" : "w-64"
+        )}
+      >
         {/* Header */}
-        <div className="flex items-center gap-3 px-4 h-16 border-b border-border shrink-0">
-          <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center shadow-sm">
+        <div className={cn(
+          "flex items-center h-16 border-b border-border shrink-0",
+          collapsed ? "justify-center px-2" : "gap-3 px-4"
+        )}>
+          <div className={cn(
+            "rounded-xl bg-primary flex items-center justify-center shadow-sm shrink-0",
+            collapsed ? "h-9 w-9" : "h-10 w-10"
+          )}>
             <Factory className="h-5 w-5 text-primary-foreground" />
           </div>
-          <div className="flex flex-col min-w-0">
-            <span className="font-bold text-sm truncate">{factoryName || "ICETECH"}</span>
-            <span className="text-[10px] text-muted-foreground">Sistema de Gestão</span>
-          </div>
-        </div>
-
-        {sidebarNav}
-
-        {/* Footer */}
-        <div className="border-t border-border p-3 space-y-2">
-          {factoryName && role !== "super_admin" && (
-            <div className="px-3 py-2 rounded-lg bg-muted/50 text-[11px] text-muted-foreground text-center truncate">
-              🏭 {factoryName}
+          {!collapsed && (
+            <div className="flex flex-col min-w-0">
+              <span className="font-bold text-sm truncate">{factoryName || "ICETECH"}</span>
+              <span className="text-[10px] text-muted-foreground">Sistema de Gestão</span>
             </div>
           )}
+        </div>
+
+        {renderSidebarNav(collapsed)}
+
+        {/* Footer */}
+        <div className={cn("border-t border-border space-y-1", collapsed ? "p-2" : "p-3")}>
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className={cn(
+              "flex items-center rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-150",
+              collapsed ? "justify-center p-2.5 w-full" : "gap-3 px-3 py-2.5 w-full"
+            )}
+          >
+            {collapsed
+              ? <PanelLeftOpen className="h-[18px] w-[18px]" />
+              : <><PanelLeftClose className="h-[18px] w-[18px] shrink-0" /><span>Recolher</span></>
+            }
+          </button>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all duration-150"
+            className={cn(
+              "flex items-center rounded-lg text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all duration-150",
+              collapsed ? "justify-center p-2.5 w-full" : "gap-3 px-3 py-2.5 w-full"
+            )}
           >
             <LogOut className="h-[18px] w-[18px] shrink-0" />
-            <span>Sair</span>
+            {!collapsed && <span>Sair</span>}
           </button>
         </div>
       </aside>
