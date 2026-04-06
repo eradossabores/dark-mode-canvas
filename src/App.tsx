@@ -76,7 +76,7 @@ const App = () => (
               <GlobalSearch />
               <Routes>
               {/* Public */}
-              <Route path="/" element={<Navigate to="/login" replace />} />
+              <Route path="/" element={<VendasLanding />} />
               <Route path="/login" element={<Login />} />
               <Route path="/cadastro" element={<Cadastro />} />
               <Route path="/pedir" element={<Pedir />} />
