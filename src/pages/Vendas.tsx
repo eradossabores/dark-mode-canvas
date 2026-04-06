@@ -597,9 +597,12 @@ export default function Vendas() {
     if (!editVenda) return;
     try {
       const itensValidos = editItens.filter((item) => item.sabor_id && item.quantidade > 0);
-      const itemIdsMantidos = itensValidos
-        .filter((item) => item.id && !item.isNew)
-        .map((item) => item.id);
+      const brindesValidos = editBrindes.filter(b => b.sabor_id && Number(b.quantidade) > 0);
+      const allKeptIds = [
+        ...itensValidos.filter((item) => item.id && !item.isNew).map((item) => item.id),
+        ...brindesValidos.filter(b => b.id).map(b => b.id),
+      ];
+      const itemIdsMantidos = allKeptIds;
 
       // Se mudou de paga/cancelada para pendente, resetar valor_pago
       const editTotal = itensValidos.reduce((sum: number, it: any) => sum + Number(it.preco_unitario) * (it.quantidade || 0), 0);
