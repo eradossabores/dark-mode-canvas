@@ -826,6 +826,7 @@ export type Database = {
           cidade: string | null
           cnpj: string | null
           created_at: string | null
+          emite_nfe: boolean
           endereco: string | null
           estado: string | null
           id: string
@@ -834,6 +835,8 @@ export type Database = {
           longitude: number | null
           max_collaborators: number | null
           name: string
+          nfe_api_key: string | null
+          nfe_company_id: string | null
           owner_id: string
           theme: Json | null
           unidades_por_saco: number
@@ -847,6 +850,7 @@ export type Database = {
           cidade?: string | null
           cnpj?: string | null
           created_at?: string | null
+          emite_nfe?: boolean
           endereco?: string | null
           estado?: string | null
           id?: string
@@ -855,6 +859,8 @@ export type Database = {
           longitude?: number | null
           max_collaborators?: number | null
           name: string
+          nfe_api_key?: string | null
+          nfe_company_id?: string | null
           owner_id: string
           theme?: Json | null
           unidades_por_saco?: number
@@ -868,6 +874,7 @@ export type Database = {
           cidade?: string | null
           cnpj?: string | null
           created_at?: string | null
+          emite_nfe?: boolean
           endereco?: string | null
           estado?: string | null
           id?: string
@@ -876,6 +883,8 @@ export type Database = {
           longitude?: number | null
           max_collaborators?: number | null
           name?: string
+          nfe_api_key?: string | null
+          nfe_company_id?: string | null
           owner_id?: string
           theme?: Json | null
           unidades_por_saco?: number
@@ -1272,6 +1281,78 @@ export type Database = {
             columns: ["factory_id"]
             isOneToOne: false
             referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notas_fiscais: {
+        Row: {
+          chave_acesso: string | null
+          cliente_cpf_cnpj: string | null
+          cliente_nome: string | null
+          created_at: string
+          erro_mensagem: string | null
+          factory_id: string | null
+          id: string
+          nfe_io_id: string | null
+          numero: string | null
+          pdf_url: string | null
+          serie: string | null
+          status: string
+          updated_at: string
+          valor_total: number
+          venda_id: string | null
+          xml_url: string | null
+        }
+        Insert: {
+          chave_acesso?: string | null
+          cliente_cpf_cnpj?: string | null
+          cliente_nome?: string | null
+          created_at?: string
+          erro_mensagem?: string | null
+          factory_id?: string | null
+          id?: string
+          nfe_io_id?: string | null
+          numero?: string | null
+          pdf_url?: string | null
+          serie?: string | null
+          status?: string
+          updated_at?: string
+          valor_total?: number
+          venda_id?: string | null
+          xml_url?: string | null
+        }
+        Update: {
+          chave_acesso?: string | null
+          cliente_cpf_cnpj?: string | null
+          cliente_nome?: string | null
+          created_at?: string
+          erro_mensagem?: string | null
+          factory_id?: string | null
+          id?: string
+          nfe_io_id?: string | null
+          numero?: string | null
+          pdf_url?: string | null
+          serie?: string | null
+          status?: string
+          updated_at?: string
+          valor_total?: number
+          venda_id?: string | null
+          xml_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notas_fiscais_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notas_fiscais_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vendas"
             referencedColumns: ["id"]
           },
         ]
