@@ -132,6 +132,16 @@ export default function Estoque() {
     });
     setEmbalagens(sortedEmb);
     setMovimentacoes(mov.data || []);
+
+    // Load gelo cubo stock
+    if (factoryId) {
+      const { data: factoryConf } = await (supabase as any).from("factories").select("vende_gelo_cubo").eq("id", factoryId).single();
+      setVendeGeloCubo(factoryConf?.vende_gelo_cubo || false);
+      if (factoryConf?.vende_gelo_cubo) {
+        const { data: cuboData } = await (supabase as any).from("estoque_gelo_cubo").select("*").eq("factory_id", factoryId).order("tamanho");
+        setGeloCuboEstoque(cuboData || []);
+      }
+    }
   }
 
   async function addFreezerStock() {
