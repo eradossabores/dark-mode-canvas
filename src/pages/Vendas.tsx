@@ -1035,7 +1035,8 @@ export default function Vendas() {
                         }, 0);
                         const frete = parseDecimal(valorFrete) || 0;
                         const freteNaComanda = fretePagoPor === "cliente" ? frete : fretePagoPor === "ambos" ? Math.round(frete / 2 * 100) / 100 : 0;
-                        return (subtotalProd + freteNaComanda).toFixed(2);
+                        const geloCuboTotal = geloCuboItens.reduce((s, it) => s + (geloCuboPrecos[it.tamanho] || 0) * it.quantidade, 0);
+                        return (subtotalProd + freteNaComanda + geloCuboTotal).toFixed(2);
                       })()}</span>
                     </div>
                     {brindes.filter(b => Number(b.quantidade) > 0 && b.sabor_id).map((b, i) => (
