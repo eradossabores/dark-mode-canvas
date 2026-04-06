@@ -18,6 +18,7 @@ interface Props {
 export default function ConfigGeloCuboSection({ factoryId }: Props) {
   const [ativo, setAtivo] = useState(false);
   const [precos, setPrecos] = useState<Record<string, number>>({ "2kg": 10, "4kg": 18, "5kg": 22 });
+  const [estoqueInicial, setEstoqueInicial] = useState<Record<string, number>>({ "2kg": 0, "4kg": 0, "5kg": 0 });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -45,6 +46,17 @@ export default function ConfigGeloCuboSection({ factoryId }: Props) {
         precosData.forEach((p: any) => { map[p.tamanho] = Number(p.preco); });
         setPrecos(map);
       }
+
+      // Load current stock
+      const { data: estoqueData } = await (supabase as any)
+        .from("estoque_gelo_cubo")
+        .select("tamanho, quantidade")
+        .eq("factory_id", factoryId);
+      if (estoqueData && estoqueData.length > 0) {
+        const map: Record<string, number> = { "2kg": 0, "4kg": 0, "5kg": 0 };
+        estoqueData.forEach((e: any) => { map[e.tamanho] = Number(e.quantidade); });
+        setEstoqueInicial(map);
+      }
     } catch { /* ignore */ }
     setLoading(false);
   }
@@ -55,12 +67,19 @@ export default function ConfigGeloCuboSection({ factoryId }: Props) {
     try {
       await (supabase as any).from("factories").update({ vende_gelo_cubo: ativo }).eq("id", factoryId);
 
-      // Upsert prices
+      // Upsert prices and stock
       for (const tam of TAMANHOS) {
         await (supabase as any)
           .from("gelo_cubo_precos")
           .upsert(
             { factory_id: factoryId, tamanho: tam, preco: precos[tam] || 0 },
+            { onConflict: "factory_id,tamanho" }
+          );
+
+        await (supabase as any)
+          .from("estoque_gelo_cubo")
+          .upsert(
+            { factory_id: factoryId, tamanho: tam, quantidade: estoqueInicial[tam] || 0, updated_at: new Date().toISOString() },
             { onConflict: "factory_id,tamanho" }
           );
       }
@@ -103,27 +122,51 @@ export default function ConfigGeloCuboSection({ factoryId }: Props) {
         </div>
 
         {ativo && (
-          <div className="space-y-3">
-            <h4 className="text-sm font-semibold">Preços por tamanho</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {TAMANHOS.map((tam) => (
-                <div key={tam} className="rounded-lg border p-4 text-center space-y-2 bg-card hover:shadow-md transition-shadow">
-                  <Badge variant="outline" className="text-xs">{tam}</Badge>
-                  <div className="flex items-center justify-center gap-1">
-                    <span className="text-xs text-muted-foreground">R$</span>
-                    <Input
-                      type="number"
-                      min={0}
-                      step={0.5}
-                      className="h-9 w-24 text-center text-lg font-bold"
-                      value={precos[tam]}
-                      onChange={(e) => setPrecos(prev => ({ ...prev, [tam]: Number(e.target.value) }))}
-                    />
+          <>
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold">Preços por tamanho</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {TAMANHOS.map((tam) => (
+                  <div key={tam} className="rounded-lg border p-4 text-center space-y-2 bg-card hover:shadow-md transition-shadow">
+                    <Badge variant="outline" className="text-xs">{tam}</Badge>
+                    <div className="flex items-center justify-center gap-1">
+                      <span className="text-xs text-muted-foreground">R$</span>
+                      <Input
+                        type="number"
+                        min={0}
+                        step={0.5}
+                        className="h-9 w-24 text-center text-lg font-bold"
+                        value={precos[tam]}
+                        onChange={(e) => setPrecos(prev => ({ ...prev, [tam]: Number(e.target.value) }))}
+                      />
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold">📦 Estoque atual por tamanho</h4>
+              <p className="text-xs text-muted-foreground">Defina a quantidade em estoque de cada tamanho. Este valor será usado para controle de vendas.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {TAMANHOS.map((tam) => (
+                  <div key={tam} className="rounded-lg border p-4 text-center space-y-2 bg-card hover:shadow-md transition-shadow">
+                    <Badge variant="secondary" className="text-xs">{tam}</Badge>
+                    <div className="flex items-center justify-center gap-1">
+                      <span className="text-xs text-muted-foreground">Qtd</span>
+                      <Input
+                        type="number"
+                        min={0}
+                        className="h-9 w-24 text-center text-lg font-bold"
+                        value={estoqueInicial[tam]}
+                        onChange={(e) => setEstoqueInicial(prev => ({ ...prev, [tam]: Number(e.target.value) }))}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
         )}
 
         <Button className="w-full sm:w-auto" onClick={handleSave} disabled={saving}>
