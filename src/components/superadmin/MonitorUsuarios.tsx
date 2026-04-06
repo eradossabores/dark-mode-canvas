@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Activity, Clock, Users, Wifi, WifiOff, BarChart3, Calendar } from "lucide-react";
+import { Activity, Clock, Users, Wifi, WifiOff, BarChart3, Calendar, Factory, FileDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { format, formatDistanceToNow, subDays, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -139,6 +140,39 @@ export default function MonitorUsuarios() {
     .sort(([a], [b]) => b.localeCompare(a))
     .slice(0, 30);
 
+  // Factory usage summary
+  interface FactoryUsage {
+    factory_id: string;
+    factory_name: string;
+    total_minutes: number;
+    total_sessions: number;
+    unique_users: Set<string>;
+    last_seen: string;
+  }
+  const factoryUsage: (Omit<FactoryUsage, "unique_users"> & { unique_users: number })[] = Object.values(
+    sessions.reduce<Record<string, FactoryUsage>>((acc, s) => {
+      const key = s.factory_id || "unknown";
+      if (!acc[key]) {
+        acc[key] = {
+          factory_id: key,
+          factory_name: s.factory_name || "—",
+          total_minutes: 0,
+          total_sessions: 0,
+          unique_users: new Set(),
+          last_seen: s.last_seen_at,
+        };
+      }
+      acc[key].total_minutes += s.duration_minutes;
+      acc[key].total_sessions += 1;
+      acc[key].unique_users.add(s.user_id);
+      if (new Date(s.last_seen_at) > new Date(acc[key].last_seen)) {
+        acc[key].last_seen = s.last_seen_at;
+      }
+      return acc;
+    }, {})
+  ).map((f) => ({ ...f, unique_users: f.unique_users.size }))
+   .sort((a, b) => b.total_minutes - a.total_minutes);
+
   function formatMinutes(min: number) {
     if (min < 60) return `${min}min`;
     const h = Math.floor(min / 60);
@@ -147,6 +181,57 @@ export default function MonitorUsuarios() {
   }
 
   const totalMinutes = usageSummary.reduce((a, b) => a + b.total_minutes, 0);
+
+  async function exportPDF() {
+    const { default: jsPDF } = await import("jspdf");
+    const { default: autoTable } = await import("jspdf-autotable");
+    const doc = new jsPDF();
+    const title = `Relatório de Uso — Últimos ${period} dias`;
+    const date = format(new Date(), "dd/MM/yyyy HH:mm");
+
+    doc.setFontSize(16);
+    doc.text("ICETECH — Relatório de Uso", 14, 18);
+    doc.setFontSize(10);
+    doc.text(`Período: últimos ${period} dias | Gerado em: ${date}`, 14, 26);
+
+    // Factory table
+    doc.setFontSize(12);
+    doc.text("Uso por Fábrica", 14, 36);
+    autoTable(doc, {
+      startY: 40,
+      head: [["Fábrica", "Usuários", "Sessões", "Tempo Total", "Último Acesso"]],
+      body: factoryUsage.map((f) => [
+        f.factory_name,
+        f.unique_users.toString(),
+        f.total_sessions.toString(),
+        formatMinutes(f.total_minutes),
+        format(new Date(f.last_seen), "dd/MM/yyyy HH:mm"),
+      ]),
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [30, 58, 95] },
+    });
+
+    // User ranking table
+    const finalY = (doc as any).lastAutoTable?.finalY || 80;
+    doc.setFontSize(12);
+    doc.text("Ranking de Usuários", 14, finalY + 10);
+    autoTable(doc, {
+      startY: finalY + 14,
+      head: [["#", "Usuário", "Email", "Fábrica", "Sessões", "Tempo Total"]],
+      body: usageSummary.map((u, i) => [
+        (i + 1).toString(),
+        u.user_name,
+        u.user_email,
+        u.factory_name,
+        u.total_sessions.toString(),
+        formatMinutes(u.total_minutes),
+      ]),
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [30, 58, 95] },
+    });
+
+    doc.save(`relatorio-uso-${period}dias.pdf`);
+  }
 
   return (
     <div className="space-y-6">
@@ -234,20 +319,26 @@ export default function MonitorUsuarios() {
         <div className="flex items-center justify-between mb-2">
           <TabsList>
             <TabsTrigger value="ranking" className="gap-1.5"><BarChart3 className="h-3.5 w-3.5" /> Ranking</TabsTrigger>
+            <TabsTrigger value="fabricas" className="gap-1.5"><Factory className="h-3.5 w-3.5" /> Por Fábrica</TabsTrigger>
             <TabsTrigger value="historico" className="gap-1.5"><Clock className="h-3.5 w-3.5" /> Histórico</TabsTrigger>
             <TabsTrigger value="diario" className="gap-1.5"><Calendar className="h-3.5 w-3.5" /> Por Dia</TabsTrigger>
           </TabsList>
-          <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1">Hoje</SelectItem>
-              <SelectItem value="7">Últimos 7 dias</SelectItem>
-              <SelectItem value="15">Últimos 15 dias</SelectItem>
-              <SelectItem value="30">Últimos 30 dias</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={exportPDF}>
+              <FileDown className="h-3.5 w-3.5" /> Exportar PDF
+            </Button>
+            <Select value={period} onValueChange={setPeriod}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">Hoje</SelectItem>
+                <SelectItem value="7">Últimos 7 dias</SelectItem>
+                <SelectItem value="15">Últimos 15 dias</SelectItem>
+                <SelectItem value="30">Últimos 30 dias</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Ranking */}
@@ -310,7 +401,50 @@ export default function MonitorUsuarios() {
           </Card>
         </TabsContent>
 
-        {/* Histórico */}
+        {/* Por Fábrica */}
+        <TabsContent value="fabricas">
+          <Card>
+            <CardContent className="p-0">
+              {loading ? (
+                <p className="text-center py-8 text-muted-foreground animate-pulse">Carregando...</p>
+              ) : factoryUsage.length === 0 ? (
+                <p className="text-center py-8 text-muted-foreground">Nenhum dado encontrado.</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>#</TableHead>
+                      <TableHead>Fábrica</TableHead>
+                      <TableHead className="text-right">Usuários</TableHead>
+                      <TableHead className="text-right">Sessões</TableHead>
+                      <TableHead className="text-right">Tempo Total</TableHead>
+                      <TableHead className="text-right">Média/Usuário</TableHead>
+                      <TableHead className="text-right">Último Acesso</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {factoryUsage.map((f, i) => (
+                      <TableRow key={f.factory_id}>
+                        <TableCell className="font-bold text-muted-foreground">{i + 1}</TableCell>
+                        <TableCell className="font-medium text-sm">{f.factory_name}</TableCell>
+                        <TableCell className="text-right text-sm">{f.unique_users}</TableCell>
+                        <TableCell className="text-right text-sm">{f.total_sessions}</TableCell>
+                        <TableCell className="text-right font-medium text-sm">{formatMinutes(f.total_minutes)}</TableCell>
+                        <TableCell className="text-right text-sm text-muted-foreground">
+                          {f.unique_users > 0 ? formatMinutes(Math.round(f.total_minutes / f.unique_users)) : "—"}
+                        </TableCell>
+                        <TableCell className="text-right text-sm text-muted-foreground">
+                          {formatDistanceToNow(new Date(f.last_seen), { addSuffix: true, locale: ptBR })}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="historico">
           <Card>
             <CardContent className="p-0">
