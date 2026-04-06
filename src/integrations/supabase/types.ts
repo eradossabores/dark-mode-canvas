@@ -184,6 +184,48 @@ export type Database = {
           },
         ]
       }
+      cliente_gelo_cubo_preco: {
+        Row: {
+          cliente_id: string
+          created_at: string
+          factory_id: string | null
+          id: string
+          preco: number
+          tamanho: string
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string
+          factory_id?: string | null
+          id?: string
+          preco?: number
+          tamanho: string
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string
+          factory_id?: string | null
+          id?: string
+          preco?: number
+          tamanho?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_gelo_cubo_preco_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_gelo_cubo_preco_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cliente_preco_sabor: {
         Row: {
           cliente_id: string
