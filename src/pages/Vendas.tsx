@@ -114,6 +114,7 @@ export default function Vendas() {
   const [editDetalheEspecie, setEditDetalheEspecie] = useState("");
   const [editValorFrete, setEditValorFrete] = useState("");
   const [editFretePagoPor, setEditFretePagoPor] = useState<"empresa" | "cliente" | "ambos">("cliente");
+  const [editBrindes, setEditBrindes] = useState<{ sabor_id: string; quantidade: string; id?: string | null }[]>([]);
 
   // Detail state
   const [detailVenda, setDetailVenda] = useState<any>(null);
