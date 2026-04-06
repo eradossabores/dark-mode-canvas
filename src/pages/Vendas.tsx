@@ -560,7 +560,7 @@ export default function Vendas() {
     setEditFretePagoPor(v.frete_pago_por || "cliente");
     // Load items
     const { data } = await (supabase as any).from("venda_itens").select("*, sabores(nome)").eq("venda_id", v.id);
-    setEditItens((data || []).map((it: any) => ({ ...it, quantidade: it.quantidade })));
+    setEditItens((data || []).map((it: any) => ({ ...it, quantidade: it.quantidade, preco_unitario_display: String(it.preco_unitario).replace(".", ",") })));
     setEditOpen(true);
   }
 
@@ -1307,7 +1307,7 @@ export default function Vendas() {
             <div>
                 <div className="flex items-center justify-between mb-2">
                   <Label className="text-base font-semibold">Itens da Venda</Label>
-                  <Button size="sm" variant="outline" onClick={() => setEditItens([...editItens, { id: null, sabor_id: "", sabores: null, quantidade: 1, preco_unitario: 0, isNew: true }])}>
+                  <Button size="sm" variant="outline" onClick={() => setEditItens([...editItens, { id: null, sabor_id: "", sabores: null, quantidade: 1, preco_unitario: 0, preco_unitario_display: "", isNew: true }])}>
                     <Plus className="h-3 w-3 mr-1" />Add Sabor
                   </Button>
                 </div>
@@ -1324,7 +1324,7 @@ export default function Vendas() {
                         const preco = await fetchPreco(editVenda.cliente_id, v, totalQtd);
                         if (preco != null) {
                           const u2 = [...updated];
-                          u2[i] = { ...u2[i], preco_unitario: preco };
+                          u2[i] = { ...u2[i], preco_unitario: preco, preco_unitario_display: String(preco).replace(".", ",") };
                           setEditItens(u2);
                         }
                       }
@@ -1348,7 +1348,7 @@ export default function Vendas() {
                           const preco = await fetchPreco(editVenda.cliente_id, item.sabor_id, totalQtd);
                           if (preco != null) {
                             const u2 = [...updated];
-                            u2[i] = { ...u2[i], preco_unitario: preco };
+                            u2[i] = { ...u2[i], preco_unitario: preco, preco_unitario_display: String(preco).replace(".", ",") };
                             setEditItens(u2);
                           }
                         }
@@ -1361,11 +1361,11 @@ export default function Vendas() {
                         type="text"
                         inputMode="decimal"
                         className="pl-7 text-xs"
-                        value={item.preco_unitario}
+                        value={item.preco_unitario_display ?? String(item.preco_unitario).replace(".", ",")}
                         onChange={(e) => {
                           const v = formatDecimalInput(e.target.value);
                           const updated = [...editItens];
-                          updated[i] = { ...updated[i], preco_unitario: parseDecimal(v) };
+                          updated[i] = { ...updated[i], preco_unitario: parseDecimal(v), preco_unitario_display: v };
                           setEditItens(updated);
                         }}
                         placeholder="Unit."
@@ -1384,7 +1384,7 @@ export default function Vendas() {
                           const qty = item.quantidade || 1;
                           const newUnit = qty > 0 ? totalItem / qty : 0;
                           const updated = [...editItens];
-                          updated[i] = { ...updated[i], preco_unitario: Number(newUnit.toFixed(4)) };
+                          updated[i] = { ...updated[i], preco_unitario: Number(newUnit.toFixed(4)), preco_unitario_display: newUnit.toFixed(4).replace(".", ",") };
                           setEditItens(updated);
                         }}
                         placeholder="Total"
