@@ -399,12 +399,29 @@ export default function Vendas() {
         // Frete: cliente paga → soma no total; empresa paga → despesa; ambos → 50/50
         const freteCliente = fretePagoPor === "cliente" ? freteTotal : fretePagoPor === "ambos" ? Math.round(freteTotal / 2 * 100) / 100 : 0;
         const freteEmpresa = fretePagoPor === "empresa" ? freteTotal : fretePagoPor === "ambos" ? Math.round(freteTotal / 2 * 100) / 100 : 0;
-        const totalVendaCalc = totalProdutos + freteCliente;
+        // Add gelo cubo subtotal
+        const geloCuboSubtotal = geloCuboItens.reduce((s, it) => s + (geloCuboPrecos[it.tamanho] || 0) * it.quantidade, 0);
+        const totalVendaCalc = totalProdutos + freteCliente + geloCuboSubtotal;
         const vPix = detalhePgto === "pix" ? totalVendaCalc : detalhePgto === "misto" ? (parseFloat(detalhePix.replace(",", ".")) || 0) : 0;
         const vEsp = detalhePgto === "especie" ? totalVendaCalc : detalhePgto === "misto" ? (parseFloat(detalheEspecie.replace(",", ".")) || 0) : 0;
         const updateData: any = { forma_pagamento: formaPagamento, status: statusVenda, valor_pix: vPix, valor_especie: vEsp, total: totalVendaCalc, valor_frete: freteTotal, frete_pago_por: fretePagoPor };
         if (numeroNf.trim()) updateData.numero_nf = numeroNf.trim();
         await (supabase as any).from("vendas").update(updateData).eq("id", vendaId);
+
+        // Save gelo cubo items
+        if (geloCuboItens.length > 0) {
+          const cuboInserts = geloCuboItens.filter(it => it.quantidade > 0).map(it => ({
+            venda_id: vendaId,
+            factory_id: factoryId,
+            tamanho: it.tamanho,
+            quantidade: it.quantidade,
+            preco_unitario: geloCuboPrecos[it.tamanho] || 0,
+            subtotal: (geloCuboPrecos[it.tamanho] || 0) * it.quantidade,
+          }));
+          if (cuboInserts.length > 0) {
+            await (supabase as any).from("venda_gelo_cubo_itens").insert(cuboInserts);
+          }
+        }
 
         // Se empresa paga frete (total ou parcial), registrar despesa
         if (freteEmpresa > 0) {
