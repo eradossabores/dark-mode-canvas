@@ -370,11 +370,10 @@ export default function ConfigurarFabrica() {
       </div>
 
       <Tabs defaultValue="vendas" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 h-auto gap-1 p-1">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto gap-1 p-1">
           <TabsTrigger value="vendas" className="gap-1.5 text-xs sm:text-sm py-2.5">
             <DollarSign className="h-4 w-4" />
-            <span className="hidden sm:inline">Preços</span>
-            <span className="sm:hidden">Preços</span>
+            <span>Preços</span>
           </TabsTrigger>
           <TabsTrigger value="producao" className="gap-1.5 text-xs sm:text-sm py-2.5">
             <Cog className="h-4 w-4" />
