@@ -631,7 +631,31 @@ export default function Estoque() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="sacos">
+        {vendeGeloCubo && (
+          <TabsContent value="gelo_cubo">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">🧊 Gelo em Cubos Filtrados</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {geloCuboEstoque.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">Nenhum estoque de gelo em cubos cadastrado. Configure em <strong>Configurar Fábrica</strong>.</p>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {geloCuboEstoque.map((item: any) => (
+                      <div key={item.id} className="rounded-xl border bg-card p-5 text-center space-y-2 hover:shadow-md transition-shadow">
+                        <Badge variant="outline" className="text-sm font-semibold">{item.tamanho}</Badge>
+                        <p className="text-3xl font-bold text-foreground">{item.quantidade}</p>
+                        <p className="text-xs text-muted-foreground">unidades em estoque</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
           <SacosTab factoryId={factoryId} />
         </TabsContent>
 
