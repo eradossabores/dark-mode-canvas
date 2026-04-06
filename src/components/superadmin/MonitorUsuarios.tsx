@@ -401,7 +401,50 @@ export default function MonitorUsuarios() {
           </Card>
         </TabsContent>
 
-        {/* Histórico */}
+        {/* Por Fábrica */}
+        <TabsContent value="fabricas">
+          <Card>
+            <CardContent className="p-0">
+              {loading ? (
+                <p className="text-center py-8 text-muted-foreground animate-pulse">Carregando...</p>
+              ) : factoryUsage.length === 0 ? (
+                <p className="text-center py-8 text-muted-foreground">Nenhum dado encontrado.</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>#</TableHead>
+                      <TableHead>Fábrica</TableHead>
+                      <TableHead className="text-right">Usuários</TableHead>
+                      <TableHead className="text-right">Sessões</TableHead>
+                      <TableHead className="text-right">Tempo Total</TableHead>
+                      <TableHead className="text-right">Média/Usuário</TableHead>
+                      <TableHead className="text-right">Último Acesso</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {factoryUsage.map((f, i) => (
+                      <TableRow key={f.factory_id}>
+                        <TableCell className="font-bold text-muted-foreground">{i + 1}</TableCell>
+                        <TableCell className="font-medium text-sm">{f.factory_name}</TableCell>
+                        <TableCell className="text-right text-sm">{f.unique_users}</TableCell>
+                        <TableCell className="text-right text-sm">{f.total_sessions}</TableCell>
+                        <TableCell className="text-right font-medium text-sm">{formatMinutes(f.total_minutes)}</TableCell>
+                        <TableCell className="text-right text-sm text-muted-foreground">
+                          {f.unique_users > 0 ? formatMinutes(Math.round(f.total_minutes / f.unique_users)) : "—"}
+                        </TableCell>
+                        <TableCell className="text-right text-sm text-muted-foreground">
+                          {formatDistanceToNow(new Date(f.last_seen), { addSuffix: true, locale: ptBR })}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="historico">
           <Card>
             <CardContent className="p-0">
