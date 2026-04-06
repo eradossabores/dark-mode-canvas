@@ -71,6 +71,15 @@ export default function ConfigurarFabrica() {
   const [partners, setPartners] = useState<any[]>([]);
   const [loadingPartners, setLoadingPartners] = useState(true);
 
+  // NFE config state
+  const [emiteNfe, setEmiteNfe] = useState(false);
+  const [nfeApiKey, setNfeApiKey] = useState("");
+  const [nfeCompanyId, setNfeCompanyId] = useState("");
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [loadingNfe, setLoadingNfe] = useState(true);
+  const [savingNfe, setSavingNfe] = useState(false);
+  const [nfEmitidas, setNfEmitidas] = useState<any[]>([]);
+
   function updateAddressText(field: keyof FactoryAddress, value: string) {
     setAddress((prev) => ({ ...prev, [field]: value }));
   }
