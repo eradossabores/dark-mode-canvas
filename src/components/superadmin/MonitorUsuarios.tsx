@@ -319,9 +319,11 @@ export default function MonitorUsuarios() {
         <div className="flex items-center justify-between mb-2">
           <TabsList>
             <TabsTrigger value="ranking" className="gap-1.5"><BarChart3 className="h-3.5 w-3.5" /> Ranking</TabsTrigger>
+            <TabsTrigger value="fabricas" className="gap-1.5"><Factory className="h-3.5 w-3.5" /> Por Fábrica</TabsTrigger>
             <TabsTrigger value="historico" className="gap-1.5"><Clock className="h-3.5 w-3.5" /> Histórico</TabsTrigger>
             <TabsTrigger value="diario" className="gap-1.5"><Calendar className="h-3.5 w-3.5" /> Por Dia</TabsTrigger>
           </TabsList>
+          <div className="flex items-center gap-2">
           <Select value={period} onValueChange={setPeriod}>
             <SelectTrigger className="w-[140px]">
               <SelectValue />
