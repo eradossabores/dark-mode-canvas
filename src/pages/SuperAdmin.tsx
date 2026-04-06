@@ -716,6 +716,8 @@ export default function SuperAdmin() {
           </DialogContent>
         </Dialog>
       )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
