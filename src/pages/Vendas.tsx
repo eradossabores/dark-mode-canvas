@@ -1361,11 +1361,11 @@ export default function Vendas() {
                         type="text"
                         inputMode="decimal"
                         className="pl-7 text-xs"
-                        value={item.preco_unitario}
+                        value={item.preco_unitario_display ?? String(item.preco_unitario).replace(".", ",")}
                         onChange={(e) => {
                           const v = formatDecimalInput(e.target.value);
                           const updated = [...editItens];
-                          updated[i] = { ...updated[i], preco_unitario: parseDecimal(v) };
+                          updated[i] = { ...updated[i], preco_unitario: parseDecimal(v), preco_unitario_display: v };
                           setEditItens(updated);
                         }}
                         placeholder="Unit."
