@@ -44,7 +44,7 @@ import Suporte from "@/pages/Suporte";
 import ConfigurarFabrica from "@/pages/ConfigurarFabrica";
 import NotFound from "@/pages/NotFound";
 import Compras from "@/pages/Compras";
-import LandingPage from "@/pages/LandingPage";
+
 
 const queryClient = new QueryClient();
 
@@ -76,7 +76,7 @@ const App = () => (
               <GlobalSearch />
               <Routes>
               {/* Public */}
-              <Route path="/" element={<LandingPage />} />
+              <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="/login" element={<Login />} />
               <Route path="/cadastro" element={<Cadastro />} />
               <Route path="/pedir" element={<Pedir />} />
