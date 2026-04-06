@@ -197,6 +197,12 @@ export default function ChecklistProducaoDia({ targetDate }: ChecklistProducaoDi
   const [registrados, setRegistrados] = useState<Set<string>>(new Set());
   const [receitaMap, setReceitaMap] = useState<Record<string, number>>({});
 
+  // Finalization dialog
+  const [finalizarDialogOpen, setFinalizarDialogOpen] = useState(false);
+  const [allSabores, setAllSabores] = useState<{ id: string; nome: string }[]>([]);
+  const [extraItens, setExtraItens] = useState<{ sabor_id: string; quantidade: number; modo: "lote" | "unidade" }[]>([]);
+  const [registrandoExtra, setRegistrandoExtra] = useState(false);
+
   function saveRegistrados(newSet: Set<string>) {
     setRegistrados(newSet);
     localStorage.setItem(REGISTRADOS_KEY, JSON.stringify([...newSet]));
