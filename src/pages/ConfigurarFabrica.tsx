@@ -89,6 +89,7 @@ export default function ConfigurarFabrica() {
     loadSacosConfig();
     loadAddress();
     loadPartners();
+    loadNfeConfig();
   }, [factoryId]);
 
   async function loadPartners() {
