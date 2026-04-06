@@ -560,7 +560,7 @@ export default function Vendas() {
     setEditFretePagoPor(v.frete_pago_por || "cliente");
     // Load items
     const { data } = await (supabase as any).from("venda_itens").select("*, sabores(nome)").eq("venda_id", v.id);
-    setEditItens((data || []).map((it: any) => ({ ...it, quantidade: it.quantidade })));
+    setEditItens((data || []).map((it: any) => ({ ...it, quantidade: it.quantidade, preco_unitario_display: String(it.preco_unitario).replace(".", ",") })));
     setEditOpen(true);
   }
 
