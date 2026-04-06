@@ -114,6 +114,7 @@ export default function Vendas() {
   const [editDetalheEspecie, setEditDetalheEspecie] = useState("");
   const [editValorFrete, setEditValorFrete] = useState("");
   const [editFretePagoPor, setEditFretePagoPor] = useState<"empresa" | "cliente" | "ambos">("cliente");
+  const [editBrindes, setEditBrindes] = useState<{ sabor_id: string; quantidade: string; id?: string | null }[]>([]);
 
   // Detail state
   const [detailVenda, setDetailVenda] = useState<any>(null);
@@ -583,7 +584,12 @@ export default function Vendas() {
     setEditFretePagoPor(v.frete_pago_por || "cliente");
     // Load items
     const { data } = await (supabase as any).from("venda_itens").select("*, sabores(nome)").eq("venda_id", v.id);
-    setEditItens((data || []).map((it: any) => ({ ...it, quantidade: it.quantidade, preco_unitario_display: String(it.preco_unitario).replace(".", ",") })));
+    // Separate brindes (price = 0) from regular items
+    const allItems = data || [];
+    const regularItems = allItems.filter((it: any) => Number(it.preco_unitario) > 0);
+    const brindeItems = allItems.filter((it: any) => Number(it.preco_unitario) === 0 && it.quantidade > 0);
+    setEditItens(regularItems.map((it: any) => ({ ...it, quantidade: it.quantidade, preco_unitario_display: String(it.preco_unitario).replace(".", ",") })));
+    setEditBrindes(brindeItems.map((it: any) => ({ sabor_id: it.sabor_id, quantidade: String(it.quantidade), id: it.id })));
     setEditOpen(true);
   }
 
@@ -591,9 +597,12 @@ export default function Vendas() {
     if (!editVenda) return;
     try {
       const itensValidos = editItens.filter((item) => item.sabor_id && item.quantidade > 0);
-      const itemIdsMantidos = itensValidos
-        .filter((item) => item.id && !item.isNew)
-        .map((item) => item.id);
+      const brindesValidos = editBrindes.filter(b => b.sabor_id && Number(b.quantidade) > 0);
+      const allKeptIds = [
+        ...itensValidos.filter((item) => item.id && !item.isNew).map((item) => item.id),
+        ...brindesValidos.filter(b => b.id).map(b => b.id),
+      ];
+      const itemIdsMantidos = allKeptIds;
 
       // Se mudou de paga/cancelada para pendente, resetar valor_pago
       const editTotal = itensValidos.reduce((sum: number, it: any) => sum + Number(it.preco_unitario) * (it.quantidade || 0), 0);
@@ -670,6 +679,31 @@ export default function Vendas() {
           }
         }
       }
+
+      // Handle brindes (price = 0)
+      for (const brinde of brindesValidos) {
+        const qty = Number(brinde.quantidade);
+        if (brinde.id) {
+          // Update existing brinde
+          await (supabase as any).from("venda_itens").update({
+            sabor_id: brinde.sabor_id,
+            quantidade: qty,
+            preco_unitario: 0,
+            subtotal: 0,
+          }).eq("id", brinde.id);
+        } else {
+          // Insert new brinde
+          await (supabase as any).from("venda_itens").insert({
+            venda_id: editVenda.id,
+            sabor_id: brinde.sabor_id,
+            quantidade: qty,
+            preco_unitario: 0,
+            subtotal: 0,
+            regra_preco_aplicada: "brinde",
+          });
+        }
+      }
+
       await (supabase as any).from("vendas").update({ total: newTotal + editFreteCliente }).eq("id", editVenda.id);
 
       toast({ title: "Venda atualizada!" });
@@ -1430,6 +1464,37 @@ export default function Vendas() {
                   })()}</span>
                 </div>
               </div>
+
+            {/* Brindes na Edição */}
+            <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-medium">🎁 Brindes (preço R$ 0,00)</Label>
+                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setEditBrindes([...editBrindes, { sabor_id: "", quantidade: "1" }])}>
+                  <Plus className="h-3 w-3 mr-1" />Brinde
+                </Button>
+              </div>
+              {editBrindes.map((brinde, i) => (
+                <div key={`brinde-${i}`} className="flex gap-2 items-center">
+                  <Select value={brinde.sabor_id} onValueChange={(v) => {
+                    const u = [...editBrindes]; u[i] = { ...u[i], sabor_id: v }; setEditBrindes(u);
+                  }}>
+                    <SelectTrigger className="flex-1"><SelectValue placeholder="Sabor" /></SelectTrigger>
+                    <SelectContent>{sabores.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <Input type="number" min={1} className="w-20" value={brinde.quantidade} onChange={(e) => {
+                    const u = [...editBrindes]; u[i] = { ...u[i], quantidade: e.target.value }; setEditBrindes(u);
+                  }} placeholder="Qtd" />
+                  <Badge variant="secondary" className="text-[10px] whitespace-nowrap">R$ 0,00</Badge>
+                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditBrindes(editBrindes.filter((_, idx) => idx !== i))}>
+                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                  </Button>
+                </div>
+              ))}
+              {editBrindes.length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-1">Nenhum brinde adicionado</p>
+              )}
+            </div>
+
             {/* Frete na Edição */}
             <div className="space-y-2">
               <Label className="text-xs font-medium">🚚 Frete (opcional)</Label>
