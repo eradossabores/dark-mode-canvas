@@ -1464,6 +1464,37 @@ export default function Vendas() {
                   })()}</span>
                 </div>
               </div>
+
+            {/* Brindes na Edição */}
+            <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-medium">🎁 Brindes (preço R$ 0,00)</Label>
+                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setEditBrindes([...editBrindes, { sabor_id: "", quantidade: "1" }])}>
+                  <Plus className="h-3 w-3 mr-1" />Brinde
+                </Button>
+              </div>
+              {editBrindes.map((brinde, i) => (
+                <div key={`brinde-${i}`} className="flex gap-2 items-center">
+                  <Select value={brinde.sabor_id} onValueChange={(v) => {
+                    const u = [...editBrindes]; u[i] = { ...u[i], sabor_id: v }; setEditBrindes(u);
+                  }}>
+                    <SelectTrigger className="flex-1"><SelectValue placeholder="Sabor" /></SelectTrigger>
+                    <SelectContent>{sabores.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <Input type="number" min={1} className="w-20" value={brinde.quantidade} onChange={(e) => {
+                    const u = [...editBrindes]; u[i] = { ...u[i], quantidade: e.target.value }; setEditBrindes(u);
+                  }} placeholder="Qtd" />
+                  <Badge variant="secondary" className="text-[10px] whitespace-nowrap">R$ 0,00</Badge>
+                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditBrindes(editBrindes.filter((_, idx) => idx !== i))}>
+                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                  </Button>
+                </div>
+              ))}
+              {editBrindes.length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-1">Nenhum brinde adicionado</p>
+              )}
+            </div>
+
             {/* Frete na Edição */}
             <div className="space-y-2">
               <Label className="text-xs font-medium">🚚 Frete (opcional)</Label>
