@@ -142,10 +142,29 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [hovered, setHovered] = useState(false);
   const isExpanded = !collapsed || hovered;
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
   const location = useLocation();
   const navigate = useNavigate();
   const { role, signOut, user, factoryId, factoryName, branding, impersonatingFactory, clearImpersonation } = useAuth();
   useKeyboardShortcuts();
+
+  // Auto-open parent menus when a child route is active
+  useEffect(() => {
+    const newOpen: Record<string, boolean> = {};
+    for (const group of menuGroups) {
+      for (const item of group.items) {
+        if ((item as any).children) {
+          const childActive = (item as any).children.some((c: any) => location.pathname === c.path);
+          if (childActive) newOpen[item.label] = true;
+        }
+      }
+    }
+    setOpenMenus((prev) => ({ ...prev, ...newOpen }));
+  }, [location.pathname]);
+
+  const toggleMenu = (label: string) => {
+    setOpenMenus((prev) => ({ ...prev, [label]: !prev[label] }));
+  };
 
   // Only show Ice Age theme for the original factory
   const ERA_DOS_SABORES_ID = "00000000-0000-0000-0000-000000000001";
@@ -221,29 +240,35 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </p>
             )}
             {group.items.map((item: any) => {
-              // Has sub-items (expandable)
               if (item.children) {
                 const childActive = item.children.some((c: any) => location.pathname === c.path);
+                const isOpen = openMenus[item.label] ?? false;
                 return (
                   <div key={item.label}>
-                    <div
+                    <button
+                      onClick={() => toggleMenu(item.label)}
                       className={cn(
-                        "flex items-center gap-3 px-4 py-2 text-sm transition-colors rounded-md mx-2 cursor-default",
+                        "flex items-center gap-3 px-4 py-2 text-sm transition-colors rounded-md mx-2 w-[calc(100%-1rem)] text-left",
                         childActive
                           ? "text-sidebar-foreground font-semibold"
-                          : "text-sidebar-foreground/70"
+                          : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                       )}
                     >
                       <item.icon className="h-4 w-4 shrink-0" />
                       {isExpanded && (
                         <>
                           <span className="flex-1">{item.label}</span>
-                          <ChevronRight className={cn("h-3 w-3 transition-transform", childActive && "rotate-90")} />
+                          <ChevronRight className={cn("h-3 w-3 transition-transform duration-200", isOpen && "rotate-90")} />
                         </>
                       )}
-                    </div>
+                    </button>
                     {isExpanded && (
-                      <div className="ml-4 border-l border-sidebar-border/40 pl-1 space-y-0.5">
+                      <div
+                        className={cn(
+                          "ml-4 border-l border-sidebar-border/40 pl-1 space-y-0.5 overflow-hidden transition-all duration-200",
+                          isOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
+                        )}
+                      >
                         {item.children.map((child: any) => {
                           const active = location.pathname === child.path;
                           return (
@@ -394,17 +419,26 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   {group.items.map((item: any) => {
                     if (item.children) {
                       const childActive = item.children.some((c: any) => location.pathname === c.path);
+                      const isOpen = openMenus[item.label] ?? false;
                       return (
                         <div key={item.label}>
-                          <div className={cn(
-                            "flex items-center gap-3 px-4 py-2 text-sm rounded-md mx-2",
-                            childActive ? "text-white font-semibold" : "text-white/70"
-                          )}>
+                          <button
+                            onClick={() => toggleMenu(item.label)}
+                            className={cn(
+                              "flex items-center gap-3 px-4 py-2 text-sm rounded-md mx-2 w-[calc(100%-1rem)] text-left",
+                              childActive ? "text-white font-semibold" : "text-white/70 hover:bg-white/10"
+                            )}
+                          >
                             <item.icon className="h-4 w-4 shrink-0" />
                             <span className="flex-1">{item.label}</span>
-                            <ChevronRight className={cn("h-3 w-3 transition-transform", childActive && "rotate-90")} />
-                          </div>
-                          <div className="ml-5 border-l border-white/15 pl-1 space-y-0.5">
+                            <ChevronRight className={cn("h-3 w-3 transition-transform duration-200", isOpen && "rotate-90")} />
+                          </button>
+                          <div
+                            className={cn(
+                              "ml-5 border-l border-white/15 pl-1 space-y-0.5 overflow-hidden transition-all duration-200",
+                              isOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
+                            )}
+                          >
                             {item.children.map((child: any) => {
                               const active = location.pathname === child.path;
                               return (
