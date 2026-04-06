@@ -679,6 +679,31 @@ export default function Vendas() {
           }
         }
       }
+
+      // Handle brindes (price = 0)
+      for (const brinde of brindesValidos) {
+        const qty = Number(brinde.quantidade);
+        if (brinde.id) {
+          // Update existing brinde
+          await (supabase as any).from("venda_itens").update({
+            sabor_id: brinde.sabor_id,
+            quantidade: qty,
+            preco_unitario: 0,
+            subtotal: 0,
+          }).eq("id", brinde.id);
+        } else {
+          // Insert new brinde
+          await (supabase as any).from("venda_itens").insert({
+            venda_id: editVenda.id,
+            sabor_id: brinde.sabor_id,
+            quantidade: qty,
+            preco_unitario: 0,
+            subtotal: 0,
+            regra_preco_aplicada: "brinde",
+          });
+        }
+      }
+
       await (supabase as any).from("vendas").update({ total: newTotal + editFreteCliente }).eq("id", editVenda.id);
 
       toast({ title: "Venda atualizada!" });
