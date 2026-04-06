@@ -84,6 +84,11 @@ export default function Vendas() {
   const [loading, setLoading] = useState(false);
   const [sendingToProduction, setSendingToProduction] = useState<string | null>(null);
 
+  // Gelo em Cubos Filtrados
+  const [factoryVendeGeloCubo, setFactoryVendeGeloCubo] = useState(false);
+  const [geloCuboPrecos, setGeloCuboPrecos] = useState<Record<string, number>>({});
+  const [geloCuboItens, setGeloCuboItens] = useState<{ tamanho: string; quantidade: number }[]>([]);
+
   // Saco config from factory
   const [factoryUsaSacos, setFactoryUsaSacos] = useState(false);
   const [factoryUnidadesPorSaco, setFactoryUnidadesPorSaco] = useState(50);
