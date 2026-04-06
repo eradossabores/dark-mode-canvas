@@ -286,33 +286,57 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     );
   };
 
-  const sidebarNav = (
-    <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+  const renderSidebarNav = (isCollapsedMode: boolean) => (
+    <nav className={cn("flex-1 overflow-y-auto py-4 space-y-6", isCollapsedMode ? "px-2" : "px-3")}>
       {filteredGroups.map((group) => (
         <div key={group.label}>
-          <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/50">
-            {group.label}
-          </p>
+          {!isCollapsedMode && (
+            <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/50">
+              {group.label}
+            </p>
+          )}
+          {isCollapsedMode && <div className="h-px bg-border mx-1 mb-2" />}
           <div className="space-y-0.5">
-            {group.items.map(renderMenuItem)}
+            {group.items.map((item) => renderMenuItem(item, isCollapsedMode))}
           </div>
         </div>
       ))}
       {role === "super_admin" && (
         <div>
-          <div className="h-px bg-border mx-3 mb-3" />
-          <Link
-            to="/super-admin"
-            className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
-              location.pathname === "/super-admin"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            )}
-          >
-            <Crown className="h-[18px] w-[18px] shrink-0" />
-            <span>Super Admin</span>
-          </Link>
+          <div className={cn("h-px bg-border mb-3", isCollapsedMode ? "mx-1" : "mx-3")} />
+          {isCollapsedMode ? (
+            <div className="relative group">
+              <Link
+                to="/super-admin"
+                className={cn(
+                  "flex items-center justify-center p-2.5 rounded-lg transition-all duration-150",
+                  location.pathname === "/super-admin"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                <Crown className="h-[18px] w-[18px]" />
+              </Link>
+              <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover:block z-50">
+                <div className="bg-popover border border-border rounded-md shadow-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap">
+                  Super Admin
+                </div>
+              </div>
+            </div>
+          ) : (
+            <Link
+              to="/super-admin"
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
+                location.pathname === "/super-admin"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+            >
+              <Crown className="h-[18px] w-[18px] shrink-0" />
+              <span>Super Admin</span>
+            </Link>
+          )}
         </div>
       )}
     </nav>
