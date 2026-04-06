@@ -595,6 +595,74 @@ export default function ChecklistProducaoDia({ targetDate }: ChecklistProducaoDi
           </div>
         );
       })}
+
+      {/* Dialog de finalização */}
+      <Dialog open={finalizarDialogOpen} onOpenChange={setFinalizarDialogOpen}>
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-green-500" />
+              Produção 100% Concluída!
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Todos os lotes planejados foram finalizados. Deseja encerrar a produção ou acrescentar mais sabores?
+          </p>
+
+          {extraItens.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Sabores extras:</Label>
+              {extraItens.map((item, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                  <Select value={item.sabor_id} onValueChange={(v) => { const u = [...extraItens]; u[i].sabor_id = v; setExtraItens(u); }}>
+                    <SelectTrigger className="flex-1"><SelectValue placeholder="Sabor" /></SelectTrigger>
+                    <SelectContent>{allSabores.map(s => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <Input
+                    type="number" min={1} className="w-20"
+                    value={item.quantidade || ""}
+                    onChange={(e) => { const u = [...extraItens]; u[i].quantidade = Number(e.target.value); setExtraItens(u); }}
+                    placeholder="Qtd"
+                  />
+                  <RadioGroup
+                    value={item.modo}
+                    onValueChange={(v: "lote" | "unidade") => { const u = [...extraItens]; u[i].modo = v; setExtraItens(u); }}
+                    className="flex gap-2"
+                  >
+                    <div className="flex items-center gap-1">
+                      <RadioGroupItem value="lote" id={`modo-lote-${i}`} />
+                      <Label htmlFor={`modo-lote-${i}`} className="text-xs cursor-pointer">Lote</Label>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <RadioGroupItem value="unidade" id={`modo-und-${i}`} />
+                      <Label htmlFor={`modo-und-${i}`} className="text-xs cursor-pointer">Und</Label>
+                    </div>
+                  </RadioGroup>
+                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setExtraItens(extraItens.filter((_, idx) => idx !== i))}>
+                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <Button variant="outline" size="sm" className="w-full" onClick={() => setExtraItens([...extraItens, { sabor_id: "", quantidade: 1, modo: "lote" }])}>
+            <Plus className="h-4 w-4 mr-1" /> Adicionar Sabor Extra
+          </Button>
+
+          <DialogFooter className="flex gap-2 sm:gap-2">
+            {extraItens.length > 0 ? (
+              <Button onClick={handleRegistrarExtras} disabled={registrandoExtra} className="flex-1">
+                {registrandoExtra ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Registrando...</> : "Registrar e Finalizar"}
+              </Button>
+            ) : (
+              <Button onClick={handleFinalizar} className="flex-1">
+                <PartyPopper className="h-4 w-4 mr-2" /> Finalizar Produção
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
