@@ -142,10 +142,29 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [hovered, setHovered] = useState(false);
   const isExpanded = !collapsed || hovered;
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
   const location = useLocation();
   const navigate = useNavigate();
   const { role, signOut, user, factoryId, factoryName, branding, impersonatingFactory, clearImpersonation } = useAuth();
   useKeyboardShortcuts();
+
+  // Auto-open parent menus when a child route is active
+  useEffect(() => {
+    const newOpen: Record<string, boolean> = {};
+    for (const group of menuGroups) {
+      for (const item of group.items) {
+        if ((item as any).children) {
+          const childActive = (item as any).children.some((c: any) => location.pathname === c.path);
+          if (childActive) newOpen[item.label] = true;
+        }
+      }
+    }
+    setOpenMenus((prev) => ({ ...prev, ...newOpen }));
+  }, [location.pathname]);
+
+  const toggleMenu = (label: string) => {
+    setOpenMenus((prev) => ({ ...prev, [label]: !prev[label] }));
+  };
 
   // Only show Ice Age theme for the original factory
   const ERA_DOS_SABORES_ID = "00000000-0000-0000-0000-000000000001";
