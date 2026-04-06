@@ -656,6 +656,7 @@ export default function Estoque() {
           </TabsContent>
         )}
 
+        <TabsContent value="sacos">
           <SacosTab factoryId={factoryId} />
         </TabsContent>
 
