@@ -371,6 +371,22 @@ export default function SuperAdmin() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Painel Super Admin</h1>
+        </div>
+      </div>
+
+      <Tabs defaultValue="fabricas">
+        <TabsList className="mb-4">
+          <TabsTrigger value="fabricas" className="gap-2"><Factory className="h-4 w-4" /> Fábricas</TabsTrigger>
+          <TabsTrigger value="monitor" className="gap-2"><Activity className="h-4 w-4" /> Monitor de Uso</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="monitor">
+          <MonitorUsuarios />
+        </TabsContent>
+
+        <TabsContent value="fabricas">
+      <div className="flex items-center justify-between">
+        <div>
           <p className="text-muted-foreground">Gerencie todas as fábricas e assinaturas</p>
         </div>
         <Dialog open={showNewFactory} onOpenChange={setShowNewFactory}>
