@@ -146,10 +146,52 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     navigate("/login");
   };
 
-  const renderMenuItem = (item: MenuItem) => {
+  const renderMenuItem = (item: MenuItem, isCollapsed = false) => {
     if (item.children) {
       const childActive = item.children.some((c) => location.pathname === c.path);
       const isOpen = openMenus[item.label] ?? false;
+
+      if (isCollapsed) {
+        // In collapsed mode, show only icon with tooltip-like behavior
+        return (
+          <div key={item.label} className="relative group">
+            <div
+              className={cn(
+                "flex items-center justify-center p-2.5 rounded-lg transition-all duration-150",
+                childActive
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+            >
+              <item.icon className="h-[18px] w-[18px]" />
+            </div>
+            {/* Flyout on hover */}
+            <div className="absolute left-full top-0 ml-2 hidden group-hover:block z-50">
+              <div className="bg-popover border border-border rounded-lg shadow-lg p-2 min-w-[180px]">
+                <p className="px-2 py-1 text-xs font-semibold text-muted-foreground">{item.label}</p>
+                {item.children.map((child) => {
+                  const active = location.pathname === child.path;
+                  return (
+                    <Link
+                      key={child.path}
+                      to={child.path}
+                      className={cn(
+                        "flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-medium transition-colors",
+                        active
+                          ? "bg-primary text-primary-foreground"
+                          : "text-foreground hover:bg-muted"
+                      )}
+                    >
+                      <child.icon className="h-3.5 w-3.5 shrink-0" />
+                      <span>{child.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        );
+      }
 
       return (
         <div key={item.label}>
@@ -203,6 +245,30 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     }
 
     const active = location.pathname === item.path;
+
+    if (isCollapsed) {
+      return (
+        <div key={item.path} className="relative group">
+          <Link
+            to={item.path}
+            className={cn(
+              "flex items-center justify-center p-2.5 rounded-lg transition-all duration-150",
+              active
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            )}
+          >
+            <item.icon className="h-[18px] w-[18px]" />
+          </Link>
+          <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover:block z-50">
+            <div className="bg-popover border border-border rounded-md shadow-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap">
+              {item.label}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <Link
         key={item.path}
