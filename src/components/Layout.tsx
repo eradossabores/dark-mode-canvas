@@ -90,6 +90,7 @@ const menuGroups: MenuGroup[] = [
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
+  const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
   const location = useLocation();
