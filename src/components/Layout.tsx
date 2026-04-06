@@ -5,7 +5,7 @@ import {
   Warehouse, ClipboardList, UserCog, BarChart3, FileUp, DollarSign, Monitor,
   ShoppingBag, Database, LogOut, Shield, Brain, MapPin, Map, Target,
   HardDrive, UserCheck, Crown, MessageCircle, Settings, CalendarDays,
-  ChevronDown, Menu, X
+  ChevronDown, Menu, X, PanelLeftClose, PanelLeftOpen
 } from "lucide-react";
 import PaymentBanner from "@/components/PaymentBanner";
 import { cn } from "@/lib/utils";
@@ -90,6 +90,7 @@ const menuGroups: MenuGroup[] = [
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
+  const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
   const location = useLocation();
@@ -145,10 +146,52 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     navigate("/login");
   };
 
-  const renderMenuItem = (item: MenuItem) => {
+  const renderMenuItem = (item: MenuItem, isCollapsed = false) => {
     if (item.children) {
       const childActive = item.children.some((c) => location.pathname === c.path);
       const isOpen = openMenus[item.label] ?? false;
+
+      if (isCollapsed) {
+        // In collapsed mode, show only icon with tooltip-like behavior
+        return (
+          <div key={item.label} className="relative group">
+            <div
+              className={cn(
+                "flex items-center justify-center p-2.5 rounded-lg transition-all duration-150",
+                childActive
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+            >
+              <item.icon className="h-[18px] w-[18px]" />
+            </div>
+            {/* Flyout on hover */}
+            <div className="absolute left-full top-0 ml-2 hidden group-hover:block z-50">
+              <div className="bg-popover border border-border rounded-lg shadow-lg p-2 min-w-[180px]">
+                <p className="px-2 py-1 text-xs font-semibold text-muted-foreground">{item.label}</p>
+                {item.children.map((child) => {
+                  const active = location.pathname === child.path;
+                  return (
+                    <Link
+                      key={child.path}
+                      to={child.path}
+                      className={cn(
+                        "flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-medium transition-colors",
+                        active
+                          ? "bg-primary text-primary-foreground"
+                          : "text-foreground hover:bg-muted"
+                      )}
+                    >
+                      <child.icon className="h-3.5 w-3.5 shrink-0" />
+                      <span>{child.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        );
+      }
 
       return (
         <div key={item.label}>
@@ -202,6 +245,30 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     }
 
     const active = location.pathname === item.path;
+
+    if (isCollapsed) {
+      return (
+        <div key={item.path} className="relative group">
+          <Link
+            to={item.path}
+            className={cn(
+              "flex items-center justify-center p-2.5 rounded-lg transition-all duration-150",
+              active
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            )}
+          >
+            <item.icon className="h-[18px] w-[18px]" />
+          </Link>
+          <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover:block z-50">
+            <div className="bg-popover border border-border rounded-md shadow-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap">
+              {item.label}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <Link
         key={item.path}
@@ -219,33 +286,57 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     );
   };
 
-  const sidebarNav = (
-    <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+  const renderSidebarNav = (isCollapsedMode: boolean) => (
+    <nav className={cn("flex-1 overflow-y-auto py-4 space-y-6", isCollapsedMode ? "px-2" : "px-3")}>
       {filteredGroups.map((group) => (
         <div key={group.label}>
-          <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/50">
-            {group.label}
-          </p>
+          {!isCollapsedMode && (
+            <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/50">
+              {group.label}
+            </p>
+          )}
+          {isCollapsedMode && <div className="h-px bg-border mx-1 mb-2" />}
           <div className="space-y-0.5">
-            {group.items.map(renderMenuItem)}
+            {group.items.map((item) => renderMenuItem(item, isCollapsedMode))}
           </div>
         </div>
       ))}
       {role === "super_admin" && (
         <div>
-          <div className="h-px bg-border mx-3 mb-3" />
-          <Link
-            to="/super-admin"
-            className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
-              location.pathname === "/super-admin"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            )}
-          >
-            <Crown className="h-[18px] w-[18px] shrink-0" />
-            <span>Super Admin</span>
-          </Link>
+          <div className={cn("h-px bg-border mb-3", isCollapsedMode ? "mx-1" : "mx-3")} />
+          {isCollapsedMode ? (
+            <div className="relative group">
+              <Link
+                to="/super-admin"
+                className={cn(
+                  "flex items-center justify-center p-2.5 rounded-lg transition-all duration-150",
+                  location.pathname === "/super-admin"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                <Crown className="h-[18px] w-[18px]" />
+              </Link>
+              <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover:block z-50">
+                <div className="bg-popover border border-border rounded-md shadow-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap">
+                  Super Admin
+                </div>
+              </div>
+            </div>
+          ) : (
+            <Link
+              to="/super-admin"
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
+                location.pathname === "/super-admin"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+            >
+              <Crown className="h-[18px] w-[18px] shrink-0" />
+              <span>Super Admin</span>
+            </Link>
+          )}
         </div>
       )}
     </nav>
@@ -274,7 +365,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="fixed inset-0 z-[60] md:hidden">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
           <aside className="absolute left-0 top-0 h-full w-72 bg-card border-r border-border flex flex-col shadow-2xl animate-in slide-in-from-left duration-200">
-            {/* Header */}
             <div className="flex items-center gap-3 px-4 h-14 border-b border-border shrink-0">
               <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
                 <Factory className="h-5 w-5 text-primary-foreground" />
@@ -285,9 +375,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
-            {sidebarNav}
+            {renderSidebarNav(false)}
 
-            {/* Footer */}
             <div className="border-t border-border p-3">
               <button
                 onClick={handleLogout}
@@ -302,33 +391,56 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       )}
 
       {/* ─── DESKTOP SIDEBAR ─── */}
-      <aside className="hidden md:flex flex-col w-64 bg-card border-r border-border shrink-0">
+      <aside
+        className={cn(
+          "hidden md:flex flex-col bg-card border-r border-border shrink-0 transition-all duration-300 ease-in-out",
+          collapsed ? "w-[68px]" : "w-64"
+        )}
+      >
         {/* Header */}
-        <div className="flex items-center gap-3 px-4 h-16 border-b border-border shrink-0">
-          <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center shadow-sm">
+        <div className={cn(
+          "flex items-center h-16 border-b border-border shrink-0",
+          collapsed ? "justify-center px-2" : "gap-3 px-4"
+        )}>
+          <div className={cn(
+            "rounded-xl bg-primary flex items-center justify-center shadow-sm shrink-0",
+            collapsed ? "h-9 w-9" : "h-10 w-10"
+          )}>
             <Factory className="h-5 w-5 text-primary-foreground" />
           </div>
-          <div className="flex flex-col min-w-0">
-            <span className="font-bold text-sm truncate">{factoryName || "ICETECH"}</span>
-            <span className="text-[10px] text-muted-foreground">Sistema de Gestão</span>
-          </div>
-        </div>
-
-        {sidebarNav}
-
-        {/* Footer */}
-        <div className="border-t border-border p-3 space-y-2">
-          {factoryName && role !== "super_admin" && (
-            <div className="px-3 py-2 rounded-lg bg-muted/50 text-[11px] text-muted-foreground text-center truncate">
-              🏭 {factoryName}
+          {!collapsed && (
+            <div className="flex flex-col min-w-0">
+              <span className="font-bold text-sm truncate">{factoryName || "ICETECH"}</span>
+              <span className="text-[10px] text-muted-foreground">Sistema de Gestão</span>
             </div>
           )}
+        </div>
+
+        {renderSidebarNav(collapsed)}
+
+        {/* Footer */}
+        <div className={cn("border-t border-border space-y-1", collapsed ? "p-2" : "p-3")}>
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className={cn(
+              "flex items-center rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-150",
+              collapsed ? "justify-center p-2.5 w-full" : "gap-3 px-3 py-2.5 w-full"
+            )}
+          >
+            {collapsed
+              ? <PanelLeftOpen className="h-[18px] w-[18px]" />
+              : <><PanelLeftClose className="h-[18px] w-[18px] shrink-0" /><span>Recolher</span></>
+            }
+          </button>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all duration-150"
+            className={cn(
+              "flex items-center rounded-lg text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all duration-150",
+              collapsed ? "justify-center p-2.5 w-full" : "gap-3 px-3 py-2.5 w-full"
+            )}
           >
             <LogOut className="h-[18px] w-[18px] shrink-0" />
-            <span>Sair</span>
+            {!collapsed && <span>Sair</span>}
           </button>
         </div>
       </aside>
