@@ -26,6 +26,8 @@ export default function Estoque() {
   const [freezers, setFreezers] = useState<any[]>([]);
   const [clientes, setClientes] = useState<any[]>([]);
   const [sabores, setSabores] = useState<any[]>([]);
+  const [geloCuboEstoque, setGeloCuboEstoque] = useState<any[]>([]);
+  const [vendeGeloCubo, setVendeGeloCubo] = useState(false);
 
   // Freezer dialog
   const [openFreezer, setOpenFreezer] = useState(false);
