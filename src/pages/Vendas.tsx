@@ -1174,7 +1174,38 @@ export default function Vendas() {
                     </Button>
                   </div>
                 ))}
-              </div>
+               </div>
+              {/* Gelo em Cubos Filtrados */}
+              {factoryVendeGeloCubo && Object.keys(geloCuboPrecos).length > 0 && (
+                <div className="space-y-2 p-3 border-2 rounded-lg bg-muted/30 border-blue-500/20">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-bold">🧊 Gelo em Cubos Filtrados</Label>
+                    <Button type="button" size="sm" variant="ghost" className="h-6 text-xs gap-1" onClick={() => setGeloCuboItens([...geloCuboItens, { tamanho: "2kg", quantidade: 1 }])}>
+                      <Plus className="h-3 w-3" /> Add
+                    </Button>
+                  </div>
+                  {geloCuboItens.map((item, i) => (
+                    <div key={i} className="flex gap-2 items-center">
+                      <Select value={item.tamanho} onValueChange={(v) => { const u = [...geloCuboItens]; u[i].tamanho = v; setGeloCuboItens(u); }}>
+                        <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {["2kg", "4kg", "5kg"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <Input type="number" min={1} className="w-20" value={item.quantidade} onChange={(e) => { const u = [...geloCuboItens]; u[i].quantidade = Number(e.target.value); setGeloCuboItens(u); }} placeholder="Qtd" />
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">R$ {((geloCuboPrecos[item.tamanho] || 0) * item.quantidade).toFixed(2)}</span>
+                      <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => setGeloCuboItens(geloCuboItens.filter((_, idx) => idx !== i))}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                  {geloCuboItens.length > 0 && (
+                    <div className="text-xs font-medium text-right pt-1 border-t">
+                      Subtotal Cubos: R$ {geloCuboItens.reduce((s, it) => s + (geloCuboPrecos[it.tamanho] || 0) * it.quantidade, 0).toFixed(2)}
+                    </div>
+                  )}
+                </div>
+              )}
               <div><Label>Observações</Label><Input value={observacoes} onChange={(e) => setObservacoes(e.target.value)} /></div>
               <div className="flex items-center space-x-2">
                 <Checkbox id="ignorar-estoque" checked={ignorarEstoque} onCheckedChange={(v) => setIgnorarEstoque(!!v)} />
