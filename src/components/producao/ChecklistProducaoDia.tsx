@@ -312,8 +312,59 @@ export default function ChecklistProducaoDia({ targetDate }: ChecklistProducaoDi
   function triggerCelebration(updated: ChecklistItem[]) {
     const allDone = updated.every(c => c.concluido);
     if (allDone && updated.length > 0) {
+      // Show finalization dialog instead of immediate celebration
+      setFinalizarDialogOpen(true);
+      setExtraItens([]);
+    }
+  }
+
+  function handleFinalizar() {
+    setFinalizarDialogOpen(false);
+    setShowCelebration(true);
+    setTimeout(() => setShowCelebration(false), 5000);
+  }
+
+  async function handleRegistrarExtras() {
+    if (extraItens.length === 0 || extraItens.every(it => !it.sabor_id || it.quantidade <= 0)) {
+      toast({ title: "Adicione ao menos um sabor com quantidade", variant: "destructive" });
+      return;
+    }
+    setRegistrandoExtra(true);
+    try {
+      const savedFuncs = localStorage.getItem(`checklist-producao-${hojeStr}-funcs`);
+      const operador = localStorage.getItem(`checklist-producao-${hojeStr}-operador`) || "sistema";
+      const funcIds: string[] = savedFuncs ? JSON.parse(savedFuncs) : [];
+
+      for (const item of extraItens.filter(it => it.sabor_id && it.quantidade > 0)) {
+        const gelosPorLote = receitaMap[item.sabor_id] || 84;
+        const qtdTotal = item.modo === "lote" ? item.quantidade * gelosPorLote : item.quantidade;
+        const qtdLotes = item.modo === "lote" ? item.quantidade : Math.ceil(item.quantidade / gelosPorLote);
+
+        await realizarProducao({
+          p_sabor_id: item.sabor_id,
+          p_modo: item.modo === "lote" ? "lote" : "unidade",
+          p_quantidade_lotes: qtdLotes,
+          p_quantidade_total: qtdTotal,
+          p_operador: operador,
+          p_observacoes: `Produção extra via checklist`,
+          p_funcionarios: funcIds.filter(f => f !== "patroes").map(f => ({ funcionario_id: f, quantidade_produzida: 0 })),
+          p_ignorar_estoque: true,
+        });
+      }
+
+      const nomes = extraItens.filter(it => it.sabor_id && it.quantidade > 0).map(it => {
+        const s = allSabores.find(s => s.id === it.sabor_id);
+        return s?.nome || "?";
+      });
+      toast({ title: `✅ Produção extra registrada!`, description: nomes.join(", ") });
+      setFinalizarDialogOpen(false);
       setShowCelebration(true);
       setTimeout(() => setShowCelebration(false), 5000);
+      fetchDecisoes();
+    } catch (e: any) {
+      toast({ title: "Erro ao registrar", description: e.message, variant: "destructive" });
+    } finally {
+      setRegistrandoExtra(false);
     }
   }
 
