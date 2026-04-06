@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Factory, Plus, Users, CreditCard, CheckCircle, XCircle, Clock, AlertTriangle, Upload, Pencil, Trash2, LogIn, Info, UserPlus, Activity, Search, TrendingUp, TrendingDown, Bell, Headphones, FileDown, ShieldAlert, BarChart3 } from "lucide-react";
+import { Factory, Plus, Users, CreditCard, CheckCircle, XCircle, Clock, AlertTriangle, Upload, Pencil, Trash2, LogIn, Info, UserPlus, Activity, Search, TrendingUp, TrendingDown, Bell, Headphones, FileDown, ShieldAlert, BarChart3, FileText } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 import { format, differenceInDays } from "date-fns";
@@ -36,6 +37,7 @@ interface FactoryRow {
     paid_at: string | null;
     amount: number;
   };
+  emite_nfe?: boolean;
   owner_email?: string;
   collaborator_count?: number;
   vendas_mes?: number;
@@ -918,6 +920,20 @@ export default function SuperAdmin() {
                           <span>{format(new Date(factory.subscription.current_period_end), "dd/MM/yyyy", { locale: ptBR })}</span>
                         </div>
                       )}
+
+                      {/* NFE Toggle */}
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground flex items-center gap-1"><FileText className="h-3.5 w-3.5" /> Nota Fiscal</span>
+                        <Switch
+                          checked={!!factory.emite_nfe}
+                          onCheckedChange={async (checked) => {
+                            const { error } = await (supabase as any).from("factories").update({ emite_nfe: checked }).eq("id", factory.id);
+                            if (error) { toast({ title: "Erro ao atualizar NF-e", variant: "destructive" }); return; }
+                            setFactories(prev => prev.map(f => f.id === factory.id ? { ...f, emite_nfe: checked } : f));
+                            toast({ title: checked ? "NF-e habilitada" : "NF-e desabilitada" });
+                          }}
+                        />
+                      </div>
 
                       <div className="border-t my-1" />
 
