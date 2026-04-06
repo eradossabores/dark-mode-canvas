@@ -37,6 +37,7 @@ interface FactoryRow {
     paid_at: string | null;
     amount: number;
   };
+  emite_nfe?: boolean;
   owner_email?: string;
   collaborator_count?: number;
   vendas_mes?: number;
