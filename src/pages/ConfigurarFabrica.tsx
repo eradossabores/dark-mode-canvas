@@ -276,6 +276,84 @@ export default function ConfigurarFabrica() {
     } finally { setSavingRec(false); }
   }
 
+  async function loadNfeConfig() {
+    if (!factoryId) { setLoadingNfe(false); return; }
+    setLoadingNfe(true);
+    try {
+      const { data } = await (supabase as any)
+        .from("factories")
+        .select("emite_nfe, nfe_api_key, nfe_company_id")
+        .eq("id", factoryId)
+        .single();
+      if (data) {
+        setEmiteNfe(data.emite_nfe || false);
+        setNfeApiKey(data.nfe_api_key || "");
+        setNfeCompanyId(data.nfe_company_id || "");
+      }
+      // Load recent NFs
+      const { data: nfs } = await (supabase as any)
+        .from("notas_fiscais")
+        .select("*")
+        .eq("factory_id", factoryId)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      setNfEmitidas(nfs || []);
+    } catch { /* ignore */ }
+    setLoadingNfe(false);
+  }
+
+  async function handleSaveNfe() {
+    if (!factoryId) return;
+    setSavingNfe(true);
+    try {
+      await (supabase as any).from("factories").update({
+        emite_nfe: emiteNfe,
+        nfe_api_key: nfeApiKey || null,
+        nfe_company_id: nfeCompanyId || null,
+      }).eq("id", factoryId);
+      toast({ title: "✅ Configuração de NF-e salva!" });
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+    setSavingNfe(false);
+  }
+
+  async function handleCheckNfStatus(nfId: string) {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-nfe-status`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ nf_id: nfId }),
+        }
+      );
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Erro ao consultar");
+      toast({ title: "Status atualizado", description: `Status: ${result.status}` });
+      loadNfeConfig();
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+  }
+
+  function getNfStatusBadge(status: string) {
+    switch (status) {
+      case "autorizada":
+        return <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400"><CheckCircle className="h-3 w-3" />Autorizada</span>;
+      case "processando":
+        return <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400"><RefreshCw className="h-3 w-3 animate-spin" />Processando</span>;
+      case "cancelada":
+        return <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground"><XCircle className="h-3 w-3" />Cancelada</span>;
+      case "erro":
+        return <span className="inline-flex items-center gap-1 text-xs font-medium text-destructive"><AlertTriangle className="h-3 w-3" />Erro</span>;
+      default:
+        return <span className="text-xs text-muted-foreground">{status}</span>;
+    }
+  }
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* Header */}
