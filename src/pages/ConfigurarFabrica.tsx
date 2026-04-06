@@ -791,6 +791,145 @@ export default function ConfigurarFabrica() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* ═══════ NOTA FISCAL ═══════ */}
+        <TabsContent value="nfe">
+          <Card className="border-0 shadow-lg">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-primary/10">
+                  <FileText className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Nota Fiscal Eletrônica (NF-e)</CardTitle>
+                  <CardDescription>Configure a emissão automática de notas fiscais via NFE.io</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <Separator />
+            <CardContent className="pt-6">
+              {loadingNfe ? (
+                <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
+                  <Loader2 className="h-5 w-5 animate-spin" /> Carregando...
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Toggle */}
+                  <div className="flex items-center justify-between rounded-xl border p-5 bg-card">
+                    <div className="space-y-1">
+                      <Label className="text-base font-medium">Emitir NF-e automaticamente</Label>
+                      <p className="text-sm text-muted-foreground">Ao finalizar uma venda, a nota fiscal será emitida automaticamente via NFE.io</p>
+                    </div>
+                    <Switch checked={emiteNfe} onCheckedChange={setEmiteNfe} />
+                  </div>
+
+                  {emiteNfe && (
+                    <div className="space-y-5 animate-in fade-in-0 slide-in-from-top-2 duration-300">
+                      {/* API Key */}
+                      <div className="rounded-xl border bg-card p-5 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-primary/10">
+                            <span className="text-base">🔑</span>
+                          </div>
+                          <h3 className="font-semibold text-sm">Credenciais NFE.io</h3>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Obtenha sua API Key e Company ID no painel do{" "}
+                          <a href="https://app.nfe.io" target="_blank" rel="noopener noreferrer" className="text-primary underline">NFE.io</a>
+                        </p>
+
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">API Key</Label>
+                            <div className="relative">
+                              <Input
+                                type={showApiKey ? "text" : "password"}
+                                placeholder="Sua API Key do NFE.io"
+                                value={nfeApiKey}
+                                onChange={(e) => setNfeApiKey(e.target.value)}
+                                className="pr-10"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowApiKey(!showApiKey)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                              >
+                                {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">Company ID</Label>
+                            <Input
+                              placeholder="ID da empresa no NFE.io"
+                              value={nfeCompanyId}
+                              onChange={(e) => setNfeCompanyId(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Info */}
+                      <div className="rounded-xl bg-primary/5 border border-primary/20 p-4 flex items-start gap-3">
+                        <span className="text-lg mt-0.5">📋</span>
+                        <div className="text-sm text-muted-foreground space-y-1">
+                          <p><strong>Como funciona:</strong></p>
+                          <ul className="list-disc pl-4 space-y-0.5">
+                            <li>Ao finalizar uma venda, a NF-e é emitida automaticamente</li>
+                            <li>O NCM padrão utilizado é 22011000 (Gelo)</li>
+                            <li>CFOP padrão: 5102 (Venda de mercadoria)</li>
+                            <li>O processamento é assíncrono no NFE.io</li>
+                            <li>Certifique-se que o CNPJ e certificado digital estão configurados no NFE.io</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <Button className="w-full sm:w-auto" size="lg" onClick={handleSaveNfe} disabled={savingNfe}>
+                    {savingNfe ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Salvando...</> : <><Save className="h-4 w-4 mr-2" /> Salvar Configuração</>}
+                  </Button>
+
+                  {/* NFs emitidas recentes */}
+                  {nfEmitidas.length > 0 && (
+                    <div className="space-y-3 pt-4 border-t">
+                      <h3 className="font-semibold text-sm">Últimas NF-e Emitidas</h3>
+                      <div className="space-y-2">
+                        {nfEmitidas.map((nf) => (
+                          <div key={nf.id} className="flex items-center justify-between rounded-lg border bg-card px-4 py-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                {getNfStatusBadge(nf.status)}
+                                {nf.numero && <span className="text-xs text-muted-foreground">Nº {nf.numero}</span>}
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                                {nf.cliente_nome} — R$ {Number(nf.valor_total).toFixed(2)}
+                                {nf.erro_mensagem && <span className="text-destructive ml-1">| {nf.erro_mensagem}</span>}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0 ml-3">
+                              {nf.status === "processando" && (
+                                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => handleCheckNfStatus(nf.id)}>
+                                  <RefreshCw className="h-3 w-3 mr-1" /> Atualizar
+                                </Button>
+                              )}
+                              {nf.pdf_url && (
+                                <a href={nf.pdf_url} target="_blank" rel="noopener noreferrer">
+                                  <Button size="sm" variant="outline" className="h-7 text-xs">PDF</Button>
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   );
