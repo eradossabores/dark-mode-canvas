@@ -1384,7 +1384,7 @@ export default function Vendas() {
                           const qty = item.quantidade || 1;
                           const newUnit = qty > 0 ? totalItem / qty : 0;
                           const updated = [...editItens];
-                          updated[i] = { ...updated[i], preco_unitario: Number(newUnit.toFixed(4)) };
+                          updated[i] = { ...updated[i], preco_unitario: Number(newUnit.toFixed(4)), preco_unitario_display: newUnit.toFixed(4).replace(".", ",") };
                           setEditItens(updated);
                         }}
                         placeholder="Total"
