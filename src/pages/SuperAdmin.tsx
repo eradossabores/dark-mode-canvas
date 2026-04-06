@@ -9,13 +9,15 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { Factory, Plus, Users, CreditCard, CheckCircle, XCircle, Clock, AlertTriangle, Upload, Pencil, Trash2, LogIn, Info, UserPlus } from "lucide-react";
+import { Factory, Plus, Users, CreditCard, CheckCircle, XCircle, Clock, AlertTriangle, Upload, Pencil, Trash2, LogIn, Info, UserPlus, Activity } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { extractColorsFromImage } from "@/lib/color-extract";
 import EditFactoryDialog from "@/components/superadmin/EditFactoryDialog";
 import FactoryDetailsDialog from "@/components/superadmin/FactoryDetailsDialog";
+import MonitorUsuarios from "@/components/superadmin/MonitorUsuarios";
 
 interface FactoryRow {
   id: string;
@@ -369,6 +371,22 @@ export default function SuperAdmin() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Painel Super Admin</h1>
+        </div>
+      </div>
+
+      <Tabs defaultValue="fabricas">
+        <TabsList className="mb-4">
+          <TabsTrigger value="fabricas" className="gap-2"><Factory className="h-4 w-4" /> Fábricas</TabsTrigger>
+          <TabsTrigger value="monitor" className="gap-2"><Activity className="h-4 w-4" /> Monitor de Uso</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="monitor">
+          <MonitorUsuarios />
+        </TabsContent>
+
+        <TabsContent value="fabricas">
+      <div className="flex items-center justify-between">
+        <div>
           <p className="text-muted-foreground">Gerencie todas as fábricas e assinaturas</p>
         </div>
         <Dialog open={showNewFactory} onOpenChange={setShowNewFactory}>
@@ -698,6 +716,8 @@ export default function SuperAdmin() {
           </DialogContent>
         </Dialog>
       )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
