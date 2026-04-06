@@ -567,6 +567,7 @@ export default function Estoque() {
         <div className="overflow-x-auto -mx-1 px-1 pb-1">
           <TabsList className="flex w-max min-w-full sm:w-auto sm:flex-wrap gap-0.5">
             <TabsTrigger value="gelos" className="text-xs sm:text-sm px-2 sm:px-3">Gelos</TabsTrigger>
+            {vendeGeloCubo && <TabsTrigger value="gelo_cubo" className="text-xs sm:text-sm px-2 sm:px-3 gap-1">🧊 Cubos</TabsTrigger>}
             <TabsTrigger value="sacos" className="text-xs sm:text-sm px-2 sm:px-3 gap-1">📦 Sacos</TabsTrigger>
             <TabsTrigger value="avarias" className="text-xs sm:text-sm px-2 sm:px-3 gap-1"><AlertTriangle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />Avarias</TabsTrigger>
             <TabsTrigger value="freezers" className="text-xs sm:text-sm px-2 sm:px-3 gap-1"><Snowflake className="h-3 w-3 sm:h-3.5 sm:w-3.5" />Freezers</TabsTrigger>
