@@ -392,6 +392,11 @@ export default function ConfigurarFabrica() {
             <Users className="h-4 w-4" />
             <span>Equipe</span>
           </TabsTrigger>
+          <TabsTrigger value="nfe" className="gap-1.5 text-xs sm:text-sm py-2.5">
+            <FileText className="h-4 w-4" />
+            <span className="hidden sm:inline">Nota Fiscal</span>
+            <span className="sm:hidden">NF-e</span>
+          </TabsTrigger>
         </TabsList>
 
         {/* ═══════ PREÇOS ═══════ */}
