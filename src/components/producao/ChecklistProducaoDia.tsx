@@ -3,7 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { realizarProducao } from "@/lib/supabase-helpers";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, PartyPopper } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Loader2, PartyPopper, Plus, Trash2, CheckCircle2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const SABOR_COLORS: Record<string, string> = {
@@ -191,12 +197,25 @@ export default function ChecklistProducaoDia({ targetDate }: ChecklistProducaoDi
   const [registrados, setRegistrados] = useState<Set<string>>(new Set());
   const [receitaMap, setReceitaMap] = useState<Record<string, number>>({});
 
+  // Finalization dialog
+  const [finalizarDialogOpen, setFinalizarDialogOpen] = useState(false);
+  const [allSabores, setAllSabores] = useState<{ id: string; nome: string }[]>([]);
+  const [extraItens, setExtraItens] = useState<{ sabor_id: string; quantidade: number; modo: "lote" | "unidade" }[]>([]);
+  const [registrandoExtra, setRegistrandoExtra] = useState(false);
+
   function saveRegistrados(newSet: Set<string>) {
     setRegistrados(newSet);
     localStorage.setItem(REGISTRADOS_KEY, JSON.stringify([...newSet]));
   }
 
-  useEffect(() => { fetchDecisoes(); loadReceitaMap(); }, [hojeStr, factoryId]);
+  useEffect(() => { fetchDecisoes(); loadReceitaMap(); loadAllSabores(); }, [hojeStr, factoryId]);
+
+  async function loadAllSabores() {
+    let q = (supabase as any).from("sabores").select("id, nome").eq("ativo", true).order("nome");
+    if (factoryId) q = q.eq("factory_id", factoryId);
+    const { data } = await q;
+    setAllSabores(data || []);
+  }
 
   async function loadReceitaMap() {
     let rQ = (supabase as any).from("sabor_receita").select("sabor_id, gelos_por_lote");
@@ -293,8 +312,59 @@ export default function ChecklistProducaoDia({ targetDate }: ChecklistProducaoDi
   function triggerCelebration(updated: ChecklistItem[]) {
     const allDone = updated.every(c => c.concluido);
     if (allDone && updated.length > 0) {
+      // Show finalization dialog instead of immediate celebration
+      setFinalizarDialogOpen(true);
+      setExtraItens([]);
+    }
+  }
+
+  function handleFinalizar() {
+    setFinalizarDialogOpen(false);
+    setShowCelebration(true);
+    setTimeout(() => setShowCelebration(false), 5000);
+  }
+
+  async function handleRegistrarExtras() {
+    if (extraItens.length === 0 || extraItens.every(it => !it.sabor_id || it.quantidade <= 0)) {
+      toast({ title: "Adicione ao menos um sabor com quantidade", variant: "destructive" });
+      return;
+    }
+    setRegistrandoExtra(true);
+    try {
+      const savedFuncs = localStorage.getItem(`checklist-producao-${hojeStr}-funcs`);
+      const operador = localStorage.getItem(`checklist-producao-${hojeStr}-operador`) || "sistema";
+      const funcIds: string[] = savedFuncs ? JSON.parse(savedFuncs) : [];
+
+      for (const item of extraItens.filter(it => it.sabor_id && it.quantidade > 0)) {
+        const gelosPorLote = receitaMap[item.sabor_id] || 84;
+        const qtdTotal = item.modo === "lote" ? item.quantidade * gelosPorLote : item.quantidade;
+        const qtdLotes = item.modo === "lote" ? item.quantidade : Math.ceil(item.quantidade / gelosPorLote);
+
+        await realizarProducao({
+          p_sabor_id: item.sabor_id,
+          p_modo: item.modo === "lote" ? "lote" : "unidade",
+          p_quantidade_lotes: qtdLotes,
+          p_quantidade_total: qtdTotal,
+          p_operador: operador,
+          p_observacoes: `Produção extra via checklist`,
+          p_funcionarios: funcIds.filter(f => f !== "patroes").map(f => ({ funcionario_id: f, quantidade_produzida: 0 })),
+          p_ignorar_estoque: true,
+        });
+      }
+
+      const nomes = extraItens.filter(it => it.sabor_id && it.quantidade > 0).map(it => {
+        const s = allSabores.find(s => s.id === it.sabor_id);
+        return s?.nome || "?";
+      });
+      toast({ title: `✅ Produção extra registrada!`, description: nomes.join(", ") });
+      setFinalizarDialogOpen(false);
       setShowCelebration(true);
       setTimeout(() => setShowCelebration(false), 5000);
+      fetchDecisoes();
+    } catch (e: any) {
+      toast({ title: "Erro ao registrar", description: e.message, variant: "destructive" });
+    } finally {
+      setRegistrandoExtra(false);
     }
   }
 
@@ -525,6 +595,74 @@ export default function ChecklistProducaoDia({ targetDate }: ChecklistProducaoDi
           </div>
         );
       })}
+
+      {/* Dialog de finalização */}
+      <Dialog open={finalizarDialogOpen} onOpenChange={setFinalizarDialogOpen}>
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-green-500" />
+              Produção 100% Concluída!
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Todos os lotes planejados foram finalizados. Deseja encerrar a produção ou acrescentar mais sabores?
+          </p>
+
+          {extraItens.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Sabores extras:</Label>
+              {extraItens.map((item, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                  <Select value={item.sabor_id} onValueChange={(v) => { const u = [...extraItens]; u[i].sabor_id = v; setExtraItens(u); }}>
+                    <SelectTrigger className="flex-1"><SelectValue placeholder="Sabor" /></SelectTrigger>
+                    <SelectContent>{allSabores.map(s => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <Input
+                    type="number" min={1} className="w-20"
+                    value={item.quantidade || ""}
+                    onChange={(e) => { const u = [...extraItens]; u[i].quantidade = Number(e.target.value); setExtraItens(u); }}
+                    placeholder="Qtd"
+                  />
+                  <RadioGroup
+                    value={item.modo}
+                    onValueChange={(v: "lote" | "unidade") => { const u = [...extraItens]; u[i].modo = v; setExtraItens(u); }}
+                    className="flex gap-2"
+                  >
+                    <div className="flex items-center gap-1">
+                      <RadioGroupItem value="lote" id={`modo-lote-${i}`} />
+                      <Label htmlFor={`modo-lote-${i}`} className="text-xs cursor-pointer">Lote</Label>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <RadioGroupItem value="unidade" id={`modo-und-${i}`} />
+                      <Label htmlFor={`modo-und-${i}`} className="text-xs cursor-pointer">Und</Label>
+                    </div>
+                  </RadioGroup>
+                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setExtraItens(extraItens.filter((_, idx) => idx !== i))}>
+                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <Button variant="outline" size="sm" className="w-full" onClick={() => setExtraItens([...extraItens, { sabor_id: "", quantidade: 1, modo: "lote" }])}>
+            <Plus className="h-4 w-4 mr-1" /> Adicionar Sabor Extra
+          </Button>
+
+          <DialogFooter className="flex gap-2 sm:gap-2">
+            {extraItens.length > 0 ? (
+              <Button onClick={handleRegistrarExtras} disabled={registrandoExtra} className="flex-1">
+                {registrandoExtra ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Registrando...</> : "Registrar e Finalizar"}
+              </Button>
+            ) : (
+              <Button onClick={handleFinalizar} className="flex-1">
+                <PartyPopper className="h-4 w-4 mr-2" /> Finalizar Produção
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
