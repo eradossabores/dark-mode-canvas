@@ -240,29 +240,35 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </p>
             )}
             {group.items.map((item: any) => {
-              // Has sub-items (expandable)
               if (item.children) {
                 const childActive = item.children.some((c: any) => location.pathname === c.path);
+                const isOpen = openMenus[item.label] ?? false;
                 return (
                   <div key={item.label}>
-                    <div
+                    <button
+                      onClick={() => toggleMenu(item.label)}
                       className={cn(
-                        "flex items-center gap-3 px-4 py-2 text-sm transition-colors rounded-md mx-2 cursor-default",
+                        "flex items-center gap-3 px-4 py-2 text-sm transition-colors rounded-md mx-2 w-[calc(100%-1rem)] text-left",
                         childActive
                           ? "text-sidebar-foreground font-semibold"
-                          : "text-sidebar-foreground/70"
+                          : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                       )}
                     >
                       <item.icon className="h-4 w-4 shrink-0" />
                       {isExpanded && (
                         <>
                           <span className="flex-1">{item.label}</span>
-                          <ChevronRight className={cn("h-3 w-3 transition-transform", childActive && "rotate-90")} />
+                          <ChevronRight className={cn("h-3 w-3 transition-transform duration-200", isOpen && "rotate-90")} />
                         </>
                       )}
-                    </div>
+                    </button>
                     {isExpanded && (
-                      <div className="ml-4 border-l border-sidebar-border/40 pl-1 space-y-0.5">
+                      <div
+                        className={cn(
+                          "ml-4 border-l border-sidebar-border/40 pl-1 space-y-0.5 overflow-hidden transition-all duration-200",
+                          isOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
+                        )}
+                      >
                         {item.children.map((child: any) => {
                           const active = location.pathname === child.path;
                           return (
