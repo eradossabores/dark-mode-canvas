@@ -349,7 +349,7 @@ export default function RelatorioVendas() {
                             : "-"}
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className="capitalize">{v.forma_pagamento || "-"}</Badge>
+                          <Badge variant="outline">{displayFormaPagamento(v.forma_pagamento)}</Badge>
                         </TableCell>
                         <TableCell>
                           <Badge variant={v.status === "paga" ? "default" : v.status === "cancelada" ? "destructive" : "secondary"}>{v.status}</Badge>
