@@ -392,6 +392,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* ─── DESKTOP SIDEBAR ─── */}
       <aside
+        onMouseEnter={() => setCollapsed(false)}
+        onMouseLeave={() => setCollapsed(true)}
         className={cn(
           "hidden md:flex flex-col bg-card border-r border-border shrink-0 transition-all duration-300 ease-in-out",
           collapsed ? "w-[68px]" : "w-64"
