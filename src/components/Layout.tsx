@@ -159,8 +159,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               className={cn(
                 "flex items-center justify-center p-2.5 rounded-lg transition-all duration-150",
                 childActive
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "bg-sidebar-primary/15 text-sidebar-primary"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
               )}
             >
               <item.icon className="h-[18px] w-[18px]" />
@@ -200,8 +200,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             className={cn(
               "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
               childActive
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "bg-sidebar-primary/15 text-sidebar-primary"
+                : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
             )}
           >
             <item.icon className="h-[18px] w-[18px] shrink-0" />
@@ -219,7 +219,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               isOpen ? "max-h-40 mt-1" : "max-h-0"
             )}
           >
-            <div className="ml-3 pl-3 border-l-2 border-border space-y-0.5">
+            <div className="ml-3 pl-3 border-l-2 border-sidebar-border space-y-0.5">
               {item.children.map((child) => {
                 const active = location.pathname === child.path;
                 return (
@@ -229,8 +229,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     className={cn(
                       "flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-150",
                       active
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                     )}
                   >
                     <child.icon className="h-4 w-4 shrink-0" />
@@ -254,8 +254,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             className={cn(
               "flex items-center justify-center p-2.5 rounded-lg transition-all duration-150",
               active
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
             )}
           >
             <item.icon className="h-[18px] w-[18px]" />
@@ -276,8 +276,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         className={cn(
           "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
           active
-            ? "bg-primary text-primary-foreground shadow-sm"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+            : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
         )}
       >
         <item.icon className="h-[18px] w-[18px] shrink-0" />
@@ -291,11 +291,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {filteredGroups.map((group) => (
         <div key={group.label}>
           {!isCollapsedMode && (
-            <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/50">
+            <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">
               {group.label}
             </p>
           )}
-          {isCollapsedMode && <div className="h-px bg-border mx-1 mb-2" />}
+          {isCollapsedMode && <div className="h-px bg-sidebar-border mx-1 mb-2" />}
           <div className="space-y-0.5">
             {group.items.map((item) => renderMenuItem(item, isCollapsedMode))}
           </div>
@@ -303,7 +303,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       ))}
       {role === "super_admin" && (
         <div>
-          <div className={cn("h-px bg-border mb-3", isCollapsedMode ? "mx-1" : "mx-3")} />
+          <div className={cn("h-px bg-sidebar-border mb-3", isCollapsedMode ? "mx-1" : "mx-3")} />
           {isCollapsedMode ? (
             <div className="relative group">
               <Link
@@ -311,8 +311,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 className={cn(
                   "flex items-center justify-center p-2.5 rounded-lg transition-all duration-150",
                   location.pathname === "/super-admin"
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                 )}
               >
                 <Crown className="h-[18px] w-[18px]" />
@@ -329,8 +329,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
                 location.pathname === "/super-admin"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
               )}
             >
               <Crown className="h-[18px] w-[18px] shrink-0" />
