@@ -54,10 +54,12 @@ export default function RelatorioVendas() {
   async function loadData() {
     let vQ = (supabase as any).from("vendas").select("*, clientes(nome)").order("created_at", { ascending: false });
     let iQ = (supabase as any).from("venda_itens").select("*, sabores(nome)");
-    if (factoryId) { vQ = vQ.eq("factory_id", factoryId); iQ = iQ.eq("factory_id", factoryId); }
-    const [v, it] = await Promise.all([vQ, iQ]);
+    let aQ = (supabase as any).from("abatimentos_historico").select("*");
+    if (factoryId) { vQ = vQ.eq("factory_id", factoryId); iQ = iQ.eq("factory_id", factoryId); aQ = aQ.eq("factory_id", factoryId); }
+    const [v, it, ab] = await Promise.all([vQ, iQ, aQ]);
     setVendas(v.data || []);
     setItens(it.data || []);
+    setAbatimentos(ab.data || []);
   }
 
   const operadores = useMemo(() => {
