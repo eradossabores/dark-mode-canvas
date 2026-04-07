@@ -1125,6 +1125,45 @@ export default function PlanoSemanal() {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
+                        <Button variant="outline" size="icon" className="h-7 w-7 rounded-full" onClick={async () => {
+                          const mon = new Date(p.semana_inicio + "T00:00:00");
+                          const currentMon = getMonday(new Date());
+                          const diff = Math.round((mon.getTime() - currentMon.getTime()) / (7 * 24 * 60 * 60 * 1000));
+                          setWeekOffset(diff);
+                          await loadPlan(p.id, p.nome);
+                          toast({ title: "Plano carregado para edição ✏️" });
+                        }}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Editar plano</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="icon" className="h-7 w-7 rounded-full" onClick={async () => {
+                          const { data: planItens } = await (supabase as any).from("plano_semanal_itens").select("*").eq("plano_id", p.id);
+                          if (planItens && planItens.length > 0) {
+                            const newItens = planItens.map((d: any) => ({
+                              id: crypto.randomUUID(), sabor_id: d.sabor_id, dia_semana: d.dia_semana, quantidade: d.quantidade,
+                            }));
+                            setItens(newItens);
+                            setPlanoId(null);
+                            setPlanoNome(p.nome + " (cópia)");
+                            setWeekOffset(prev => prev + 1);
+                            toast({ title: "Plano duplicado para a próxima semana 📋" });
+                          }
+                        }}>
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Duplicar plano</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
                         <Button variant="outline" size="icon" className="h-7 w-7 rounded-full" onClick={() => {
                           const mon = new Date(p.semana_inicio + "T00:00:00");
                           const currentMon = getMonday(new Date());
