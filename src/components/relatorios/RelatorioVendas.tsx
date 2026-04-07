@@ -308,25 +308,39 @@ export default function RelatorioVendas() {
                   <TableRow>{headers.map((h) => <TableHead key={h}>{h}</TableHead>)}</TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.slice(0, 100).map((v) => (
-                    <TableRow key={v.id}>
-                      <TableCell>{new Date(v.created_at).toLocaleDateString("pt-BR")}</TableCell>
-                      <TableCell>{v.clientes?.nome}</TableCell>
-                      <TableCell>R$ {Number(v.total).toFixed(2)}</TableCell>
-                      <TableCell>
-                        {Number(v.valor_frete || 0) > 0 
-                          ? <span className="text-xs">R$ {Number(v.valor_frete).toFixed(2)} <span className="text-muted-foreground">({v.frete_pago_por || "cliente"})</span></span>
-                          : "-"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="capitalize">{v.forma_pagamento || "-"}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={v.status === "paga" ? "default" : v.status === "cancelada" ? "destructive" : "secondary"}>{v.status}</Badge>
-                      </TableCell>
-                      <TableCell>{v.operador}</TableCell>
-                    </TableRow>
-                  ))}
+                  {filtered.slice(0, 100).map((v) => {
+                    const abatido = abatimentosPorVenda[v.id] || 0;
+                    const saldo = Number(v.total) - abatido;
+                    return (
+                      <TableRow key={v.id}>
+                        <TableCell>{new Date(v.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                        <TableCell>{v.clientes?.nome}</TableCell>
+                        <TableCell>R$ {Number(v.total).toFixed(2)}</TableCell>
+                        <TableCell>
+                          {abatido > 0
+                            ? <span className="text-xs text-green-600 font-medium">R$ {abatido.toFixed(2)}</span>
+                            : "-"}
+                        </TableCell>
+                        <TableCell>
+                          {abatido > 0
+                            ? <Badge variant={saldo <= 0.01 ? "default" : "secondary"}>{saldo <= 0.01 ? "Quitado" : `R$ ${saldo.toFixed(2)}`}</Badge>
+                            : "-"}
+                        </TableCell>
+                        <TableCell>
+                          {Number(v.valor_frete || 0) > 0 
+                            ? <span className="text-xs">R$ {Number(v.valor_frete).toFixed(2)} <span className="text-muted-foreground">({v.frete_pago_por || "cliente"})</span></span>
+                            : "-"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize">{v.forma_pagamento || "-"}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={v.status === "paga" ? "default" : v.status === "cancelada" ? "destructive" : "secondary"}>{v.status}</Badge>
+                        </TableCell>
+                        <TableCell>{v.operador}</TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </CardContent>
