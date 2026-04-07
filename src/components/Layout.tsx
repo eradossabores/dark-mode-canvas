@@ -291,7 +291,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {filteredGroups.map((group) => (
         <div key={group.label}>
           {!isCollapsedMode && (
-            <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/50">
+            <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">
               {group.label}
             </p>
           )}
