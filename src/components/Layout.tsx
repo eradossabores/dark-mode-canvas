@@ -412,12 +412,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           "flex items-center h-16 border-b border-sidebar-border shrink-0",
           collapsed ? "justify-center px-2" : "gap-3 px-4"
         )}>
-          <div className={cn(
-            "rounded-xl bg-primary flex items-center justify-center shadow-sm shrink-0",
-            collapsed ? "h-9 w-9" : "h-10 w-10"
-          )}>
-            <Factory className="h-5 w-5 text-primary-foreground" />
-          </div>
+          {branding?.logoUrl ? (
+            <img src={branding.logoUrl} alt={factoryName || "Logo"} className={cn("rounded-xl object-cover shrink-0", collapsed ? "h-9 w-9" : "h-10 w-10")} />
+          ) : (
+            <div className={cn(
+              "rounded-xl bg-sidebar-primary flex items-center justify-center shadow-sm shrink-0",
+              collapsed ? "h-9 w-9" : "h-10 w-10"
+            )}>
+              <Factory className="h-5 w-5 text-sidebar-primary-foreground" />
+            </div>
+          )}
           {!collapsed && (
             <div className="flex flex-col min-w-0">
               <span className="font-bold text-sm truncate">{factoryName || "ICETECH"}</span>
