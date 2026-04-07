@@ -16,6 +16,12 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const COLORS = ["hsl(200,98%,39%)", "hsl(213,93%,67%)", "hsl(38,92%,50%)", "hsl(142,71%,45%)", "hsl(215,20%,65%)", "hsl(0,72%,50%)"];
 
+const FORMA_PAGAMENTO_LABELS: Record<string, string> = {
+  pix: "PIX", dinheiro: "Dinheiro", cartao: "Cartão", fiado: "A Prazo",
+  boleto: "Boleto", parcelado: "Parcelado", especie: "Espécie",
+};
+const displayFormaPagamento = (v: string | null) => v ? (FORMA_PAGAMENTO_LABELS[v] || v.charAt(0).toUpperCase() + v.slice(1)) : "-";
+
 const FORMAS_PAGAMENTO = [
   { value: "todos", label: "Todos" },
   { value: "pix", label: "PIX" },
