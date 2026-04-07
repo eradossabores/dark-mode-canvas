@@ -54,12 +54,23 @@ export default function RelatorioVendas() {
   async function loadData() {
     let vQ = (supabase as any).from("vendas").select("*, clientes(nome)").order("created_at", { ascending: false });
     let iQ = (supabase as any).from("venda_itens").select("*, sabores(nome)");
-    let aQ = (supabase as any).from("abatimentos_historico").select("*");
-    if (factoryId) { vQ = vQ.eq("factory_id", factoryId); iQ = iQ.eq("factory_id", factoryId); aQ = aQ.eq("factory_id", factoryId); }
-    const [v, it, ab] = await Promise.all([vQ, iQ, aQ]);
-    setVendas(v.data || []);
+    if (factoryId) { vQ = vQ.eq("factory_id", factoryId); iQ = iQ.eq("factory_id", factoryId); }
+    const [v, it] = await Promise.all([vQ, iQ]);
+    const vendasData = v.data || [];
+    setVendas(vendasData);
     setItens(it.data || []);
-    setAbatimentos(ab.data || []);
+
+    // Buscar abatimentos pelas vendas (não por factory_id, pois pode ser null)
+    if (vendasData.length > 0) {
+      const vendaIds = vendasData.map((vd: any) => vd.id);
+      const { data: abData } = await (supabase as any)
+        .from("abatimentos_historico")
+        .select("*")
+        .in("venda_id", vendaIds);
+      setAbatimentos(abData || []);
+    } else {
+      setAbatimentos([]);
+    }
   }
 
   const operadores = useMemo(() => {
