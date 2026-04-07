@@ -318,7 +318,7 @@ export default function RelatorioVendas() {
                         <TableCell>R$ {Number(v.total).toFixed(2)}</TableCell>
                         <TableCell>
                           {abatido > 0
-                            ? <span className="text-xs text-green-600 font-medium">R$ {abatido.toFixed(2)}</span>
+                            ? <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">R$ {abatido.toFixed(2)}</span>
                             : "-"}
                         </TableCell>
                         <TableCell>
