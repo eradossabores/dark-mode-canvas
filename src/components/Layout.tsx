@@ -395,7 +395,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         onMouseEnter={() => setCollapsed(false)}
         onMouseLeave={() => setCollapsed(true)}
         className={cn(
-          "hidden md:flex flex-col bg-card border-r border-border shrink-0 transition-all duration-300 ease-in-out",
+          "hidden md:flex flex-col bg-sidebar border-r border-sidebar-border shrink-0 transition-all duration-300 ease-in-out text-sidebar-foreground",
           collapsed ? "w-[68px]" : "w-64"
         )}
       >
