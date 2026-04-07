@@ -477,7 +477,7 @@ export default function Auditoria() {
                             {(ve.itens || []).length > 3 && <Badge variant="outline" className="text-xs">+{(ve.itens || []).length - 3}</Badge>}
                           </div>
                         </TableCell>
-                        <TableCell><Badge variant="outline" className="capitalize text-xs">{ve.forma_pagamento || "-"}</Badge></TableCell>
+                        <TableCell><Badge variant="outline" className="text-xs">{{"pix":"PIX","dinheiro":"Dinheiro","cartao":"Cartão","fiado":"A Prazo","boleto":"Boleto","parcelado":"Parcelado"}[ve.forma_pagamento] || ve.forma_pagamento || "-"}</Badge></TableCell>
                         <TableCell><Badge variant={ve.status === "paga" ? "default" : "secondary"} className="text-xs">{ve.status}</Badge></TableCell>
                         <TableCell>
                           <div className="flex gap-1">
