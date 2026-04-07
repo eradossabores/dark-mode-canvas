@@ -219,7 +219,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               isOpen ? "max-h-40 mt-1" : "max-h-0"
             )}
           >
-            <div className="ml-3 pl-3 border-l-2 border-border space-y-0.5">
+            <div className="ml-3 pl-3 border-l-2 border-sidebar-border space-y-0.5">
               {item.children.map((child) => {
                 const active = location.pathname === child.path;
                 return (
