@@ -466,6 +466,7 @@ export type Database = {
       contas_a_pagar: {
         Row: {
           ativa: boolean
+          categoria: string
           created_at: string
           descricao: string
           factory_id: string | null
@@ -484,6 +485,7 @@ export type Database = {
         }
         Insert: {
           ativa?: boolean
+          categoria?: string
           created_at?: string
           descricao: string
           factory_id?: string | null
@@ -502,6 +504,7 @@ export type Database = {
         }
         Update: {
           ativa?: boolean
+          categoria?: string
           created_at?: string
           descricao?: string
           factory_id?: string | null
@@ -1353,6 +1356,57 @@ export type Database = {
             columns: ["venda_id"]
             isOneToOne: false
             referencedRelation: "vendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pagamentos_contas: {
+        Row: {
+          conta_id: string
+          created_at: string
+          data_pagamento: string
+          factory_id: string | null
+          forma_pagamento: string
+          id: string
+          observacoes: string | null
+          parcela_numero: number | null
+          valor: number
+        }
+        Insert: {
+          conta_id: string
+          created_at?: string
+          data_pagamento?: string
+          factory_id?: string | null
+          forma_pagamento?: string
+          id?: string
+          observacoes?: string | null
+          parcela_numero?: number | null
+          valor?: number
+        }
+        Update: {
+          conta_id?: string
+          created_at?: string
+          data_pagamento?: string
+          factory_id?: string | null
+          forma_pagamento?: string
+          id?: string
+          observacoes?: string | null
+          parcela_numero?: number | null
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagamentos_contas_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: false
+            referencedRelation: "contas_a_pagar"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_contas_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
             referencedColumns: ["id"]
           },
         ]
