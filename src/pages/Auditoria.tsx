@@ -477,7 +477,7 @@ export default function Auditoria() {
                             {(ve.itens || []).length > 3 && <Badge variant="outline" className="text-xs">+{(ve.itens || []).length - 3}</Badge>}
                           </div>
                         </TableCell>
-                        <TableCell><Badge variant="outline" className="capitalize text-xs">{ve.forma_pagamento || "-"}</Badge></TableCell>
+                        <TableCell><Badge variant="outline" className="text-xs">{{"pix":"PIX","dinheiro":"Dinheiro","cartao":"Cartão","fiado":"A Prazo","boleto":"Boleto","parcelado":"Parcelado"}[ve.forma_pagamento] || ve.forma_pagamento || "-"}</Badge></TableCell>
                         <TableCell><Badge variant={ve.status === "paga" ? "default" : "secondary"} className="text-xs">{ve.status}</Badge></TableCell>
                         <TableCell>
                           <div className="flex gap-1">
@@ -515,7 +515,7 @@ export default function Auditoria() {
                 <div><span className="text-muted-foreground">Total:</span> <span className="font-bold">R$ {Number(viewVenda.total).toFixed(2)}</span></div>
                 <div><span className="text-muted-foreground">Data da Venda:</span> {viewVenda.data_venda ? new Date(viewVenda.data_venda).toLocaleDateString("pt-BR") : "-"}</div>
                 <div><span className="text-muted-foreground">Excluída em:</span> {new Date(viewVenda.excluido_em).toLocaleString("pt-BR")}</div>
-                <div><span className="text-muted-foreground">Pagamento:</span> <Badge variant="outline" className="capitalize">{viewVenda.forma_pagamento || "-"}</Badge></div>
+                <div><span className="text-muted-foreground">Pagamento:</span> <Badge variant="outline">{{"pix":"PIX","dinheiro":"Dinheiro","cartao":"Cartão","fiado":"A Prazo","boleto":"Boleto","parcelado":"Parcelado"}[viewVenda.forma_pagamento] || viewVenda.forma_pagamento || "-"}</Badge></div>
                 <div><span className="text-muted-foreground">Status:</span> <Badge variant={viewVenda.status === "paga" ? "default" : "secondary"}>{viewVenda.status}</Badge></div>
                 {viewVenda.numero_nf && <div><span className="text-muted-foreground">NF:</span> {viewVenda.numero_nf}</div>}
                 {viewVenda.observacoes && <div className="col-span-2"><span className="text-muted-foreground">Obs:</span> {viewVenda.observacoes}</div>}

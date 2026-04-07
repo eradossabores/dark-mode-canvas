@@ -16,6 +16,12 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const COLORS = ["hsl(200,98%,39%)", "hsl(213,93%,67%)", "hsl(38,92%,50%)", "hsl(142,71%,45%)", "hsl(215,20%,65%)", "hsl(0,72%,50%)"];
 
+const FORMA_PAGAMENTO_LABELS: Record<string, string> = {
+  pix: "PIX", dinheiro: "Dinheiro", cartao: "Cartão", fiado: "A Prazo",
+  boleto: "Boleto", parcelado: "Parcelado", especie: "Espécie",
+};
+const displayFormaPagamento = (v: string | null) => v ? (FORMA_PAGAMENTO_LABELS[v] || v.charAt(0).toUpperCase() + v.slice(1)) : "-";
+
 const FORMAS_PAGAMENTO = [
   { value: "todos", label: "Todos" },
   { value: "pix", label: "PIX" },
@@ -133,7 +139,7 @@ export default function RelatorioVendas() {
       map[forma].valor += Number(v.total);
     });
     return Object.entries(map)
-      .map(([name, v]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), qtd: v.qtd, valor: v.valor }))
+      .map(([name, v]) => ({ name: displayFormaPagamento(name), qtd: v.qtd, valor: v.valor }))
       .sort((a, b) => b.valor - a.valor);
   }, [filtered]);
 
@@ -157,7 +163,7 @@ export default function RelatorioVendas() {
       abatido > 0 ? `R$ ${abatido.toFixed(2)}` : "-",
       saldo > 0.01 ? `R$ ${saldo.toFixed(2)}` : "Quitado",
       Number(v.valor_frete || 0) > 0 ? `R$ ${Number(v.valor_frete).toFixed(2)} (${v.frete_pago_por || "cliente"})` : "-",
-      v.forma_pagamento || "-",
+      displayFormaPagamento(v.forma_pagamento),
       v.status,
       v.operador,
     ];
@@ -343,7 +349,7 @@ export default function RelatorioVendas() {
                             : "-"}
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className="capitalize">{v.forma_pagamento || "-"}</Badge>
+                          <Badge variant="outline">{displayFormaPagamento(v.forma_pagamento)}</Badge>
                         </TableCell>
                         <TableCell>
                           <Badge variant={v.status === "paga" ? "default" : v.status === "cancelada" ? "destructive" : "secondary"}>{v.status}</Badge>
