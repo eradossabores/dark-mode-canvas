@@ -50,7 +50,8 @@ export async function exportToPDF(
   filename: string,
   totals?: { label: string; value: string }[],
   chartContainerId?: string,
-  branding?: PDFBranding
+  branding?: PDFBranding,
+  summary?: { label: string; value: string }[]
 ) {
   const doc = new jsPDF();
   const PAGE_W = 210;
