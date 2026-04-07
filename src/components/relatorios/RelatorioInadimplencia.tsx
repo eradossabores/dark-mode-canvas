@@ -10,8 +10,10 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis
 import { AlertTriangle, DollarSign, Clock, Users } from "lucide-react";
 import KpiCard from "./KpiCard";
 import ExportButtons from "./ExportButtons";
+import DateRangeFilter from "./DateRangeFilter";
 import { exportToPDF, exportToExcel } from "@/lib/export-utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { startOfMonth } from "date-fns";
 
 const COLORS = ["hsl(0,72%,50%)", "hsl(38,92%,50%)", "hsl(200,98%,39%)", "hsl(142,71%,45%)"];
 
@@ -30,9 +32,11 @@ export default function RelatorioInadimplencia() {
   const [previewLoaded, setPreviewLoaded] = useState(false);
   const [filtroFaixa, setFiltroFaixa] = useState("todos");
   const [filtroCliente, setFiltroCliente] = useState("");
+  const [startDate, setStartDate] = useState<Date | undefined>(startOfMonth(new Date()));
+  const [endDate, setEndDate] = useState<Date | undefined>(new Date());
 
   useEffect(() => { loadData(); }, [factoryId]);
-  useEffect(() => { setPreviewLoaded(false); }, [filtroFaixa, filtroCliente]);
+  useEffect(() => { setPreviewLoaded(false); }, [filtroFaixa, filtroCliente, startDate, endDate]);
 
   async function loadData() {
     let pQ = (supabase as any).from("venda_parcelas").select("*, vendas(cliente_id, clientes(nome))").eq("paga", false).order("vencimento");
@@ -50,6 +54,19 @@ export default function RelatorioInadimplencia() {
     return parcelas.filter(p => {
       const venc = new Date(p.vencimento);
       if (venc >= hoje) return false;
+
+      // Filtro por data de vencimento
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        if (venc < start) return false;
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        if (venc > end) return false;
+      }
+
       const dias = Math.floor((hoje.getTime() - venc.getTime()) / 86400000);
       const nome = (p.vendas?.clientes?.nome || "").toLowerCase();
 
@@ -62,7 +79,7 @@ export default function RelatorioInadimplencia() {
 
       return true;
     });
-  }, [parcelas, filtroFaixa, filtroCliente]);
+  }, [parcelas, filtroFaixa, filtroCliente, startDate, endDate]);
 
   const parcelasAVencer = parcelas.filter(p => new Date(p.vencimento) >= hoje);
 
@@ -105,7 +122,7 @@ export default function RelatorioInadimplencia() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end gap-3 p-4 bg-card rounded-lg border">
+      <DateRangeFilter startDate={startDate} endDate={endDate} onStartChange={setStartDate} onEndChange={setEndDate}>
         <div>
           <Label className="text-xs mb-1 block">Faixa de Atraso</Label>
           <Select value={filtroFaixa} onValueChange={setFiltroFaixa}>
@@ -131,7 +148,7 @@ export default function RelatorioInadimplencia() {
           ], "charts-inadimplencia", { factoryName: factoryName || undefined, factoryLogoUrl: branding?.logoUrl })}
           onExcel={() => exportToExcel(headers, rows, "Inadimplência", "relatorio-inadimplencia")}
         />
-      </div>
+      </DateRangeFilter>
 
       {!previewLoaded ? (
         <Card>
