@@ -135,16 +135,22 @@ export default function RelatorioVendas() {
     return Object.entries(map).map(([name, value]) => ({ name, value })).reverse();
   }, [filtered]);
 
-  const headers = ["Data", "Cliente", "Total", "Frete", "Pagamento", "Status", "Operador"];
-  const rows = filtered.map((v) => [
-    new Date(v.created_at).toLocaleDateString("pt-BR"),
-    v.clientes?.nome || "-",
-    `R$ ${Number(v.total).toFixed(2)}`,
-    Number(v.valor_frete || 0) > 0 ? `R$ ${Number(v.valor_frete).toFixed(2)} (${v.frete_pago_por || "cliente"})` : "-",
-    v.forma_pagamento || "-",
-    v.status,
-    v.operador,
-  ]);
+  const headers = ["Data", "Cliente", "Total", "Abatido", "Saldo", "Frete", "Pagamento", "Status", "Operador"];
+  const rows = filtered.map((v) => {
+    const abatido = abatimentosPorVenda[v.id] || 0;
+    const saldo = Number(v.total) - abatido;
+    return [
+      new Date(v.created_at).toLocaleDateString("pt-BR"),
+      v.clientes?.nome || "-",
+      `R$ ${Number(v.total).toFixed(2)}`,
+      abatido > 0 ? `R$ ${abatido.toFixed(2)}` : "-",
+      saldo > 0.01 ? `R$ ${saldo.toFixed(2)}` : "Quitado",
+      Number(v.valor_frete || 0) > 0 ? `R$ ${Number(v.valor_frete).toFixed(2)} (${v.frete_pago_por || "cliente"})` : "-",
+      v.forma_pagamento || "-",
+      v.status,
+      v.operador,
+    ];
+  });
 
   const periodoLabel = `${startDate?.toLocaleDateString("pt-BR") || "—"} a ${endDate?.toLocaleDateString("pt-BR") || "—"}`;
 
