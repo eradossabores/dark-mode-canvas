@@ -353,6 +353,20 @@ export default function RelatorioVendas() {
                     );
                   })}
                 </TableBody>
+                <tfoot>
+                  <tr className="border-t-2 border-primary/30 bg-muted/50 font-bold">
+                    <TableCell colSpan={2} className="text-right text-sm">Totais:</TableCell>
+                    <TableCell className="text-sm">R$ {faturamento.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
+                    <TableCell className="text-sm text-emerald-600 dark:text-emerald-400">R$ {totalAbatido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
+                    <TableCell className="text-sm">
+                      <Badge variant={(faturamento - totalAbatido) <= 0.01 ? "default" : "secondary"}>
+                        {(faturamento - totalAbatido) <= 0.01 ? "Quitado" : `R$ ${(faturamento - totalAbatido).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm">R$ {totalFrete.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
+                    <TableCell colSpan={3}></TableCell>
+                  </tr>
+                </tfoot>
               </Table>
             </CardContent>
           </Card>
