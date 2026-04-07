@@ -50,7 +50,8 @@ export async function exportToPDF(
   filename: string,
   totals?: { label: string; value: string }[],
   chartContainerId?: string,
-  branding?: PDFBranding
+  branding?: PDFBranding,
+  summary?: { label: string; value: string }[]
 ) {
   const doc = new jsPDF();
   const PAGE_W = 210;
@@ -220,7 +221,54 @@ export async function exportToPDF(
     });
   }
 
-  // ── Rodapé em todas as páginas ──
+  // ── Mini Resumo Final ──
+  if (summary && summary.length > 0) {
+    const finalY = (doc as any).lastAutoTable?.finalY || currentY;
+    let sumY = finalY + 10;
+
+    if (sumY + 14 + summary.length * 10 > PAGE_H - 25) {
+      doc.addPage();
+      sumY = MARGIN;
+    }
+
+    const boxW = CONTENT_W * 0.5;
+    const boxX = MARGIN + CONTENT_W - boxW;
+    const boxH = 12 + summary.length * 10 + 6;
+
+    // Background
+    doc.setFillColor(235, 245, 255);
+    doc.setDrawColor(0, 100, 160);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(boxX, sumY, boxW, boxH, 3, 3, "FD");
+
+    // Title
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 80, 140);
+    doc.text("RESUMO FINANCEIRO", boxX + 6, sumY + 8);
+
+    // Line
+    doc.setDrawColor(0, 100, 160);
+    doc.setLineWidth(0.3);
+    doc.line(boxX + 6, sumY + 11, boxX + boxW - 6, sumY + 11);
+
+    // Items
+    let itemY = sumY + 18;
+    summary.forEach((s, idx) => {
+      const isLast = idx === summary.length - 1;
+      doc.setFontSize(isLast ? 10 : 8.5);
+      doc.setFont("helvetica", isLast ? "bold" : "normal");
+      doc.setTextColor(isLast ? 0 : 60, isLast ? 80 : 60, isLast ? 140 : 60);
+      doc.text(s.label, boxX + 6, itemY);
+      doc.setFont("helvetica", "bold");
+      doc.text(s.value, boxX + boxW - 6, itemY, { align: "right" });
+      itemY += 10;
+    });
+
+    doc.setTextColor(0);
+  }
+
+
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
