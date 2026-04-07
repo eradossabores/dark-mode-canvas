@@ -78,9 +78,7 @@ const menuGroups: MenuGroup[] = [
     items: [
       { path: "/painel/configurar", label: "Configurações", icon: Settings },
       { path: "/painel/relatorios", label: "Relatórios", icon: BarChart3 },
-      { path: "/painel/importar-planilha", label: "Importar Dados", icon: FileUp },
       { path: "/painel/auditoria", label: "Auditoria", icon: ClipboardList },
-      { path: "/painel/diagnostico", label: "Diagnóstico", icon: Database },
       { path: "/painel/usuarios", label: "Usuários", icon: Shield },
       { path: "/painel/backup", label: "Backup", icon: HardDrive },
       { path: "/painel/suporte", label: "Suporte", icon: MessageCircle },
