@@ -82,12 +82,22 @@ export default function RelatorioVendas() {
 
   const filteredIds = new Set(filtered.map((v) => v.id));
   const filteredItens = itens.filter((i) => filteredIds.has(i.venda_id));
+  const filteredAbatimentos = abatimentos.filter((a) => filteredIds.has(a.venda_id));
+
+  const abatimentosPorVenda = useMemo(() => {
+    const map: Record<string, number> = {};
+    filteredAbatimentos.forEach((a) => {
+      map[a.venda_id] = (map[a.venda_id] || 0) + Number(a.valor);
+    });
+    return map;
+  }, [filteredAbatimentos]);
 
   const faturamento = filtered.reduce((s, v) => s + Number(v.total), 0);
   const totalFrete = filtered.reduce((s, v) => s + Number(v.valor_frete || 0), 0);
   const totalVendas = filtered.length;
   const ticketMedio = totalVendas > 0 ? faturamento / totalVendas : 0;
   const totalUnidades = filteredItens.reduce((s, i) => s + i.quantidade, 0);
+  const totalAbatido = filteredAbatimentos.reduce((s, a) => s + Number(a.valor), 0);
 
   const porSabor = useMemo(() => {
     const map: Record<string, { qtd: number; valor: number }> = {};
