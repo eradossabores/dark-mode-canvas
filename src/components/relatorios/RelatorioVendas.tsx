@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
-import { DollarSign, ShoppingCart, TrendingUp, Target, Truck } from "lucide-react";
+import { DollarSign, ShoppingCart, TrendingUp, Target, Truck, CreditCard } from "lucide-react";
 import DateRangeFilter from "./DateRangeFilter";
 import KpiCard from "./KpiCard";
 import ExportButtons from "./ExportButtons";
@@ -36,6 +36,7 @@ export default function RelatorioVendas() {
   const { factoryId, factoryName, branding } = useAuth();
   const [vendas, setVendas] = useState<any[]>([]);
   const [itens, setItens] = useState<any[]>([]);
+  const [abatimentos, setAbatimentos] = useState<any[]>([]);
   const [startDate, setStartDate] = useState<Date | undefined>(
     new Date(new Date().getFullYear(), new Date().getMonth(), 1)
   );
@@ -53,10 +54,12 @@ export default function RelatorioVendas() {
   async function loadData() {
     let vQ = (supabase as any).from("vendas").select("*, clientes(nome)").order("created_at", { ascending: false });
     let iQ = (supabase as any).from("venda_itens").select("*, sabores(nome)");
-    if (factoryId) { vQ = vQ.eq("factory_id", factoryId); iQ = iQ.eq("factory_id", factoryId); }
-    const [v, it] = await Promise.all([vQ, iQ]);
+    let aQ = (supabase as any).from("abatimentos_historico").select("*");
+    if (factoryId) { vQ = vQ.eq("factory_id", factoryId); iQ = iQ.eq("factory_id", factoryId); aQ = aQ.eq("factory_id", factoryId); }
+    const [v, it, ab] = await Promise.all([vQ, iQ, aQ]);
     setVendas(v.data || []);
     setItens(it.data || []);
+    setAbatimentos(ab.data || []);
   }
 
   const operadores = useMemo(() => {
@@ -79,12 +82,22 @@ export default function RelatorioVendas() {
 
   const filteredIds = new Set(filtered.map((v) => v.id));
   const filteredItens = itens.filter((i) => filteredIds.has(i.venda_id));
+  const filteredAbatimentos = abatimentos.filter((a) => filteredIds.has(a.venda_id));
+
+  const abatimentosPorVenda = useMemo(() => {
+    const map: Record<string, number> = {};
+    filteredAbatimentos.forEach((a) => {
+      map[a.venda_id] = (map[a.venda_id] || 0) + Number(a.valor);
+    });
+    return map;
+  }, [filteredAbatimentos]);
 
   const faturamento = filtered.reduce((s, v) => s + Number(v.total), 0);
   const totalFrete = filtered.reduce((s, v) => s + Number(v.valor_frete || 0), 0);
   const totalVendas = filtered.length;
   const ticketMedio = totalVendas > 0 ? faturamento / totalVendas : 0;
   const totalUnidades = filteredItens.reduce((s, i) => s + i.quantidade, 0);
+  const totalAbatido = filteredAbatimentos.reduce((s, a) => s + Number(a.valor), 0);
 
   const porSabor = useMemo(() => {
     const map: Record<string, { qtd: number; valor: number }> = {};
@@ -122,16 +135,22 @@ export default function RelatorioVendas() {
     return Object.entries(map).map(([name, value]) => ({ name, value })).reverse();
   }, [filtered]);
 
-  const headers = ["Data", "Cliente", "Total", "Frete", "Pagamento", "Status", "Operador"];
-  const rows = filtered.map((v) => [
-    new Date(v.created_at).toLocaleDateString("pt-BR"),
-    v.clientes?.nome || "-",
-    `R$ ${Number(v.total).toFixed(2)}`,
-    Number(v.valor_frete || 0) > 0 ? `R$ ${Number(v.valor_frete).toFixed(2)} (${v.frete_pago_por || "cliente"})` : "-",
-    v.forma_pagamento || "-",
-    v.status,
-    v.operador,
-  ]);
+  const headers = ["Data", "Cliente", "Total", "Abatido", "Saldo", "Frete", "Pagamento", "Status", "Operador"];
+  const rows = filtered.map((v) => {
+    const abatido = abatimentosPorVenda[v.id] || 0;
+    const saldo = Number(v.total) - abatido;
+    return [
+      new Date(v.created_at).toLocaleDateString("pt-BR"),
+      v.clientes?.nome || "-",
+      `R$ ${Number(v.total).toFixed(2)}`,
+      abatido > 0 ? `R$ ${abatido.toFixed(2)}` : "-",
+      saldo > 0.01 ? `R$ ${saldo.toFixed(2)}` : "Quitado",
+      Number(v.valor_frete || 0) > 0 ? `R$ ${Number(v.valor_frete).toFixed(2)} (${v.frete_pago_por || "cliente"})` : "-",
+      v.forma_pagamento || "-",
+      v.status,
+      v.operador,
+    ];
+  });
 
   const periodoLabel = `${startDate?.toLocaleDateString("pt-BR") || "—"} a ${endDate?.toLocaleDateString("pt-BR") || "—"}`;
 
@@ -178,6 +197,7 @@ export default function RelatorioVendas() {
             { label: "Total de Vendas", value: totalVendas.toString() },
             { label: "Ticket Médio", value: `R$ ${ticketMedio.toFixed(2)}` },
             { label: "Unidades Vendidas", value: totalUnidades.toLocaleString("pt-BR") },
+            { label: "Total Abatido", value: `R$ ${totalAbatido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
             { label: "Total Frete", value: `R$ ${totalFrete.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
             { label: "Período", value: periodoLabel },
             ...(filtroPagamento !== "todos" ? [{ label: "Filtro Pagamento", value: filtroPagamento.toUpperCase() }] : []),
@@ -211,11 +231,12 @@ export default function RelatorioVendas() {
             {filtroOperador !== "todos" && <Badge variant="outline" className="ml-2">Op: {filtroOperador}</Badge>}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
             <KpiCard title="Faturamento" value={`R$ ${faturamento.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={DollarSign} />
             <KpiCard title="Total de Vendas" value={totalVendas.toString()} icon={ShoppingCart} />
             <KpiCard title="Ticket Médio" value={`R$ ${ticketMedio.toFixed(2)}`} icon={Target} />
             <KpiCard title="Unidades Vendidas" value={totalUnidades.toLocaleString("pt-BR")} icon={TrendingUp} />
+            <KpiCard title="Total Abatido" value={`R$ ${totalAbatido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={CreditCard} />
             <KpiCard title="Total Frete" value={`R$ ${totalFrete.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={Truck} />
           </div>
 
@@ -287,25 +308,39 @@ export default function RelatorioVendas() {
                   <TableRow>{headers.map((h) => <TableHead key={h}>{h}</TableHead>)}</TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.slice(0, 100).map((v) => (
-                    <TableRow key={v.id}>
-                      <TableCell>{new Date(v.created_at).toLocaleDateString("pt-BR")}</TableCell>
-                      <TableCell>{v.clientes?.nome}</TableCell>
-                      <TableCell>R$ {Number(v.total).toFixed(2)}</TableCell>
-                      <TableCell>
-                        {Number(v.valor_frete || 0) > 0 
-                          ? <span className="text-xs">R$ {Number(v.valor_frete).toFixed(2)} <span className="text-muted-foreground">({v.frete_pago_por || "cliente"})</span></span>
-                          : "-"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="capitalize">{v.forma_pagamento || "-"}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={v.status === "paga" ? "default" : v.status === "cancelada" ? "destructive" : "secondary"}>{v.status}</Badge>
-                      </TableCell>
-                      <TableCell>{v.operador}</TableCell>
-                    </TableRow>
-                  ))}
+                  {filtered.slice(0, 100).map((v) => {
+                    const abatido = abatimentosPorVenda[v.id] || 0;
+                    const saldo = Number(v.total) - abatido;
+                    return (
+                      <TableRow key={v.id}>
+                        <TableCell>{new Date(v.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                        <TableCell>{v.clientes?.nome}</TableCell>
+                        <TableCell>R$ {Number(v.total).toFixed(2)}</TableCell>
+                        <TableCell>
+                          {abatido > 0
+                            ? <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">R$ {abatido.toFixed(2)}</span>
+                            : "-"}
+                        </TableCell>
+                        <TableCell>
+                          {abatido > 0
+                            ? <Badge variant={saldo <= 0.01 ? "default" : "secondary"}>{saldo <= 0.01 ? "Quitado" : `R$ ${saldo.toFixed(2)}`}</Badge>
+                            : "-"}
+                        </TableCell>
+                        <TableCell>
+                          {Number(v.valor_frete || 0) > 0 
+                            ? <span className="text-xs">R$ {Number(v.valor_frete).toFixed(2)} <span className="text-muted-foreground">({v.frete_pago_por || "cliente"})</span></span>
+                            : "-"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize">{v.forma_pagamento || "-"}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={v.status === "paga" ? "default" : v.status === "cancelada" ? "destructive" : "secondary"}>{v.status}</Badge>
+                        </TableCell>
+                        <TableCell>{v.operador}</TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </CardContent>
