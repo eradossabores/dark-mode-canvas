@@ -401,7 +401,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       >
         {/* Header */}
         <div className={cn(
-          "flex items-center h-16 border-b border-border shrink-0",
+          "flex items-center h-16 border-b border-sidebar-border shrink-0",
           collapsed ? "justify-center px-2" : "gap-3 px-4"
         )}>
           <div className={cn(
