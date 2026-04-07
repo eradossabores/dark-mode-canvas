@@ -432,16 +432,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <LogOut className="h-[18px] w-[18px] shrink-0" />
             {!collapsed && <span>Sair</span>}
           </button>
-          <button
-            onClick={handleLogout}
-            className={cn(
-              "flex items-center rounded-lg text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all duration-150",
-              collapsed ? "justify-center p-2.5 w-full" : "gap-3 px-3 py-2.5 w-full"
-            )}
-          >
-            <LogOut className="h-[18px] w-[18px] shrink-0" />
-            {!collapsed && <span>Sair</span>}
-          </button>
         </div>
       </aside>
 
