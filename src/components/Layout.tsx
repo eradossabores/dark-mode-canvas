@@ -353,9 +353,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
         <div className="flex items-center gap-2 min-w-0">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-            <Factory className="h-4 w-4 text-primary-foreground" />
-          </div>
+          {branding?.logoUrl ? (
+            <img src={branding.logoUrl} alt={factoryName || "Logo"} className="h-8 w-8 rounded-lg object-cover" />
+          ) : (
+            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+              <Factory className="h-4 w-4 text-primary-foreground" />
+            </div>
+          )}
           <span className="font-semibold text-sm truncate">{factoryName || "ICETECH"}</span>
         </div>
       </div>
