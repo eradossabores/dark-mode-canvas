@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import {
   CalendarDays, Plus, Trash2, Save, ArrowLeft, Pencil,
-  TrendingDown, AlertTriangle, CheckCircle2,
+  TrendingDown, AlertTriangle, CheckCircle2, Eye,
   Copy, BarChart3, Sparkles, Package, X, Check, ChevronLeft, ChevronRight,
   Bot, Loader2, Brain, Info, FileText, Share2
 } from "lucide-react";
