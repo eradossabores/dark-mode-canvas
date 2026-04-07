@@ -44,7 +44,6 @@ const menuGroups: MenuGroup[] = [
       { path: "/painel/producao", label: "Produção", icon: Factory },
       { path: "/painel/monitor-producao", label: "Monitor", icon: Monitor },
       { path: "/painel/presenca", label: "Presença", icon: UserCheck },
-      { path: "/painel/previsao-demanda", label: "Previsão", icon: Brain },
     ],
   },
   {
@@ -79,9 +78,7 @@ const menuGroups: MenuGroup[] = [
     items: [
       { path: "/painel/configurar", label: "Configurações", icon: Settings },
       { path: "/painel/relatorios", label: "Relatórios", icon: BarChart3 },
-      { path: "/painel/importar-planilha", label: "Importar Dados", icon: FileUp },
       { path: "/painel/auditoria", label: "Auditoria", icon: ClipboardList },
-      { path: "/painel/diagnostico", label: "Diagnóstico", icon: Database },
       { path: "/painel/usuarios", label: "Usuários", icon: Shield },
       { path: "/painel/backup", label: "Backup", icon: HardDrive },
       { path: "/painel/suporte", label: "Suporte", icon: MessageCircle },
