@@ -1156,33 +1156,42 @@ export default function PlanoSemanal() {
       )}
 
       {/* Floating action bar */}
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-lg">
         <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }}
-          className="flex items-center gap-2 bg-card/95 backdrop-blur-md border border-border/50 rounded-2xl shadow-xl px-4 py-2.5 flex-wrap justify-center">
-          <Button variant="outline" size="sm" className="rounded-full" onClick={() => gerarRelatorioPDF(false)} disabled={itens.length === 0}>
+          className="flex items-center gap-1.5 md:gap-2 bg-card/95 backdrop-blur-md border border-border/50 rounded-2xl shadow-xl px-3 md:px-4 py-2 md:py-2.5 justify-center">
+          <Button variant="outline" size="icon" className="rounded-full h-8 w-8 md:hidden" onClick={() => gerarRelatorioPDF(false)} disabled={itens.length === 0}>
+            <FileText className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="sm" className="rounded-full hidden md:flex" onClick={() => gerarRelatorioPDF(false)} disabled={itens.length === 0}>
             <FileText className="h-4 w-4 mr-1.5" /> PDF
           </Button>
-          <Button variant="outline" size="sm" className="rounded-full" onClick={() => gerarRelatorioPDF(true)} disabled={itens.length === 0}>
+          <Button variant="outline" size="icon" className="rounded-full h-8 w-8 md:hidden" onClick={() => gerarRelatorioPDF(true)} disabled={itens.length === 0}>
+            <Share2 className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="sm" className="rounded-full hidden md:flex" onClick={() => gerarRelatorioPDF(true)} disabled={itens.length === 0}>
             <Share2 className="h-4 w-4 mr-1.5" /> WhatsApp
           </Button>
-          <Button variant="outline" size="sm" className="rounded-full" onClick={duplicarPlano} disabled={itens.length === 0}>
+          <Button variant="outline" size="icon" className="rounded-full h-8 w-8 md:hidden" onClick={duplicarPlano} disabled={itens.length === 0}>
+            <Copy className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="sm" className="rounded-full hidden md:flex" onClick={duplicarPlano} disabled={itens.length === 0}>
             <Copy className="h-4 w-4 mr-1.5" /> Duplicar
           </Button>
-          <Button size="sm" className="rounded-full shadow-sm" onClick={() => setShowSaveDialog(true)} disabled={itens.length === 0}>
-            <Save className="h-4 w-4 mr-1.5" /> Salvar
+          <Button size="sm" className="rounded-full shadow-sm text-xs md:text-sm" onClick={() => setShowSaveDialog(true)} disabled={itens.length === 0}>
+            <Save className="h-4 w-4 md:mr-1.5" /> <span className="hidden md:inline">Salvar</span>
           </Button>
           <Button 
             size="sm" 
-            className="rounded-full shadow-sm bg-emerald-600 hover:bg-emerald-700 text-white"
+            className="rounded-full shadow-sm bg-emerald-600 hover:bg-emerald-700 text-white text-xs md:text-sm"
             onClick={() => setShowAutorizarConfirm(true)} 
             disabled={itens.length === 0 || autorizando || planoStatus === "autorizado"}
           >
             {autorizando ? (
-              <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> Autorizando...</>
+              <><Loader2 className="h-4 w-4 md:mr-1.5 animate-spin" /> <span className="hidden md:inline">Autorizando...</span></>
             ) : planoStatus === "autorizado" ? (
-              <><CheckCircle2 className="h-4 w-4 mr-1.5" /> Autorizado</>
+              <><CheckCircle2 className="h-4 w-4 md:mr-1.5" /> <span className="hidden md:inline">Autorizado</span></>
             ) : (
-              <><Check className="h-4 w-4 mr-1.5" /> Autorizar</>
+              <><Check className="h-4 w-4 md:mr-1.5" /> <span className="hidden md:inline">Autorizar</span></>
             )}
           </Button>
         </motion.div>
