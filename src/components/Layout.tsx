@@ -303,7 +303,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       ))}
       {role === "super_admin" && (
         <div>
-          <div className={cn("h-px bg-border mb-3", isCollapsedMode ? "mx-1" : "mx-3")} />
+          <div className={cn("h-px bg-sidebar-border mb-3", isCollapsedMode ? "mx-1" : "mx-3")} />
           {isCollapsedMode ? (
             <div className="relative group">
               <Link
