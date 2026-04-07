@@ -233,7 +233,11 @@ export default function RelatorioVendas() {
             { label: "Período", value: periodoLabel },
             ...(filtroPagamento !== "todos" ? [{ label: "Filtro Pagamento", value: filtroPagamento.toUpperCase() }] : []),
             ...(filtroStatus !== "todos" ? [{ label: "Filtro Status", value: filtroStatus }] : []),
-          ], "charts-vendas", { factoryName: factoryName || undefined, factoryLogoUrl: branding?.logoUrl })}
+          ], "charts-vendas", { factoryName: factoryName || undefined, factoryLogoUrl: branding?.logoUrl }, [
+            { label: "Faturamento Total", value: `R$ ${faturamento.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
+            { label: "Total Abatido", value: `R$ ${totalAbatido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
+            { label: "Pendência", value: saldoTotal <= 0.01 ? "Quitado" : `R$ ${saldoTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
+          ])}
           onExcel={() => exportToExcel(headers, rows, "Vendas", "relatorio-vendas")}
         />
       </DateRangeFilter>
