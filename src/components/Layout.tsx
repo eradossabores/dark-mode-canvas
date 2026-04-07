@@ -421,18 +421,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {renderSidebarNav(collapsed)}
 
         {/* Footer */}
-        <div className={cn("border-t border-border space-y-1", collapsed ? "p-2" : "p-3")}>
+        <div className={cn("border-t border-sidebar-border space-y-1", collapsed ? "p-2" : "p-3")}>
           <button
-            onClick={() => setCollapsed(!collapsed)}
+            onClick={handleLogout}
             className={cn(
-              "flex items-center rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-150",
+              "flex items-center rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-destructive/10 hover:text-destructive transition-all duration-150",
               collapsed ? "justify-center p-2.5 w-full" : "gap-3 px-3 py-2.5 w-full"
             )}
           >
-            {collapsed
-              ? <PanelLeftOpen className="h-[18px] w-[18px]" />
-              : <><PanelLeftClose className="h-[18px] w-[18px] shrink-0" /><span>Recolher</span></>
-            }
+            <LogOut className="h-[18px] w-[18px] shrink-0" />
+            {!collapsed && <span>Sair</span>}
           </button>
           <button
             onClick={handleLogout}
