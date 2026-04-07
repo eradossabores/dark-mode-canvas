@@ -395,13 +395,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         onMouseEnter={() => setCollapsed(false)}
         onMouseLeave={() => setCollapsed(true)}
         className={cn(
-          "hidden md:flex flex-col bg-card border-r border-border shrink-0 transition-all duration-300 ease-in-out",
+          "hidden md:flex flex-col bg-sidebar border-r border-sidebar-border shrink-0 transition-all duration-300 ease-in-out text-sidebar-foreground",
           collapsed ? "w-[68px]" : "w-64"
         )}
       >
         {/* Header */}
         <div className={cn(
-          "flex items-center h-16 border-b border-border shrink-0",
+          "flex items-center h-16 border-b border-sidebar-border shrink-0",
           collapsed ? "justify-center px-2" : "gap-3 px-4"
         )}>
           <div className={cn(
@@ -421,23 +421,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {renderSidebarNav(collapsed)}
 
         {/* Footer */}
-        <div className={cn("border-t border-border space-y-1", collapsed ? "p-2" : "p-3")}>
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className={cn(
-              "flex items-center rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-150",
-              collapsed ? "justify-center p-2.5 w-full" : "gap-3 px-3 py-2.5 w-full"
-            )}
-          >
-            {collapsed
-              ? <PanelLeftOpen className="h-[18px] w-[18px]" />
-              : <><PanelLeftClose className="h-[18px] w-[18px] shrink-0" /><span>Recolher</span></>
-            }
-          </button>
+        <div className={cn("border-t border-sidebar-border space-y-1", collapsed ? "p-2" : "p-3")}>
           <button
             onClick={handleLogout}
             className={cn(
-              "flex items-center rounded-lg text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all duration-150",
+              "flex items-center rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-destructive/10 hover:text-destructive transition-all duration-150",
               collapsed ? "justify-center p-2.5 w-full" : "gap-3 px-3 py-2.5 w-full"
             )}
           >
