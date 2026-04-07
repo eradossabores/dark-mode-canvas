@@ -197,6 +197,7 @@ export default function RelatorioVendas() {
             { label: "Total de Vendas", value: totalVendas.toString() },
             { label: "Ticket Médio", value: `R$ ${ticketMedio.toFixed(2)}` },
             { label: "Unidades Vendidas", value: totalUnidades.toLocaleString("pt-BR") },
+            { label: "Total Abatido", value: `R$ ${totalAbatido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
             { label: "Total Frete", value: `R$ ${totalFrete.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
             { label: "Período", value: periodoLabel },
             ...(filtroPagamento !== "todos" ? [{ label: "Filtro Pagamento", value: filtroPagamento.toUpperCase() }] : []),
