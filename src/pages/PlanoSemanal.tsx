@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import {
   CalendarDays, Plus, Trash2, Save, ArrowLeft, Pencil,
-  TrendingDown, AlertTriangle, CheckCircle2,
+  TrendingDown, AlertTriangle, CheckCircle2, Eye,
   Copy, BarChart3, Sparkles, Package, X, Check, ChevronLeft, ChevronRight,
   Bot, Loader2, Brain, Info, FileText, Share2
 } from "lucide-react";
@@ -1110,13 +1110,15 @@ export default function PlanoSemanal() {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button variant="outline" size="icon" className="h-7 w-7 rounded-full" onClick={() => {
+                        <Button variant="outline" size="icon" className="h-7 w-7 rounded-full" onClick={async () => {
                           const mon = new Date(p.semana_inicio + "T00:00:00");
                           const currentMon = getMonday(new Date());
                           const diff = Math.round((mon.getTime() - currentMon.getTime()) / (7 * 24 * 60 * 60 * 1000));
                           setWeekOffset(diff);
+                          await loadPlan(p.id, p.nome);
+                          toast({ title: "Plano carregado 👁️" });
                         }}>
-                          <FileText className="h-3.5 w-3.5" />
+                          <Eye className="h-3.5 w-3.5" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>Visualizar plano</TooltipContent>
