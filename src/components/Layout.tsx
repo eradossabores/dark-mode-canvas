@@ -370,9 +370,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
           <aside className="absolute left-0 top-0 h-full w-72 bg-card border-r border-border flex flex-col shadow-2xl animate-in slide-in-from-left duration-200">
             <div className="flex items-center gap-3 px-4 h-14 border-b border-border shrink-0">
-              <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
-                <Factory className="h-5 w-5 text-primary-foreground" />
-              </div>
+              {branding?.logoUrl ? (
+                <img src={branding.logoUrl} alt={factoryName || "Logo"} className="h-9 w-9 rounded-lg object-cover" />
+              ) : (
+                <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
+                  <Factory className="h-5 w-5 text-primary-foreground" />
+                </div>
+              )}
               <div className="flex flex-col min-w-0">
                 <span className="font-bold text-sm truncate">{factoryName || "ICETECH"}</span>
                 <span className="text-[10px] text-muted-foreground">Sistema de Gestão</span>
