@@ -1107,15 +1107,47 @@ export default function PlanoSemanal() {
                   </p>
                 </div>
                 <div className="flex gap-1.5">
-                  <Button variant="outline" size="sm" className="h-7 text-xs rounded-full" onClick={() => {
-                    const mon = new Date(p.semana_inicio + "T00:00:00");
-                    const currentMon = getMonday(new Date());
-                    const diff = Math.round((mon.getTime() - currentMon.getTime()) / (7 * 24 * 60 * 60 * 1000));
-                    setWeekOffset(diff);
-                  }}>Carregar</Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full hover:bg-destructive/10" onClick={() => setDeleteConfirm(p.id)}>
-                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                  </Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="icon" className="h-7 w-7 rounded-full" onClick={() => {
+                          const mon = new Date(p.semana_inicio + "T00:00:00");
+                          const currentMon = getMonday(new Date());
+                          const diff = Math.round((mon.getTime() - currentMon.getTime()) / (7 * 24 * 60 * 60 * 1000));
+                          setWeekOffset(diff);
+                        }}>
+                          <FileText className="h-3.5 w-3.5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Visualizar plano</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="icon" className="h-7 w-7 rounded-full" onClick={() => {
+                          const mon = new Date(p.semana_inicio + "T00:00:00");
+                          const currentMon = getMonday(new Date());
+                          const diff = Math.round((mon.getTime() - currentMon.getTime()) / (7 * 24 * 60 * 60 * 1000));
+                          setWeekOffset(diff);
+                          setTimeout(() => gerarRelatorioPDF(true), 500);
+                        }}>
+                          <Share2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Compartilhar via WhatsApp</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full hover:bg-destructive/10" onClick={() => setDeleteConfirm(p.id)}>
+                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Excluir plano</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </div>
             ))}
