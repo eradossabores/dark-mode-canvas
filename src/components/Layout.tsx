@@ -295,7 +295,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               {group.label}
             </p>
           )}
-          {isCollapsedMode && <div className="h-px bg-border mx-1 mb-2" />}
+          {isCollapsedMode && <div className="h-px bg-sidebar-border mx-1 mb-2" />}
           <div className="space-y-0.5">
             {group.items.map((item) => renderMenuItem(item, isCollapsedMode))}
           </div>
