@@ -36,6 +36,7 @@ export default function RelatorioVendas() {
   const { factoryId, factoryName, branding } = useAuth();
   const [vendas, setVendas] = useState<any[]>([]);
   const [itens, setItens] = useState<any[]>([]);
+  const [abatimentos, setAbatimentos] = useState<any[]>([]);
   const [startDate, setStartDate] = useState<Date | undefined>(
     new Date(new Date().getFullYear(), new Date().getMonth(), 1)
   );
