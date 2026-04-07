@@ -139,7 +139,7 @@ export default function RelatorioVendas() {
       map[forma].valor += Number(v.total);
     });
     return Object.entries(map)
-      .map(([name, v]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), qtd: v.qtd, valor: v.valor }))
+      .map(([name, v]) => ({ name: displayFormaPagamento(name), qtd: v.qtd, valor: v.valor }))
       .sort((a, b) => b.valor - a.valor);
   }, [filtered]);
 
