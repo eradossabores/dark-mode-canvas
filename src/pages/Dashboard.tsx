@@ -19,6 +19,12 @@ import EstoqueInteligente from "@/components/dashboard/EstoqueInteligente";
 import RankingClientes from "@/components/dashboard/RankingClientes";
 import ClientesInativos from "@/components/dashboard/ClientesInativos";
 import GastosColaboradores from "@/components/dashboard/GastosColaboradores";
+import ComparativoMensal from "@/components/dashboard/ComparativoMensal";
+import MetaVendas from "@/components/dashboard/MetaVendas";
+import AlertasInteligentes from "@/components/dashboard/AlertasInteligentes";
+import EficienciaProducao from "@/components/dashboard/EficienciaProducao";
+import SugestaoCompra from "@/components/dashboard/SugestaoCompra";
+import ClassificacaoABC from "@/components/dashboard/ClassificacaoABC";
 
 const postItCharacters = [sidImg, scratAcornImg, buckImg, scrat3dImg, scratStandingImg, scratHangingImg];
 const ERA_DOS_SABORES_ID = "00000000-0000-0000-0000-000000000001";
@@ -778,6 +784,22 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* New widgets row: Comparativo + Meta + Alertas + Eficiência */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-4 sm:mb-6 opacity-0 animate-fade-in" style={{ animationDelay: "600ms", animationFillMode: "forwards" }}>
+        <div className="relative rounded-xl border-[0.75px] border-border p-0.5 lg:col-span-2">
+          <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
+          <div className="relative"><ComparativoMensal factoryId={factoryId} /></div>
+        </div>
+        <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
+          <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
+          <div className="relative"><MetaVendas factoryId={factoryId} /></div>
+        </div>
+        <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
+          <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
+          <div className="relative"><EficienciaProducao factoryId={factoryId} /></div>
+        </div>
+      </div>
+
       {/* Widgets: Estoque Inteligente + Ranking + Clientes Inativos */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6 opacity-0 animate-fade-in" style={{ animationDelay: "700ms", animationFillMode: "forwards" }}>
         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
@@ -791,6 +813,22 @@ export default function Dashboard() {
         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
           <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
           <div className="relative"><ClientesInativos factoryId={factoryId} /></div>
+        </div>
+      </div>
+
+      {/* Alertas + Sugestão Compra + Classificação ABC */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6 opacity-0 animate-fade-in" style={{ animationDelay: "750ms", animationFillMode: "forwards" }}>
+        <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
+          <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
+          <div className="relative"><AlertasInteligentes factoryId={factoryId} /></div>
+        </div>
+        <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
+          <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
+          <div className="relative"><SugestaoCompra factoryId={factoryId} /></div>
+        </div>
+        <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
+          <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
+          <div className="relative"><ClassificacaoABC factoryId={factoryId} /></div>
         </div>
       </div>
 
