@@ -105,6 +105,7 @@ export default function PlanoSemanal() {
   const [autorizando, setAutorizando] = useState(false);
   const [showAutorizarConfirm, setShowAutorizarConfirm] = useState(false);
   const [planoStatus, setPlanoStatus] = useState<string>("rascunho");
+  const [viewPlano, setViewPlano] = useState<{ nome: string; semana: string; status: string; itens: any[] } | null>(null);
 
   const mondayOfWeek = useMemo(() => {
     const now = new Date();
