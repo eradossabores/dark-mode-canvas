@@ -391,6 +391,41 @@ export type Database = {
           },
         ]
       }
+      comissoes_config: {
+        Row: {
+          created_at: string
+          factory_id: string
+          id: string
+          percentual: number
+          updated_at: string
+          vendedor_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          factory_id: string
+          id?: string
+          percentual?: number
+          updated_at?: string
+          vendedor_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          factory_id?: string
+          id?: string
+          percentual?: number
+          updated_at?: string
+          vendedor_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comissoes_config_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       compras: {
         Row: {
           created_at: string
@@ -838,8 +873,6 @@ export type Database = {
           longitude: number | null
           max_collaborators: number | null
           name: string
-          nfe_api_key: string | null
-          nfe_company_id: string | null
           owner_id: string
           theme: Json | null
           unidades_por_saco: number
@@ -862,8 +895,6 @@ export type Database = {
           longitude?: number | null
           max_collaborators?: number | null
           name: string
-          nfe_api_key?: string | null
-          nfe_company_id?: string | null
           owner_id: string
           theme?: Json | null
           unidades_por_saco?: number
@@ -886,8 +917,6 @@ export type Database = {
           longitude?: number | null
           max_collaborators?: number | null
           name?: string
-          nfe_api_key?: string | null
-          nfe_company_id?: string | null
           owner_id?: string
           theme?: Json | null
           unidades_por_saco?: number
@@ -963,6 +992,41 @@ export type Database = {
             foreignKeyName: "factory_pricing_tiers_factory_id_fkey"
             columns: ["factory_id"]
             isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      factory_secrets: {
+        Row: {
+          created_at: string
+          factory_id: string
+          id: string
+          nfe_api_key: string | null
+          nfe_company_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          factory_id: string
+          id?: string
+          nfe_api_key?: string | null
+          nfe_company_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          factory_id?: string
+          id?: string
+          nfe_api_key?: string | null
+          nfe_company_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "factory_secrets_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: true
             referencedRelation: "factories"
             referencedColumns: ["id"]
           },
@@ -1241,6 +1305,41 @@ export type Database = {
           },
         ]
       }
+      metas_vendas: {
+        Row: {
+          created_at: string
+          factory_id: string
+          id: string
+          mes: string
+          updated_at: string
+          valor_meta: number
+        }
+        Insert: {
+          created_at?: string
+          factory_id: string
+          id?: string
+          mes: string
+          updated_at?: string
+          valor_meta?: number
+        }
+        Update: {
+          created_at?: string
+          factory_id?: string
+          id?: string
+          mes?: string
+          updated_at?: string
+          valor_meta?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "metas_vendas_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       movimentacoes_estoque: {
         Row: {
           created_at: string
@@ -1356,6 +1455,53 @@ export type Database = {
             columns: ["venda_id"]
             isOneToOne: false
             referencedRelation: "vendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_progress: {
+        Row: {
+          cliente_cadastrado: boolean
+          created_at: string
+          estoque_configurado: boolean
+          factory_id: string
+          id: string
+          primeira_producao: boolean
+          primeira_venda: boolean
+          receita_configurada: boolean
+          sabores_cadastrados: boolean
+          updated_at: string
+        }
+        Insert: {
+          cliente_cadastrado?: boolean
+          created_at?: string
+          estoque_configurado?: boolean
+          factory_id: string
+          id?: string
+          primeira_producao?: boolean
+          primeira_venda?: boolean
+          receita_configurada?: boolean
+          sabores_cadastrados?: boolean
+          updated_at?: string
+        }
+        Update: {
+          cliente_cadastrado?: boolean
+          created_at?: string
+          estoque_configurado?: boolean
+          factory_id?: string
+          id?: string
+          primeira_producao?: boolean
+          primeira_venda?: boolean
+          receita_configurada?: boolean
+          sabores_cadastrados?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_progress_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: true
+            referencedRelation: "factories"
             referencedColumns: ["id"]
           },
         ]
@@ -1781,6 +1927,7 @@ export type Database = {
           quantidade_lotes: number
           quantidade_total: number
           sabor_id: string
+          validade: string | null
         }
         Insert: {
           created_at?: string
@@ -1792,6 +1939,7 @@ export type Database = {
           quantidade_lotes?: number
           quantidade_total: number
           sabor_id: string
+          validade?: string | null
         }
         Update: {
           created_at?: string
@@ -1803,6 +1951,7 @@ export type Database = {
           quantidade_lotes?: number
           quantidade_total?: number
           sabor_id?: string
+          validade?: string | null
         }
         Relationships: [
           {
@@ -2218,18 +2367,21 @@ export type Database = {
       }
       user_roles: {
         Row: {
+          created_at: string
           factory_id: string | null
           id: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
+          created_at?: string
           factory_id?: string | null
           id?: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
+          created_at?: string
           factory_id?: string | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
