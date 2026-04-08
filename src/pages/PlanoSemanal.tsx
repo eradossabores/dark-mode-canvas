@@ -105,6 +105,7 @@ export default function PlanoSemanal() {
   const [autorizando, setAutorizando] = useState(false);
   const [showAutorizarConfirm, setShowAutorizarConfirm] = useState(false);
   const [planoStatus, setPlanoStatus] = useState<string>("rascunho");
+  const [viewPlano, setViewPlano] = useState<{ nome: string; semana: string; status: string; itens: any[] } | null>(null);
 
   const mondayOfWeek = useMemo(() => {
     const now = new Date();
@@ -1111,12 +1112,19 @@ export default function PlanoSemanal() {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button variant="outline" size="icon" className="h-7 w-7 rounded-full" onClick={async () => {
+                          const { data: planItens } = await (supabase as any)
+                            .from("plano_semanal_itens")
+                            .select("*, sabores(nome)")
+                            .eq("plano_id", p.id);
                           const mon = new Date(p.semana_inicio + "T00:00:00");
-                          const currentMon = getMonday(new Date());
-                          const diff = Math.round((mon.getTime() - currentMon.getTime()) / (7 * 24 * 60 * 60 * 1000));
-                          setWeekOffset(diff);
-                          await loadPlan(p.id, p.nome);
-                          toast({ title: "Plano carregado 👁️" });
+                          const end = new Date(mon);
+                          end.setDate(end.getDate() + 6);
+                          setViewPlano({
+                            nome: p.nome,
+                            semana: `${mon.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })} — ${end.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}`,
+                            status: p.status,
+                            itens: planItens || [],
+                          });
                         }}>
                           <Eye className="h-3.5 w-3.5" />
                         </Button>
@@ -1289,6 +1297,62 @@ export default function PlanoSemanal() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog de Visualização do Plano */}
+      <Dialog open={!!viewPlano} onOpenChange={() => setViewPlano(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5 text-primary" />
+              {viewPlano?.nome}
+            </DialogTitle>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <CalendarDays className="h-4 w-4" />
+              {viewPlano?.semana}
+              <Badge variant="outline" className={viewPlano?.status === "autorizado" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : ""}>
+                {viewPlano?.status === "autorizado" ? "✅ Autorizado" : viewPlano?.status}
+              </Badge>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-2">
+            {DIAS_SEMANA.map(dia => {
+              const itensNoDia = (viewPlano?.itens || []).filter((item: any) => item.dia_semana === dia.value);
+              if (itensNoDia.length === 0) return null;
+              const totalDia = itensNoDia.reduce((s: number, i: any) => s + i.quantidade, 0);
+              return (
+                <div key={dia.value} className={`rounded-xl border ${dia.border} bg-gradient-to-br ${dia.gradient} p-3`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-bold">{dia.label}</h4>
+                    <Badge variant="secondary" className="text-[10px]">{totalDia} un.</Badge>
+                  </div>
+                  <div className="space-y-1">
+                    {itensNoDia.map((item: any) => (
+                      <div key={item.id} className="flex items-center justify-between px-2 py-1 rounded-lg bg-background/60">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getSaborColor(item.sabores?.nome || "") }} />
+                          <span className="text-xs font-medium">{item.sabores?.nome || "—"}</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground font-medium">{item.quantidade} un.</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Totais */}
+            {viewPlano && (
+              <div className="rounded-xl border bg-muted/30 p-3 flex items-center justify-between">
+                <span className="text-sm font-bold">Total Geral</span>
+                <span className="text-lg font-bold text-primary">
+                  {(viewPlano.itens || []).reduce((s: number, i: any) => s + i.quantidade, 0)} unidades
+                </span>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
