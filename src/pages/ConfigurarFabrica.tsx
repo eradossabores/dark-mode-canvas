@@ -280,15 +280,24 @@ export default function ConfigurarFabrica() {
     if (!factoryId) { setLoadingNfe(false); return; }
     setLoadingNfe(true);
     try {
-      const { data } = await (supabase as any)
+      // Load emite_nfe from factories
+      const { data: factoryData } = await (supabase as any)
         .from("factories")
-        .select("emite_nfe, nfe_api_key, nfe_company_id")
+        .select("emite_nfe")
         .eq("id", factoryId)
         .single();
-      if (data) {
-        setEmiteNfe(data.emite_nfe || false);
-        setNfeApiKey(data.nfe_api_key || "");
-        setNfeCompanyId(data.nfe_company_id || "");
+      if (factoryData) {
+        setEmiteNfe(factoryData.emite_nfe || false);
+      }
+      // Load NF-e secrets from factory_secrets
+      const { data: secretsData } = await (supabase as any)
+        .from("factory_secrets")
+        .select("nfe_api_key, nfe_company_id")
+        .eq("factory_id", factoryId)
+        .maybeSingle();
+      if (secretsData) {
+        setNfeApiKey(secretsData.nfe_api_key || "");
+        setNfeCompanyId(secretsData.nfe_company_id || "");
       }
       // Load recent NFs
       const { data: nfs } = await (supabase as any)
@@ -306,11 +315,16 @@ export default function ConfigurarFabrica() {
     if (!factoryId) return;
     setSavingNfe(true);
     try {
+      // Save emite_nfe on factories table
       await (supabase as any).from("factories").update({
         emite_nfe: emiteNfe,
+      }).eq("id", factoryId);
+      // Upsert secrets in factory_secrets table
+      await (supabase as any).from("factory_secrets").upsert({
+        factory_id: factoryId,
         nfe_api_key: nfeApiKey || null,
         nfe_company_id: nfeCompanyId || null,
-      }).eq("id", factoryId);
+      }, { onConflict: "factory_id" });
       toast({ title: "✅ Configuração de NF-e salva!" });
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
