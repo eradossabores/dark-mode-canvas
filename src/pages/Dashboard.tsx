@@ -19,6 +19,12 @@ import EstoqueInteligente from "@/components/dashboard/EstoqueInteligente";
 import RankingClientes from "@/components/dashboard/RankingClientes";
 import ClientesInativos from "@/components/dashboard/ClientesInativos";
 import GastosColaboradores from "@/components/dashboard/GastosColaboradores";
+import ComparativoMensal from "@/components/dashboard/ComparativoMensal";
+import MetaVendas from "@/components/dashboard/MetaVendas";
+import AlertasInteligentes from "@/components/dashboard/AlertasInteligentes";
+import EficienciaProducao from "@/components/dashboard/EficienciaProducao";
+import SugestaoCompra from "@/components/dashboard/SugestaoCompra";
+import ClassificacaoABC from "@/components/dashboard/ClassificacaoABC";
 
 const postItCharacters = [sidImg, scratAcornImg, buckImg, scrat3dImg, scratStandingImg, scratHangingImg];
 const ERA_DOS_SABORES_ID = "00000000-0000-0000-0000-000000000001";
