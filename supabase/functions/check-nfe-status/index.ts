@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
     // Get NF record
     const { data: nf, error: nfError } = await supabase
       .from("notas_fiscais")
-      .select("*, factories(nfe_api_key, nfe_company_id)")
+      .select("*")
       .eq("id", nf_id)
       .single();
 
@@ -59,20 +59,24 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (!nf.nfe_io_id || !nf.factories?.nfe_api_key || !nf.factories?.nfe_company_id) {
+    // Get secrets from factory_secrets table
+    const { data: secrets } = await supabase
+      .from("factory_secrets")
+      .select("nfe_api_key, nfe_company_id")
+      .eq("factory_id", nf.factory_id)
+      .single();
+
+    if (!nf.nfe_io_id || !secrets?.nfe_api_key || !secrets?.nfe_company_id) {
       return new Response(JSON.stringify({ error: "Dados insuficientes para consulta" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Query NFE.io for status
     const nfeResponse = await fetch(
-      `${NFE_API_BASE}/companies/${nf.factories.nfe_company_id}/productinvoices/${nf.nfe_io_id}`,
+      `${NFE_API_BASE}/companies/${secrets.nfe_company_id}/productinvoices/${nf.nfe_io_id}`,
       {
-        headers: {
-          Authorization: nf.factories.nfe_api_key,
-        },
+        headers: { Authorization: secrets.nfe_api_key },
       }
     );
 
@@ -86,7 +90,6 @@ Deno.serve(async (req) => {
 
     const nfeData = await nfeResponse.json();
 
-    // Map NFE.io status to our status
     let newStatus = nf.status;
     if (nfeData.flowStatus === "Issued" || nfeData.flowStatus === "IssuedFiscalDocument") {
       newStatus = "autorizada";
@@ -96,15 +99,13 @@ Deno.serve(async (req) => {
       newStatus = "erro";
     }
 
-    // Build PDF/XML URLs
     const pdfUrl = nfeData.id
-      ? `${NFE_API_BASE}/companies/${nf.factories.nfe_company_id}/productinvoices/${nfeData.id}/pdf`
+      ? `${NFE_API_BASE}/companies/${secrets.nfe_company_id}/productinvoices/${nfeData.id}/pdf`
       : null;
     const xmlUrl = nfeData.id
-      ? `${NFE_API_BASE}/companies/${nf.factories.nfe_company_id}/productinvoices/${nfeData.id}/xml`
+      ? `${NFE_API_BASE}/companies/${secrets.nfe_company_id}/productinvoices/${nfeData.id}/xml`
       : null;
 
-    // Update local record
     await supabase
       .from("notas_fiscais")
       .update({
@@ -121,20 +122,10 @@ Deno.serve(async (req) => {
       .eq("id", nf_id);
 
     return new Response(
-      JSON.stringify({
-        status: newStatus,
-        numero: nfeData.number,
-        chave_acesso: nfeData.accessKey,
-        pdf_url: pdfUrl,
-        xml_url: xmlUrl,
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      JSON.stringify({ status: newStatus, numero: nfeData.number, chave_acesso: nfeData.accessKey, pdf_url: pdfUrl, xml_url: xmlUrl }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e: any) {
-    console.error("Error:", e);
     return new Response(JSON.stringify({ error: e.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

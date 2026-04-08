@@ -18,7 +18,6 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Validate user
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Não autorizado" }), {
@@ -46,10 +45,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get factory NFE config
+    // Get factory info
     const { data: factory, error: factoryError } = await supabase
       .from("factories")
-      .select("emite_nfe, nfe_api_key, nfe_company_id, name, cnpj, endereco, bairro, cidade, estado, cep")
+      .select("emite_nfe, name, cnpj, endereco, bairro, cidade, estado, cep")
       .eq("id", factory_id)
       .single();
 
@@ -67,7 +66,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (!factory.nfe_api_key || !factory.nfe_company_id) {
+    // Get NF-e secrets from factory_secrets table
+    const { data: secrets } = await supabase
+      .from("factory_secrets")
+      .select("nfe_api_key, nfe_company_id")
+      .eq("factory_id", factory_id)
+      .single();
+
+    if (!secrets?.nfe_api_key || !secrets?.nfe_company_id) {
       return new Response(JSON.stringify({ error: "API Key ou Company ID do NFE.io não configurados" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -106,7 +112,6 @@ Deno.serve(async (req) => {
     const cliente = venda.clientes;
     const itens = venda.venda_itens || [];
 
-    // Map payment method
     function mapPaymentMethod(forma: string) {
       switch (forma?.toLowerCase()) {
         case "pix": return "InstantPayment";
@@ -119,7 +124,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Build NFE.io payload
     const nfePayload = {
       operationNature: "Venda de mercadoria",
       operationType: "Outgoing",
@@ -138,9 +142,7 @@ Deno.serve(async (req) => {
         email: cliente?.email || null,
         address: {
           state: cliente?.estado || factory.estado || "SP",
-          city: {
-            name: cliente?.cidade || factory.cidade || "",
-          },
+          city: { name: cliente?.cidade || factory.cidade || "" },
           district: cliente?.bairro || "",
           street: cliente?.endereco || "",
           number: "S/N",
@@ -160,42 +162,20 @@ Deno.serve(async (req) => {
         unitAmount: item.preco_unitario,
         amount: item.subtotal,
         taxObject: "InformedWithICMS",
-        ncm: "22011000", // NCM for ice
+        ncm: "22011000",
         cest: "",
-        cfop: "5102", // Sale of merchandise acquired
+        cfop: "5102",
         unitOfMeasure: "UN",
         taxes: {
-          icms: {
-            cst: "00",
-            origin: "National",
-            bcAmount: item.subtotal,
-            rate: 0,
-            amount: 0,
-          },
-          pis: {
-            cst: "07",
-          },
-          cofins: {
-            cst: "07",
-          },
+          icms: { cst: "00", origin: "National", bcAmount: item.subtotal, rate: 0, amount: 0 },
+          pis: { cst: "07" },
+          cofins: { cst: "07" },
         },
       })),
-      payment: [
-        {
-          paymentDetail: [
-            {
-              method: mapPaymentMethod(venda.forma_pagamento),
-              amount: venda.total,
-            },
-          ],
-        },
-      ],
-      transport: {
-        freightModality: "Free",
-      },
+      payment: [{ paymentDetail: [{ method: mapPaymentMethod(venda.forma_pagamento), amount: venda.total }] }],
+      transport: { freightModality: "Free" },
     };
 
-    // Create NF record in database first
     const { data: nfRecord, error: nfInsertError } = await supabase
       .from("notas_fiscais")
       .insert({
@@ -210,22 +190,20 @@ Deno.serve(async (req) => {
       .single();
 
     if (nfInsertError) {
-      console.error("Erro ao criar registro NF:", nfInsertError);
       return new Response(JSON.stringify({ error: "Erro ao criar registro da NF" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Call NFE.io API
     try {
       const nfeResponse = await fetch(
-        `${NFE_API_BASE}/companies/${factory.nfe_company_id}/productinvoices`,
+        `${NFE_API_BASE}/companies/${secrets.nfe_company_id}/productinvoices`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: factory.nfe_api_key,
+            Authorization: secrets.nfe_api_key,
           },
           body: JSON.stringify(nfePayload),
         }
@@ -234,8 +212,6 @@ Deno.serve(async (req) => {
       const nfeResult = await nfeResponse.json();
 
       if (!nfeResponse.ok) {
-        console.error("NFE.io error:", JSON.stringify(nfeResult));
-        // Update record with error
         await supabase
           .from("notas_fiscais")
           .update({
@@ -245,19 +221,11 @@ Deno.serve(async (req) => {
           .eq("id", nfRecord.id);
 
         return new Response(
-          JSON.stringify({
-            error: "Erro ao emitir NF no NFE.io",
-            details: nfeResult?.message || nfeResult?.error,
-            nf_id: nfRecord.id,
-          }),
-          {
-            status: 422,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
+          JSON.stringify({ error: "Erro ao emitir NF no NFE.io", details: nfeResult?.message || nfeResult?.error, nf_id: nfRecord.id }),
+          { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      // Update record with NFE.io response
       await supabase
         .from("notas_fiscais")
         .update({
@@ -269,7 +237,6 @@ Deno.serve(async (req) => {
         })
         .eq("id", nfRecord.id);
 
-      // Update venda with NF number
       if (nfeResult.number) {
         await supabase
           .from("vendas")
@@ -278,42 +245,21 @@ Deno.serve(async (req) => {
       }
 
       return new Response(
-        JSON.stringify({
-          success: true,
-          nf_id: nfRecord.id,
-          nfe_io_id: nfeResult.id,
-          status: nfeResult.flowStatus || "processando",
-          numero: nfeResult.number || null,
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        JSON.stringify({ success: true, nf_id: nfRecord.id, nfe_io_id: nfeResult.id, status: nfeResult.flowStatus || "processando", numero: nfeResult.number || null }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     } catch (apiError: any) {
-      console.error("NFE.io API call failed:", apiError);
       await supabase
         .from("notas_fiscais")
-        .update({
-          status: "erro",
-          erro_mensagem: apiError.message || "Erro de conexão com NFE.io",
-        })
+        .update({ status: "erro", erro_mensagem: apiError.message || "Erro de conexão com NFE.io" })
         .eq("id", nfRecord.id);
 
       return new Response(
-        JSON.stringify({
-          error: "Falha na comunicação com NFE.io",
-          details: apiError.message,
-          nf_id: nfRecord.id,
-        }),
-        {
-          status: 502,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        JSON.stringify({ error: "Falha na comunicação com NFE.io", details: apiError.message, nf_id: nfRecord.id }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
   } catch (e: any) {
-    console.error("Unhandled error:", e);
     return new Response(JSON.stringify({ error: e.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
