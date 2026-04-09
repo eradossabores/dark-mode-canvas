@@ -541,7 +541,89 @@ export default function MonitorUsuarios() {
           </div>
         </div>
 
-        <TabsContent value="ranking">
+        <TabsContent value="hoje">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Zap className="h-4 w-4 text-amber-500" />
+                Atividade em Tempo Real — Hoje
+                <Badge variant="outline" className="ml-auto text-[10px]">
+                  {todaySessions.length} sessões · Atualiza a cada 15s
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {todaySessions.length === 0 ? (
+                <p className="text-center py-8 text-muted-foreground">Nenhuma sessão registrada hoje.</p>
+              ) : (
+                <>
+                  {/* Today summary cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 pb-2">
+                    <div className="rounded-lg border p-3 space-y-1">
+                      <p className="text-xs text-muted-foreground">Sessões Hoje</p>
+                      <p className="text-xl font-bold">{todaySessions.length}</p>
+                    </div>
+                    <div className="rounded-lg border p-3 space-y-1">
+                      <p className="text-xs text-muted-foreground">Usuários Únicos</p>
+                      <p className="text-xl font-bold">{new Set(todaySessions.map(s => s.user_id)).size}</p>
+                    </div>
+                    <div className="rounded-lg border p-3 space-y-1">
+                      <p className="text-xs text-muted-foreground">Tempo Total</p>
+                      <p className="text-xl font-bold">{formatMinutes(todaySessions.reduce((a, s) => a + s.duration_minutes, 0))}</p>
+                    </div>
+                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Usuário</TableHead>
+                        <TableHead>Fábrica</TableHead>
+                        <TableHead>Início</TableHead>
+                        <TableHead className="text-right">Duração</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {todaySessions.map((s) => {
+                        const isOnlineNow = now - new Date(s.last_seen_at).getTime() < ONLINE_THRESHOLD_MS;
+                        return (
+                          <TableRow key={s.id} className={isOnlineNow ? "bg-emerald-500/5" : ""}>
+                            <TableCell>
+                              {isOnlineNow ? (
+                                <span className="relative flex h-3 w-3">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
+                                </span>
+                              ) : (
+                                <span className="flex h-3 w-3 rounded-full bg-muted-foreground/30" />
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <p className="font-medium text-sm">{s.user_name}</p>
+                              <p className="text-[11px] text-muted-foreground">{s.user_email}</p>
+                            </TableCell>
+                            <TableCell className="text-sm">{s.factory_name}</TableCell>
+                            <TableCell className="text-sm">{format(new Date(s.started_at), "HH:mm", { locale: ptBR })}</TableCell>
+                            <TableCell className="text-right font-medium text-sm">
+                              {isOnlineNow ? (
+                                <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px]">
+                                  {formatMinutes(s.duration_minutes)} · Ativo
+                                </Badge>
+                              ) : (
+                                formatMinutes(s.duration_minutes)
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+
           <Card>
             <CardContent className="p-0">
               {loading ? (
