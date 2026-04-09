@@ -622,8 +622,7 @@ export default function MonitorUsuarios() {
             </CardContent>
           </Card>
         </TabsContent>
-
-
+        <TabsContent value="ranking">
           <Card>
             <CardContent className="p-0">
               {loading ? (
