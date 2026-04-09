@@ -616,6 +616,14 @@ export default function SuperAdmin() {
           <MonitorUsuarios />
         </TabsContent>
 
+        <TabsContent value="saude">
+          <PainelSaudeGeral />
+        </TabsContent>
+
+        <TabsContent value="onboarding">
+          <OnboardingChecklist />
+        </TabsContent>
+
         {/* ====== SUPPORT TAB ====== */}
         <TabsContent value="suporte">
           <div className="space-y-4">
