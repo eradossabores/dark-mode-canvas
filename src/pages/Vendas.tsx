@@ -198,6 +198,8 @@ export default function Vendas() {
       telefone: clienteData?.telefone || undefined,
       status: v.status,
       valor_pago: Number(v.valor_pago || 0),
+      valor_frete: Number(v.valor_frete || 0),
+      frete_pago_por: v.frete_pago_por || undefined,
       itens: (itensData || []).map((it: any) => ({
         sabor_nome: it.sabores?.nome || "?",
         quantidade: it.quantidade,
