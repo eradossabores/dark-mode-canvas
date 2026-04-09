@@ -198,6 +198,8 @@ export default function Vendas() {
       telefone: clienteData?.telefone || undefined,
       status: v.status,
       valor_pago: Number(v.valor_pago || 0),
+      valor_frete: Number(v.valor_frete || 0),
+      frete_pago_por: v.frete_pago_por || undefined,
       itens: (itensData || []).map((it: any) => ({
         sabor_nome: it.sabores?.nome || "?",
         quantidade: it.quantidade,
@@ -538,6 +540,8 @@ export default function Vendas() {
             telefone: clienteFull.telefone,
             status: statusVenda as "pendente" | "paga" | "cancelada",
             valor_pago: statusVenda === "paga" ? totalVenda : (statusVenda === "pendente" ? 0 : totalVenda),
+            valor_frete: parseDecimal(valorFrete) || 0,
+            frete_pago_por: fretePagoPor,
             itens: (itensData || []).map((it: any) => ({
               sabor_nome: it.sabores?.nome || "?",
               quantidade: it.quantidade,
