@@ -477,6 +477,7 @@ export default function MonitorUsuarios() {
       <Tabs defaultValue="ranking">
         <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
           <TabsList>
+            <TabsTrigger value="hoje" className="gap-1.5"><Zap className="h-3.5 w-3.5" /> Hoje</TabsTrigger>
             <TabsTrigger value="ranking" className="gap-1.5"><BarChart3 className="h-3.5 w-3.5" /> Ranking</TabsTrigger>
             <TabsTrigger value="fabricas" className="gap-1.5"><Factory className="h-3.5 w-3.5" /> Por Fábrica</TabsTrigger>
             <TabsTrigger value="historico" className="gap-1.5"><Clock className="h-3.5 w-3.5" /> Histórico</TabsTrigger>
