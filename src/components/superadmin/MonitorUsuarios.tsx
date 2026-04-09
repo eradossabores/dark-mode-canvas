@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Activity, Clock, Users, Wifi, BarChart3, Calendar, Factory, FileDown, AlertTriangle, TrendingUp, TrendingDown, Flame } from "lucide-react";
+import { Activity, Clock, Users, Wifi, BarChart3, Calendar, Factory, FileDown, AlertTriangle, TrendingUp, TrendingDown, Flame, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format, formatDistanceToNow, subDays, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
