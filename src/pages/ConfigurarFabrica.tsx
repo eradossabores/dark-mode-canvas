@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Settings, Save, Loader2, Package, MapPin, Users, DollarSign, Cog, Building2, Search, FileText, Eye, EyeOff, CheckCircle, XCircle, AlertTriangle, RefreshCw } from "lucide-react";
+import { Settings, Save, Loader2, Package, MapPin, Users, DollarSign, Cog, Building2, Search, FileText, Eye, EyeOff, CheckCircle, XCircle, AlertTriangle, RefreshCw, CheckCircle2, Circle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import ConfigVendasSection from "@/components/configurar/ConfigVendasSection";
@@ -71,7 +72,6 @@ export default function ConfigurarFabrica() {
   const [partners, setPartners] = useState<any[]>([]);
   const [loadingPartners, setLoadingPartners] = useState(true);
 
-  // NFE config state
   const [emiteNfe, setEmiteNfe] = useState(false);
   const [nfeApiKey, setNfeApiKey] = useState("");
   const [nfeCompanyId, setNfeCompanyId] = useState("");
@@ -83,6 +83,18 @@ export default function ConfigurarFabrica() {
   function updateAddressText(field: keyof FactoryAddress, value: string) {
     setAddress((prev) => ({ ...prev, [field]: value }));
   }
+
+  // ── Setup progress ──
+  const setupStatus = useMemo(() => {
+    const checks = [
+      { label: "Receitas", ok: receitas.length > 0, icon: "🧪" },
+      { label: "CEP", ok: !!address.cep && isValidCep(normalizeCep(address.cep)), icon: "📍" },
+      { label: "CNPJ", ok: !!address.cnpj && address.cnpj.replace(/\D/g, "").length === 14, icon: "🏢" },
+      { label: "Coordenadas", ok: address.latitude != null && address.longitude != null, icon: "🗺️" },
+    ];
+    const done = checks.filter(c => c.ok).length;
+    return { checks, done, total: checks.length, percent: Math.round((done / checks.length) * 100) };
+  }, [receitas, address]);
 
   useEffect(() => {
     loadReceitas();
@@ -280,7 +292,6 @@ export default function ConfigurarFabrica() {
     if (!factoryId) { setLoadingNfe(false); return; }
     setLoadingNfe(true);
     try {
-      // Load emite_nfe from factories
       const { data: factoryData } = await (supabase as any)
         .from("factories")
         .select("emite_nfe")
@@ -289,7 +300,6 @@ export default function ConfigurarFabrica() {
       if (factoryData) {
         setEmiteNfe(factoryData.emite_nfe || false);
       }
-      // Load NF-e secrets from factory_secrets
       const { data: secretsData } = await (supabase as any)
         .from("factory_secrets")
         .select("nfe_api_key, nfe_company_id")
@@ -299,7 +309,6 @@ export default function ConfigurarFabrica() {
         setNfeApiKey(secretsData.nfe_api_key || "");
         setNfeCompanyId(secretsData.nfe_company_id || "");
       }
-      // Load recent NFs
       const { data: nfs } = await (supabase as any)
         .from("notas_fiscais")
         .select("*")
@@ -315,11 +324,9 @@ export default function ConfigurarFabrica() {
     if (!factoryId) return;
     setSavingNfe(true);
     try {
-      // Save emite_nfe on factories table
       await (supabase as any).from("factories").update({
         emite_nfe: emiteNfe,
       }).eq("id", factoryId);
-      // Upsert secrets in factory_secrets table
       await (supabase as any).from("factory_secrets").upsert({
         factory_id: factoryId,
         nfe_api_key: nfeApiKey || null,
@@ -368,9 +375,11 @@ export default function ConfigurarFabrica() {
     }
   }
 
+  const isLoading = loadingRec || loadingAddr;
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
-      {/* Header */}
+      {/* ── Header ── */}
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-primary/10">
@@ -383,35 +392,93 @@ export default function ConfigurarFabrica() {
         </div>
       </div>
 
+      {/* ── Barra de Progresso de Setup ── */}
+      {!isLoading && setupStatus.percent < 100 && (
+        <Card className="border border-primary/20 bg-primary/5 shadow-sm">
+          <CardContent className="pt-5 pb-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-base">🚀</span>
+                <span className="text-sm font-semibold">Setup da Fábrica</span>
+              </div>
+              <Badge variant="outline" className="text-xs font-bold">
+                {setupStatus.done}/{setupStatus.total} concluído
+              </Badge>
+            </div>
+            <Progress value={setupStatus.percent} className="h-2" />
+            <div className="flex flex-wrap gap-3">
+              {setupStatus.checks.map(c => (
+                <div key={c.label} className="flex items-center gap-1.5 text-xs">
+                  {c.ok
+                    ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                    : <Circle className="h-3.5 w-3.5 text-muted-foreground" />
+                  }
+                  <span className={c.ok ? "text-muted-foreground line-through" : "font-medium"}>{c.label}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Cards de Status Rápido ── */}
+      {!isLoading && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {setupStatus.checks.map(c => (
+            <div key={c.label} className={`rounded-xl border p-3 flex items-center gap-3 transition-colors ${c.ok ? "bg-emerald-500/5 border-emerald-500/20" : "bg-muted/30 border-border"}`}>
+              <span className="text-lg">{c.icon}</span>
+              <div className="min-w-0">
+                <p className="text-xs font-medium truncate">{c.label}</p>
+                <p className={`text-[11px] ${c.ok ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`}>
+                  {c.ok ? "✓ Configurado" : "Pendente"}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Abas Reorganizadas ── */}
       <Tabs defaultValue="vendas" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto gap-1 p-1">
-          <TabsTrigger value="vendas" className="gap-1.5 text-xs sm:text-sm py-2.5">
-            <DollarSign className="h-4 w-4" />
-            <span>Preços</span>
-          </TabsTrigger>
-          <TabsTrigger value="producao" className="gap-1.5 text-xs sm:text-sm py-2.5">
-            <Cog className="h-4 w-4" />
-            <span>Produção</span>
-          </TabsTrigger>
-          <TabsTrigger value="sacos" className="gap-1.5 text-xs sm:text-sm py-2.5">
-            <Package className="h-4 w-4" />
-            <span>Sacos</span>
-          </TabsTrigger>
-          <TabsTrigger value="endereco" className="gap-1.5 text-xs sm:text-sm py-2.5">
-            <Building2 className="h-4 w-4" />
-            <span className="hidden sm:inline">Endereço</span>
-            <span className="sm:hidden">End.</span>
-          </TabsTrigger>
-          <TabsTrigger value="equipe" className="gap-1.5 text-xs sm:text-sm py-2.5">
-            <Users className="h-4 w-4" />
-            <span>Equipe</span>
-          </TabsTrigger>
-          <TabsTrigger value="nfe" className="gap-1.5 text-xs sm:text-sm py-2.5">
-            <FileText className="h-4 w-4" />
-            <span className="hidden sm:inline">Nota Fiscal</span>
-            <span className="sm:hidden">NF-e</span>
-          </TabsTrigger>
-        </TabsList>
+        {/* Grupo: Operacional */}
+        <div className="space-y-2">
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-1">Operacional</p>
+          <TabsList className="grid w-full grid-cols-3 h-auto gap-1 p-1">
+            <TabsTrigger value="vendas" className="gap-1.5 text-xs sm:text-sm py-2.5">
+              <DollarSign className="h-4 w-4" />
+              <span>Preços</span>
+            </TabsTrigger>
+            <TabsTrigger value="producao" className="gap-1.5 text-xs sm:text-sm py-2.5">
+              <Cog className="h-4 w-4" />
+              <span>Produção</span>
+            </TabsTrigger>
+            <TabsTrigger value="sacos" className="gap-1.5 text-xs sm:text-sm py-2.5">
+              <Package className="h-4 w-4" />
+              <span>Sacos</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        {/* Grupo: Dados da Empresa */}
+        <div className="space-y-2 -mt-2">
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-1">Dados da Empresa</p>
+          <TabsList className="grid w-full grid-cols-3 h-auto gap-1 p-1">
+            <TabsTrigger value="endereco" className="gap-1.5 text-xs sm:text-sm py-2.5">
+              <Building2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Endereço</span>
+              <span className="sm:hidden">End.</span>
+            </TabsTrigger>
+            <TabsTrigger value="equipe" className="gap-1.5 text-xs sm:text-sm py-2.5">
+              <Users className="h-4 w-4" />
+              <span>Equipe</span>
+            </TabsTrigger>
+            <TabsTrigger value="nfe" className="gap-1.5 text-xs sm:text-sm py-2.5">
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline">Nota Fiscal</span>
+              <span className="sm:hidden">NF-e</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* ═══════ PREÇOS ═══════ */}
         <TabsContent value="vendas" className="space-y-6">
@@ -556,7 +623,6 @@ export default function ConfigurarFabrica() {
                   {usaSacos && (
                     <div className="space-y-5 animate-in fade-in-0 slide-in-from-top-2 duration-300">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {/* Unidades por saco */}
                         <div className="rounded-xl border bg-card p-5 space-y-3">
                           <div className="flex items-center gap-2">
                             <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-blue-500/10">
@@ -572,7 +638,6 @@ export default function ConfigurarFabrica() {
                           </div>
                         </div>
 
-                        {/* Estoque atual */}
                         <div className="rounded-xl border bg-card p-5 space-y-3">
                           <div className="flex items-center gap-2">
                             <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-emerald-500/10">
@@ -828,7 +893,6 @@ export default function ConfigurarFabrica() {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {/* Toggle */}
                   <div className="flex items-center justify-between rounded-xl border p-5 bg-card">
                     <div className="space-y-1">
                       <Label className="text-base font-medium">Emitir NF-e automaticamente</Label>
@@ -839,7 +903,6 @@ export default function ConfigurarFabrica() {
 
                   {emiteNfe && (
                     <div className="space-y-5 animate-in fade-in-0 slide-in-from-top-2 duration-300">
-                      {/* API Key */}
                       <div className="rounded-xl border bg-card p-5 space-y-3">
                         <div className="flex items-center gap-2">
                           <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-primary/10">
@@ -884,7 +947,6 @@ export default function ConfigurarFabrica() {
                         </div>
                       </div>
 
-                      {/* Info */}
                       <div className="rounded-xl bg-primary/5 border border-primary/20 p-4 flex items-start gap-3">
                         <span className="text-lg mt-0.5">📋</span>
                         <div className="text-sm text-muted-foreground space-y-1">
@@ -905,7 +967,6 @@ export default function ConfigurarFabrica() {
                     {savingNfe ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Salvando...</> : <><Save className="h-4 w-4 mr-2" /> Salvar Configuração</>}
                   </Button>
 
-                  {/* NFs emitidas recentes */}
                   {nfEmitidas.length > 0 && (
                     <div className="space-y-3 pt-4 border-t">
                       <h3 className="font-semibold text-sm">Últimas NF-e Emitidas</h3>
