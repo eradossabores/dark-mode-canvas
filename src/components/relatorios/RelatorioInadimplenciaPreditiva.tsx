@@ -15,6 +15,7 @@ export default function RelatorioInadimplenciaPreditiva() {
   const [clientes, setClientes] = useState<any[]>([]);
   const [vendas, setVendas] = useState<any[]>([]);
   const [parcelas, setParcelas] = useState<any[]>([]);
+  const [previewLoaded, setPreviewLoaded] = useState(false);
 
   useEffect(() => { if (factoryId) load(); }, [factoryId]);
 
@@ -32,9 +33,7 @@ export default function RelatorioInadimplenciaPreditiva() {
   const clienteNome: Record<string, string> = {};
   (clientes || []).forEach(c => { clienteNome[c.id] = c.nome; });
 
-  // Build score per client
   const scores: Record<string, { nome: string; totalVendas: number; totalDevido: number; parcelasAtrasadas: number; parcelasTotal: number; maiorAtraso: number }> = {};
-
   (vendas || []).forEach(v => {
     const nome = clienteNome[v.cliente_id] || "?";
     if (!scores[v.cliente_id]) scores[v.cliente_id] = { nome, totalVendas: 0, totalDevido: 0, parcelasAtrasadas: 0, parcelasTotal: 0, maiorAtraso: 0 };
@@ -70,61 +69,66 @@ export default function RelatorioInadimplenciaPreditiva() {
   const altoRisco = analysis.filter(a => a.risco === "alto").length;
   const medioRisco = analysis.filter(a => a.risco === "medio").length;
   const exportId = "relatorio-inadimplencia-preditiva";
-
   const formatBRL = (v: number) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
 
   return (
     <div id={exportId} className="space-y-4">
       <div className="flex justify-end">
         <ExportButtons
-          onExportPDF={() => exportToPDF(exportId, `Inadimplência Preditiva - ${factoryName}`)}
-          onExportExcel={() => exportToExcel(analysis.map(a => ({
+          onPDF={() => exportToPDF(exportId, `Inadimplência Preditiva - ${factoryName}`)}
+          onExcel={() => exportToExcel(analysis.map(a => ({
             Cliente: a.nome, "Total Devido": a.totalDevido, "Parcelas Atrasadas": a.parcelasAtrasadas,
             "Maior Atraso (dias)": a.maiorAtraso, "Taxa Atraso (%)": a.taxaAtraso.toFixed(1), Risco: a.risco,
-          })), `Inadimplência Preditiva - ${factoryName}`)}
+          })), `Inadimplência Preditiva - ${factoryName}`, "Inadimplência", "inadimplencia-preditiva")}
+          onPreview={() => setPreviewLoaded(true)}
+          previewLoaded={previewLoaded}
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <KpiCard title="Risco Alto" value={String(altoRisco)} icon={<ShieldAlert className="h-4 w-4 text-red-500" />} />
-        <KpiCard title="Risco Médio" value={String(medioRisco)} icon={<AlertTriangle className="h-4 w-4 text-amber-500" />} />
-        <KpiCard title="Risco Baixo" value={String(analysis.length - altoRisco - medioRisco)} icon={<ShieldCheck className="h-4 w-4 text-green-500" />} />
-      </div>
+      {previewLoaded && (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <KpiCard title="Risco Alto" value={String(altoRisco)} icon={ShieldAlert} />
+            <KpiCard title="Risco Médio" value={String(medioRisco)} icon={AlertTriangle} />
+            <KpiCard title="Risco Baixo" value={String(analysis.length - altoRisco - medioRisco)} icon={ShieldCheck} />
+          </div>
 
-      <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-sm">Score de Risco por Cliente</CardTitle></CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Cliente</TableHead>
-                <TableHead className="text-right">Devido</TableHead>
-                <TableHead className="text-right">Parcelas Atrasadas</TableHead>
-                <TableHead className="text-right">Maior Atraso</TableHead>
-                <TableHead>Risco</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {analysis.slice(0, 50).map((a) => (
-                <TableRow key={a.id}>
-                  <TableCell className="font-medium">{a.nome}</TableCell>
-                  <TableCell className="text-right">{formatBRL(a.totalDevido)}</TableCell>
-                  <TableCell className="text-right">{a.parcelasAtrasadas}/{a.parcelasTotal}</TableCell>
-                  <TableCell className="text-right">{a.maiorAtraso > 0 ? `${a.maiorAtraso}d` : "-"}</TableCell>
-                  <TableCell>
-                    <Badge variant={a.risco === "alto" ? "destructive" : a.risco === "medio" ? "outline" : "default"}>
-                      {a.risco === "alto" ? "🔴 Alto" : a.risco === "medio" ? "🟡 Médio" : "🟢 Baixo"}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {analysis.length === 0 && (
-                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">Nenhum cliente com risco identificado</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Score de Risco por Cliente</CardTitle></CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead className="text-right">Devido</TableHead>
+                    <TableHead className="text-right">Parc. Atrasadas</TableHead>
+                    <TableHead className="text-right">Maior Atraso</TableHead>
+                    <TableHead>Risco</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {analysis.slice(0, 50).map((a) => (
+                    <TableRow key={a.id}>
+                      <TableCell className="font-medium">{a.nome}</TableCell>
+                      <TableCell className="text-right">{formatBRL(a.totalDevido)}</TableCell>
+                      <TableCell className="text-right">{a.parcelasAtrasadas}/{a.parcelasTotal}</TableCell>
+                      <TableCell className="text-right">{a.maiorAtraso > 0 ? `${a.maiorAtraso}d` : "-"}</TableCell>
+                      <TableCell>
+                        <Badge variant={a.risco === "alto" ? "destructive" : a.risco === "medio" ? "outline" : "default"}>
+                          {a.risco === "alto" ? "🔴 Alto" : a.risco === "medio" ? "🟡 Médio" : "🟢 Baixo"}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {analysis.length === 0 && (
+                    <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">Nenhum cliente com risco</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   );
 }

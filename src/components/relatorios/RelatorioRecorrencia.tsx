@@ -14,6 +14,7 @@ export default function RelatorioRecorrencia() {
   const { factoryId, factoryName } = useAuth();
   const [clientes, setClientes] = useState<any[]>([]);
   const [vendas, setVendas] = useState<any[]>([]);
+  const [previewLoaded, setPreviewLoaded] = useState(false);
 
   useEffect(() => { if (factoryId) load(); }, [factoryId]);
 
@@ -54,51 +55,57 @@ export default function RelatorioRecorrencia() {
     <div id={exportId} className="space-y-4">
       <div className="flex justify-end">
         <ExportButtons
-          onExportPDF={() => exportToPDF(exportId, `Recorrência - ${factoryName}`)}
-          onExportExcel={() => exportToExcel(analysis.map(a => ({
+          onPDF={() => exportToPDF(exportId, `Recorrência - ${factoryName}`)}
+          onExcel={() => exportToExcel(analysis.map(a => ({
             Cliente: a.nome, Compras: a.totalCompras, "Freq. Média (dias)": a.freqMedia,
             "Dias desde última": a.diasDesdeUltima, Status: a.status,
-          })), `Recorrência - ${factoryName}`)}
+          })), `Recorrência - ${factoryName}`, "Recorrência", "recorrencia")}
+          onPreview={() => setPreviewLoaded(true)}
+          previewLoaded={previewLoaded}
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <KpiCard title="Clientes Regulares" value={String(regulares)} icon={<RefreshCw className="h-4 w-4 text-green-500" />} />
-        <KpiCard title="Reposição Atrasada" value={String(atrasados)} icon={<Calendar className="h-4 w-4 text-amber-500" />} />
-        <KpiCard title="Total Analisados" value={String(analysis.length)} icon={<ShoppingCart className="h-4 w-4" />} />
-      </div>
+      {previewLoaded && (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <KpiCard title="Clientes Regulares" value={String(regulares)} icon={RefreshCw} />
+            <KpiCard title="Reposição Atrasada" value={String(atrasados)} icon={Calendar} />
+            <KpiCard title="Total Analisados" value={String(analysis.length)} icon={ShoppingCart} />
+          </div>
 
-      <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-sm">Padrão de Recorrência</CardTitle></CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Cliente</TableHead>
-                <TableHead className="text-right">Compras</TableHead>
-                <TableHead className="text-right">Freq. Média</TableHead>
-                <TableHead className="text-right">Dias s/ comprar</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {analysis.slice(0, 50).map((a) => (
-                <TableRow key={a.id}>
-                  <TableCell className="font-medium">{a.nome}</TableCell>
-                  <TableCell className="text-right">{a.totalCompras}</TableCell>
-                  <TableCell className="text-right">{a.freqMedia > 0 ? `${a.freqMedia}d` : "-"}</TableCell>
-                  <TableCell className="text-right">{a.diasDesdeUltima < 999 ? `${a.diasDesdeUltima}d` : "-"}</TableCell>
-                  <TableCell>
-                    <Badge variant={a.status === "regular" ? "default" : a.status === "atrasado" ? "destructive" : "secondary"}>
-                      {a.status === "regular" ? "Regular" : a.status === "atrasado" ? "Atrasado" : "Novo"}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Padrão de Recorrência</CardTitle></CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead className="text-right">Compras</TableHead>
+                    <TableHead className="text-right">Freq. Média</TableHead>
+                    <TableHead className="text-right">Dias s/ comprar</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {analysis.slice(0, 50).map((a) => (
+                    <TableRow key={a.id}>
+                      <TableCell className="font-medium">{a.nome}</TableCell>
+                      <TableCell className="text-right">{a.totalCompras}</TableCell>
+                      <TableCell className="text-right">{a.freqMedia > 0 ? `${a.freqMedia}d` : "-"}</TableCell>
+                      <TableCell className="text-right">{a.diasDesdeUltima < 999 ? `${a.diasDesdeUltima}d` : "-"}</TableCell>
+                      <TableCell>
+                        <Badge variant={a.status === "regular" ? "default" : a.status === "atrasado" ? "destructive" : "secondary"}>
+                          {a.status === "regular" ? "Regular" : a.status === "atrasado" ? "Atrasado" : "Novo"}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   );
 }
