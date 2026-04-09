@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Factory, Plus, Users, CreditCard, CheckCircle, XCircle, Clock, AlertTriangle, Upload, Pencil, Trash2, LogIn, Info, UserPlus, Activity, Search, TrendingUp, TrendingDown, Bell, Headphones, FileDown, ShieldAlert, BarChart3, FileText } from "lucide-react";
+import { Factory, Plus, Users, CreditCard, CheckCircle, XCircle, Clock, AlertTriangle, Upload, Pencil, Trash2, LogIn, Info, UserPlus, Activity, Search, TrendingUp, TrendingDown, Bell, Headphones, FileDown, ShieldAlert, BarChart3, FileText, Heart, Rocket } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
@@ -21,6 +21,8 @@ import EditFactoryDialog from "@/components/superadmin/EditFactoryDialog";
 import FactoryDetailsDialog from "@/components/superadmin/FactoryDetailsDialog";
 import MonitorUsuarios from "@/components/superadmin/MonitorUsuarios";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import PainelSaudeGeral from "@/components/superadmin/PainelSaudeGeral";
+import OnboardingChecklist from "@/components/superadmin/OnboardingChecklist";
 
 interface FactoryRow {
   id: string;
@@ -606,6 +608,8 @@ export default function SuperAdmin() {
               </span>
             )}
           </TabsTrigger>
+          <TabsTrigger value="saude" className="gap-2"><Heart className="h-4 w-4" /> Saúde</TabsTrigger>
+          <TabsTrigger value="onboarding" className="gap-2"><Rocket className="h-4 w-4" /> Onboarding</TabsTrigger>
         </TabsList>
 
         <TabsContent value="monitor">
