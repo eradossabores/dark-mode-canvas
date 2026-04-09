@@ -1093,7 +1093,25 @@ export default function AReceber() {
                           </p>
                         )}
                       </div>
-                      <span className="font-bold text-green-600">R$ {Number(h.valor).toFixed(2)}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-green-600">R$ {Number(h.valor).toFixed(2)}</span>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={async () => {
+                          if (!confirm("Excluir este abatimento? O valor será estornado.")) return;
+                          try {
+                            const valor = Number(h.valor);
+                            const { error: delErr } = await (supabase as any).from("abatimentos_historico").delete().eq("id", h.id);
+                            if (delErr) throw delErr;
+                            const venda = vendas.find(v => v.id === h.venda_id);
+                            if (venda) {
+                              const novoValorPago = Math.max(0, Number(venda.valor_pago || 0) - valor);
+                              await (supabase as any).from("vendas").update({ valor_pago: novoValorPago, status: novoValorPago >= Number(venda.total) ? "paga" : "pendente" }).eq("id", h.venda_id);
+                            }
+                            toast({ title: "Abatimento excluído" });
+                            await loadData();
+                            await loadHistorico(h.venda_id);
+                          } catch (e: any) { toast({ title: "Erro", description: e.message, variant: "destructive" }); }
+                        }}><Trash2 className="h-4 w-4" /></Button>
+                      </div>
                     </div>
                   ))}
                   <div className="flex justify-between pt-2 border-t text-sm font-semibold">
