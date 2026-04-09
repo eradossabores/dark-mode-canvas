@@ -25,6 +25,8 @@ import AlertasInteligentes from "@/components/dashboard/AlertasInteligentes";
 import EficienciaProducao from "@/components/dashboard/EficienciaProducao";
 import SugestaoCompra from "@/components/dashboard/SugestaoCompra";
 import ClassificacaoABC from "@/components/dashboard/ClassificacaoABC";
+import HistoricoProdutividade from "@/components/dashboard/HistoricoProdutividade";
+import RankingProdutividade from "@/components/dashboard/RankingProdutividade";
 
 const postItCharacters = [sidImg, scratAcornImg, buckImg, scrat3dImg, scratStandingImg, scratHangingImg];
 const ERA_DOS_SABORES_ID = "00000000-0000-0000-0000-000000000001";
@@ -953,8 +955,14 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Histórico de Produtividade + Ranking */}
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6 opacity-0 animate-fade-in" style={{ animationDelay: "1100ms", animationFillMode: "forwards" }}>
+        <HistoricoProdutividade factoryId={factoryId} />
+        <RankingProdutividade factoryId={factoryId} />
+      </div>
+
       {/* Gastos com Colaboradores */}
-      <div className="mt-6 opacity-0 animate-fade-in" style={{ animationDelay: "1100ms", animationFillMode: "forwards" }}>
+      <div className="mt-6 opacity-0 animate-fade-in" style={{ animationDelay: "1200ms", animationFillMode: "forwards" }}>
         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
           <GlowingEffect spread={20} glow disabled={false} proximity={40} inactiveZone={0.2} borderWidth={3} />
           <div className="relative"><GastosColaboradores factoryId={factoryId} /></div>
