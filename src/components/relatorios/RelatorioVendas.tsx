@@ -346,12 +346,28 @@ export default function RelatorioVendas() {
           </Card>
           </div>
 
-          <Card>
-            <CardHeader><CardTitle className="text-sm">Histórico de Vendas</CardTitle></CardHeader>
-            <CardContent>
+          <Card className="overflow-hidden">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-semibold">Histórico de Vendas</CardTitle>
+                <Badge variant="outline" className="text-xs font-normal">{filtered.length} registro{filtered.length !== 1 ? "s" : ""}</Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="px-0 pb-0">
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>{headers.map((h) => <TableHead key={h}>{h}</TableHead>)}</TableRow>
+                  <TableRow className="bg-muted/40 hover:bg-muted/40">
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider w-[100px]">Data</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider">Cliente</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-right">Total</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-right">Recebido</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-center">Saldo</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-right">Frete</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-center">Pagamento</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-center">Status</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider">Operador</TableHead>
+                  </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filtered.slice(0, 100).map((v) => {
@@ -359,49 +375,62 @@ export default function RelatorioVendas() {
                     const recebido = v.status === "paga" ? Number(v.total) : abatido;
                     const saldo = Number(v.total) - recebido;
                     return (
-                      <TableRow key={v.id}>
-                        <TableCell>{new Date(v.created_at).toLocaleDateString("pt-BR")}</TableCell>
-                        <TableCell>{v.clientes?.nome}</TableCell>
-                        <TableCell>R$ {Number(v.total).toFixed(2)}</TableCell>
-                        <TableCell>
+                      <TableRow key={v.id} className="transition-colors">
+                        <TableCell className="text-sm tabular-nums">{new Date(v.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                        <TableCell className="text-sm font-medium">{v.clientes?.nome || "-"}</TableCell>
+                        <TableCell className="text-sm font-semibold text-right tabular-nums">R$ {Number(v.total).toFixed(2)}</TableCell>
+                        <TableCell className="text-right tabular-nums">
                           {recebido > 0
-                            ? <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">R$ {recebido.toFixed(2)}</span>
-                            : "-"}
+                            ? <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">R$ {recebido.toFixed(2)}</span>
+                            : <span className="text-sm text-muted-foreground">-</span>}
                         </TableCell>
-                        <TableCell>
-                          <Badge variant={saldo <= 0.01 ? "default" : "secondary"}>{saldo <= 0.01 ? "Quitado" : `R$ ${saldo.toFixed(2)}`}</Badge>
+                        <TableCell className="text-center">
+                          {saldo <= 0.01 
+                            ? <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-0 text-xs">Quitado</Badge>
+                            : <Badge variant="secondary" className="bg-destructive/10 text-destructive border-0 text-xs font-semibold tabular-nums">R$ {saldo.toFixed(2)}</Badge>}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-right tabular-nums">
                           {Number(v.valor_frete || 0) > 0 
-                            ? <span className="text-xs">R$ {Number(v.valor_frete).toFixed(2)} <span className="text-muted-foreground">({v.frete_pago_por || "cliente"})</span></span>
-                            : "-"}
+                            ? <span className="text-sm">R$ {Number(v.valor_frete).toFixed(2)}</span>
+                            : <span className="text-sm text-muted-foreground">-</span>}
                         </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{displayFormaPagamento(v.forma_pagamento)}</Badge>
+                        <TableCell className="text-center">
+                          <Badge variant="outline" className="text-xs font-normal">{displayFormaPagamento(v.forma_pagamento)}</Badge>
                         </TableCell>
-                        <TableCell>
-                          <Badge variant={v.status === "paga" ? "default" : v.status === "cancelada" ? "destructive" : "secondary"}>{v.status}</Badge>
+                        <TableCell className="text-center">
+                          <Badge 
+                            className={
+                              v.status === "paga" 
+                                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-0 text-xs" 
+                                : v.status === "cancelada" 
+                                  ? "bg-destructive/10 text-destructive border-0 text-xs" 
+                                  : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0 text-xs"
+                            }
+                          >
+                            {v.status}
+                          </Badge>
                         </TableCell>
-                        <TableCell>{v.operador}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{v.operador}</TableCell>
                       </TableRow>
                     );
                   })}
                 </TableBody>
                 <tfoot>
-                  <tr className="border-t-2 border-primary/30 bg-muted/50 font-bold">
-                    <TableCell colSpan={2} className="text-right text-sm">Totais:</TableCell>
-                    <TableCell className="text-sm">R$ {faturamento.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
-                    <TableCell className="text-sm text-emerald-600 dark:text-emerald-400">R$ {totalAbatido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
-                    <TableCell className="text-sm">
-                      <Badge variant={(faturamento - totalAbatido) <= 0.01 ? "default" : "secondary"}>
-                        {(faturamento - totalAbatido) <= 0.01 ? "Quitado" : `R$ ${(faturamento - totalAbatido).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
-                      </Badge>
+                  <tr className="border-t-2 border-primary/20 bg-primary/5">
+                    <TableCell colSpan={2} className="text-right text-sm font-bold py-3">Totais:</TableCell>
+                    <TableCell className="text-sm font-bold text-right tabular-nums py-3">R$ {faturamento.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
+                    <TableCell className="text-sm font-bold text-right tabular-nums text-emerald-600 dark:text-emerald-400 py-3">R$ {totalRecebido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
+                    <TableCell className="text-center py-3">
+                      {saldoPendente <= 0.01 
+                        ? <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-0 text-xs font-bold">R$ 0,00</Badge>
+                        : <Badge variant="secondary" className="bg-destructive/10 text-destructive border-0 text-xs font-bold tabular-nums">R$ {saldoPendente.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</Badge>}
                     </TableCell>
-                    <TableCell className="text-sm">R$ {totalFrete.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
-                    <TableCell colSpan={3}></TableCell>
+                    <TableCell className="text-sm font-bold text-right tabular-nums py-3">R$ {totalFrete.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
+                    <TableCell colSpan={3} className="py-3"></TableCell>
                   </tr>
                 </tfoot>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </>
