@@ -108,6 +108,47 @@ export default function MonitorUsuarios() {
     return () => clearInterval(interval);
   }, [period]);
 
+  // Load today's sessions
+  async function loadTodaySessions() {
+    try {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const { data, error } = await (supabase as any)
+        .from("user_sessions")
+        .select("*")
+        .gte("started_at", todayStart.toISOString())
+        .order("last_seen_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      const enriched = await enrichSessions(data || []);
+      setTodaySessions(enriched);
+    } catch (e) {
+      console.error("Erro ao carregar sessões de hoje:", e);
+    }
+  }
+
+  useEffect(() => {
+    loadTodaySessions();
+    const interval = setInterval(loadTodaySessions, 15_000);
+
+    // Realtime subscription
+    const channel = supabase
+      .channel("today-sessions-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "user_sessions" },
+        () => {
+          loadTodaySessions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const now = Date.now();
   const onlineUsers = sessions.filter((s) => now - new Date(s.last_seen_at).getTime() < ONLINE_THRESHOLD_MS);
 
