@@ -356,21 +356,20 @@ export default function RelatorioVendas() {
                 <TableBody>
                   {filtered.slice(0, 100).map((v) => {
                     const abatido = abatimentosPorVenda[v.id] || 0;
-                    const saldo = Number(v.total) - abatido;
+                    const recebido = v.status === "paga" ? Number(v.total) : abatido;
+                    const saldo = Number(v.total) - recebido;
                     return (
                       <TableRow key={v.id}>
                         <TableCell>{new Date(v.created_at).toLocaleDateString("pt-BR")}</TableCell>
                         <TableCell>{v.clientes?.nome}</TableCell>
                         <TableCell>R$ {Number(v.total).toFixed(2)}</TableCell>
                         <TableCell>
-                          {abatido > 0
-                            ? <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">R$ {abatido.toFixed(2)}</span>
+                          {recebido > 0
+                            ? <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">R$ {recebido.toFixed(2)}</span>
                             : "-"}
                         </TableCell>
                         <TableCell>
-                          {abatido > 0
-                            ? <Badge variant={saldo <= 0.01 ? "default" : "secondary"}>{saldo <= 0.01 ? "Quitado" : `R$ ${saldo.toFixed(2)}`}</Badge>
-                            : "-"}
+                          <Badge variant={saldo <= 0.01 ? "default" : "secondary"}>{saldo <= 0.01 ? "Quitado" : `R$ ${saldo.toFixed(2)}`}</Badge>
                         </TableCell>
                         <TableCell>
                           {Number(v.valor_frete || 0) > 0 
