@@ -352,6 +352,7 @@ export default function Clientes() {
                   )}
                   <div className="flex items-center gap-1 pt-1 border-t">
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openClienteOnMap(c.id)}><Map className="h-3.5 w-3.5" /></Button>
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setSituacaoCliente({ id: c.id, nome: c.nome })} title="Situação"><ClipboardCheck className="h-3.5 w-3.5" /></Button>
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setHistoricoCliente({ id: c.id, nome: c.nome })}><History className="h-3.5 w-3.5" /></Button>
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEdit(c)}><Pencil className="h-3.5 w-3.5" /></Button>
                     <Button size="icon" variant="ghost" className="h-8 w-8 ml-auto" onClick={() => setDeleteId(c.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
