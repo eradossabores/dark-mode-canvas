@@ -116,6 +116,13 @@ export default function RelatorioVendas() {
   const totalUnidades = filteredItens.reduce((s, i) => s + i.quantidade, 0);
   const totalAbatido = filteredAbatimentos.reduce((s, a) => s + Number(a.valor), 0);
 
+  // Total recebido = vendas pagas (total integral) + abatimentos em vendas não-pagas
+  const totalRecebido = filtered.reduce((s, v) => {
+    if (v.status === "paga") return s + Number(v.total);
+    return s + (abatimentosPorVenda[v.id] || 0);
+  }, 0);
+  const saldoPendente = faturamento - totalRecebido;
+
   const porSabor = useMemo(() => {
     const map: Record<string, { qtd: number; valor: number }> = {};
     filteredItens.forEach((i) => {
@@ -266,11 +273,15 @@ export default function RelatorioVendas() {
             {filtroOperador !== "todos" && <Badge variant="outline" className="ml-2">Op: {filtroOperador}</Badge>}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <KpiCard title="Faturamento" value={`R$ ${faturamento.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={DollarSign} />
+            <KpiCard title="Total Recebido" value={`R$ ${totalRecebido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={CreditCard} />
+            <KpiCard title="Saldo Pendente" value={`R$ ${saldoPendente.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={Target} />
             <KpiCard title="Total de Vendas" value={totalVendas.toString()} icon={ShoppingCart} />
-            <KpiCard title="Ticket Médio" value={`R$ ${ticketMedio.toFixed(2)}`} icon={Target} />
-            <KpiCard title="Unidades Vendidas" value={totalUnidades.toLocaleString("pt-BR")} icon={TrendingUp} />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <KpiCard title="Ticket Médio" value={`R$ ${ticketMedio.toFixed(2)}`} icon={TrendingUp} />
+            <KpiCard title="Unidades Vendidas" value={totalUnidades.toLocaleString("pt-BR")} icon={ShoppingCart} />
             <KpiCard title="Total Abatido" value={`R$ ${totalAbatido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={CreditCard} />
             <KpiCard title="Total Frete" value={`R$ ${totalFrete.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={Truck} />
           </div>
