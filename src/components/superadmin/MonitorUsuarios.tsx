@@ -44,6 +44,7 @@ const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 export default function MonitorUsuarios() {
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [allSessions, setAllSessions] = useState<SessionRow[]>([]);
+  const [todaySessions, setTodaySessions] = useState<SessionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState("7");
 
