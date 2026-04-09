@@ -438,6 +438,12 @@ export default function Clientes() {
         open={!!historicoCliente}
         onOpenChange={(v) => !v && setHistoricoCliente(null)}
       />
+      <SituacaoCliente
+        clienteId={situacaoCliente?.id || null}
+        clienteNome={situacaoCliente?.nome || ""}
+        open={!!situacaoCliente}
+        onOpenChange={(v) => !v && setSituacaoCliente(null)}
+      />
     </div>
   );
 }
