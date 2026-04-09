@@ -342,7 +342,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* ─── MOBILE HEADER ─── */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 h-14 bg-card border-b border-border flex items-center px-4 gap-3 shadow-sm">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 h-14 bg-sidebar border-b border-sidebar-border flex items-center px-4 gap-3 shadow-sm text-sidebar-foreground">
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
           className="p-1.5 rounded-lg hover:bg-muted transition-colors"
@@ -376,7 +376,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               )}
               <div className="flex flex-col min-w-0">
                 <span className="font-bold text-sm truncate">{factoryName || "ICETECH"}</span>
-                <span className="text-[10px] text-muted-foreground">Sistema de Gestão</span>
+                <span className="text-[10px] text-sidebar-foreground/50">Sistema de Gestão</span>
               </div>
             </div>
 
@@ -385,7 +385,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <div className="border-t border-sidebar-border p-3">
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all duration-150"
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-destructive/10 hover:text-destructive transition-all duration-150"
               >
                 <LogOut className="h-[18px] w-[18px] shrink-0" />
                 <span>Sair</span>
