@@ -26,6 +26,8 @@ interface ReciboData {
   telefone?: string;
   status?: "pendente" | "paga" | "cancelada";
   valor_pago?: number;
+  valor_frete?: number;
+  frete_pago_por?: "empresa" | "cliente" | "ambos";
 }
 
 interface Props {
@@ -188,6 +190,17 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     }
 
     y += 1;
+
+    // Frete line
+    const freteVal = data.valor_frete || 0;
+    if (freteVal > 0) {
+      const freteLabel = data.frete_pago_por === "empresa" ? "Frete (empresa)" : data.frete_pago_por === "ambos" ? "Frete (50/50)" : "Frete";
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 100, 160);
+      doc.text(`${freteLabel}: R$ ${freteVal.toFixed(2)}`, 6, y + 2);
+      y += 5;
+    }
 
     // Quantity badge
     const totalQtd = data.itens.reduce((s, i) => s + i.quantidade, 0);
@@ -382,6 +395,15 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
                   <span className="font-semibold text-green-600">CORTESIA</span>
                 </div>
               ))}
+            </div>
+          )}
+
+          {(data.valor_frete || 0) > 0 && (
+            <div className="flex justify-between items-center text-sm border-t pt-2">
+              <span className="text-muted-foreground">
+                Frete {data.frete_pago_por === "empresa" ? "(empresa)" : data.frete_pago_por === "ambos" ? "(50/50)" : ""}
+              </span>
+              <span className="font-semibold">R$ {(data.valor_frete || 0).toFixed(2)}</span>
             </div>
           )}
 
