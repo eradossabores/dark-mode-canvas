@@ -159,17 +159,17 @@ export default function RelatorioVendas() {
     return Object.entries(map).map(([name, value]) => ({ name, value })).reverse();
   }, [filtered]);
 
-  const headers = ["Data", "Cliente", "Total", "Abatido", "Saldo", "Frete", "Pagamento", "Status", "Operador"];
-  const saldoTotal = faturamento - totalAbatido;
+  const headers = ["Data", "Cliente", "Total", "Recebido", "Saldo", "Frete", "Pagamento", "Status", "Operador"];
   const rows = [
     ...filtered.map((v) => {
       const abatido = abatimentosPorVenda[v.id] || 0;
-      const saldo = Number(v.total) - abatido;
+      const recebido = v.status === "paga" ? Number(v.total) : abatido;
+      const saldo = Number(v.total) - recebido;
       return [
         new Date(v.created_at).toLocaleDateString("pt-BR"),
         v.clientes?.nome || "-",
         `R$ ${Number(v.total).toFixed(2)}`,
-        abatido > 0 ? `R$ ${abatido.toFixed(2)}` : "-",
+        recebido > 0 ? `R$ ${recebido.toFixed(2)}` : "-",
         saldo > 0.01 ? `R$ ${saldo.toFixed(2)}` : "Quitado",
         Number(v.valor_frete || 0) > 0 ? `R$ ${Number(v.valor_frete).toFixed(2)} (${v.frete_pago_por || "cliente"})` : "-",
         displayFormaPagamento(v.forma_pagamento),
@@ -181,8 +181,8 @@ export default function RelatorioVendas() {
       "",
       "TOTAIS:",
       `R$ ${faturamento.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
-      `R$ ${totalAbatido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
-      saldoTotal <= 0.01 ? "Quitado" : `R$ ${saldoTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
+      `R$ ${totalRecebido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
+      saldoPendente <= 0.01 ? "Quitado" : `R$ ${saldoPendente.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
       `R$ ${totalFrete.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
       "",
       "",
