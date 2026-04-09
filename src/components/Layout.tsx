@@ -365,8 +365,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {mobileOpen && (
         <div className="fixed inset-0 z-[60] md:hidden">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
-          <aside className="absolute left-0 top-0 h-full w-72 bg-card border-r border-border flex flex-col shadow-2xl animate-in slide-in-from-left duration-200">
-            <div className="flex items-center gap-3 px-4 h-14 border-b border-border shrink-0">
+          <aside className="absolute left-0 top-0 h-full w-72 bg-sidebar border-r border-sidebar-border flex flex-col shadow-2xl animate-in slide-in-from-left duration-200 text-sidebar-foreground">
+            <div className="flex items-center gap-3 px-4 h-14 border-b border-sidebar-border shrink-0">
               {branding?.logoUrl ? (
                 <img src={branding.logoUrl} alt={factoryName || "Logo"} className="h-9 w-9 rounded-lg object-cover" />
               ) : (
@@ -382,7 +382,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
             {renderSidebarNav(false)}
 
-            <div className="border-t border-border p-3">
+            <div className="border-t border-sidebar-border p-3">
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all duration-150"
