@@ -14,8 +14,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { insertRow } from "@/lib/supabase-helpers";
 import { geocodeClienteAddress, hasAddressForGeocoding } from "@/lib/geocoding";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, History, Map } from "lucide-react";
+import { Plus, Pencil, Trash2, History, Map, ClipboardCheck } from "lucide-react";
 import HistoricoCompras from "@/components/clientes/HistoricoCompras";
+import SituacaoCliente from "@/components/clientes/SituacaoCliente";
 
 const emptyForm = {
   nome: "", telefone: "", email: "", endereco: "", bairro: "", cidade: "",
