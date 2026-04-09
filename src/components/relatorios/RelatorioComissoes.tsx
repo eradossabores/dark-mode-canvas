@@ -58,11 +58,17 @@ export default function RelatorioComissoes() {
       <div className="flex flex-wrap items-end gap-4 justify-between">
         <DateRangeFilter startDate={startDate} endDate={endDate} onStartChange={setStartDate} onEndChange={setEndDate} />
         <ExportButtons
-          onPDF={() => exportToPDF(exportId, `Comissões - ${factoryName}`)}
-          onExcel={() => exportToExcel(ranking.map(r => ({
-            Vendedor: r.nome, Vendas: r.qtdVendas, "Total Vendido": r.totalVendas,
-            "Comissão (%)": comissaoConfig, "Comissão (R$)": r.totalVendas * (comissaoConfig / 100),
-          })), `Comissões - ${factoryName}`, "Comissões", "comissoes")}
+          onPDF={() => exportToPDF(
+            `Comissões - ${factoryName}`,
+            ["Vendedor", "Vendas", "Total Vendido", "Comissão (%)", "Comissão (R$)"],
+            ranking.map(r => [r.nome, r.qtdVendas, r.totalVendas.toFixed(2), comissaoConfig, (r.totalVendas * (comissaoConfig / 100)).toFixed(2)]),
+            "comissoes"
+          )}
+          onExcel={() => exportToExcel(
+            ["Vendedor", "Vendas", "Total Vendido", "Comissão (%)", "Comissão (R$)"],
+            ranking.map(r => [r.nome, r.qtdVendas, r.totalVendas, comissaoConfig, r.totalVendas * (comissaoConfig / 100)]),
+            "Comissões", "comissoes"
+          )}
           onPreview={handlePreview}
           previewLoaded={previewLoaded}
         />

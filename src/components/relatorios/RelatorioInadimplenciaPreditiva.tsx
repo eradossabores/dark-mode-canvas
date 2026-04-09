@@ -75,11 +75,17 @@ export default function RelatorioInadimplenciaPreditiva() {
     <div id={exportId} className="space-y-4">
       <div className="flex justify-end">
         <ExportButtons
-          onPDF={() => exportToPDF(exportId, `Inadimplência Preditiva - ${factoryName}`)}
-          onExcel={() => exportToExcel(analysis.map(a => ({
-            Cliente: a.nome, "Total Devido": a.totalDevido, "Parcelas Atrasadas": a.parcelasAtrasadas,
-            "Maior Atraso (dias)": a.maiorAtraso, "Taxa Atraso (%)": a.taxaAtraso.toFixed(1), Risco: a.risco,
-          })), `Inadimplência Preditiva - ${factoryName}`, "Inadimplência", "inadimplencia-preditiva")}
+          onPDF={() => exportToPDF(
+            `Inadimplência Preditiva - ${factoryName}`,
+            ["Cliente", "Total Devido", "Parc. Atrasadas", "Maior Atraso (dias)", "Taxa Atraso (%)", "Risco"],
+            analysis.map(a => [a.nome, a.totalDevido.toFixed(2), `${a.parcelasAtrasadas}/${a.parcelasTotal}`, a.maiorAtraso, a.taxaAtraso.toFixed(1), a.risco]),
+            "inadimplencia-preditiva"
+          )}
+          onExcel={() => exportToExcel(
+            ["Cliente", "Total Devido", "Parc. Atrasadas", "Maior Atraso (dias)", "Taxa Atraso (%)", "Risco"],
+            analysis.map(a => [a.nome, a.totalDevido, a.parcelasAtrasadas, a.maiorAtraso, Number(a.taxaAtraso.toFixed(1)), a.risco]),
+            "Inadimplência", "inadimplencia-preditiva"
+          )}
           onPreview={() => setPreviewLoaded(true)}
           previewLoaded={previewLoaded}
         />

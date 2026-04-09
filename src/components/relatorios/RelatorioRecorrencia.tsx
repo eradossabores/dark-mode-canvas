@@ -55,11 +55,17 @@ export default function RelatorioRecorrencia() {
     <div id={exportId} className="space-y-4">
       <div className="flex justify-end">
         <ExportButtons
-          onPDF={() => exportToPDF(exportId, `Recorrência - ${factoryName}`)}
-          onExcel={() => exportToExcel(analysis.map(a => ({
-            Cliente: a.nome, Compras: a.totalCompras, "Freq. Média (dias)": a.freqMedia,
-            "Dias desde última": a.diasDesdeUltima, Status: a.status,
-          })), `Recorrência - ${factoryName}`, "Recorrência", "recorrencia")}
+          onPDF={() => exportToPDF(
+            `Recorrência - ${factoryName}`,
+            ["Cliente", "Compras", "Freq. Média (dias)", "Dias desde última", "Status"],
+            analysis.map(a => [a.nome, a.totalCompras, a.freqMedia, a.diasDesdeUltima < 999 ? a.diasDesdeUltima : 0, a.status]),
+            "recorrencia"
+          )}
+          onExcel={() => exportToExcel(
+            ["Cliente", "Compras", "Freq. Média (dias)", "Dias desde última", "Status"],
+            analysis.map(a => [a.nome, a.totalCompras, a.freqMedia, a.diasDesdeUltima < 999 ? a.diasDesdeUltima : 0, a.status]),
+            "Recorrência", "recorrencia"
+          )}
           onPreview={() => setPreviewLoaded(true)}
           previewLoaded={previewLoaded}
         />
