@@ -42,6 +42,7 @@ const menuGroups: MenuGroup[] = [
         ]
       },
       { path: "/painel/producao", label: "Produção", icon: Factory },
+      { path: "/painel/estoque", label: "Estoque", icon: Warehouse },
       { path: "/painel/monitor-producao", label: "Monitor", icon: Monitor },
       { path: "/painel/presenca", label: "Presença", icon: UserCheck },
     ],
@@ -62,7 +63,6 @@ const menuGroups: MenuGroup[] = [
       { path: "/painel/clientes", label: "Clientes", icon: Users },
       { path: "/painel/funcionarios", label: "Colaboradores", icon: UserCog },
       { path: "/painel/sabores", label: "Sabores", icon: Package },
-      { path: "/painel/estoque", label: "Estoque", icon: Warehouse },
     ],
   },
   {
