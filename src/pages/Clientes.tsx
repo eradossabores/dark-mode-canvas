@@ -14,8 +14,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { insertRow } from "@/lib/supabase-helpers";
 import { geocodeClienteAddress, hasAddressForGeocoding } from "@/lib/geocoding";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, History, Map } from "lucide-react";
+import { Plus, Pencil, Trash2, History, Map, ClipboardCheck } from "lucide-react";
 import HistoricoCompras from "@/components/clientes/HistoricoCompras";
+import SituacaoCliente from "@/components/clientes/SituacaoCliente";
 
 const emptyForm = {
   nome: "", telefone: "", email: "", endereco: "", bairro: "", cidade: "",
@@ -37,6 +38,7 @@ export default function Clientes() {
   const [page, setPage] = useState(0);
   const [busca, setBusca] = useState("");
   const [historicoCliente, setHistoricoCliente] = useState<{ id: string; nome: string } | null>(null);
+  const [situacaoCliente, setSituacaoCliente] = useState<{ id: string; nome: string } | null>(null);
   const PAGE_SIZE = 20;
 
   // Gelo cubo config
@@ -350,6 +352,7 @@ export default function Clientes() {
                   )}
                   <div className="flex items-center gap-1 pt-1 border-t">
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openClienteOnMap(c.id)}><Map className="h-3.5 w-3.5" /></Button>
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setSituacaoCliente({ id: c.id, nome: c.nome })} title="Situação"><ClipboardCheck className="h-3.5 w-3.5" /></Button>
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setHistoricoCliente({ id: c.id, nome: c.nome })}><History className="h-3.5 w-3.5" /></Button>
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEdit(c)}><Pencil className="h-3.5 w-3.5" /></Button>
                     <Button size="icon" variant="ghost" className="h-8 w-8 ml-auto" onClick={() => setDeleteId(c.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
@@ -401,6 +404,7 @@ export default function Clientes() {
                         <Button size="sm" variant="outline" onClick={() => openClienteOnMap(c.id)}>
                           <Map className="mr-1 h-4 w-4" /> Ver no mapa
                         </Button>
+                        <Button size="icon" variant="ghost" onClick={() => setSituacaoCliente({ id: c.id, nome: c.nome })} title="Situação"><ClipboardCheck className="h-4 w-4" /></Button>
                         <Button size="icon" variant="ghost" onClick={() => setHistoricoCliente({ id: c.id, nome: c.nome })} title="Histórico"><History className="h-4 w-4" /></Button>
                         <Button size="icon" variant="ghost" onClick={() => openEdit(c)} title="Editar"><Pencil className="h-4 w-4" /></Button>
                         <Button size="icon" variant="ghost" onClick={() => setDeleteId(c.id)} title="Apagar"><Trash2 className="h-4 w-4 text-destructive" /></Button>
@@ -433,6 +437,12 @@ export default function Clientes() {
         clienteNome={historicoCliente?.nome || ""}
         open={!!historicoCliente}
         onOpenChange={(v) => !v && setHistoricoCliente(null)}
+      />
+      <SituacaoCliente
+        clienteId={situacaoCliente?.id || null}
+        clienteNome={situacaoCliente?.nome || ""}
+        open={!!situacaoCliente}
+        onOpenChange={(v) => !v && setSituacaoCliente(null)}
       />
     </div>
   );
