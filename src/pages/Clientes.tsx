@@ -38,6 +38,7 @@ export default function Clientes() {
   const [page, setPage] = useState(0);
   const [busca, setBusca] = useState("");
   const [historicoCliente, setHistoricoCliente] = useState<{ id: string; nome: string } | null>(null);
+  const [situacaoCliente, setSituacaoCliente] = useState<{ id: string; nome: string } | null>(null);
   const PAGE_SIZE = 20;
 
   // Gelo cubo config
