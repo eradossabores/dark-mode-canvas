@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Activity, Clock, Users, Wifi, BarChart3, Calendar, Factory, FileDown, AlertTriangle, TrendingUp, TrendingDown, Flame } from "lucide-react";
+import { Activity, Clock, Users, Wifi, BarChart3, Calendar, Factory, FileDown, AlertTriangle, TrendingUp, TrendingDown, Flame, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format, formatDistanceToNow, subDays, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -44,6 +44,7 @@ const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 export default function MonitorUsuarios() {
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [allSessions, setAllSessions] = useState<SessionRow[]>([]);
+  const [todaySessions, setTodaySessions] = useState<SessionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState("7");
 
@@ -106,6 +107,47 @@ export default function MonitorUsuarios() {
     const interval = setInterval(loadSessions, 30_000);
     return () => clearInterval(interval);
   }, [period]);
+
+  // Load today's sessions
+  async function loadTodaySessions() {
+    try {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const { data, error } = await (supabase as any)
+        .from("user_sessions")
+        .select("*")
+        .gte("started_at", todayStart.toISOString())
+        .order("last_seen_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      const enriched = await enrichSessions(data || []);
+      setTodaySessions(enriched);
+    } catch (e) {
+      console.error("Erro ao carregar sessões de hoje:", e);
+    }
+  }
+
+  useEffect(() => {
+    loadTodaySessions();
+    const interval = setInterval(loadTodaySessions, 15_000);
+
+    // Realtime subscription
+    const channel = supabase
+      .channel("today-sessions-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "user_sessions" },
+        () => {
+          loadTodaySessions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const now = Date.now();
   const onlineUsers = sessions.filter((s) => now - new Date(s.last_seen_at).getTime() < ONLINE_THRESHOLD_MS);
@@ -477,6 +519,7 @@ export default function MonitorUsuarios() {
       <Tabs defaultValue="ranking">
         <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
           <TabsList>
+            <TabsTrigger value="hoje" className="gap-1.5"><Zap className="h-3.5 w-3.5" /> Hoje</TabsTrigger>
             <TabsTrigger value="ranking" className="gap-1.5"><BarChart3 className="h-3.5 w-3.5" /> Ranking</TabsTrigger>
             <TabsTrigger value="fabricas" className="gap-1.5"><Factory className="h-3.5 w-3.5" /> Por Fábrica</TabsTrigger>
             <TabsTrigger value="historico" className="gap-1.5"><Clock className="h-3.5 w-3.5" /> Histórico</TabsTrigger>
@@ -498,6 +541,87 @@ export default function MonitorUsuarios() {
           </div>
         </div>
 
+        <TabsContent value="hoje">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Zap className="h-4 w-4 text-amber-500" />
+                Atividade em Tempo Real — Hoje
+                <Badge variant="outline" className="ml-auto text-[10px]">
+                  {todaySessions.length} sessões · Atualiza a cada 15s
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {todaySessions.length === 0 ? (
+                <p className="text-center py-8 text-muted-foreground">Nenhuma sessão registrada hoje.</p>
+              ) : (
+                <>
+                  {/* Today summary cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 pb-2">
+                    <div className="rounded-lg border p-3 space-y-1">
+                      <p className="text-xs text-muted-foreground">Sessões Hoje</p>
+                      <p className="text-xl font-bold">{todaySessions.length}</p>
+                    </div>
+                    <div className="rounded-lg border p-3 space-y-1">
+                      <p className="text-xs text-muted-foreground">Usuários Únicos</p>
+                      <p className="text-xl font-bold">{new Set(todaySessions.map(s => s.user_id)).size}</p>
+                    </div>
+                    <div className="rounded-lg border p-3 space-y-1">
+                      <p className="text-xs text-muted-foreground">Tempo Total</p>
+                      <p className="text-xl font-bold">{formatMinutes(todaySessions.reduce((a, s) => a + s.duration_minutes, 0))}</p>
+                    </div>
+                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Usuário</TableHead>
+                        <TableHead>Fábrica</TableHead>
+                        <TableHead>Início</TableHead>
+                        <TableHead className="text-right">Duração</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {todaySessions.map((s) => {
+                        const isOnlineNow = now - new Date(s.last_seen_at).getTime() < ONLINE_THRESHOLD_MS;
+                        return (
+                          <TableRow key={s.id} className={isOnlineNow ? "bg-emerald-500/5" : ""}>
+                            <TableCell>
+                              {isOnlineNow ? (
+                                <span className="relative flex h-3 w-3">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
+                                </span>
+                              ) : (
+                                <span className="flex h-3 w-3 rounded-full bg-muted-foreground/30" />
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <p className="font-medium text-sm">{s.user_name}</p>
+                              <p className="text-[11px] text-muted-foreground">{s.user_email}</p>
+                            </TableCell>
+                            <TableCell className="text-sm">{s.factory_name}</TableCell>
+                            <TableCell className="text-sm">{format(new Date(s.started_at), "HH:mm", { locale: ptBR })}</TableCell>
+                            <TableCell className="text-right font-medium text-sm">
+                              {isOnlineNow ? (
+                                <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px]">
+                                  {formatMinutes(s.duration_minutes)} · Ativo
+                                </Badge>
+                              ) : (
+                                formatMinutes(s.duration_minutes)
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
         <TabsContent value="ranking">
           <Card>
             <CardContent className="p-0">
