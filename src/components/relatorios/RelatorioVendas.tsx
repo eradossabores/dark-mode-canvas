@@ -242,8 +242,8 @@ export default function RelatorioVendas() {
             ...(filtroStatus !== "todos" ? [{ label: "Filtro Status", value: filtroStatus }] : []),
           ], "charts-vendas", { factoryName: factoryName || undefined, factoryLogoUrl: branding?.logoUrl }, [
             { label: "Faturamento Total", value: `R$ ${faturamento.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
-            { label: "Total Abatido", value: `R$ ${totalAbatido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
-            { label: "Pendência", value: saldoTotal <= 0.01 ? "Quitado" : `R$ ${saldoTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
+            { label: "Total Recebido", value: `R$ ${totalRecebido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
+            { label: "Pendência", value: saldoPendente <= 0.01 ? "Quitado" : `R$ ${saldoPendente.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
           ])}
           onExcel={() => exportToExcel(headers, rows, "Vendas", "relatorio-vendas")}
         />
