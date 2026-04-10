@@ -23,6 +23,7 @@ import MonitorUsuarios from "@/components/superadmin/MonitorUsuarios";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import PainelSaudeGeral from "@/components/superadmin/PainelSaudeGeral";
 import OnboardingChecklist from "@/components/superadmin/OnboardingChecklist";
+import PlanosTab from "@/components/superadmin/PlanosTab";
 
 interface FactoryRow {
   id: string;
