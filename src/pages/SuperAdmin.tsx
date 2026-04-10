@@ -611,6 +611,7 @@ export default function SuperAdmin() {
           </TabsTrigger>
           <TabsTrigger value="saude" className="gap-2"><Heart className="h-4 w-4" /> Saúde</TabsTrigger>
           <TabsTrigger value="onboarding" className="gap-2"><Rocket className="h-4 w-4" /> Onboarding</TabsTrigger>
+          <TabsTrigger value="planos" className="gap-2"><Tag className="h-4 w-4" /> Planos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="monitor">
