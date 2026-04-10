@@ -626,6 +626,10 @@ export default function SuperAdmin() {
           <OnboardingChecklist />
         </TabsContent>
 
+        <TabsContent value="planos">
+          <PlanosTab factories={factories} onReload={loadFactories} />
+        </TabsContent>
+
         {/* ====== SUPPORT TAB ====== */}
         <TabsContent value="suporte">
           <div className="space-y-4">
