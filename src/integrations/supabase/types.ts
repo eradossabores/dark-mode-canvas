@@ -2244,6 +2244,7 @@ export type Database = {
           grace_until: string | null
           id: string
           paid_at: string | null
+          plan_name: string
           status: string
           trial_start: string | null
           updated_at: string | null
@@ -2258,6 +2259,7 @@ export type Database = {
           grace_until?: string | null
           id?: string
           paid_at?: string | null
+          plan_name?: string
           status?: string
           trial_start?: string | null
           updated_at?: string | null
@@ -2272,6 +2274,7 @@ export type Database = {
           grace_until?: string | null
           id?: string
           paid_at?: string | null
+          plan_name?: string
           status?: string
           trial_start?: string | null
           updated_at?: string | null
