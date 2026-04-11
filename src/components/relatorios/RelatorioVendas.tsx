@@ -240,7 +240,7 @@ export default function RelatorioVendas() {
             { label: "Período", value: periodoLabel },
             ...(filtroPagamento !== "todos" ? [{ label: "Filtro Pagamento", value: filtroPagamento.toUpperCase() }] : []),
             ...(filtroStatus !== "todos" ? [{ label: "Filtro Status", value: filtroStatus }] : []),
-          ], "charts-vendas", { factoryName: factoryName || undefined, factoryLogoUrl: branding?.logoUrl }, [
+          ], undefined, { factoryName: factoryName || undefined, factoryLogoUrl: branding?.logoUrl }, [
             { label: "Faturamento Total", value: `R$ ${faturamento.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
             { label: "Total Recebido", value: `R$ ${totalRecebido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
             { label: "Pendência", value: saldoPendente <= 0.01 ? "Quitado" : `R$ ${saldoPendente.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
@@ -285,8 +285,6 @@ export default function RelatorioVendas() {
             <KpiCard title="Total Abatido" value={`R$ ${totalAbatido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={CreditCard} />
             <KpiCard title="Total Frete" value={`R$ ${totalFrete.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={Truck} />
           </div>
-
-          <div id="charts-vendas" className="hidden"></div>
 
           <Card className="overflow-hidden">
             <CardHeader className="pb-3">
