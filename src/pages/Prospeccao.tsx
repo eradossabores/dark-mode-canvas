@@ -19,14 +19,6 @@ import {
   Navigation, Crosshair, Loader2, X,
 } from "lucide-react";
 
-// Leaflet icon fix
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
-  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
-});
-
 const BOA_VISTA_CENTER: [number, number] = [2.8195, -60.6714];
 
 const TIPO_LABELS: Record<string, string> = {
@@ -50,30 +42,14 @@ const STATUS_COLORS: Record<string, string> = {
   sem_interesse: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
 };
 
-function makeIcon(color: string) {
-  return new L.Icon({
-    iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
-    shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
-    iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34],
-  });
-}
-
-const ICONS: Record<string, L.Icon> = {
-  novo: makeIcon("grey"),
-  visitado: makeIcon("blue"),
-  interessado: makeIcon("orange"),
-  pedido_fechado: makeIcon("green"),
-  retornar: makeIcon("violet"),
-  sem_interesse: makeIcon("red"),
+const STATUS_MARKER_COLORS: Record<string, string> = {
+  novo: "#6b7280",
+  visitado: "#2563eb",
+  interessado: "#ea580c",
+  pedido_fechado: "#16a34a",
+  retornar: "#7c3aed",
+  sem_interesse: "#dc2626",
 };
-
-const EXPLORE_ICON = new L.Icon({
-  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
-  iconSize: [30, 49], iconAnchor: [15, 49], popupAnchor: [1, -34],
-});
-
-const CLIENT_ICON = makeIcon("blue");
 
 // ClickHandler is now handled by AdvancedMap's onMapClick prop
 
