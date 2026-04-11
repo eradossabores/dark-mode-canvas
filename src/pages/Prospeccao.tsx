@@ -7,10 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Marker, Popup, Polyline, Circle, useMapEvents } from "react-leaflet";
-import { AdvancedMap, createSvgIcon } from "@/components/ui/interactive-map";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import { AdvancedMap, createSvgIcon, createDotIcon, MAP_ICONS, type MapMarker, type MapCircle, type MapPolyline } from "@/components/ui/interactive-map";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import ProspectoForm from "@/components/prospeccao/ProspectoForm";
@@ -21,14 +18,6 @@ import {
   Users, Target, TrendingUp, Eye, Pencil, Trash2, Phone, FileText, RefreshCw, MessageSquare,
   Navigation, Crosshair, Loader2, X,
 } from "lucide-react";
-
-// Leaflet icon fix
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
-  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
-});
 
 const BOA_VISTA_CENTER: [number, number] = [2.8195, -60.6714];
 
@@ -53,30 +42,14 @@ const STATUS_COLORS: Record<string, string> = {
   sem_interesse: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
 };
 
-function makeIcon(color: string) {
-  return new L.Icon({
-    iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
-    shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
-    iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34],
-  });
-}
-
-const ICONS: Record<string, L.Icon> = {
-  novo: makeIcon("grey"),
-  visitado: makeIcon("blue"),
-  interessado: makeIcon("orange"),
-  pedido_fechado: makeIcon("green"),
-  retornar: makeIcon("violet"),
-  sem_interesse: makeIcon("red"),
+const STATUS_MARKER_COLORS: Record<string, string> = {
+  novo: "#6b7280",
+  visitado: "#2563eb",
+  interessado: "#ea580c",
+  pedido_fechado: "#16a34a",
+  retornar: "#7c3aed",
+  sem_interesse: "#dc2626",
 };
-
-const EXPLORE_ICON = new L.Icon({
-  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
-  iconSize: [30, 49], iconAnchor: [15, 49], popupAnchor: [1, -34],
-});
-
-const CLIENT_ICON = makeIcon("blue");
 
 // ClickHandler is now handled by AdvancedMap's onMapClick prop
 
@@ -619,93 +592,101 @@ export default function Prospeccao() {
                   enableClustering={false}
                   enableControls={true}
                   onMapClick={(latlng) => handleMapClick(latlng.lat, latlng.lng)}
+                  onMarkerClick={(marker) => {
+                    // Handle marker clicks for actions if needed
+                  }}
                   style={{ height: "550px", width: "100%" }}
-                >
-                  {comCoordenadas.map(p => (
-                    <Marker key={p.id} position={[p.latitude, p.longitude]} icon={ICONS[p.status] || ICONS.novo}>
-                      <Popup>
-                        <div className="min-w-[200px] space-y-1">
-                          <p className="font-bold">{p.nome}</p>
-                          <p className="text-xs">{TIPO_LABELS[p.tipo] || p.tipo}</p>
-                          {p.bairro && <p className="text-xs text-muted-foreground">{p.bairro}</p>}
-                          {p.telefone && <p className="text-xs">📞 {p.telefone}</p>}
-                          <div className="flex gap-0.5">{[1,2,3,4,5].map(s => <span key={s} className={`text-xs ${s <= p.score ? "text-amber-400" : "text-muted-foreground/40"}`}>★</span>)}</div>
-                          {p.observacoes_estrategicas && <p className="text-xs italic text-muted-foreground mt-1">{p.observacoes_estrategicas}</p>}
-                          <div className="flex gap-1 mt-2 flex-wrap">
-                            <button className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded" onClick={() => setVisitaDialogId(p.id)}>Registrar Visita</button>
-                            <button className="text-xs bg-muted text-foreground px-2 py-1 rounded" onClick={() => { setEditingProspecto(p); }}>Editar</button>
-                            <button className="text-xs bg-accent text-accent-foreground px-2 py-1 rounded" onClick={() => setPlacingId(p.id)}>Reposicionar</button>
+                  markers={[
+                    ...comCoordenadas.map((p): MapMarker => ({
+                      id: p.id,
+                      position: [p.latitude, p.longitude],
+                      color: STATUS_MARKER_COLORS[p.status] || "#6b7280",
+                      popup: {
+                        title: p.nome,
+                        content: (
+                          <div className="min-w-[200px] space-y-1">
+                            <p className="text-xs">{TIPO_LABELS[p.tipo] || p.tipo}</p>
+                            {p.bairro && <p className="text-xs text-muted-foreground">{p.bairro}</p>}
+                            {p.telefone && <p className="text-xs">📞 {p.telefone}</p>}
+                            <div className="flex gap-0.5">{[1,2,3,4,5].map(s => <span key={s} className={`text-xs ${s <= p.score ? "text-amber-400" : "text-muted-foreground/40"}`}>★</span>)}</div>
+                            {p.observacoes_estrategicas && <p className="text-xs italic text-muted-foreground mt-1">{p.observacoes_estrategicas}</p>}
+                            <div className="flex gap-1 mt-2 flex-wrap">
+                              <button className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded" onClick={() => setVisitaDialogId(p.id)}>Registrar Visita</button>
+                              <button className="text-xs bg-muted text-foreground px-2 py-1 rounded" onClick={() => { setEditingProspecto(p); }}>Editar</button>
+                              <button className="text-xs bg-accent text-accent-foreground px-2 py-1 rounded" onClick={() => setPlacingId(p.id)}>Reposicionar</button>
+                            </div>
                           </div>
-                        </div>
-                      </Popup>
-                    </Marker>
-                  ))}
-
-                  {/* Explore pin */}
-                  {explorePin && (
-                    <>
-                      <Circle
-                        center={[explorePin.lat, explorePin.lng]}
-                        radius={exploreRadius * 1000}
-                        pathOptions={{
-                          color: "hsl(38, 90%, 50%)",
-                          fillColor: "hsl(38, 90%, 50%)",
-                          fillOpacity: 0.08,
-                          weight: 2,
-                          dashArray: "6 4",
-                        }}
-                      />
-                      <Marker position={[explorePin.lat, explorePin.lng]} icon={EXPLORE_ICON}>
-                        <Popup><p className="font-bold text-sm">📍 Ponto de exploração</p><p className="text-xs">{exploreBairro || "Identificando..."} · Raio: {exploreRadius}km</p></Popup>
-                      </Marker>
-                    </>
-                  )}
-
-                  {/* Explore route */}
-                  {exploreRoute.length > 1 && (
-                    <Polyline positions={exploreRoute.map(p => [p.lat, p.lng] as [number, number])} color="hsl(38,90%,50%)" weight={4} dashArray="10 5" />
-                  )}
-
-                  {/* POI markers from OpenStreetMap */}
-                  {explorePOIs.map(poi => {
-                    const tagColor = poi.ai_tag === "cliente_potencial" ? "hsl(140,60%,40%)" 
-                      : poi.ai_tag === "nao_compativel" ? "hsl(0,0%,60%)" : "hsl(280,60%,55%)";
-                    const poiIcon = new L.DivIcon({
-                      html: `<div style="background:${tagColor};width:12px;height:12px;border-radius:50%;border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.3)"></div>`,
-                      iconSize: [12, 12], iconAnchor: [6, 6], popupAnchor: [0, -8], className: "",
-                    });
-                    return (
-                    <Marker key={poi.id} position={[poi.lat, poi.lng]} icon={poiIcon}>
-                      <Popup>
-                        <div className="min-w-[180px]">
-                          <p className="font-bold text-sm">{poi.nome}</p>
-                          <p className="text-xs text-gray-500">{poi.tipo_label}</p>
-                          {poi.ai_tag && (
-                            <p className={`text-xs font-medium mt-1 ${poi.ai_tag === "cliente_potencial" ? "text-green-600" : poi.ai_tag === "nao_compativel" ? "text-gray-400" : "text-purple-600"}`}>
-                              {poi.ai_tag === "cliente_potencial" ? "✅ Cliente Potencial" : poi.ai_tag === "nao_compativel" ? "❌ Não Compatível" : "🔍 Avaliar"}
-                              {poi.ai_prioridade && ` · ${poi.ai_prioridade}`}
-                            </p>
-                          )}
-                          {poi.ai_motivo && <p className="text-[10px] italic text-gray-400 mt-0.5">{poi.ai_motivo}</p>}
-                          {poi.endereco && <p className="text-xs text-gray-400">{poi.endereco}</p>}
-                          {poi.telefone && <p className="text-xs">📞 {poi.telefone}</p>}
-                          {poi.horario && <p className="text-xs">🕐 {poi.horario}</p>}
-                          <button
-                            className="text-xs bg-primary text-white px-2 py-1 rounded mt-2 w-full"
-                            onClick={() => openQuickRegisterWithPOI(poi)}
-                          >
-                            Cadastrar como Prospecto
-                          </button>
-                        </div>
-                      </Popup>
-                    </Marker>
-                    );
-                  })}
-
-                  {showRoute && routePoints.length > 1 && !explorePin && (
-                    <Polyline positions={routePoints.map(p => [p.lat, p.lng] as [number, number])} color="hsl(200,98%,39%)" weight={3} dashArray="8 4" />
-                  )}
-                </AdvancedMap>
+                        ),
+                      },
+                    })),
+                    ...(explorePin ? [{
+                      id: "explore-pin",
+                      position: [explorePin.lat, explorePin.lng] as [number, number],
+                      icon: createSvgIcon("#d97706", "large"),
+                      popup: {
+                        title: "📍 Ponto de exploração",
+                        content: `${exploreBairro || "Identificando..."} · Raio: ${exploreRadius}km`,
+                      },
+                    }] : []),
+                    ...explorePOIs.map((poi): MapMarker => {
+                      const tagColor = poi.ai_tag === "cliente_potencial" ? "#22c55e"
+                        : poi.ai_tag === "nao_compativel" ? "#9ca3af" : "#a855f7";
+                      return {
+                        id: poi.id,
+                        position: [poi.lat, poi.lng],
+                        icon: createDotIcon(tagColor, 14),
+                        popup: {
+                          title: poi.nome,
+                          content: (
+                            <div className="min-w-[180px]">
+                              <p className="text-xs text-muted-foreground">{poi.tipo_label}</p>
+                              {poi.ai_tag && (
+                                <p className={`text-xs font-medium mt-1 ${poi.ai_tag === "cliente_potencial" ? "text-green-600" : poi.ai_tag === "nao_compativel" ? "text-muted-foreground" : "text-purple-600"}`}>
+                                  {poi.ai_tag === "cliente_potencial" ? "✅ Cliente Potencial" : poi.ai_tag === "nao_compativel" ? "❌ Não Compatível" : "🔍 Avaliar"}
+                                  {poi.ai_prioridade && ` · ${poi.ai_prioridade}`}
+                                </p>
+                              )}
+                              {poi.ai_motivo && <p className="text-[10px] italic text-muted-foreground mt-0.5">{poi.ai_motivo}</p>}
+                              {poi.endereco && <p className="text-xs text-muted-foreground">{poi.endereco}</p>}
+                              {poi.telefone && <p className="text-xs">📞 {poi.telefone}</p>}
+                              {poi.horario && <p className="text-xs">🕐 {poi.horario}</p>}
+                              <button
+                                className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded mt-2 w-full"
+                                onClick={() => openQuickRegisterWithPOI(poi)}
+                              >
+                                Cadastrar como Prospecto
+                              </button>
+                            </div>
+                          ),
+                        },
+                      };
+                    }),
+                  ]}
+                  circles={explorePin ? [{
+                    id: "explore-radius",
+                    center: [explorePin.lat, explorePin.lng],
+                    radius: exploreRadius * 1000,
+                    style: {
+                      strokeColor: "#d97706",
+                      strokeWeight: 2,
+                      strokeOpacity: 0.8,
+                      fillColor: "#d97706",
+                      fillOpacity: 0.08,
+                    },
+                  }] : []}
+                  polylines={[
+                    ...(exploreRoute.length > 1 ? [{
+                      id: "explore-route",
+                      positions: exploreRoute.map(p => [p.lat, p.lng] as [number, number]),
+                      style: { strokeColor: "#d97706", strokeWeight: 4, strokeOpacity: 0.8 },
+                    }] : []),
+                    ...(showRoute && routePoints.length > 1 && !explorePin ? [{
+                      id: "visit-route",
+                      positions: routePoints.map(p => [p.lat, p.lng] as [number, number]),
+                      style: { strokeColor: "#0284c7", strokeWeight: 3, strokeOpacity: 0.8 },
+                    }] : []),
+                  ]}
+                />
             </Card>
 
             {/* Explore results panel */}
