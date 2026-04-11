@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { AdvancedMap, createLabeledSvgIcon, createSvgIcon, MAP_ICONS, type MapMarker } from "@/components/ui/interactive-map";
-import L from "leaflet";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,47 +17,6 @@ const clienteIcon = createSvgIcon('#2563eb');
 const pendingIcon = createSvgIcon('#dc2626');
 const DEFAULT_CENTER: [number, number] = [2.8195, -60.6714];
 
-// Custom factory icon - distinct building shape
-const createFactoryIcon = (label: string) => {
-  const w = 44;
-  const h = 44;
-  const labelWidth = Math.max(160, Math.min(240, label.length * 7.4));
-  const labelHeight = 52;
-  const gap = 6;
-  const totalHeight = h + labelHeight + gap;
-  const totalWidth = Math.max(w, labelWidth);
-
-  return L.divIcon({
-    html: `
-      <div style="display:flex; flex-direction:column; align-items:center; width:${totalWidth}px; height:${totalHeight}px;">
-        <div style="width:${labelWidth}px; min-height:${labelHeight}px; padding:4px; margin-bottom:${gap}px; border-radius:22px; background:linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.88)); border:2px solid rgba(234,88,12,0.4); box-shadow:0 22px 40px -24px rgba(15,23,42,0.48), 0 0 16px -4px rgba(234,88,12,0.25); backdrop-filter:blur(16px);">
-          <div style="display:flex; align-items:center; gap:10px; min-height:${labelHeight - 8}px; padding:0 12px; border-radius:18px; background:rgba(255,255,255,0.72);">
-            <div style="font-size:20px; flex-shrink:0;">🏭</div>
-            <div style="flex:1; min-width:0; color:#ea580c; font-family:'DM Sans', system-ui, sans-serif; font-size:12.5px; font-weight:900; letter-spacing:-0.03em; line-height:1.1; text-transform:uppercase; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; text-overflow:ellipsis;">
-              ${label}
-            </div>
-          </div>
-        </div>
-        <svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 44 44">
-          <circle cx="22" cy="22" r="20" fill="#ea580c" stroke="#fff" stroke-width="2.5" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.3))"/>
-          <g transform="translate(10, 10)" fill="#fff">
-            <rect x="0" y="8" width="8" height="16" rx="1"/>
-            <rect x="10" y="4" width="8" height="20" rx="1"/>
-            <rect x="3" y="2" width="3" height="8" rx="1"/>
-            <rect x="13" y="0" width="2" height="5" rx="0.5"/>
-            <rect x="20" y="10" width="4" height="14" rx="1"/>
-          </g>
-        </svg>
-      </div>
-    `,
-    className: '',
-    iconSize: [totalWidth, totalHeight] as [number, number],
-    iconAnchor: [totalWidth / 2, totalHeight] as [number, number],
-    popupAnchor: [1, -totalHeight + 10] as [number, number],
-  });
-};
-
-// Haversine distance calculation
 function calcDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -102,7 +60,6 @@ export default function MapaClientes() {
   const [factoryName, setFactoryName] = useState<string>("");
   const [hasFactoryCoords, setHasFactoryCoords] = useState(false);
 
-  // Drag confirmation state
   interface PendingDrag {
     type: "factory" | "client";
     id: string;
@@ -113,23 +70,18 @@ export default function MapaClientes() {
   const [pendingDrag, setPendingDrag] = useState<PendingDrag | null>(null);
   const [confirmDragOpen, setConfirmDragOpen] = useState(false);
   const [mapKey, setMapKey] = useState(0);
-  
 
-  // Load factory location (with auto-geocode if missing coords)
   useEffect(() => {
     if (!factoryId) return;
     (supabase as any).from("factories").select("latitude, longitude, name, endereco, bairro, cidade, estado").eq("id", factoryId).maybeSingle()
       .then(async ({ data }: any) => {
         if (!data) return;
         setFactoryName(data.name || "");
-
         if (data.latitude != null && data.longitude != null) {
           setFactoryCenter([data.latitude, data.longitude]);
           setHasFactoryCoords(true);
           return;
         }
-
-        // Auto-geocode factory address if coordinates are missing
         if (data.endereco?.trim()) {
           try {
             const coords = await geocodeClienteAddress({
@@ -141,7 +93,6 @@ export default function MapaClientes() {
             if (coords) {
               setFactoryCenter([coords.lat, coords.lng]);
               setHasFactoryCoords(true);
-              // Persist coordinates so we don't geocode again
               await (supabase as any).from("factories").update({ latitude: coords.lat, longitude: coords.lng }).eq("id", factoryId);
             }
           } catch (e) {
@@ -153,13 +104,9 @@ export default function MapaClientes() {
 
   function getStatusLabel(status?: AutoGeocodeStatus) {
     switch (status) {
-      case "localizado":
-        return { label: "Localizado", variant: "default" as const };
-      case "nao-encontrado":
-        return { label: "Não encontrado", variant: "destructive" as const };
-      case "pendente":
-      default:
-        return { label: "Pendente", variant: "secondary" as const };
+      case "localizado": return { label: "Localizado", variant: "default" as const };
+      case "nao-encontrado": return { label: "Não encontrado", variant: "destructive" as const };
+      default: return { label: "Pendente", variant: "secondary" as const };
     }
   }
 
@@ -167,7 +114,6 @@ export default function MapaClientes() {
     const pendentes = lista.filter((cliente) =>
       cliente.latitude == null && cliente.longitude == null && hasAddressForGeocoding(cliente)
     );
-
     setAutoGeocodeStatus((prev) => {
       const next = { ...prev };
       lista.forEach((cliente) => {
@@ -177,26 +123,15 @@ export default function MapaClientes() {
       });
       return next;
     });
-
     if (pendentes.length === 0) return;
-
     setAutoGeocoding(true);
     let atualizados = 0;
-
     for (const cliente of pendentes) {
       try {
         setAutoGeocodeStatus((prev) => ({ ...prev, [cliente.id]: "pendente" }));
         const coords = await geocodeClienteAddress(cliente);
-        if (!coords) {
-          setAutoGeocodeStatus((prev) => ({ ...prev, [cliente.id]: "nao-encontrado" }));
-          continue;
-        }
-
-        const { error } = await (supabase as any)
-          .from("clientes")
-          .update({ latitude: coords.lat, longitude: coords.lng })
-          .eq("id", cliente.id);
-
+        if (!coords) { setAutoGeocodeStatus((prev) => ({ ...prev, [cliente.id]: "nao-encontrado" })); continue; }
+        const { error } = await (supabase as any).from("clientes").update({ latitude: coords.lat, longitude: coords.lng }).eq("id", cliente.id);
         if (error) throw error;
         setAutoGeocodeStatus((prev) => ({ ...prev, [cliente.id]: "localizado" }));
         atualizados += 1;
@@ -205,14 +140,9 @@ export default function MapaClientes() {
         console.warn("Falha ao geocodificar cliente automaticamente:", cliente.nome, error);
       }
     }
-
     setAutoGeocoding(false);
-
     if (atualizados > 0) {
-      toast({
-        title: "📍 Clientes adicionados ao mapa",
-        description: `${atualizados} cliente(s) com endereço foram posicionados automaticamente.`,
-      });
+      toast({ title: "📍 Clientes adicionados ao mapa", description: `${atualizados} cliente(s) com endereço foram posicionados automaticamente.` });
       await loadClientes(false);
     }
   }, []);
@@ -221,11 +151,8 @@ export default function MapaClientes() {
 
   useEffect(() => {
     if (!highlightedClienteId || clientes.length === 0) return;
-
     const cliente = clientes.find((item) => item.id === highlightedClienteId);
-    if (!cliente) return;
-
-    if (cliente.latitude != null && cliente.longitude != null) {
+    if (cliente?.latitude != null && cliente?.longitude != null) {
       setFlyTarget([cliente.latitude, cliente.longitude]);
     }
   }, [clientes, highlightedClienteId]);
@@ -241,13 +168,9 @@ export default function MapaClientes() {
       .order("nome");
     if (factoryId) q = q.eq("factory_id", factoryId);
     const { data } = await q;
-
     const lista = data || [];
     setClientes(lista);
-
-    if (runAutoGeocode) {
-      await autoGeocodeMissingClientes(lista);
-    }
+    if (runAutoGeocode) await autoGeocodeMissingClientes(lista);
   }
 
   const semCoordenadas = clientes.filter(c => c.latitude == null || c.longitude == null);
@@ -263,10 +186,7 @@ export default function MapaClientes() {
     : [];
 
   function focusCliente(c: Cliente) {
-    if (c.latitude && c.longitude) {
-      setFlyTarget([c.latitude, c.longitude]);
-      setSearchTerm("");
-    }
+    if (c.latitude && c.longitude) { setFlyTarget([c.latitude, c.longitude]); setSearchTerm(""); }
   }
 
   function startPlacing(clienteId: string) {
@@ -275,7 +195,7 @@ export default function MapaClientes() {
     toast({ title: "Clique no mapa para posicionar o cliente" });
   }
 
-  function handleMapClick(latlng: L.LatLng) {
+  function handleMapClick(latlng: { lat: number; lng: number }) {
     if (!placingClienteId) return;
     setTempMarker([latlng.lat, latlng.lng]);
   }
@@ -283,10 +203,7 @@ export default function MapaClientes() {
   async function savePosition() {
     if (!placingClienteId || !tempMarker) return;
     try {
-      const { error } = await (supabase as any)
-        .from("clientes")
-        .update({ latitude: tempMarker[0], longitude: tempMarker[1] })
-        .eq("id", placingClienteId);
+      const { error } = await (supabase as any).from("clientes").update({ latitude: tempMarker[0], longitude: tempMarker[1] }).eq("id", placingClienteId);
       if (error) throw error;
       toast({ title: "Localização salva!" });
       setPlacingClienteId(null);
@@ -297,17 +214,11 @@ export default function MapaClientes() {
     }
   }
 
-  function cancelPlacing() {
-    setPlacingClienteId(null);
-    setTempMarker(null);
-  }
+  function cancelPlacing() { setPlacingClienteId(null); setTempMarker(null); }
 
   async function removePosition(clienteId: string) {
     try {
-      await (supabase as any)
-        .from("clientes")
-        .update({ latitude: null, longitude: null })
-        .eq("id", clienteId);
+      await (supabase as any).from("clientes").update({ latitude: null, longitude: null }).eq("id", clienteId);
       toast({ title: "Localização removida" });
       loadClientes();
     } catch (e: any) {
@@ -316,12 +227,10 @@ export default function MapaClientes() {
   }
 
   const placingCliente = clientes.find(c => c.id === placingClienteId);
-  const hasFactoryLocation = hasFactoryCoords;
 
-  // Build markers for AdvancedMap
   const markers: MapMarker[] = [
     ...clientesFiltrados.map(c => {
-      const dist = hasFactoryLocation ? calcDistanceKm(factoryCenter[0], factoryCenter[1], c.latitude!, c.longitude!) : null;
+      const dist = hasFactoryCoords ? calcDistanceKm(factoryCenter[0], factoryCenter[1], c.latitude!, c.longitude!) : null;
       const distLabel = dist !== null ? ` · ${formatDistance(dist)}` : '';
       return {
         id: c.id,
@@ -335,31 +244,19 @@ export default function MapaClientes() {
         popup: {
           title: c.nome,
           content: (
-            <div className="space-y-1">
-              {dist !== null && (
-                <p className="text-xs font-semibold text-primary">📏 {formatDistance(dist)} da fábrica</p>
-              )}
-              {c.bairro && <p className="text-xs text-muted-foreground">{c.bairro}</p>}
-              {c.endereco && <p className="text-xs text-muted-foreground">{c.endereco}</p>}
-              {c.telefone && <p className="text-xs text-muted-foreground">📞 {c.telefone}</p>}
-              {c.possui_freezer && <p className="text-xs text-primary font-medium mt-1">❄️ Possui Freezer</p>}
-              <p className="text-xs text-amber-600 mt-1">✋ Arraste o marcador para ajustar a posição</p>
-              <div className="flex gap-1 mt-2">
-                <button
-                  className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded hover:opacity-90"
-                  onClick={() => startPlacing(c.id)}
-                >
-                  Reposicionar
-                </button>
-                <button
-                  className="text-xs bg-destructive text-destructive-foreground px-2 py-1 rounded hover:opacity-90"
-                  onClick={() => removePosition(c.id)}
-              >
-                Remover
-              </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {dist !== null && <p style={{ fontSize: 12, fontWeight: 600, color: '#2563eb' }}>📏 {formatDistance(dist)} da fábrica</p>}
+              {c.bairro && <p style={{ fontSize: 12, color: '#666' }}>{c.bairro}</p>}
+              {c.endereco && <p style={{ fontSize: 12, color: '#666' }}>{c.endereco}</p>}
+              {c.telefone && <p style={{ fontSize: 12, color: '#666' }}>📞 {c.telefone}</p>}
+              {c.possui_freezer && <p style={{ fontSize: 12, color: '#2563eb', fontWeight: 500 }}>❄️ Possui Freezer</p>}
+              <p style={{ fontSize: 11, color: '#d97706' }}>✋ Arraste o marcador para ajustar a posição</p>
+              <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+                <button style={{ fontSize: 12, background: '#2563eb', color: 'white', padding: '4px 8px', borderRadius: 4, border: 'none', cursor: 'pointer' }} onClick={() => startPlacing(c.id)}>Reposicionar</button>
+                <button style={{ fontSize: 12, background: '#dc2626', color: 'white', padding: '4px 8px', borderRadius: 4, border: 'none', cursor: 'pointer' }} onClick={() => removePosition(c.id)}>Remover</button>
+              </div>
             </div>
-          </div>
-        ),
+          ),
         },
         data: c,
       };
@@ -368,24 +265,20 @@ export default function MapaClientes() {
       id: 'temp-marker',
       position: tempMarker,
       icon: pendingIcon,
-      popup: {
-        title: placingCliente?.nome || '',
-        content: <p className="text-xs text-gray-500">Nova posição</p>,
-      },
+      popup: { title: placingCliente?.nome || '', content: 'Nova posição' },
     }] : []),
-    // Factory marker
     ...(hasFactoryCoords ? [{
       id: 'factory-marker',
       position: factoryCenter,
       draggable: true,
       excludeFromCluster: true,
-      icon: createFactoryIcon(factoryName || 'Fábrica'),
+      icon: createLabeledSvgIcon('#ea580c', `🏭 ${factoryName || 'Fábrica'}`, 'large'),
       popup: {
         title: `🏭 ${factoryName || 'Fábrica'}`,
         content: (
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Localização da fábrica (ponto de referência)</p>
-            <p className="text-xs text-amber-600">✋ Arraste para ajustar a posição</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <p style={{ fontSize: 12, color: '#666' }}>Localização da fábrica (ponto de referência)</p>
+            <p style={{ fontSize: 11, color: '#d97706' }}>✋ Arraste para ajustar a posição</p>
           </div>
         ),
       },
@@ -404,45 +297,22 @@ export default function MapaClientes() {
         </Button>
       </div>
 
-      {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <Card><CardContent className="pt-3 pb-3 text-center">
-          <p className="text-xl font-bold">{clientes.length}</p>
-          <p className="text-xs text-muted-foreground">Clientes ativos</p>
-        </CardContent></Card>
-        <Card><CardContent className="pt-3 pb-3 text-center">
-          <p className="text-xl font-bold text-primary">{comCoordenadas.length}</p>
-          <p className="text-xs text-muted-foreground">No mapa</p>
-        </CardContent></Card>
-        <Card><CardContent className="pt-3 pb-3 text-center">
-          <p className="text-xl font-bold text-amber-500">{semCoordenadas.length}</p>
-          <p className="text-xs text-muted-foreground">Sem localização</p>
-        </CardContent></Card>
-        <Card><CardContent className="pt-3 pb-3 text-center">
-          <p className="text-xl font-bold">{bairros.length}</p>
-          <p className="text-xs text-muted-foreground">Bairros</p>
-        </CardContent></Card>
+        <Card><CardContent className="pt-3 pb-3 text-center"><p className="text-xl font-bold">{clientes.length}</p><p className="text-xs text-muted-foreground">Clientes ativos</p></CardContent></Card>
+        <Card><CardContent className="pt-3 pb-3 text-center"><p className="text-xl font-bold text-primary">{comCoordenadas.length}</p><p className="text-xs text-muted-foreground">No mapa</p></CardContent></Card>
+        <Card><CardContent className="pt-3 pb-3 text-center"><p className="text-xl font-bold text-amber-500">{semCoordenadas.length}</p><p className="text-xs text-muted-foreground">Sem localização</p></CardContent></Card>
+        <Card><CardContent className="pt-3 pb-3 text-center"><p className="text-xl font-bold">{bairros.length}</p><p className="text-xs text-muted-foreground">Bairros</p></CardContent></Card>
       </div>
 
-      {/* Search */}
       <div className="relative mb-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar cliente no mapa..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="pl-9"
-          />
+          <Input placeholder="Buscar cliente no mapa..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9" />
         </div>
         {searchResults.length > 0 && (
           <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-y-auto">
             {searchResults.map(c => (
-              <button
-                key={c.id}
-                className="w-full text-left px-3 py-2 hover:bg-muted text-sm flex items-center gap-2"
-                onClick={() => focusCliente(c)}
-              >
+              <button key={c.id} className="w-full text-left px-3 py-2 hover:bg-muted text-sm flex items-center gap-2" onClick={() => focusCliente(c)}>
                 <MapPin className="h-3 w-3 text-primary shrink-0" />
                 <span className="font-medium">{c.nome}</span>
                 {c.bairro && <span className="text-muted-foreground text-xs">— {c.bairro}</span>}
@@ -457,7 +327,6 @@ export default function MapaClientes() {
         )}
       </div>
 
-      {/* Placing mode banner */}
       {placingClienteId && (
         <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-300 rounded-lg flex items-center justify-between">
           <div>
@@ -465,20 +334,13 @@ export default function MapaClientes() {
             <p className="text-xs text-muted-foreground">Clique no mapa para definir a localização</p>
           </div>
           <div className="flex gap-2">
-            {tempMarker && (
-              <Button size="sm" onClick={savePosition}>
-                <Save className="h-4 w-4 mr-1" /> Salvar
-              </Button>
-            )}
-            <Button size="sm" variant="outline" onClick={cancelPlacing}>
-              <X className="h-4 w-4 mr-1" /> Cancelar
-            </Button>
+            {tempMarker && <Button size="sm" onClick={savePosition}><Save className="h-4 w-4 mr-1" /> Salvar</Button>}
+            <Button size="sm" variant="outline" onClick={cancelPlacing}><X className="h-4 w-4 mr-1" /> Cancelar</Button>
           </div>
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        {/* Map */}
         <div className="lg:col-span-3">
           <Card className="overflow-hidden">
             <AdvancedMap
@@ -491,21 +353,9 @@ export default function MapaClientes() {
                 if (marker.id === 'temp-marker') return;
                 const oldPos: [number, number] = marker.position as [number, number];
                 if (marker.id === 'factory-marker') {
-                  setPendingDrag({
-                    type: "factory",
-                    id: factoryId || "",
-                    name: factoryName || "Fábrica",
-                    oldPos,
-                    newPos,
-                  });
+                  setPendingDrag({ type: "factory", id: factoryId || "", name: factoryName || "Fábrica", oldPos, newPos });
                 } else {
-                  setPendingDrag({
-                    type: "client",
-                    id: String(marker.id),
-                    name: marker.data?.nome || "Cliente",
-                    oldPos,
-                    newPos,
-                  });
+                  setPendingDrag({ type: "client", id: String(marker.id), name: marker.data?.nome || "Cliente", oldPos, newPos });
                 }
                 setConfirmDragOpen(true);
               }}
@@ -516,14 +366,10 @@ export default function MapaClientes() {
               style={{ height: "600px", width: "100%" }}
             />
           </Card>
-
-          {/* Filter */}
           <div className="flex items-center gap-3 mt-3">
             <Users className="h-4 w-4 text-muted-foreground" />
             <Select value={filterBairro} onValueChange={setFilterBairro}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Filtrar por bairro" />
-              </SelectTrigger>
+              <SelectTrigger className="w-[200px]"><SelectValue placeholder="Filtrar por bairro" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos os bairros</SelectItem>
                 {bairros.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
@@ -535,11 +381,9 @@ export default function MapaClientes() {
           </div>
         </div>
 
-        {/* Sidebar - clients without coordinates */}
         <div className="space-y-3">
           <h3 className="font-bold text-sm flex items-center gap-2">
-            <MapPin className="h-4 w-4 text-amber-500" />
-            Sem localização ({semCoordenadas.length})
+            <MapPin className="h-4 w-4 text-amber-500" /> Sem localização ({semCoordenadas.length})
           </h3>
           <div className="max-h-[560px] overflow-y-auto space-y-2 pr-1">
             {semCoordenadas.map(c => (
@@ -566,14 +410,8 @@ export default function MapaClientes() {
         </div>
       </div>
 
-      {/* Drag Confirmation Dialog */}
       <AlertDialog open={confirmDragOpen} onOpenChange={(v) => {
-        if (!v) {
-          setConfirmDragOpen(false);
-          setPendingDrag(null);
-          setMapKey(k => k + 1);
-          loadClientes(false);
-        }
+        if (!v) { setConfirmDragOpen(false); setPendingDrag(null); setMapKey(k => k + 1); loadClientes(false); }
       }}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -588,60 +426,38 @@ export default function MapaClientes() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setPendingDrag(null);
-              setMapKey(k => k + 1);
-              loadClientes(false);
-            }}>
-              Cancelar
-            </AlertDialogCancel>
+            <AlertDialogCancel onClick={() => { setPendingDrag(null); setMapKey(k => k + 1); loadClientes(false); }}>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={async () => {
               if (!pendingDrag) return;
               setConfirmDragOpen(false);
               const { type, id, name, oldPos, newPos } = pendingDrag;
-
               try {
                 if (type === "factory") {
-                  const { error } = await (supabase as any)
-                    .from("factories")
-                    .update({ latitude: newPos[0], longitude: newPos[1] })
-                    .eq("id", id);
+                  const { error } = await (supabase as any).from("factories").update({ latitude: newPos[0], longitude: newPos[1] }).eq("id", id);
                   if (error) throw error;
                   setFactoryCenter(newPos);
                 } else {
-                  const { error } = await (supabase as any)
-                    .from("clientes")
-                    .update({ latitude: newPos[0], longitude: newPos[1] })
-                    .eq("id", id);
+                  const { error } = await (supabase as any).from("clientes").update({ latitude: newPos[0], longitude: newPos[1] }).eq("id", id);
                   if (error) throw error;
                   await loadClientes(false);
                 }
-
-                // Show undo toast
-                const toastId = toast({
+                toast({
                   title: `📍 ${name} reposicionado`,
                   description: (
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-xs">Nova posição salva.</span>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-6 text-xs gap-1"
-                        onClick={async () => {
-                          try {
-                            if (type === "factory") {
-                              await (supabase as any).from("factories").update({ latitude: oldPos[0], longitude: oldPos[1] }).eq("id", id);
-                              setFactoryCenter(oldPos);
-                            } else {
-                              await (supabase as any).from("clientes").update({ latitude: oldPos[0], longitude: oldPos[1] }).eq("id", id);
-                              await loadClientes(false);
-                            }
-                            toast({ title: "↩️ Posição restaurada", description: `${name} voltou à posição anterior.` });
-                          } catch (e: any) {
-                            toast({ title: "Erro ao desfazer", description: e.message, variant: "destructive" });
+                      <Button size="sm" variant="outline" className="h-6 text-xs gap-1" onClick={async () => {
+                        try {
+                          if (type === "factory") {
+                            await (supabase as any).from("factories").update({ latitude: oldPos[0], longitude: oldPos[1] }).eq("id", id);
+                            setFactoryCenter(oldPos);
+                          } else {
+                            await (supabase as any).from("clientes").update({ latitude: oldPos[0], longitude: oldPos[1] }).eq("id", id);
+                            await loadClientes(false);
                           }
-                        }}
-                      >
+                          toast({ title: "↩️ Posição restaurada", description: `${name} voltou à posição anterior.` });
+                        } catch (e: any) { toast({ title: "Erro ao desfazer", description: e.message, variant: "destructive" }); }
+                      }}>
                         <Undo2 className="h-3 w-3" /> Desfazer
                       </Button>
                     </div>
@@ -651,11 +467,8 @@ export default function MapaClientes() {
               } catch (e: any) {
                 toast({ title: "Erro ao salvar posição", description: e.message, variant: "destructive" });
               }
-
               setPendingDrag(null);
-            }}>
-              Confirmar
-            </AlertDialogAction>
+            }}>Confirmar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
