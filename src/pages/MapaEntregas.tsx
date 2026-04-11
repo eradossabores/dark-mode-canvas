@@ -68,32 +68,24 @@ function haversineDistance(a: [number, number], b: [number, number]): number {
   return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
 }
 
-/** Nearest-neighbor ordering starting from origin */
 function optimizeOrder(origin: [number, number], points: PedidoEntrega[]): PedidoEntrega[] {
   const withCoords = points.filter(p => p.latitude != null && p.longitude != null);
   const withoutCoords = points.filter(p => p.latitude == null || p.longitude == null);
-
   if (withCoords.length <= 1) return [...withCoords, ...withoutCoords];
-
   const ordered: PedidoEntrega[] = [];
   const remaining = [...withCoords];
   let current = origin;
-
   while (remaining.length > 0) {
     let nearestIdx = 0;
     let nearestDist = Infinity;
     for (let i = 0; i < remaining.length; i++) {
       const d = haversineDistance(current, [remaining[i].latitude!, remaining[i].longitude!]);
-      if (d < nearestDist) {
-        nearestDist = d;
-        nearestIdx = i;
-      }
+      if (d < nearestDist) { nearestDist = d; nearestIdx = i; }
     }
     const next = remaining.splice(nearestIdx, 1)[0];
     ordered.push({ ...next, ordem: ordered.length + 1 });
     current = [next.latitude!, next.longitude!];
   }
-
   return [...ordered, ...withoutCoords];
 }
 
@@ -116,10 +108,7 @@ export default function MapaEntregas() {
   const [otimizarRota, setOtimizarRota] = useState(true);
 
   useEffect(() => {
-    if (role !== "super_admin" && !factoryId) {
-      setPedidos([]);
-      return;
-    }
+    if (role !== "super_admin" && !factoryId) { setPedidos([]); return; }
     loadData();
   }, [factoryId, role]);
 
@@ -131,10 +120,8 @@ export default function MapaEntregas() {
         .in("status", ["separado_para_entrega", "em_producao", "aguardando_producao"])
         .eq("tipo_pedido", "entrega")
         .order("data_entrega");
-
       if (factoryId) q = q.eq("factory_id", factoryId);
       const { data } = await q;
-
       const mapped: PedidoEntrega[] = (data || []).map((p: any) => ({
         id: p.id,
         clienteNome: p.clientes?.nome || "?",
@@ -149,143 +136,76 @@ export default function MapaEntregas() {
         valorFrete: p.vendas?.valor_frete ?? 0,
         fretePagoPor: p.vendas?.frete_pago_por ?? "cliente",
       }));
-
       if (factoryId) {
-        const { data: fData } = await supabase
-          .from("factories")
-          .select("latitude, longitude, name, endereco, bairro, cidade, estado")
-          .eq("id", factoryId)
-          .single();
-
+        const { data: fData } = await supabase.from("factories").select("latitude, longitude, name, endereco, bairro, cidade, estado").eq("id", factoryId).single();
         if (fData?.latitude != null && fData?.longitude != null) {
           setFactoryCoords([fData.latitude, fData.longitude]);
           setHasFactoryCoords(true);
-        } else {
-          setHasFactoryCoords(false);
-        }
-
+        } else { setHasFactoryCoords(false); }
         setFactoryName(fData?.name || "Fábrica");
-        
         const parts = [fData?.endereco, fData?.bairro, fData?.cidade, fData?.estado].filter(Boolean);
         setFactoryAddress(parts.join(", "));
       }
-
       setPedidos(mapped);
-    } catch (e) {
-      console.error("MapaEntregas error:", e);
-    }
+    } catch (e) { console.error("MapaEntregas error:", e); }
   }
 
-  function handleMarkerDragEnd(nextPosition: [number, number]) {
-    setPendingPosition(nextPosition);
-  }
+  function handleMarkerDragEnd(nextPosition: [number, number]) { setPendingPosition(nextPosition); }
 
   async function confirmReposition() {
     if (!factoryId || !pendingPosition || savingFactoryPosition) return;
-
     const oldPosition = factoryCoords;
     setPreviousSavedPosition(oldPosition);
     setFactoryCoords(pendingPosition);
     setHasFactoryCoords(true);
     setSavingFactoryPosition(true);
     setPendingPosition(null);
-
     try {
-      const { error } = await supabase
-        .from("factories")
-        .update({ latitude: pendingPosition[0], longitude: pendingPosition[1] })
-        .eq("id", factoryId);
-
+      const { error } = await supabase.from("factories").update({ latitude: pendingPosition[0], longitude: pendingPosition[1] }).eq("id", factoryId);
       if (error) throw error;
-
-      toast({
-        title: "Posição da fábrica atualizada",
-        description: "O ponto de partida das entregas foi salvo com sucesso.",
-      });
+      toast({ title: "Posição da fábrica atualizada", description: "O ponto de partida das entregas foi salvo com sucesso." });
     } catch (error: any) {
       setFactoryCoords(oldPosition);
       setPreviousSavedPosition(null);
-      toast({
-        title: "Erro ao salvar posição",
-        description: error?.message || "Não foi possível atualizar a localização da fábrica.",
-        variant: "destructive",
-      });
-    } finally {
-      setSavingFactoryPosition(false);
-    }
+      toast({ title: "Erro ao salvar posição", description: error?.message || "Não foi possível atualizar a localização da fábrica.", variant: "destructive" });
+    } finally { setSavingFactoryPosition(false); }
   }
 
-  function cancelReposition() {
-    setPendingPosition(null);
-  }
+  function cancelReposition() { setPendingPosition(null); }
 
   async function undoReposition() {
     if (!factoryId || !previousSavedPosition || savingFactoryPosition) return;
-
     setSavingFactoryPosition(true);
     const restoreTo = previousSavedPosition;
-
     try {
-      const { error } = await supabase
-        .from("factories")
-        .update({ latitude: restoreTo[0], longitude: restoreTo[1] })
-        .eq("id", factoryId);
-
+      const { error } = await supabase.from("factories").update({ latitude: restoreTo[0], longitude: restoreTo[1] }).eq("id", factoryId);
       if (error) throw error;
-
       setFactoryCoords(restoreTo);
       setPreviousSavedPosition(null);
-      toast({
-        title: "Posição restaurada",
-        description: "A fábrica voltou para a posição anterior.",
-      });
+      toast({ title: "Posição restaurada", description: "A fábrica voltou para a posição anterior." });
     } catch (error: any) {
-      toast({
-        title: "Erro ao desfazer",
-        description: error?.message || "Não foi possível restaurar a posição.",
-        variant: "destructive",
-      });
-    } finally {
-      setSavingFactoryPosition(false);
-    }
+      toast({ title: "Erro ao desfazer", description: error?.message || "Não foi possível restaurar a posição.", variant: "destructive" });
+    } finally { setSavingFactoryPosition(false); }
   }
 
-  // Route cache to avoid repeated API calls
   const routeCacheRef = useMemo(() => new Map<string, { coords: [number, number][]; distanceKm: number; durationMin: number }>(), []);
 
-  async function fetchRoute(
-    from: [number, number],
-    to: [number, number]
-  ): Promise<{ coords: [number, number][]; distanceKm: number; durationMin: number }> {
+  async function fetchRoute(from: [number, number], to: [number, number]): Promise<{ coords: [number, number][]; distanceKm: number; durationMin: number }> {
     const cacheKey = `${from[0].toFixed(5)},${from[1].toFixed(5)}-${to[0].toFixed(5)},${to[1].toFixed(5)}`;
     if (routeCacheRef.has(cacheKey)) return routeCacheRef.get(cacheKey)!;
-
-    // Try server-side proxy (edge function) first — avoids CORS and rate limiting
     try {
-      const { data, error } = await supabase.functions.invoke("route-directions", {
-        body: { from, to },
-      });
-
+      const { data, error } = await supabase.functions.invoke("route-directions", { body: { from, to } });
       if (!error && data?.coords?.length >= 2) {
-        const result = {
-          coords: data.coords as [number, number][],
-          distanceKm: data.distanceKm,
-          durationMin: data.durationMin,
-        };
+        const result = { coords: data.coords as [number, number][], distanceKm: data.distanceKm, durationMin: data.durationMin };
         routeCacheRef.set(cacheKey, result);
         return result;
       }
-    } catch (e) {
-      console.warn("Edge function route failed:", e);
-    }
-
-    // Client-side OSRM fallback
+    } catch (e) { console.warn("Edge function route failed:", e); }
     const coordsStr = `${from[1]},${from[0]};${to[1]},${to[0]}`;
     const OSRM_URLS = [
       `https://router.project-osrm.org/route/v1/driving/${coordsStr}?overview=full&geometries=geojson`,
       `https://routing.openstreetmap.de/routed-car/route/v1/driving/${coordsStr}?overview=full&geometries=geojson`,
     ];
-
     for (const url of OSRM_URLS) {
       try {
         const controller = new AbortController();
@@ -294,40 +214,24 @@ export default function MapaEntregas() {
         clearTimeout(timeout);
         if (!res.ok) continue;
         const data = await res.json();
-
         if (data.code === "Ok" && data.routes?.[0]) {
           const route = data.routes[0];
           const routeCoords = route.geometry.coordinates.map((c: number[]) => [c[1], c[0]] as [number, number]);
           if (routeCoords.length >= 2) {
-            const result = {
-              coords: routeCoords,
-              distanceKm: Math.round((route.distance / 1000) * 10) / 10,
-              durationMin: Math.round(route.duration / 60),
-            };
+            const result = { coords: routeCoords, distanceKm: Math.round((route.distance / 1000) * 10) / 10, durationMin: Math.round(route.duration / 60) };
             routeCacheRef.set(cacheKey, result);
             return result;
           }
         }
-      } catch (e) {
-        console.warn("Client OSRM failed:", e);
-      }
+      } catch (e) { console.warn("Client OSRM failed:", e); }
     }
-
-    // Final fallback: haversine straight line
     const dist = haversineDistance(from, to);
-    const result = {
-      coords: [from, to],
-      distanceKm: Math.round(dist * 10) / 10,
-      durationMin: Math.round((dist / 30) * 60),
-    };
+    const result = { coords: [from, to], distanceKm: Math.round(dist * 10) / 10, durationMin: Math.round((dist / 30) * 60) };
     routeCacheRef.set(cacheKey, result);
     return result;
   }
 
-  const bairros = useMemo(() => {
-    const set = new Set(pedidos.map(p => p.bairro));
-    return Array.from(set).sort();
-  }, [pedidos]);
+  const bairros = useMemo(() => Array.from(new Set(pedidos.map(p => p.bairro))).sort(), [pedidos]);
 
   const filtered = useMemo(() => {
     return pedidos.filter(p => {
@@ -337,44 +241,25 @@ export default function MapaEntregas() {
     });
   }, [pedidos, filtroStatus, filtroBairro]);
 
-  // Optimized ordering
   const orderedPedidos = useMemo(() => {
     if (!otimizarRota || !hasFactoryCoords) return filtered;
     return optimizeOrder(factoryCoords, filtered);
   }, [filtered, otimizarRota, factoryCoords, hasFactoryCoords]);
 
   useEffect(() => {
-    if (!hasFactoryCoords || orderedPedidos.length === 0) {
-      setRoutePolylines([]);
-      setRouteInfoMap({});
-      return;
-    }
-
+    if (!hasFactoryCoords || orderedPedidos.length === 0) { setRoutePolylines([]); setRouteInfoMap({}); return; }
     const pedidosComCoords = orderedPedidos.filter(p => p.latitude != null && p.longitude != null);
-    if (pedidosComCoords.length === 0) {
-      setRoutePolylines([]);
-      setRouteInfoMap({});
-      return;
-    }
-
+    if (pedidosComCoords.length === 0) { setRoutePolylines([]); setRouteInfoMap({}); return; }
     let cancelled = false;
-
     async function loadRoutes() {
       const ROUTE_COLORS = ["#2563eb", "#dc2626", "#16a34a", "#d97706", "#7c3aed", "#0891b2", "#ea580c", "#db2777"];
       const lines: MapPolyline[] = [];
       const infoMap: Record<string, RouteInfo> = {};
-
       for (let i = 0; i < pedidosComCoords.length; i++) {
         if (cancelled) return;
         const p = pedidosComCoords[i];
-        // When optimized, chain routes: factory -> 1st -> 2nd -> ...
-        const from = otimizarRota && i > 0
-          ? [pedidosComCoords[i - 1].latitude!, pedidosComCoords[i - 1].longitude!] as [number, number]
-          : factoryCoords;
-
-        // Small delay between requests to avoid rate limiting
+        const from = otimizarRota && i > 0 ? [pedidosComCoords[i - 1].latitude!, pedidosComCoords[i - 1].longitude!] as [number, number] : factoryCoords;
         if (i > 0) await new Promise(r => setTimeout(r, 300));
-
         const result = await fetchRoute(from, [p.latitude!, p.longitude!]);
         infoMap[p.id] = { distanceKm: result.distanceKm, durationMin: result.durationMin };
         lines.push({
@@ -387,25 +272,15 @@ export default function MapaEntregas() {
           },
         });
       }
-
-      if (!cancelled) {
-        setRoutePolylines(lines);
-        setRouteInfoMap(infoMap);
-      }
+      if (!cancelled) { setRoutePolylines(lines); setRouteInfoMap(infoMap); }
     }
-
     loadRoutes();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [orderedPedidos, factoryCoords, hasFactoryCoords, selectedRoute, otimizarRota]);
 
   const grouped = useMemo(() => {
     const map: Record<string, PedidoEntrega[]> = {};
-    orderedPedidos.forEach(p => {
-      if (!map[p.bairro]) map[p.bairro] = [];
-      map[p.bairro].push(p);
-    });
+    orderedPedidos.forEach(p => { if (!map[p.bairro]) map[p.bairro] = []; map[p.bairro].push(p); });
     return Object.entries(map).sort((a, b) => b[1].length - a[1].length);
   }, [orderedPedidos]);
 
@@ -418,11 +293,10 @@ export default function MapaEntregas() {
   const mapMarkers: MapMarker[] = useMemo(() => {
     const clientMarkers = orderedPedidos
       .filter(p => p.latitude != null && p.longitude != null)
-      .map((p, idx) => {
+      .map((p) => {
         const info = routeInfoMap[p.id];
         const isSelected = selectedRoute === p.id;
         const orderLabel = p.ordem ? `${p.ordem}° ` : "";
-
         return {
           id: p.id,
           position: [p.latitude!, p.longitude!] as [number, number],
@@ -434,15 +308,11 @@ export default function MapaEntregas() {
           popup: {
             title: `📍 ${orderLabel}${p.clienteNome}`,
             content: (
-              <div className="space-y-1 min-w-[180px]">
-                <p className="text-xs">📦 {p.itens} un · {p.bairro}</p>
-                <p className="text-xs">📅 {new Date(p.dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}</p>
-                {info && (
-                  <p className="text-xs font-medium text-primary">🛣️ {info.distanceKm} km · ~{info.durationMin} min</p>
-                )}
-                {p.valorFrete > 0 && (
-                  <p className="text-xs">🚚 Frete: R$ {p.valorFrete.toFixed(2)} ({p.fretePagoPor === "empresa" ? "Empresa" : p.fretePagoPor === "ambos" ? "Dividido" : "Cliente"})</p>
-                )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 180 }}>
+                <p style={{ fontSize: 12 }}>📦 {p.itens} un · {p.bairro}</p>
+                <p style={{ fontSize: 12 }}>📅 {new Date(p.dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}</p>
+                {info && <p style={{ fontSize: 12, fontWeight: 500, color: '#2563eb' }}>🛣️ {info.distanceKm} km · ~{info.durationMin} min</p>}
+                {p.valorFrete > 0 && <p style={{ fontSize: 12 }}>🚚 Frete: R$ {p.valorFrete.toFixed(2)} ({p.fretePagoPor === "empresa" ? "Empresa" : p.fretePagoPor === "ambos" ? "Dividido" : "Cliente"})</p>}
               </div>
             ),
           },
@@ -457,12 +327,10 @@ export default function MapaEntregas() {
       popup: {
         title: `🏭 Origem: ${factoryName}`,
         content: (
-          <div className="space-y-1">
-            <p className="text-xs font-semibold text-emerald-600">📍 Ponto de partida das entregas</p>
-            <p className="text-xs text-muted-foreground">Arraste o marcador para reposicionar</p>
-            {savingFactoryPosition && (
-              <p className="text-xs text-muted-foreground">Salvando nova posição...</p>
-            )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <p style={{ fontSize: 12, fontWeight: 600, color: '#16a34a' }}>📍 Ponto de partida das entregas</p>
+            <p style={{ fontSize: 12, color: '#666' }}>Arraste o marcador para reposicionar</p>
+            {savingFactoryPosition && <p style={{ fontSize: 12, color: '#666' }}>Salvando nova posição...</p>}
           </div>
         ),
       },
@@ -476,23 +344,9 @@ export default function MapaEntregas() {
   const totalDistancia = Object.values(routeInfoMap).reduce((s, r) => s + r.distanceKm, 0);
   const totalTempo = Object.values(routeInfoMap).reduce((s, r) => s + r.durationMin, 0);
 
-  const statusLabel: Record<string, string> = {
-    aguardando_producao: "Aguardando",
-    em_producao: "Em Produção",
-    separado_para_entrega: "Separado",
-  };
-
-  const statusVariant = (s: string) => {
-    if (s === "separado_para_entrega") return "default" as const;
-    if (s === "em_producao") return "secondary" as const;
-    return "outline" as const;
-  };
-
-  const freteLabel = (pago: string) => {
-    if (pago === "empresa") return "Empresa";
-    if (pago === "ambos") return "Dividido";
-    return "Cliente";
-  };
+  const statusLabel: Record<string, string> = { aguardando_producao: "Aguardando", em_producao: "Em Produção", separado_para_entrega: "Separado" };
+  const statusVariant = (s: string) => { if (s === "separado_para_entrega") return "default" as const; if (s === "em_producao") return "secondary" as const; return "outline" as const; };
+  const freteLabel = (pago: string) => { if (pago === "empresa") return "Empresa"; if (pago === "ambos") return "Dividido"; return "Cliente"; };
 
   return (
     <div>
@@ -500,9 +354,7 @@ export default function MapaEntregas() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Reposicionar fábrica?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja mover a fábrica para a nova posição? Isso alterará o ponto de partida de todas as rotas de entrega.
-            </AlertDialogDescription>
+            <AlertDialogDescription>Tem certeza que deseja mover a fábrica para a nova posição? Isso alterará o ponto de partida de todas as rotas de entrega.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
@@ -516,60 +368,22 @@ export default function MapaEntregas() {
           <MapPin className="h-6 w-6 text-primary" />
           <h1 className="text-2xl font-bold">Mapa de Entregas</h1>
         </div>
-        <Button variant="outline" size="sm" onClick={loadData}>
-          <Truck className="h-4 w-4 mr-1" /> Atualizar
-        </Button>
+        <Button variant="outline" size="sm" onClick={loadData}><Truck className="h-4 w-4 mr-1" /> Atualizar</Button>
       </div>
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
-        <Card>
-          <CardContent className="pt-4 text-center">
-            <p className="text-2xl font-bold">{filtered.length}</p>
-            <p className="text-xs text-muted-foreground">Pedidos</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 text-center">
-            <p className="text-2xl font-bold">{bairros.length}</p>
-            <p className="text-xs text-muted-foreground">Bairros</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 text-center">
-            <p className="text-2xl font-bold">{totalItens}</p>
-            <p className="text-xs text-muted-foreground">Unidades</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 text-center">
-            <p className="text-2xl font-bold">{filtered.filter(p => p.status === "separado_para_entrega").length}</p>
-            <p className="text-xs text-muted-foreground">Prontos</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 text-center">
-            <p className="text-2xl font-bold text-primary">{totalDistancia > 0 ? `${Math.round(totalDistancia)}km` : "—"}</p>
-            <p className="text-xs text-muted-foreground">Distância total</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 text-center">
-            <p className="text-2xl font-bold text-primary">{totalTempo > 0 ? `${totalTempo}min` : "—"}</p>
-            <p className="text-xs text-muted-foreground">Tempo estimado</p>
-          </CardContent>
-        </Card>
+        <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold">{filtered.length}</p><p className="text-xs text-muted-foreground">Pedidos</p></CardContent></Card>
+        <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold">{bairros.length}</p><p className="text-xs text-muted-foreground">Bairros</p></CardContent></Card>
+        <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold">{totalItens}</p><p className="text-xs text-muted-foreground">Unidades</p></CardContent></Card>
+        <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold">{filtered.filter(p => p.status === "separado_para_entrega").length}</p><p className="text-xs text-muted-foreground">Prontos</p></CardContent></Card>
+        <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-primary">{totalDistancia > 0 ? `${Math.round(totalDistancia)}km` : "—"}</p><p className="text-xs text-muted-foreground">Distância total</p></CardContent></Card>
+        <Card><CardContent className="pt-4 text-center"><p className="text-2xl font-bold text-primary">{totalTempo > 0 ? `${totalTempo}min` : "—"}</p><p className="text-xs text-muted-foreground">Tempo estimado</p></CardContent></Card>
       </div>
 
-      {/* Frete summary */}
       {totalFrete > 0 && (
         <Card className="mb-6 border-primary/20">
           <CardContent className="pt-4 flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Truck className="h-4 w-4 text-primary" />
-              <span className="text-sm font-semibold">Frete total:</span>
-              <span className="text-sm font-bold text-primary">R$ {totalFrete.toFixed(2)}</span>
-            </div>
+            <div className="flex items-center gap-2"><Truck className="h-4 w-4 text-primary" /><span className="text-sm font-semibold">Frete total:</span><span className="text-sm font-bold text-primary">R$ {totalFrete.toFixed(2)}</span></div>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span>Empresa: R$ {filtered.filter(p => p.fretePagoPor === "empresa").reduce((s, p) => s + p.valorFrete, 0).toFixed(2)}</span>
               <span>·</span>
@@ -579,14 +393,11 @@ export default function MapaEntregas() {
         </Card>
       )}
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-6">
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-muted-foreground" />
           <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
+            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Status" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todos os status</SelectItem>
               <SelectItem value="aguardando_producao">Aguardando</SelectItem>
@@ -596,30 +407,17 @@ export default function MapaEntregas() {
           </Select>
         </div>
         <Select value={filtroBairro} onValueChange={setFiltroBairro}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Bairro" />
-          </SelectTrigger>
+          <SelectTrigger className="w-[180px]"><SelectValue placeholder="Bairro" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos os bairros</SelectItem>
-            {bairros.map(b => (
-              <SelectItem key={b} value={b}>
-                {b}
-              </SelectItem>
-            ))}
+            {bairros.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Button
-          variant={otimizarRota ? "default" : "outline"}
-          size="sm"
-          className="gap-1"
-          onClick={() => setOtimizarRota(!otimizarRota)}
-        >
-          <ArrowUpDown className="h-4 w-4" />
-          {otimizarRota ? "Rota otimizada" : "Otimizar rota"}
+        <Button variant={otimizarRota ? "default" : "outline"} size="sm" className="gap-1" onClick={() => setOtimizarRota(!otimizarRota)}>
+          <ArrowUpDown className="h-4 w-4" />{otimizarRota ? "Rota otimizada" : "Otimizar rota"}
         </Button>
       </div>
 
-      {/* Map */}
       {mapMarkers.length > 0 && (
         <Card className="mb-6">
           <CardHeader className="pb-2">
@@ -633,22 +431,10 @@ export default function MapaEntregas() {
               )}
             </CardTitle>
             <div className="flex flex-wrap items-center gap-3 mt-1">
-              <span className="flex items-center gap-1 text-xs">
-                <span className="inline-block w-3 h-3 rounded-full" style={{ background: "#ea580c" }} />
-                🏭 Fábrica (origem)
-              </span>
-              <span className="flex items-center gap-1 text-xs">
-                <span className="inline-block w-3 h-3 rounded-full" style={{ background: "#16a34a" }} />
-                Separado
-              </span>
-              <span className="flex items-center gap-1 text-xs">
-                <span className="inline-block w-3 h-3 rounded-full" style={{ background: "#3b82f6" }} />
-                Em Produção
-              </span>
-              <span className="flex items-center gap-1 text-xs">
-                <span className="inline-block w-3 h-3 rounded-full" style={{ background: "#f59e0b" }} />
-                Aguardando
-              </span>
+              <span className="flex items-center gap-1 text-xs"><span className="inline-block w-3 h-3 rounded-full" style={{ background: "#ea580c" }} />🏭 Fábrica (origem)</span>
+              <span className="flex items-center gap-1 text-xs"><span className="inline-block w-3 h-3 rounded-full" style={{ background: "#16a34a" }} />Separado</span>
+              <span className="flex items-center gap-1 text-xs"><span className="inline-block w-3 h-3 rounded-full" style={{ background: "#3b82f6" }} />Em Produção</span>
+              <span className="flex items-center gap-1 text-xs"><span className="inline-block w-3 h-3 rounded-full" style={{ background: "#f59e0b" }} />Aguardando</span>
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -659,14 +445,10 @@ export default function MapaEntregas() {
                 markers={mapMarkers}
                 polylines={routePolylines}
                 onMarkerClick={(marker) => {
-                  if (marker.id !== "factory") {
-                    setSelectedRoute(prev => (prev === marker.id ? null : String(marker.id)));
-                  }
+                  if (marker.id !== "factory") setSelectedRoute(prev => (prev === marker.id ? null : String(marker.id)));
                 }}
                 onMarkerDragEnd={(marker, newPosition) => {
-                  if (marker.id === "factory") {
-                    handleMarkerDragEnd(newPosition);
-                  }
+                  if (marker.id === "factory") handleMarkerDragEnd(newPosition);
                 }}
                 style={{ height: "400px", width: "100%" }}
                 className="rounded-b-lg overflow-hidden"
@@ -678,30 +460,14 @@ export default function MapaEntregas() {
 
       {routePolylines.length > 0 && (
         <div className="flex flex-wrap items-center gap-3 mb-4 px-1">
-          <span className="text-xs text-muted-foreground flex items-center gap-1">
-            <Navigation className="h-3 w-3" /> Rotas: {routePolylines.length}
-          </span>
-          {otimizarRota && (
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <Route className="h-3 w-3 text-primary" /> Sequência otimizada por proximidade
-            </span>
-          )}
-          {selectedRoute && (
-            <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => setSelectedRoute(null)}>
-              Mostrar todas
-            </Button>
-          )}
+          <span className="text-xs text-muted-foreground flex items-center gap-1"><Navigation className="h-3 w-3" /> Rotas: {routePolylines.length}</span>
+          {otimizarRota && <span className="text-xs text-muted-foreground flex items-center gap-1"><Route className="h-3 w-3 text-primary" /> Sequência otimizada por proximidade</span>}
+          {selectedRoute && <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => setSelectedRoute(null)}>Mostrar todas</Button>}
         </div>
       )}
 
-      {/* Pedidos list */}
       {grouped.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            <Truck className="h-12 w-12 mx-auto mb-3 opacity-30" />
-            <p className="text-lg font-medium">Nenhum pedido pendente de entrega</p>
-          </CardContent>
-        </Card>
+        <Card><CardContent className="py-12 text-center text-muted-foreground"><Truck className="h-12 w-12 mx-auto mb-3 opacity-30" /><p className="text-lg font-medium">Nenhum pedido pendente de entrega</p></CardContent></Card>
       ) : (
         <div className="space-y-6">
           {grouped.map(([bairro, pedidosBairro]) => (
@@ -714,69 +480,37 @@ export default function MapaEntregas() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {pedidosBairro.map(p => (
-                  <Card
-                    key={p.id}
-                    className={`border-l-4 ${getBairroColor(bairro)} cursor-pointer transition-shadow hover:shadow-md ${selectedRoute === p.id ? "ring-2 ring-primary" : ""}`}
-                    onClick={() => setSelectedRoute(prev => (prev === p.id ? null : p.id))}
-                  >
+                  <Card key={p.id} className={`border-l-4 ${getBairroColor(bairro)} cursor-pointer transition-shadow hover:shadow-md ${selectedRoute === p.id ? "ring-2 ring-primary" : ""}`} onClick={() => setSelectedRoute(prev => (prev === p.id ? null : p.id))}>
                     <CardContent className="pt-3 pb-3 space-y-1">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-bold text-sm truncate">
-                          {p.ordem && <span className="text-primary mr-1">{p.ordem}°</span>}
-                          {p.clienteNome}
-                        </span>
-                        <Badge variant={statusVariant(p.status)} className="text-[10px] shrink-0">
-                          {statusLabel[p.status] || p.status}
-                        </Badge>
+                        <span className="font-bold text-sm truncate">{p.ordem && <span className="text-primary mr-1">{p.ordem}°</span>}{p.clienteNome}</span>
+                        <Badge variant={statusVariant(p.status)} className="text-[10px] shrink-0">{statusLabel[p.status] || p.status}</Badge>
                       </div>
                       {p.endereco && <p className="text-xs text-muted-foreground truncate">{p.endereco}</p>}
                       <div className="flex items-center justify-between text-xs gap-2">
-                        <span className="flex items-center gap-1">
-                          <Package className="h-3 w-3" /> {p.itens} un
-                        </span>
-                        <span className="text-muted-foreground">
-                          Entrega: {new Date(p.dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}
-                        </span>
+                        <span className="flex items-center gap-1"><Package className="h-3 w-3" /> {p.itens} un</span>
+                        <span className="text-muted-foreground">Entrega: {new Date(p.dataEntrega + "T12:00:00").toLocaleDateString("pt-BR")}</span>
                       </div>
-                      {/* Route info */}
                       {routeInfoMap[p.id] && (
                         <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1 border-t border-border/50">
                           <Navigation className="h-3 w-3 text-primary" />
-                          <span className="font-medium text-foreground">{routeInfoMap[p.id].distanceKm} km</span>
-                          <span>·</span>
-                          <span>~{routeInfoMap[p.id].durationMin} min</span>
+                          <span className="font-medium text-foreground">{routeInfoMap[p.id].distanceKm} km</span><span>·</span><span>~{routeInfoMap[p.id].durationMin} min</span>
                         </div>
                       )}
-                      {/* Google Maps button */}
                       {p.latitude != null && p.longitude != null && (
                         <div className="pt-1 border-t border-border/50">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full h-7 text-xs gap-1"
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const originParam = `${factoryCoords[0]},${factoryCoords[1]}`;
-                              const destParam = `${p.latitude},${p.longitude}`;
-                              const url = `https://www.google.com/maps/dir/?api=1&origin=${originParam}&destination=${destParam}&travelmode=driving`;
-                              try {
-                                (window.top || window).open(url, "_blank", "noopener,noreferrer");
-                              } catch {
-                                window.open(url, "_blank", "noopener,noreferrer");
-                              }
-                            }}
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                            Abrir no Google Maps
+                          <Button variant="outline" size="sm" className="w-full h-7 text-xs gap-1" type="button" onClick={(e) => {
+                            e.stopPropagation();
+                            const url = `https://www.google.com/maps/dir/?api=1&origin=${factoryCoords[0]},${factoryCoords[1]}&destination=${p.latitude},${p.longitude}&travelmode=driving`;
+                            try { (window.top || window).open(url, "_blank", "noopener,noreferrer"); } catch { window.open(url, "_blank", "noopener,noreferrer"); }
+                          }}>
+                            <ExternalLink className="h-3 w-3" />Abrir no Google Maps
                           </Button>
                         </div>
                       )}
-                      {/* Frete info */}
                       {p.valorFrete > 0 && (
                         <div className="flex items-center gap-2 text-xs pt-1 border-t border-border/50">
-                          <Truck className="h-3 w-3 text-muted-foreground" />
-                          <span className="font-medium">R$ {p.valorFrete.toFixed(2)}</span>
+                          <Truck className="h-3 w-3 text-muted-foreground" /><span className="font-medium">R$ {p.valorFrete.toFixed(2)}</span>
                           <Badge variant="outline" className="text-[9px] h-4">{freteLabel(p.fretePagoPor)}</Badge>
                         </div>
                       )}
