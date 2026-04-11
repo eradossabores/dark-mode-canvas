@@ -10,6 +10,7 @@ import {
 } from '@react-google-maps/api';
 
 const GOOGLE_MAPS_API_KEY = 'AIzaSyBwfNAvuI8Fy24j2N6VUofcC5TEykupP_I';
+const MAP_LOAD_TIMEOUT_MS = 12000;
 
 const ICON_SIZES = { small: [20, 32], medium: [25, 41], large: [30, 50] } as const;
 
@@ -156,13 +157,33 @@ export function AdvancedMap({
   style?: React.CSSProperties;
   children?: React.ReactNode;
 }) {
-  const { isLoaded } = useJsApiLoader({
+  const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
   });
 
   const mapRef = useRef<google.maps.Map | null>(null);
   const [activeInfoWindow, setActiveInfoWindow] = useState<string | number | null>(null);
+  const [loaderTimedOut, setLoaderTimedOut] = useState(false);
+
+  useEffect(() => {
+    if (isLoaded || loadError) {
+      setLoaderTimedOut(false);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setLoaderTimedOut(true);
+    }, MAP_LOAD_TIMEOUT_MS);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isLoaded, loadError]);
+
+  useEffect(() => {
+    if (loadError) {
+      console.error('Erro ao carregar Google Maps:', loadError);
+    }
+  }, [loadError]);
 
   useEffect(() => {
     if (flyTo && mapRef.current) {
@@ -180,6 +201,37 @@ export function AdvancedMap({
       ...(icon.labelOrigin ? { labelOrigin: new google.maps.Point(icon.labelOrigin[0], icon.labelOrigin[1]) } : {}),
     };
   }, []);
+
+  if (!GOOGLE_MAPS_API_KEY) {
+    return (
+      <div className={className} style={style}>
+        <div className="h-full w-full flex flex-col items-center justify-center gap-2 bg-muted text-muted-foreground px-4 text-center">
+          <p className="font-medium">Chave do Google Maps não configurada.</p>
+          <p className="text-sm">Adicione uma chave válida para carregar o mapa.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError || loaderTimedOut) {
+    const message = loadError?.message || 'O Google Maps demorou demais para responder.';
+
+    return (
+      <div className={className} style={style}>
+        <div className="h-full w-full flex flex-col items-center justify-center gap-3 bg-muted text-muted-foreground px-4 text-center">
+          <p className="font-medium">Não foi possível carregar o mapa.</p>
+          <p className="max-w-md text-sm">{message}</p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="inline-flex items-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!isLoaded) {
     return (
