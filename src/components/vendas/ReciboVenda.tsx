@@ -191,10 +191,10 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
 
     y += 1;
 
-    // Frete line
+    // Frete line - only show if client pays or split
     const freteVal = data.valor_frete || 0;
-    if (freteVal > 0) {
-      const freteLabel = data.frete_pago_por === "empresa" ? "Frete (empresa)" : data.frete_pago_por === "ambos" ? "Frete (50/50)" : "Frete";
+    if (freteVal > 0 && data.frete_pago_por !== "empresa") {
+      const freteLabel = data.frete_pago_por === "ambos" ? "Frete (50/50)" : "Frete";
       doc.setFontSize(7);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0, 100, 160);
@@ -398,10 +398,10 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
             </div>
           )}
 
-          {(data.valor_frete || 0) > 0 && (
+          {(data.valor_frete || 0) > 0 && data.frete_pago_por !== "empresa" && (
             <div className="flex justify-between items-center text-sm border-t pt-2">
               <span className="text-muted-foreground">
-                Frete {data.frete_pago_por === "empresa" ? "(empresa)" : data.frete_pago_por === "ambos" ? "(50/50)" : ""}
+                Frete {data.frete_pago_por === "ambos" ? "(50/50)" : ""}
               </span>
               <span className="font-semibold">R$ {(data.valor_frete || 0).toFixed(2)}</span>
             </div>
