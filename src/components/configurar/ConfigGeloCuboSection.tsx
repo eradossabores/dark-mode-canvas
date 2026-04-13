@@ -9,7 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import { Save, Loader2, IceCream2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
-const TAMANHOS = ["2kg", "4kg", "5kg"] as const;
+const TAMANHOS = ["2kg", "3kg", "4kg", "5kg"] as const;
 
 interface Props {
   factoryId: string | null;
@@ -17,8 +17,8 @@ interface Props {
 
 export default function ConfigGeloCuboSection({ factoryId }: Props) {
   const [ativo, setAtivo] = useState(false);
-  const [precos, setPrecos] = useState<Record<string, number>>({ "2kg": 10, "4kg": 18, "5kg": 22 });
-  const [estoqueInicial, setEstoqueInicial] = useState<Record<string, number>>({ "2kg": 0, "4kg": 0, "5kg": 0 });
+  const [precos, setPrecos] = useState<Record<string, number>>({ "2kg": 10, "3kg": 14, "4kg": 18, "5kg": 22 });
+  const [estoqueInicial, setEstoqueInicial] = useState<Record<string, number>>({ "2kg": 0, "3kg": 0, "4kg": 0, "5kg": 0 });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -42,7 +42,7 @@ export default function ConfigGeloCuboSection({ factoryId }: Props) {
         .select("tamanho, preco")
         .eq("factory_id", factoryId);
       if (precosData && precosData.length > 0) {
-        const map: Record<string, number> = { "2kg": 10, "4kg": 18, "5kg": 22 };
+        const map: Record<string, number> = { "2kg": 10, "3kg": 14, "4kg": 18, "5kg": 22 };
         precosData.forEach((p: any) => { map[p.tamanho] = Number(p.preco); });
         setPrecos(map);
       }
@@ -53,7 +53,7 @@ export default function ConfigGeloCuboSection({ factoryId }: Props) {
         .select("tamanho, quantidade")
         .eq("factory_id", factoryId);
       if (estoqueData && estoqueData.length > 0) {
-        const map: Record<string, number> = { "2kg": 0, "4kg": 0, "5kg": 0 };
+        const map: Record<string, number> = { "2kg": 0, "3kg": 0, "4kg": 0, "5kg": 0 };
         estoqueData.forEach((e: any) => { map[e.tamanho] = Number(e.quantidade); });
         setEstoqueInicial(map);
       }
@@ -107,7 +107,7 @@ export default function ConfigGeloCuboSection({ factoryId }: Props) {
           Gelo em Cubos Filtrados
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Ative para vender gelo em cubos filtrados nos tamanhos 2kg, 4kg e 5kg.
+          Ative para vender gelo em cubos filtrados nos tamanhos 2kg, 3kg, 4kg e 5kg.
         </p>
       </CardHeader>
       <CardContent className="space-y-5">
