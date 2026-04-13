@@ -224,7 +224,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
-    doc.text(`TOTAL: R$ ${data.total.toFixed(2)}`, w / 2, y + 5.5, { align: "center" });
+    doc.text(`TOTAL: R$ ${totalExibido.toFixed(2)}`, w / 2, y + 5.5, { align: "center" });
     y += 13;
 
     // Payment status
