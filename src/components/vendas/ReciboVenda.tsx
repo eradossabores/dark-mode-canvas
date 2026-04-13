@@ -63,6 +63,12 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
 
   if (!data) return null;
 
+  // Ensure total includes freight paid by client
+  const freteVal = data.valor_frete || 0;
+  const freteCliente = data.frete_pago_por === "cliente" ? freteVal : data.frete_pago_por === "ambos" ? Math.round(freteVal / 2 * 100) / 100 : 0;
+  const subtotalProdutos = data.itens.filter(i => i.preco_unitario > 0).reduce((s, i) => s + i.subtotal, 0);
+  const totalExibido = subtotalProdutos + freteCliente;
+
   function drawDottedLine(doc: jsPDF, x1: number, yy: number, x2: number) {
     for (let x = x1; x < x2; x += 1.5) {
       doc.line(x, yy, x + 0.5, yy);
@@ -218,13 +224,13 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
-    doc.text(`TOTAL: R$ ${data.total.toFixed(2)}`, w / 2, y + 5.5, { align: "center" });
+    doc.text(`TOTAL: R$ ${totalExibido.toFixed(2)}`, w / 2, y + 5.5, { align: "center" });
     y += 13;
 
     // Payment status
     const isPago = data.status === "paga";
-    const valorPago = data.valor_pago ?? (isPago ? data.total : 0);
-    const restante = data.total - valorPago;
+    const valorPago = data.valor_pago ?? (isPago ? totalExibido : 0);
+    const restante = totalExibido - valorPago;
 
     if (valorPago > 0) {
       doc.setFontSize(7);
@@ -322,7 +328,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     const file = new File([pdfBlob], fileName, { type: "application/pdf" });
 
     const displayName = factoryName || "ICETECH";
-    const msg = `*${displayName}*\n\nOlá ${data.cliente_nome}, segue seu recibo.\n\nTotal: R$ ${data.total.toFixed(2)}\nData: ${data.data}\nPagamento: ${data.forma_pagamento}`;
+    const msg = `*${displayName}*\n\nOlá ${data.cliente_nome}, segue seu recibo.\n\nTotal: R$ ${totalExibido.toFixed(2)}\nData: ${data.data}\nPagamento: ${data.forma_pagamento}`;
 
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
       try {
@@ -403,12 +409,12 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
               <span className="text-muted-foreground">
                 Frete {data.frete_pago_por === "ambos" ? "(50/50)" : ""}
               </span>
-              <span className="font-semibold">R$ {(data.valor_frete || 0).toFixed(2)}</span>
+              <span className="font-semibold">R$ {freteCliente.toFixed(2)}</span>
             </div>
           )}
 
           <div className="text-right font-bold text-lg border-t pt-2">
-            TOTAL: R$ {data.total.toFixed(2)}
+            TOTAL: R$ {totalExibido.toFixed(2)}
           </div>
 
           <div className="text-right text-sm text-muted-foreground">
@@ -422,7 +428,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
           {data.valor_pago !== undefined && data.valor_pago > 0 && data.status !== "paga" && (
             <div className="text-xs text-muted-foreground text-center space-y-0.5">
               <p>Pago: R$ {data.valor_pago.toFixed(2)}</p>
-              <p className="font-bold text-amber-600">Restante: R$ {(data.total - data.valor_pago).toFixed(2)}</p>
+              <p className="font-bold text-amber-600">Restante: R$ {(totalExibido - data.valor_pago).toFixed(2)}</p>
             </div>
           )}
 
