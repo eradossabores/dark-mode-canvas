@@ -63,14 +63,11 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
 
   if (!data) return null;
 
-  // Calculate the real total including freight when client pays
+  // Ensure total includes freight paid by client
   const freteVal = data.valor_frete || 0;
   const freteCliente = data.frete_pago_por === "cliente" ? freteVal : data.frete_pago_por === "ambos" ? Math.round(freteVal / 2 * 100) / 100 : 0;
-  const totalComFrete = data.total + (data.total >= freteCliente ? 0 : freteCliente);
-  // If the saved total already includes freight, use it; otherwise add it
-  const totalExibido = freteCliente > 0 && data.total < (data.itens.filter(i => i.preco_unitario > 0).reduce((s, i) => s + i.subtotal, 0) + freteCliente)
-    ? data.itens.filter(i => i.preco_unitario > 0).reduce((s, i) => s + i.subtotal, 0) + freteCliente
-    : data.total;
+  const subtotalProdutos = data.itens.filter(i => i.preco_unitario > 0).reduce((s, i) => s + i.subtotal, 0);
+  const totalExibido = subtotalProdutos + freteCliente;
 
   function drawDottedLine(doc: jsPDF, x1: number, yy: number, x2: number) {
     for (let x = x1; x < x2; x += 1.5) {
