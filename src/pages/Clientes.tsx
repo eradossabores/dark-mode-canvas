@@ -25,7 +25,7 @@ const emptyForm = {
   latitude: "", longitude: "",
 };
 
-const TAMANHOS_CUBO = ["2kg", "4kg", "5kg"] as const;
+const TAMANHOS_CUBO = ["2kg", "3kg", "4kg", "5kg"] as const;
 
 export default function Clientes() {
   const navigate = useNavigate();
