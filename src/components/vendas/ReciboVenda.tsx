@@ -409,7 +409,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
               <span className="text-muted-foreground">
                 Frete {data.frete_pago_por === "ambos" ? "(50/50)" : ""}
               </span>
-              <span className="font-semibold">R$ {(data.valor_frete || 0).toFixed(2)}</span>
+              <span className="font-semibold">R$ {freteCliente.toFixed(2)}</span>
             </div>
           )}
 
