@@ -229,8 +229,8 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
 
     // Payment status
     const isPago = data.status === "paga";
-    const valorPago = data.valor_pago ?? (isPago ? data.total : 0);
-    const restante = data.total - valorPago;
+    const valorPago = data.valor_pago ?? (isPago ? totalExibido : 0);
+    const restante = totalExibido - valorPago;
 
     if (valorPago > 0) {
       doc.setFontSize(7);
@@ -328,7 +328,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     const file = new File([pdfBlob], fileName, { type: "application/pdf" });
 
     const displayName = factoryName || "ICETECH";
-    const msg = `*${displayName}*\n\nOlá ${data.cliente_nome}, segue seu recibo.\n\nTotal: R$ ${data.total.toFixed(2)}\nData: ${data.data}\nPagamento: ${data.forma_pagamento}`;
+    const msg = `*${displayName}*\n\nOlá ${data.cliente_nome}, segue seu recibo.\n\nTotal: R$ ${totalExibido.toFixed(2)}\nData: ${data.data}\nPagamento: ${data.forma_pagamento}`;
 
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
       try {
@@ -414,7 +414,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
           )}
 
           <div className="text-right font-bold text-lg border-t pt-2">
-            TOTAL: R$ {data.total.toFixed(2)}
+            TOTAL: R$ {totalExibido.toFixed(2)}
           </div>
 
           <div className="text-right text-sm text-muted-foreground">
@@ -428,7 +428,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
           {data.valor_pago !== undefined && data.valor_pago > 0 && data.status !== "paga" && (
             <div className="text-xs text-muted-foreground text-center space-y-0.5">
               <p>Pago: R$ {data.valor_pago.toFixed(2)}</p>
-              <p className="font-bold text-amber-600">Restante: R$ {(data.total - data.valor_pago).toFixed(2)}</p>
+              <p className="font-bold text-amber-600">Restante: R$ {(totalExibido - data.valor_pago).toFixed(2)}</p>
             </div>
           )}
 
