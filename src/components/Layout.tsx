@@ -5,7 +5,7 @@ import {
   Warehouse, ClipboardList, UserCog, BarChart3, FileUp, DollarSign, Monitor,
   ShoppingBag, Database, LogOut, Shield, Brain, MapPin, Map, Target,
   HardDrive, UserCheck, Crown, MessageCircle, Settings, CalendarDays,
-  ChevronDown, Menu, X, PanelLeftClose, PanelLeftOpen
+  ChevronDown, Menu, X, PanelLeftClose, PanelLeftOpen, Wallet
 } from "lucide-react";
 import PaymentBanner from "@/components/PaymentBanner";
 import { cn } from "@/lib/utils";
@@ -26,6 +26,15 @@ interface MenuGroup {
 }
 
 const menuGroups: MenuGroup[] = [
+  {
+    label: "Vendedor",
+    items: [
+      { path: "/painel/vendedor/clientes", label: "Meus Clientes", icon: Users },
+      { path: "/painel/vendedor/novo-pedido", label: "Novo Pedido", icon: ShoppingCart },
+      { path: "/painel/vendedor/estoque", label: "Estoque Disponível", icon: Warehouse },
+      { path: "/painel/vendedor/comissoes", label: "Minhas Comissões", icon: Wallet },
+    ],
+  },
   {
     label: "Principal",
     items: [

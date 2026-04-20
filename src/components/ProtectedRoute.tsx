@@ -14,11 +14,10 @@ const PRODUCAO_ROUTES = [
 ];
 
 const VENDEDOR_ROUTES = [
-  "/painel/vendas",
-  "/painel/estoque",
-  "/painel/clientes",
-  "/painel/a-receber",
-  "/painel/monitor-producao",
+  "/painel/vendedor/clientes",
+  "/painel/vendedor/novo-pedido",
+  "/painel/vendedor/estoque",
+  "/painel/vendedor/comissoes",
 ];
 
 // Routes only super_admin can access
@@ -165,7 +164,7 @@ export default function ProtectedRoute({ children, adminOnly, superAdminOnly }: 
 
   // Producao and vendedor should redirect to their allowed areas
   if (adminOnly && role !== "admin" && role !== "factory_owner" && role !== "super_admin") {
-    if ((role as string) === "vendedor") return <Navigate to="/painel/vendas" replace />;
+    if ((role as string) === "vendedor") return <Navigate to="/painel/vendedor/clientes" replace />;
     return <Navigate to="/painel/producao" replace />;
   }
 

@@ -44,6 +44,10 @@ import Suporte from "@/pages/Suporte";
 import ConfigurarFabrica from "@/pages/ConfigurarFabrica";
 import NotFound from "@/pages/NotFound";
 import Compras from "@/pages/Compras";
+import MeusClientes from "@/pages/vendedor/MeusClientes";
+import NovoPedido from "@/pages/vendedor/NovoPedido";
+import EstoqueDisponivel from "@/pages/vendedor/EstoqueDisponivel";
+import MinhasComissoes from "@/pages/vendedor/MinhasComissoes";
 
 
 const queryClient = new QueryClient();
@@ -115,6 +119,12 @@ const App = () => (
               <Route path="/painel/monitor-producao" element={<ProdRoute><MonitorProducao /></ProdRoute>} />
               <Route path="/painel/estoque" element={<ProdRoute><Estoque /></ProdRoute>} />
               <Route path="/painel/presenca" element={<ProdRoute><PresencaProducao /></ProdRoute>} />
+
+              {/* Vendedor routes */}
+              <Route path="/painel/vendedor/clientes" element={<ProdRoute><MeusClientes /></ProdRoute>} />
+              <Route path="/painel/vendedor/novo-pedido" element={<ProdRoute><NovoPedido /></ProdRoute>} />
+              <Route path="/painel/vendedor/estoque" element={<ProdRoute><EstoqueDisponivel /></ProdRoute>} />
+              <Route path="/painel/vendedor/comissoes" element={<ProdRoute><MinhasComissoes /></ProdRoute>} />
 
               <Route path="*" element={<NotFound />} />
               </Routes>
