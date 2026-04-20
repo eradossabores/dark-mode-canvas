@@ -344,25 +344,66 @@ export default function DashboardVendedor() {
 
   return (
     <div className="space-y-6 pb-24">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-amber-500" />
-            Olá{nome ? `, ${nome.split(" ")[0]}` : ""}!
-            {streak >= 2 && (
-              <Badge className="ml-2 bg-orange-500/15 text-orange-600 border border-orange-500/30 hover:bg-orange-500/20">
-                <Flame className="h-3 w-3 mr-1" /> {streak} dias 🔥
-              </Badge>
-            )}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Resumo de {format(new Date(), "MMMM 'de' yyyy", { locale: ptBR })}
-          </p>
+      {/* Welcome Banner com Lamp Effect (teal/cyan) */}
+      <div className="relative overflow-hidden rounded-xl sm:rounded-2xl border border-primary/20 bg-gradient-to-b from-background via-background to-primary/5">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <motion.div
+            initial={{ opacity: 0, width: "6rem" }}
+            animate={{ opacity: 0.45, width: "22rem" }}
+            transition={{ delay: 0.1, duration: 1.2, ease: "easeOut" }}
+            style={{ backgroundImage: `conic-gradient(from 70deg at center top, hsl(174, 50%, 45%), transparent, transparent)` }}
+            className="absolute -top-4 right-1/2 h-28"
+          >
+            <div className="absolute w-full left-0 bg-background/80 h-16 bottom-0 [mask-image:linear-gradient(to_top,white,transparent)]" />
+            <div className="absolute w-16 h-full left-0 bg-background/80 bottom-0 [mask-image:linear-gradient(to_right,white,transparent)]" />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, width: "6rem" }}
+            animate={{ opacity: 0.45, width: "22rem" }}
+            transition={{ delay: 0.1, duration: 1.2, ease: "easeOut" }}
+            style={{ backgroundImage: `conic-gradient(from 290deg at center top, transparent, transparent, hsl(174, 50%, 45%))` }}
+            className="absolute -top-4 left-1/2 h-28"
+          >
+            <div className="absolute w-16 h-full right-0 bg-background/80 bottom-0 [mask-image:linear-gradient(to_left,white,transparent)]" />
+            <div className="absolute w-full right-0 bg-background/80 h-16 bottom-0 [mask-image:linear-gradient(to_top,white,transparent)]" />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 0.25, scale: 1 }}
+            transition={{ delay: 0.3, duration: 1, ease: "easeOut" }}
+            className="absolute top-0 left-1/2 -translate-x-1/2 w-80 h-24 rounded-full blur-3xl"
+            style={{ background: "hsl(174, 45%, 45%)" }}
+          />
+          <motion.div
+            initial={{ width: "4rem", opacity: 0 }}
+            animate={{ width: "14rem", opacity: 0.6 }}
+            transition={{ delay: 0.2, duration: 1, ease: "easeOut" }}
+            className="absolute top-0 left-1/2 -translate-x-1/2 h-[2px]"
+            style={{ background: "linear-gradient(to right, transparent, hsl(174, 50%, 50%), transparent)" }}
+          />
+          <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-background to-transparent" />
         </div>
-        <div className="hidden md:flex gap-2">
-          <Button asChild variant="outline" size="sm"><Link to="/painel/vendedor/clientes">Meus Clientes</Link></Button>
-          <Button asChild size="sm"><Link to="/painel/vendedor/novo-pedido">Novo Pedido</Link></Button>
+        <div className="relative z-20 px-4 py-4 sm:px-6 sm:py-6 flex flex-wrap items-center justify-between gap-3">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <h1 className="text-lg sm:text-xl font-bold tracking-tight">
+                Olá<span className="text-primary">{nome ? `, ${nome.split(" ")[0]}` : ""}</span>! Bora vender?
+              </h1>
+              {streak >= 2 && (
+                <Badge className="bg-accent/15 text-accent-foreground border border-accent/40 hover:bg-accent/20">
+                  <Flame className="h-3 w-3 mr-1 text-accent" /> {streak} dias 🔥
+                </Badge>
+              )}
+            </div>
+            <p className="text-xs sm:text-sm text-muted-foreground pl-7">
+              Resumo de {format(new Date(), "MMMM 'de' yyyy", { locale: ptBR })} · {faltaProxFaixa > 0 ? `Faltam ${faltaProxFaixa}un para próxima faixa de bônus!` : "Você está mandando muito bem! 🚀"}
+            </p>
+          </div>
+          <div className="hidden md:flex gap-2">
+            <Button asChild variant="outline" size="sm"><Link to="/painel/vendedor/clientes">Meus Clientes</Link></Button>
+            <Button asChild size="sm" className="shadow-md"><Link to="/painel/vendedor/novo-pedido"><Plus className="h-4 w-4 mr-1" />Novo Pedido</Link></Button>
+          </div>
         </div>
       </div>
 
