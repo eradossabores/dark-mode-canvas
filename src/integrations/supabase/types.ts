@@ -95,6 +95,44 @@ export type Database = {
         }
         Relationships: []
       }
+      ajuda_custo_vendedor: {
+        Row: {
+          created_at: string
+          factory_id: string | null
+          id: string
+          semana_inicio: string
+          status: string
+          valor: number
+          vendedor_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          factory_id?: string | null
+          id?: string
+          semana_inicio: string
+          status?: string
+          valor?: number
+          vendedor_user_id: string
+        }
+        Update: {
+          created_at?: string
+          factory_id?: string | null
+          id?: string
+          semana_inicio?: string
+          status?: string
+          valor?: number
+          vendedor_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ajuda_custo_vendedor_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       auditoria: {
         Row: {
           acao: string
@@ -180,6 +218,50 @@ export type Database = {
             columns: ["sabor_id"]
             isOneToOne: false
             referencedRelation: "sabores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bonus_metas_vendedor: {
+        Row: {
+          created_at: string
+          factory_id: string | null
+          id: string
+          mes_referencia: string
+          status: string
+          unidades_vendidas: number
+          updated_at: string
+          valor_bonus: number
+          vendedor_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          factory_id?: string | null
+          id?: string
+          mes_referencia: string
+          status?: string
+          unidades_vendidas?: number
+          updated_at?: string
+          valor_bonus?: number
+          vendedor_user_id: string
+        }
+        Update: {
+          created_at?: string
+          factory_id?: string | null
+          id?: string
+          mes_referencia?: string
+          status?: string
+          unidades_vendidas?: number
+          updated_at?: string
+          valor_bonus?: number
+          vendedor_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bonus_metas_vendedor_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
             referencedColumns: ["id"]
           },
         ]
@@ -311,6 +393,45 @@ export type Database = {
           },
         ]
       }
+      cliente_vendedor: {
+        Row: {
+          cliente_id: string
+          created_at: string
+          factory_id: string | null
+          id: string
+          vendedor_user_id: string
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string
+          factory_id?: string | null
+          id?: string
+          vendedor_user_id: string
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string
+          factory_id?: string | null
+          id?: string
+          vendedor_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_vendedor_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_vendedor_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clientes: {
         Row: {
           bairro: string | null
@@ -422,6 +543,66 @@ export type Database = {
             columns: ["factory_id"]
             isOneToOne: false
             referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comissoes_vendas: {
+        Row: {
+          created_at: string
+          factory_id: string | null
+          faixa: string
+          id: string
+          pago_em: string | null
+          quantidade_unidades: number
+          recorrente: boolean
+          status: string
+          valor_base: number
+          valor_comissao: number
+          venda_id: string
+          vendedor_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          factory_id?: string | null
+          faixa: string
+          id?: string
+          pago_em?: string | null
+          quantidade_unidades?: number
+          recorrente?: boolean
+          status?: string
+          valor_base: number
+          valor_comissao: number
+          venda_id: string
+          vendedor_user_id: string
+        }
+        Update: {
+          created_at?: string
+          factory_id?: string | null
+          faixa?: string
+          id?: string
+          pago_em?: string | null
+          quantidade_unidades?: number
+          recorrente?: boolean
+          status?: string
+          valor_base?: number
+          valor_comissao?: number
+          venda_id?: string
+          vendedor_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comissoes_vendas_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comissoes_vendas_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vendas"
             referencedColumns: ["id"]
           },
         ]
@@ -2785,9 +2966,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calcular_comissao_pacote: {
+        Args: { _quantidade: number; _recorrente: boolean }
+        Returns: {
+          faixa: string
+          valor_base: number
+          valor_final: number
+        }[]
+      }
       calcular_preco: {
         Args: { p_cliente_id: string; p_quantidade: number; p_sabor_id: string }
         Returns: number
+      }
+      cliente_pertence_ao_vendedor: {
+        Args: { _cliente_id: string; _user_id: string }
+        Returns: boolean
       }
       get_user_factory_id: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
@@ -2810,6 +3003,7 @@ export type Database = {
             Returns: boolean
           }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_vendedor: { Args: { _user_id: string }; Returns: boolean }
       realizar_producao: {
         Args: {
           p_funcionarios: Json
