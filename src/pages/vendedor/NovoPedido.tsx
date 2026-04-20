@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "@/hooks/use-toast";
 import { Plus, Trash2, ShoppingCart, AlertTriangle } from "lucide-react";
+import ReciboVenda from "@/components/vendas/ReciboVenda";
 
 export default function NovoPedido() {
   const { user } = useAuth();
@@ -22,10 +23,12 @@ export default function NovoPedido() {
   const [observacoes, setObservacoes] = useState("");
   const [itens, setItens] = useState<{ sabor_id: string; quantidade: number }[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [reciboOpen, setReciboOpen] = useState(false);
+  const [reciboData, setReciboData] = useState<any>(null);
 
   async function load() {
     const [{ data: cli }, { data: sab }, { data: est }] = await Promise.all([
-      (supabase as any).from("clientes").select("id, nome").eq("status", "ativo").order("nome"),
+      (supabase as any).from("clientes").select("id, nome, telefone").eq("status", "ativo").order("nome"),
       (supabase as any).from("sabores").select("id, nome").eq("ativo", true).order("nome"),
       (supabase as any).from("estoque_gelos").select("sabor_id, quantidade"),
     ]);
@@ -62,7 +65,7 @@ export default function NovoPedido() {
 
     setSubmitting(true);
     try {
-      await realizarVenda({
+      const vendaId = await realizarVenda({
         p_cliente_id: clienteId,
         p_operador: user?.email || "vendedor",
         p_observacoes: observacoes,
@@ -70,6 +73,46 @@ export default function NovoPedido() {
         p_ignorar_estoque: ignorar,
       });
       toast({ title: "Pedido registrado com sucesso!" });
+
+      // Abrir comanda/recibo igual ao do operador
+      try {
+        const idVenda = typeof vendaId === "string" ? vendaId : (vendaId as any)?.id;
+        if (idVenda) {
+          const { data: v } = await (supabase as any)
+            .from("vendas")
+            .select("*, clientes(nome, telefone)")
+            .eq("id", idVenda)
+            .single();
+          const { data: itensData } = await (supabase as any)
+            .from("venda_itens").select("*, sabores(nome)").eq("venda_id", idVenda);
+          if (v) {
+            setReciboData({
+              cliente_nome: v.clientes?.nome || "?",
+              data: new Date(v.created_at).toLocaleDateString("pt-BR"),
+              forma_pagamento: v.forma_pagamento || "Pendente",
+              numero_nf: v.numero_nf || undefined,
+              numero_pedido: v.numero_pedido || undefined,
+              total: Number(v.total),
+              observacoes: (v.observacoes || "").replace(/^\[[^\]]*\]\s*/, "").trim() || undefined,
+              telefone: v.clientes?.telefone || undefined,
+              status: v.status,
+              valor_pago: Number(v.valor_pago || 0),
+              valor_frete: Number(v.valor_frete || 0),
+              frete_pago_por: v.frete_pago_por || undefined,
+              itens: (itensData || []).map((it: any) => ({
+                sabor_nome: it.sabores?.nome || "?",
+                quantidade: it.quantidade,
+                preco_unitario: Number(it.preco_unitario),
+                subtotal: Number(it.subtotal),
+              })),
+            });
+            setReciboOpen(true);
+          }
+        }
+      } catch (err) {
+        console.error("Erro ao abrir recibo:", err);
+      }
+
       setClienteId(""); setObservacoes(""); setItens([]);
       load();
     } catch (e: any) {
@@ -170,6 +213,8 @@ export default function NovoPedido() {
           </div>
         </CardContent>
       </Card>
+
+      <ReciboVenda open={reciboOpen} onOpenChange={setReciboOpen} data={reciboData} />
     </div>
   );
 }
