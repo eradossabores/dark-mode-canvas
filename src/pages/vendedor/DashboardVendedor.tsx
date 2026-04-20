@@ -21,6 +21,8 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { GlowingEffect } from "@/components/ui/glowing-effect";
+import { motion } from "framer-motion";
 
 interface ClienteRank {
   id: string;
@@ -51,7 +53,14 @@ interface Conquista {
   icon: any;
 }
 
-const FLAVOR_COLORS = ["hsl(var(--primary))", "hsl(var(--accent))", "hsl(220 70% 55%)", "hsl(280 60% 60%)", "hsl(160 60% 45%)", "hsl(30 80% 55%)"];
+const FLAVOR_COLORS = [
+  "hsl(var(--primary))",
+  "hsl(var(--accent))",
+  "hsl(174 50% 45%)",
+  "hsl(var(--chart-4))",
+  "hsl(var(--chart-5))",
+  "hsl(38 90% 55%)",
+];
 const DIAS_SEMANA = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 function calcularBonus(unidades: number) {
