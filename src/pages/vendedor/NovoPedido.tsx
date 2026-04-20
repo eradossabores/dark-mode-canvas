@@ -404,18 +404,6 @@ export default function NovoPedido() {
           </div>
 
           {/* Venda por Pacote */}
-          <div className="space-y-2 p-3 border-2 rounded-lg bg-muted/30 border-primary/20">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-sm font-bold">📦 Venda por Pacote</Label>
-                <p className="text-[10px] text-muted-foreground">
-                  {factoryUsaSacos ? `1 pacote = ${factoryUnidadesPorSaco} unidades. Quantidades em pacotes.` : "Ative 'Usa Sacos' nas configurações da fábrica para usar pacotes."}
-                </p>
-              </div>
-              <Switch checked={vendaPorPacote} onCheckedChange={(v) => { setVendaPorPacote(v); if (clienteId && itens.length > 0) setTimeout(() => recalcPrecosTotalComanda(itens, clienteId), 50); }} disabled={!factoryUsaSacos} />
-            </div>
-          </div>
-
           {/* Itens */}
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -614,11 +602,6 @@ export default function NovoPedido() {
           )}
 
           <div><Label>Observações</Label><Input value={observacoes} onChange={(e) => setObservacoes(e.target.value)} /></div>
-
-          <div className="flex items-center space-x-2">
-            <Checkbox id="np-ignorar-estoque" checked={ignorarEstoque} onCheckedChange={(v) => setIgnorarEstoque(!!v)} />
-            <Label htmlFor="np-ignorar-estoque" className="text-sm font-normal cursor-pointer">Lançamento retroativo (ignorar estoque)</Label>
-          </div>
 
           <Button className="w-full" onClick={handleSubmit} disabled={loading}>
             {loading ? "Processando..." : "Registrar Pedido"}
