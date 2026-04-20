@@ -719,7 +719,7 @@ export default function DashboardVendedor() {
       {/* Ranking + Clientes em alerta */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2"><Trophy className="h-5 w-5 text-amber-500" /> Top clientes (mais compraram)</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2"><Trophy className="h-5 w-5 text-accent" /> Top clientes (mais compraram)</CardTitle></CardHeader>
           <CardContent>
             {loading ? <p className="text-sm text-muted-foreground">Carregando...</p>
               : ranking.length === 0 ? (
@@ -733,9 +733,9 @@ export default function DashboardVendedor() {
                     <div key={c.id} className="space-y-1">
                       <div className="flex items-center justify-between text-sm gap-2">
                         <div className="flex items-center gap-2 min-w-0">
-                          {i === 0 && <Medal className="h-4 w-4 text-amber-500 shrink-0" />}
+                          {i === 0 && <Medal className="h-4 w-4 text-accent shrink-0" />}
                           {i === 1 && <Medal className="h-4 w-4 text-muted-foreground shrink-0" />}
-                          {i === 2 && <Medal className="h-4 w-4 text-amber-700 shrink-0" />}
+                          {i === 2 && <Medal className="h-4 w-4 text-accent/70 shrink-0" />}
                           {i > 2 && <span className="w-4 text-center text-xs text-muted-foreground shrink-0">{i + 1}</span>}
                           <span className="font-medium truncate">{c.nome}</span>
                         </div>
@@ -745,7 +745,7 @@ export default function DashboardVendedor() {
                         </div>
                       </div>
                       <div className="w-full bg-muted rounded-full h-1.5">
-                        <div className="h-1.5 rounded-full bg-primary transition-all" style={{ width: `${(c.totalUnidades / maxRank) * 100}%` }} />
+                        <div className="h-1.5 rounded-full bg-gradient-to-r from-primary to-accent transition-all" style={{ width: `${(c.totalUnidades / maxRank) * 100}%` }} />
                       </div>
                     </div>
                   ))}
@@ -757,14 +757,14 @@ export default function DashboardVendedor() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-red-500" /> Clientes em alerta</span>
+              <span className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-destructive" /> Clientes em alerta</span>
               <Badge variant="secondary">{clientesAlertas.length}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
             {clientesAlertas.length === 0 ? (
               <div className="text-center py-6">
-                <Sparkles className="h-10 w-10 mx-auto text-emerald-500/60 mb-2" />
+                <Sparkles className="h-10 w-10 mx-auto text-primary/60 mb-2" />
                 <p className="text-sm text-muted-foreground">Carteira saudável! 🎉</p>
               </div>
             ) : (
@@ -777,7 +777,7 @@ export default function DashboardVendedor() {
                         {c.status === "inativo" ? `Inativo há ${c.diasSemComprar === 9999 ? "∞" : c.diasSemComprar + "d"}` : "Queda de consumo"}
                       </p>
                     </div>
-                    <Badge variant="outline" className={c.status === "inativo" ? "text-red-600 border-red-500/40" : "text-amber-600 border-amber-500/40"}>
+                    <Badge variant="outline" className={c.status === "inativo" ? "text-destructive border-destructive/40" : "text-accent border-accent/40"}>
                       {c.status === "inativo" ? "Inativo" : "Risco"}
                     </Badge>
                   </div>
@@ -788,12 +788,12 @@ export default function DashboardVendedor() {
         </Card>
       </div>
 
-      {/* Ação rápida flutuante */}
-      <div className="fixed bottom-6 right-6 z-40">
+      {/* Ação rápida flutuante (FAB) - mobile-friendly */}
+      <div className="fixed bottom-6 right-6 z-40 md:bottom-8 md:right-8">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="lg" className="h-14 w-14 rounded-full shadow-lg">
-              <Plus className="h-6 w-6" />
+            <Button size="lg" className="h-14 w-14 rounded-full shadow-xl bg-gradient-to-br from-primary to-accent hover:scale-110 transition-transform">
+              <Plus className="h-6 w-6 text-primary-foreground" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
