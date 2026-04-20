@@ -77,9 +77,25 @@ export default function MeusClientes() {
         if (error) throw error;
         toast({ title: "Cliente atualizado" });
       } else {
+        // Garante factory_id: usa o do contexto ou busca do user_roles
+        let fid = factoryId;
+        if (!fid && user) {
+          const { data: ur } = await (supabase as any)
+            .from("user_roles")
+            .select("factory_id")
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          fid = ur?.factory_id ?? null;
+        }
+        if (!fid) {
+          toast({ title: "Fábrica não identificada", description: "Faça login novamente.", variant: "destructive" });
+          return;
+        }
         const { data, error } = await (supabase as any)
           .from("clientes")
-          .insert({ nome, telefone, bairro, endereco, factory_id: factoryId, estado: "RR" })
+          .insert({ nome, telefone, bairro, endereco, factory_id: fid, estado: "RR" })
           .select()
           .single();
         if (error) throw error;
@@ -89,7 +105,7 @@ export default function MeusClientes() {
           await (supabase as any).from("cliente_vendedor").upsert({
             cliente_id: data.id,
             vendedor_user_id: user.id,
-            factory_id: factoryId,
+            factory_id: fid,
           }, { onConflict: "cliente_id,vendedor_user_id" });
         }
         toast({ title: "Cliente cadastrado" });
