@@ -603,11 +603,6 @@ export default function NovoPedido() {
 
           <div><Label>Observações</Label><Input value={observacoes} onChange={(e) => setObservacoes(e.target.value)} /></div>
 
-          <div className="flex items-center space-x-2">
-            <Checkbox id="np-ignorar-estoque" checked={ignorarEstoque} onCheckedChange={(v) => setIgnorarEstoque(!!v)} />
-            <Label htmlFor="np-ignorar-estoque" className="text-sm font-normal cursor-pointer">Lançamento retroativo (ignorar estoque)</Label>
-          </div>
-
           <Button className="w-full" onClick={handleSubmit} disabled={loading}>
             {loading ? "Processando..." : "Registrar Pedido"}
           </Button>
