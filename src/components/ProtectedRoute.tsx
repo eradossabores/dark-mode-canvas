@@ -14,6 +14,7 @@ const PRODUCAO_ROUTES = [
 ];
 
 const VENDEDOR_ROUTES = [
+  "/painel/vendedor",
   "/painel/vendedor/clientes",
   "/painel/vendedor/novo-pedido",
   "/painel/vendedor/estoque",
@@ -164,7 +165,7 @@ export default function ProtectedRoute({ children, adminOnly, superAdminOnly }: 
 
   // Producao and vendedor should redirect to their allowed areas
   if (adminOnly && role !== "admin" && role !== "factory_owner" && role !== "super_admin") {
-    if ((role as string) === "vendedor") return <Navigate to="/painel/vendedor/clientes" replace />;
+    if ((role as string) === "vendedor") return <Navigate to="/painel/vendedor" replace />;
     return <Navigate to="/painel/producao" replace />;
   }
 
