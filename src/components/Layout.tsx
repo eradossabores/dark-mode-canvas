@@ -29,6 +29,7 @@ const menuGroups: MenuGroup[] = [
   {
     label: "Vendedor",
     items: [
+      { path: "/painel/vendedor", label: "Painel do Vendedor", icon: LayoutDashboard },
       { path: "/painel/vendedor/clientes", label: "Meus Clientes", icon: Users },
       { path: "/painel/vendedor/novo-pedido", label: "Novo Pedido", icon: ShoppingCart },
       { path: "/painel/vendedor/estoque", label: "Estoque Disponível", icon: Warehouse },
