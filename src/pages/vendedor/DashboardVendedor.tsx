@@ -21,6 +21,8 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { GlowingEffect } from "@/components/ui/glowing-effect";
+import { motion } from "framer-motion";
 
 interface ClienteRank {
   id: string;
@@ -51,7 +53,14 @@ interface Conquista {
   icon: any;
 }
 
-const FLAVOR_COLORS = ["hsl(var(--primary))", "hsl(var(--accent))", "hsl(220 70% 55%)", "hsl(280 60% 60%)", "hsl(160 60% 45%)", "hsl(30 80% 55%)"];
+const FLAVOR_COLORS = [
+  "hsl(var(--primary))",
+  "hsl(var(--accent))",
+  "hsl(174 50% 45%)",
+  "hsl(var(--chart-4))",
+  "hsl(var(--chart-5))",
+  "hsl(38 90% 55%)",
+];
 const DIAS_SEMANA = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 function calcularBonus(unidades: number) {
@@ -335,57 +344,98 @@ export default function DashboardVendedor() {
 
   return (
     <div className="space-y-6 pb-24">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-amber-500" />
-            Olá{nome ? `, ${nome.split(" ")[0]}` : ""}!
-            {streak >= 2 && (
-              <Badge className="ml-2 bg-orange-500/15 text-orange-600 border border-orange-500/30 hover:bg-orange-500/20">
-                <Flame className="h-3 w-3 mr-1" /> {streak} dias 🔥
-              </Badge>
-            )}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Resumo de {format(new Date(), "MMMM 'de' yyyy", { locale: ptBR })}
-          </p>
+      {/* Welcome Banner com Lamp Effect (teal/cyan) */}
+      <div className="relative overflow-hidden rounded-xl sm:rounded-2xl border border-primary/20 bg-gradient-to-b from-background via-background to-primary/5">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <motion.div
+            initial={{ opacity: 0, width: "6rem" }}
+            animate={{ opacity: 0.45, width: "22rem" }}
+            transition={{ delay: 0.1, duration: 1.2, ease: "easeOut" }}
+            style={{ backgroundImage: `conic-gradient(from 70deg at center top, hsl(174, 50%, 45%), transparent, transparent)` }}
+            className="absolute -top-4 right-1/2 h-28"
+          >
+            <div className="absolute w-full left-0 bg-background/80 h-16 bottom-0 [mask-image:linear-gradient(to_top,white,transparent)]" />
+            <div className="absolute w-16 h-full left-0 bg-background/80 bottom-0 [mask-image:linear-gradient(to_right,white,transparent)]" />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, width: "6rem" }}
+            animate={{ opacity: 0.45, width: "22rem" }}
+            transition={{ delay: 0.1, duration: 1.2, ease: "easeOut" }}
+            style={{ backgroundImage: `conic-gradient(from 290deg at center top, transparent, transparent, hsl(174, 50%, 45%))` }}
+            className="absolute -top-4 left-1/2 h-28"
+          >
+            <div className="absolute w-16 h-full right-0 bg-background/80 bottom-0 [mask-image:linear-gradient(to_left,white,transparent)]" />
+            <div className="absolute w-full right-0 bg-background/80 h-16 bottom-0 [mask-image:linear-gradient(to_top,white,transparent)]" />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 0.25, scale: 1 }}
+            transition={{ delay: 0.3, duration: 1, ease: "easeOut" }}
+            className="absolute top-0 left-1/2 -translate-x-1/2 w-80 h-24 rounded-full blur-3xl"
+            style={{ background: "hsl(174, 45%, 45%)" }}
+          />
+          <motion.div
+            initial={{ width: "4rem", opacity: 0 }}
+            animate={{ width: "14rem", opacity: 0.6 }}
+            transition={{ delay: 0.2, duration: 1, ease: "easeOut" }}
+            className="absolute top-0 left-1/2 -translate-x-1/2 h-[2px]"
+            style={{ background: "linear-gradient(to right, transparent, hsl(174, 50%, 50%), transparent)" }}
+          />
+          <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-background to-transparent" />
         </div>
-        <div className="hidden md:flex gap-2">
-          <Button asChild variant="outline" size="sm"><Link to="/painel/vendedor/clientes">Meus Clientes</Link></Button>
-          <Button asChild size="sm"><Link to="/painel/vendedor/novo-pedido">Novo Pedido</Link></Button>
+        <div className="relative z-20 px-4 py-4 sm:px-6 sm:py-6 flex flex-wrap items-center justify-between gap-3">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <h1 className="text-lg sm:text-xl font-bold tracking-tight">
+                Olá<span className="text-primary">{nome ? `, ${nome.split(" ")[0]}` : ""}</span>! Bora vender?
+              </h1>
+              {streak >= 2 && (
+                <Badge className="bg-accent/15 text-accent-foreground border border-accent/40 hover:bg-accent/20">
+                  <Flame className="h-3 w-3 mr-1 text-accent" /> {streak} dias 🔥
+                </Badge>
+              )}
+            </div>
+            <p className="text-xs sm:text-sm text-muted-foreground pl-7">
+              Resumo de {format(new Date(), "MMMM 'de' yyyy", { locale: ptBR })} · {faltaProxFaixa > 0 ? `Faltam ${faltaProxFaixa}un para próxima faixa de bônus!` : "Você está mandando muito bem! 🚀"}
+            </p>
+          </div>
+          <div className="hidden md:flex gap-2">
+            <Button asChild variant="outline" size="sm"><Link to="/painel/vendedor/clientes">Meus Clientes</Link></Button>
+            <Button asChild size="sm" className="shadow-md"><Link to="/painel/vendedor/novo-pedido"><Plus className="h-4 w-4 mr-1" />Novo Pedido</Link></Button>
+          </div>
         </div>
       </div>
 
-      {/* Alertas inteligentes */}
-      {(faltaProxFaixa > 0 && faltaProxFaixa <= 30) || clientesAlertas.length > 0 || inadimplencia > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      {/* Alertas inteligentes (semantic tokens) */}
+      {((faltaProxFaixa > 0 && faltaProxFaixa <= 30) || clientesAlertas.length > 0 || inadimplencia > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 animate-fade-in">
           {faltaProxFaixa > 0 && faltaProxFaixa <= 30 && (
-            <Card className="border-amber-500/40 bg-amber-500/5">
+            <Card className="border-accent/40 bg-accent/5">
               <CardContent className="p-4 flex items-center gap-3">
-                <Target className="h-8 w-8 text-amber-500 shrink-0" />
+                <Target className="h-8 w-8 text-accent shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold">Você está a {faltaProxFaixa}un da próxima faixa!</p>
+                  <p className="text-sm font-semibold">A {faltaProxFaixa}un da próxima faixa!</p>
                   <p className="text-xs text-muted-foreground">Comissão maior por pacote te espera.</p>
                 </div>
               </CardContent>
             </Card>
           )}
           {clientesAlertas.length > 0 && (
-            <Card className="border-red-500/40 bg-red-500/5">
+            <Card className="border-destructive/40 bg-destructive/5">
               <CardContent className="p-4 flex items-center gap-3">
-                <AlertTriangle className="h-8 w-8 text-red-500 shrink-0" />
+                <AlertTriangle className="h-8 w-8 text-destructive shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold">{clientesAlertas.length} clientes precisam de atenção</p>
+                  <p className="text-sm font-semibold">{clientesAlertas.length} clientes pedem atenção</p>
                   <p className="text-xs text-muted-foreground">Inativos ou com queda no consumo</p>
                 </div>
               </CardContent>
             </Card>
           )}
           {inadimplencia > 0 && (
-            <Card className="border-orange-500/40 bg-orange-500/5">
+            <Card className="border-accent/40 bg-accent/5">
               <CardContent className="p-4 flex items-center gap-3">
-                <DollarSign className="h-8 w-8 text-orange-500 shrink-0" />
+                <DollarSign className="h-8 w-8 text-accent shrink-0" />
                 <div>
                   <p className="text-sm font-semibold">R$ {inadimplencia.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} em aberto</p>
                   <p className="text-xs text-muted-foreground">Saldo da sua carteira</p>
@@ -394,64 +444,108 @@ export default function DashboardVendedor() {
             </Card>
           )}
         </div>
-      ) : null}
+      )}
 
-      {/* KPIs com variação */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="h-4 w-4" /> Unidades (mês)</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{unidadesMes}</p>
-            <p className={`text-xs flex items-center gap-1 ${varUnid >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-              {varUnid >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-              {varUnid.toFixed(1)}% vs mês anterior
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><DollarSign className="h-4 w-4" /> Faturamento</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">R$ {valorMes.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
-            <p className={`text-xs flex items-center gap-1 ${varValor >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-              {varValor >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-              {varValor.toFixed(1)}% vs mês anterior
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Activity className="h-4 w-4" /> Projeção do mês</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{projecaoUnid} un</p>
-            <p className="text-xs text-muted-foreground">≈ R$ {projecaoValor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><DollarSign className="h-4 w-4" /> Comissão</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">R$ {(comissaoPaga + comissaoPendente).toFixed(2)}</p>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-emerald-600">R$ {comissaoPaga.toFixed(2)} paga</span> ·{" "}
-              <span className="text-amber-600">R$ {comissaoPendente.toFixed(2)} pend.</span>
-            </p>
-          </CardContent>
-        </Card>
+      {/* === SEÇÃO 1: HERO KPI + META === */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Hero KPI: Unidades do Mês (span 2) */}
+        <div className="relative rounded-2xl border-[0.75px] border-border p-0.5 lg:col-span-2 animate-fade-in">
+          <GlowingEffect spread={50} glow disabled={false} proximity={48} inactiveZone={0.15} borderWidth={3} />
+          <Card className="relative border-0 bg-gradient-to-br from-card via-card to-primary/5 h-full">
+            <CardContent className="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 h-full">
+              <div className="space-y-2 min-w-0">
+                <div className="flex items-center gap-2 text-muted-foreground text-xs uppercase tracking-wider">
+                  <TrendingUp className="h-3.5 w-3.5" />
+                  Unidades vendidas no mês
+                </div>
+                <div className="flex items-baseline gap-3 flex-wrap">
+                  <p className="text-5xl sm:text-6xl font-bold tracking-tight bg-gradient-to-br from-primary via-primary to-accent bg-clip-text text-transparent">
+                    {unidadesMes.toLocaleString("pt-BR")}
+                  </p>
+                  <Badge variant="outline" className={`gap-1 ${varUnid >= 0 ? "text-primary border-primary/40 bg-primary/5" : "text-destructive border-destructive/40 bg-destructive/5"}`}>
+                    {varUnid >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                    {varUnid.toFixed(1)}%
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  vs mês anterior · Projeção: <span className="font-semibold text-foreground">{projecaoUnid} un</span>
+                </p>
+              </div>
+              <div className="hidden sm:flex h-24 w-24 rounded-full bg-primary/10 items-center justify-center shrink-0">
+                <Trophy className="h-12 w-12 text-primary" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Meta mensal compacta */}
+        <div className="relative rounded-2xl border-[0.75px] border-border p-0.5 animate-fade-in">
+          <GlowingEffect spread={30} glow disabled={false} proximity={40} inactiveZone={0.2} borderWidth={3} />
+          <Card className="relative border-0 bg-card h-full">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2"><Target className="h-4 w-4 text-accent" /> Meta & Bônus</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div>
+                <p className="text-2xl font-bold text-accent">R$ {bonus.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">{proximaMeta ? `Faltam ${proximaMeta - unidadesMes}un para próxima faixa` : "Meta máxima atingida 🏆"}</p>
+              </div>
+              <Progress value={progresso} className="h-2" />
+              <div className="flex justify-between text-[10px] text-muted-foreground">
+                <span>1k = +R$50</span>
+                <span>2k = +R$100</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
-      {/* Meta mensal */}
-      <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2"><Target className="h-5 w-5 text-primary" /> Progresso da meta mensal</CardTitle></CardHeader>
-        <CardContent className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="font-medium">{unidadesMes} unidades · Bônus atual: R$ {bonus.toFixed(2)}</span>
-            <span className="text-muted-foreground">{proximaMeta ? `Próxima: ${proximaMeta} un.` : "Meta máxima atingida 🏆"}</span>
-          </div>
-          <Progress value={progresso} />
-          <div className="flex justify-between text-xs text-muted-foreground pt-1">
-            <span>1.000 un = +R$ 50</span>
-            <span>2.000 un = +R$ 100</span>
-          </div>
-        </CardContent>
-      </Card>
+      {/* KPIs secundários */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 animate-fade-in">
+        <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
+          <GlowingEffect spread={20} glow disabled={false} proximity={36} inactiveZone={0.25} borderWidth={2} />
+          <Card className="relative border-0 bg-card">
+            <CardHeader className="pb-2"><CardTitle className="text-xs flex items-center gap-2 text-muted-foreground uppercase tracking-wider"><DollarSign className="h-3.5 w-3.5" /> Faturamento</CardTitle></CardHeader>
+            <CardContent>
+              <p className="text-xl sm:text-2xl font-bold">R$ {valorMes.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+              <p className={`text-xs flex items-center gap-1 ${varValor >= 0 ? "text-primary" : "text-destructive"}`}>
+                {varValor >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                {varValor.toFixed(1)}% vs mês ant.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+        <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
+          <GlowingEffect spread={20} glow disabled={false} proximity={36} inactiveZone={0.25} borderWidth={2} />
+          <Card className="relative border-0 bg-card">
+            <CardHeader className="pb-2"><CardTitle className="text-xs flex items-center gap-2 text-muted-foreground uppercase tracking-wider"><Activity className="h-3.5 w-3.5" /> Projeção</CardTitle></CardHeader>
+            <CardContent>
+              <p className="text-xl sm:text-2xl font-bold">R$ {projecaoValor.toLocaleString("pt-BR", { minimumFractionDigits: 0 })}</p>
+              <p className="text-xs text-muted-foreground">{projecaoUnid} un até fim do mês</p>
+            </CardContent>
+          </Card>
+        </div>
+        <div className="relative rounded-xl border-[0.75px] border-border p-0.5 col-span-2 md:col-span-1">
+          <GlowingEffect spread={20} glow disabled={false} proximity={36} inactiveZone={0.25} borderWidth={2} />
+          <Card className="relative border-0 bg-card">
+            <CardHeader className="pb-2"><CardTitle className="text-xs flex items-center gap-2 text-muted-foreground uppercase tracking-wider"><Award className="h-3.5 w-3.5" /> Comissão</CardTitle></CardHeader>
+            <CardContent>
+              <p className="text-xl sm:text-2xl font-bold">R$ {(comissaoPaga + comissaoPendente).toFixed(2)}</p>
+              <p className="text-xs text-muted-foreground">
+                <span className="text-primary">R$ {comissaoPaga.toFixed(2)} paga</span> ·{" "}
+                <span className="text-accent">R$ {comissaoPendente.toFixed(2)} pend.</span>
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* === SEÇÃO 2: PERFORMANCE (Gráficos) === */}
+      <div className="flex items-center gap-2 pt-2">
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">Performance</span>
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
+      </div>
 
       {/* Gráficos: vendas diárias + mix sabores */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -516,14 +610,14 @@ export default function DashboardVendedor() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2"><Award className="h-5 w-5 text-amber-500" /> Conquistas</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2"><Award className="h-5 w-5 text-accent" /> Conquistas</CardTitle></CardHeader>
           <CardContent>
             <div className="grid grid-cols-3 gap-3">
               {conquistas.map((c) => {
                 const Icon = c.icon;
                 return (
-                  <div key={c.id} className={`rounded-lg border p-3 text-center transition-all ${c.unlocked ? "bg-amber-500/10 border-amber-500/40" : "bg-muted/30 border-border opacity-50"}`}>
-                    <Icon className={`h-6 w-6 mx-auto mb-1 ${c.unlocked ? "text-amber-500" : "text-muted-foreground"}`} />
+                  <div key={c.id} className={`rounded-lg border p-3 text-center transition-all ${c.unlocked ? "bg-accent/10 border-accent/40 shadow-sm" : "bg-muted/30 border-border opacity-50"}`}>
+                    <Icon className={`h-6 w-6 mx-auto mb-1 ${c.unlocked ? "text-accent" : "text-muted-foreground"}`} />
                     <p className="text-[11px] font-semibold leading-tight">{c.label}</p>
                     <p className="text-[9px] text-muted-foreground leading-tight">{c.desc}</p>
                   </div>
@@ -534,6 +628,13 @@ export default function DashboardVendedor() {
         </Card>
       </div>
 
+      {/* === SEÇÃO 3: CARTEIRA & GAMIFICAÇÃO === */}
+      <div className="flex items-center gap-2 pt-2">
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">Carteira & Ações</span>
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
+      </div>
+
       {/* Cadastros + Tarefas do dia */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
@@ -542,7 +643,7 @@ export default function DashboardVendedor() {
               <span className="flex items-center gap-2"><UserPlus className="h-5 w-5 text-primary" /> Cadastros desta semana</span>
               <div className="flex items-center gap-2">
                 {varNovos !== 0 && (
-                  <Badge variant="outline" className={varNovos >= 0 ? "text-emerald-600 border-emerald-500/30" : "text-red-600 border-red-500/30"}>
+                  <Badge variant="outline" className={varNovos >= 0 ? "text-primary border-primary/30" : "text-destructive border-destructive/30"}>
                     {varNovos >= 0 ? "+" : ""}{varNovos.toFixed(0)}%
                   </Badge>
                 )}
@@ -570,7 +671,7 @@ export default function DashboardVendedor() {
                         {c.telefone && (
                           <Button asChild size="icon" variant="ghost" className="h-7 w-7">
                             <a href={whatsappLink(c.telefone, `Olá ${c.nome.split(" ")[0]}, tudo bem?`)} target="_blank" rel="noreferrer">
-                              <Phone className="h-3 w-3 text-emerald-600" />
+                              <Phone className="h-3 w-3 text-primary" />
                             </a>
                           </Button>
                         )}
@@ -618,7 +719,7 @@ export default function DashboardVendedor() {
       {/* Ranking + Clientes em alerta */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2"><Trophy className="h-5 w-5 text-amber-500" /> Top clientes (mais compraram)</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2"><Trophy className="h-5 w-5 text-accent" /> Top clientes (mais compraram)</CardTitle></CardHeader>
           <CardContent>
             {loading ? <p className="text-sm text-muted-foreground">Carregando...</p>
               : ranking.length === 0 ? (
@@ -632,9 +733,9 @@ export default function DashboardVendedor() {
                     <div key={c.id} className="space-y-1">
                       <div className="flex items-center justify-between text-sm gap-2">
                         <div className="flex items-center gap-2 min-w-0">
-                          {i === 0 && <Medal className="h-4 w-4 text-amber-500 shrink-0" />}
+                          {i === 0 && <Medal className="h-4 w-4 text-accent shrink-0" />}
                           {i === 1 && <Medal className="h-4 w-4 text-muted-foreground shrink-0" />}
-                          {i === 2 && <Medal className="h-4 w-4 text-amber-700 shrink-0" />}
+                          {i === 2 && <Medal className="h-4 w-4 text-accent/70 shrink-0" />}
                           {i > 2 && <span className="w-4 text-center text-xs text-muted-foreground shrink-0">{i + 1}</span>}
                           <span className="font-medium truncate">{c.nome}</span>
                         </div>
@@ -644,7 +745,7 @@ export default function DashboardVendedor() {
                         </div>
                       </div>
                       <div className="w-full bg-muted rounded-full h-1.5">
-                        <div className="h-1.5 rounded-full bg-primary transition-all" style={{ width: `${(c.totalUnidades / maxRank) * 100}%` }} />
+                        <div className="h-1.5 rounded-full bg-gradient-to-r from-primary to-accent transition-all" style={{ width: `${(c.totalUnidades / maxRank) * 100}%` }} />
                       </div>
                     </div>
                   ))}
@@ -656,14 +757,14 @@ export default function DashboardVendedor() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-red-500" /> Clientes em alerta</span>
+              <span className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-destructive" /> Clientes em alerta</span>
               <Badge variant="secondary">{clientesAlertas.length}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
             {clientesAlertas.length === 0 ? (
               <div className="text-center py-6">
-                <Sparkles className="h-10 w-10 mx-auto text-emerald-500/60 mb-2" />
+                <Sparkles className="h-10 w-10 mx-auto text-primary/60 mb-2" />
                 <p className="text-sm text-muted-foreground">Carteira saudável! 🎉</p>
               </div>
             ) : (
@@ -676,7 +777,7 @@ export default function DashboardVendedor() {
                         {c.status === "inativo" ? `Inativo há ${c.diasSemComprar === 9999 ? "∞" : c.diasSemComprar + "d"}` : "Queda de consumo"}
                       </p>
                     </div>
-                    <Badge variant="outline" className={c.status === "inativo" ? "text-red-600 border-red-500/40" : "text-amber-600 border-amber-500/40"}>
+                    <Badge variant="outline" className={c.status === "inativo" ? "text-destructive border-destructive/40" : "text-accent border-accent/40"}>
                       {c.status === "inativo" ? "Inativo" : "Risco"}
                     </Badge>
                   </div>
@@ -687,12 +788,12 @@ export default function DashboardVendedor() {
         </Card>
       </div>
 
-      {/* Ação rápida flutuante */}
-      <div className="fixed bottom-6 right-6 z-40">
+      {/* Ação rápida flutuante (FAB) - mobile-friendly */}
+      <div className="fixed bottom-6 right-6 z-40 md:bottom-8 md:right-8">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="lg" className="h-14 w-14 rounded-full shadow-lg">
-              <Plus className="h-6 w-6" />
+            <Button size="lg" className="h-14 w-14 rounded-full shadow-xl bg-gradient-to-br from-primary to-accent hover:scale-110 transition-transform">
+              <Plus className="h-6 w-6 text-primary-foreground" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
