@@ -610,14 +610,14 @@ export default function DashboardVendedor() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2"><Award className="h-5 w-5 text-amber-500" /> Conquistas</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2"><Award className="h-5 w-5 text-accent" /> Conquistas</CardTitle></CardHeader>
           <CardContent>
             <div className="grid grid-cols-3 gap-3">
               {conquistas.map((c) => {
                 const Icon = c.icon;
                 return (
-                  <div key={c.id} className={`rounded-lg border p-3 text-center transition-all ${c.unlocked ? "bg-amber-500/10 border-amber-500/40" : "bg-muted/30 border-border opacity-50"}`}>
-                    <Icon className={`h-6 w-6 mx-auto mb-1 ${c.unlocked ? "text-amber-500" : "text-muted-foreground"}`} />
+                  <div key={c.id} className={`rounded-lg border p-3 text-center transition-all ${c.unlocked ? "bg-accent/10 border-accent/40 shadow-sm" : "bg-muted/30 border-border opacity-50"}`}>
+                    <Icon className={`h-6 w-6 mx-auto mb-1 ${c.unlocked ? "text-accent" : "text-muted-foreground"}`} />
                     <p className="text-[11px] font-semibold leading-tight">{c.label}</p>
                     <p className="text-[9px] text-muted-foreground leading-tight">{c.desc}</p>
                   </div>
@@ -628,6 +628,13 @@ export default function DashboardVendedor() {
         </Card>
       </div>
 
+      {/* === SEÇÃO 3: CARTEIRA & GAMIFICAÇÃO === */}
+      <div className="flex items-center gap-2 pt-2">
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">Carteira & Ações</span>
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
+      </div>
+
       {/* Cadastros + Tarefas do dia */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
@@ -636,7 +643,7 @@ export default function DashboardVendedor() {
               <span className="flex items-center gap-2"><UserPlus className="h-5 w-5 text-primary" /> Cadastros desta semana</span>
               <div className="flex items-center gap-2">
                 {varNovos !== 0 && (
-                  <Badge variant="outline" className={varNovos >= 0 ? "text-emerald-600 border-emerald-500/30" : "text-red-600 border-red-500/30"}>
+                  <Badge variant="outline" className={varNovos >= 0 ? "text-primary border-primary/30" : "text-destructive border-destructive/30"}>
                     {varNovos >= 0 ? "+" : ""}{varNovos.toFixed(0)}%
                   </Badge>
                 )}
@@ -664,7 +671,7 @@ export default function DashboardVendedor() {
                         {c.telefone && (
                           <Button asChild size="icon" variant="ghost" className="h-7 w-7">
                             <a href={whatsappLink(c.telefone, `Olá ${c.nome.split(" ")[0]}, tudo bem?`)} target="_blank" rel="noreferrer">
-                              <Phone className="h-3 w-3 text-emerald-600" />
+                              <Phone className="h-3 w-3 text-primary" />
                             </a>
                           </Button>
                         )}
