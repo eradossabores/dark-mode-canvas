@@ -407,35 +407,35 @@ export default function DashboardVendedor() {
         </div>
       </div>
 
-      {/* Alertas inteligentes */}
-      {(faltaProxFaixa > 0 && faltaProxFaixa <= 30) || clientesAlertas.length > 0 || inadimplencia > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      {/* Alertas inteligentes (semantic tokens) */}
+      {((faltaProxFaixa > 0 && faltaProxFaixa <= 30) || clientesAlertas.length > 0 || inadimplencia > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 animate-fade-in">
           {faltaProxFaixa > 0 && faltaProxFaixa <= 30 && (
-            <Card className="border-amber-500/40 bg-amber-500/5">
+            <Card className="border-accent/40 bg-accent/5">
               <CardContent className="p-4 flex items-center gap-3">
-                <Target className="h-8 w-8 text-amber-500 shrink-0" />
+                <Target className="h-8 w-8 text-accent shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold">Você está a {faltaProxFaixa}un da próxima faixa!</p>
+                  <p className="text-sm font-semibold">A {faltaProxFaixa}un da próxima faixa!</p>
                   <p className="text-xs text-muted-foreground">Comissão maior por pacote te espera.</p>
                 </div>
               </CardContent>
             </Card>
           )}
           {clientesAlertas.length > 0 && (
-            <Card className="border-red-500/40 bg-red-500/5">
+            <Card className="border-destructive/40 bg-destructive/5">
               <CardContent className="p-4 flex items-center gap-3">
-                <AlertTriangle className="h-8 w-8 text-red-500 shrink-0" />
+                <AlertTriangle className="h-8 w-8 text-destructive shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold">{clientesAlertas.length} clientes precisam de atenção</p>
+                  <p className="text-sm font-semibold">{clientesAlertas.length} clientes pedem atenção</p>
                   <p className="text-xs text-muted-foreground">Inativos ou com queda no consumo</p>
                 </div>
               </CardContent>
             </Card>
           )}
           {inadimplencia > 0 && (
-            <Card className="border-orange-500/40 bg-orange-500/5">
+            <Card className="border-accent/40 bg-accent/5">
               <CardContent className="p-4 flex items-center gap-3">
-                <DollarSign className="h-8 w-8 text-orange-500 shrink-0" />
+                <DollarSign className="h-8 w-8 text-accent shrink-0" />
                 <div>
                   <p className="text-sm font-semibold">R$ {inadimplencia.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} em aberto</p>
                   <p className="text-xs text-muted-foreground">Saldo da sua carteira</p>
@@ -444,47 +444,100 @@ export default function DashboardVendedor() {
             </Card>
           )}
         </div>
-      ) : null}
+      )}
 
-      {/* KPIs com variação */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="h-4 w-4" /> Unidades (mês)</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{unidadesMes}</p>
-            <p className={`text-xs flex items-center gap-1 ${varUnid >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-              {varUnid >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-              {varUnid.toFixed(1)}% vs mês anterior
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><DollarSign className="h-4 w-4" /> Faturamento</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">R$ {valorMes.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
-            <p className={`text-xs flex items-center gap-1 ${varValor >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-              {varValor >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-              {varValor.toFixed(1)}% vs mês anterior
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Activity className="h-4 w-4" /> Projeção do mês</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{projecaoUnid} un</p>
-            <p className="text-xs text-muted-foreground">≈ R$ {projecaoValor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><DollarSign className="h-4 w-4" /> Comissão</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">R$ {(comissaoPaga + comissaoPendente).toFixed(2)}</p>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-emerald-600">R$ {comissaoPaga.toFixed(2)} paga</span> ·{" "}
-              <span className="text-amber-600">R$ {comissaoPendente.toFixed(2)} pend.</span>
-            </p>
-          </CardContent>
-        </Card>
+      {/* === SEÇÃO 1: HERO KPI + META === */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Hero KPI: Unidades do Mês (span 2) */}
+        <div className="relative rounded-2xl border-[0.75px] border-border p-0.5 lg:col-span-2 animate-fade-in">
+          <GlowingEffect spread={50} glow disabled={false} proximity={48} inactiveZone={0.15} borderWidth={3} />
+          <Card className="relative border-0 bg-gradient-to-br from-card via-card to-primary/5 h-full">
+            <CardContent className="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 h-full">
+              <div className="space-y-2 min-w-0">
+                <div className="flex items-center gap-2 text-muted-foreground text-xs uppercase tracking-wider">
+                  <TrendingUp className="h-3.5 w-3.5" />
+                  Unidades vendidas no mês
+                </div>
+                <div className="flex items-baseline gap-3 flex-wrap">
+                  <p className="text-5xl sm:text-6xl font-bold tracking-tight bg-gradient-to-br from-primary via-primary to-accent bg-clip-text text-transparent">
+                    {unidadesMes.toLocaleString("pt-BR")}
+                  </p>
+                  <Badge variant="outline" className={`gap-1 ${varUnid >= 0 ? "text-primary border-primary/40 bg-primary/5" : "text-destructive border-destructive/40 bg-destructive/5"}`}>
+                    {varUnid >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                    {varUnid.toFixed(1)}%
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  vs mês anterior · Projeção: <span className="font-semibold text-foreground">{projecaoUnid} un</span>
+                </p>
+              </div>
+              <div className="hidden sm:flex h-24 w-24 rounded-full bg-primary/10 items-center justify-center shrink-0">
+                <Trophy className="h-12 w-12 text-primary" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Meta mensal compacta */}
+        <div className="relative rounded-2xl border-[0.75px] border-border p-0.5 animate-fade-in">
+          <GlowingEffect spread={30} glow disabled={false} proximity={40} inactiveZone={0.2} borderWidth={3} />
+          <Card className="relative border-0 bg-card h-full">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2"><Target className="h-4 w-4 text-accent" /> Meta & Bônus</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div>
+                <p className="text-2xl font-bold text-accent">R$ {bonus.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">{proximaMeta ? `Faltam ${proximaMeta - unidadesMes}un para próxima faixa` : "Meta máxima atingida 🏆"}</p>
+              </div>
+              <Progress value={progresso} className="h-2" />
+              <div className="flex justify-between text-[10px] text-muted-foreground">
+                <span>1k = +R$50</span>
+                <span>2k = +R$100</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* KPIs secundários */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 animate-fade-in">
+        <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
+          <GlowingEffect spread={20} glow disabled={false} proximity={36} inactiveZone={0.25} borderWidth={2} />
+          <Card className="relative border-0 bg-card">
+            <CardHeader className="pb-2"><CardTitle className="text-xs flex items-center gap-2 text-muted-foreground uppercase tracking-wider"><DollarSign className="h-3.5 w-3.5" /> Faturamento</CardTitle></CardHeader>
+            <CardContent>
+              <p className="text-xl sm:text-2xl font-bold">R$ {valorMes.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+              <p className={`text-xs flex items-center gap-1 ${varValor >= 0 ? "text-primary" : "text-destructive"}`}>
+                {varValor >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                {varValor.toFixed(1)}% vs mês ant.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+        <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
+          <GlowingEffect spread={20} glow disabled={false} proximity={36} inactiveZone={0.25} borderWidth={2} />
+          <Card className="relative border-0 bg-card">
+            <CardHeader className="pb-2"><CardTitle className="text-xs flex items-center gap-2 text-muted-foreground uppercase tracking-wider"><Activity className="h-3.5 w-3.5" /> Projeção</CardTitle></CardHeader>
+            <CardContent>
+              <p className="text-xl sm:text-2xl font-bold">R$ {projecaoValor.toLocaleString("pt-BR", { minimumFractionDigits: 0 })}</p>
+              <p className="text-xs text-muted-foreground">{projecaoUnid} un até fim do mês</p>
+            </CardContent>
+          </Card>
+        </div>
+        <div className="relative rounded-xl border-[0.75px] border-border p-0.5 col-span-2 md:col-span-1">
+          <GlowingEffect spread={20} glow disabled={false} proximity={36} inactiveZone={0.25} borderWidth={2} />
+          <Card className="relative border-0 bg-card">
+            <CardHeader className="pb-2"><CardTitle className="text-xs flex items-center gap-2 text-muted-foreground uppercase tracking-wider"><Award className="h-3.5 w-3.5" /> Comissão</CardTitle></CardHeader>
+            <CardContent>
+              <p className="text-xl sm:text-2xl font-bold">R$ {(comissaoPaga + comissaoPendente).toFixed(2)}</p>
+              <p className="text-xs text-muted-foreground">
+                <span className="text-primary">R$ {comissaoPaga.toFixed(2)} paga</span> ·{" "}
+                <span className="text-accent">R$ {comissaoPendente.toFixed(2)} pend.</span>
+              </p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Meta mensal */}
