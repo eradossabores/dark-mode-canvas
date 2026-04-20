@@ -49,6 +49,7 @@ import NovoPedido from "@/pages/vendedor/NovoPedido";
 import EstoqueDisponivel from "@/pages/vendedor/EstoqueDisponivel";
 import MinhasComissoes from "@/pages/vendedor/MinhasComissoes";
 import DashboardVendedor from "@/pages/vendedor/DashboardVendedor";
+import HistoricoVendas from "@/pages/vendedor/HistoricoVendas";
 
 
 const queryClient = new QueryClient();
@@ -127,6 +128,7 @@ const App = () => (
               <Route path="/painel/vendedor/novo-pedido" element={<ProdRoute><NovoPedido /></ProdRoute>} />
               <Route path="/painel/vendedor/estoque" element={<ProdRoute><EstoqueDisponivel /></ProdRoute>} />
               <Route path="/painel/vendedor/comissoes" element={<ProdRoute><MinhasComissoes /></ProdRoute>} />
+              <Route path="/painel/vendedor/historico" element={<ProdRoute><HistoricoVendas /></ProdRoute>} />
 
               <Route path="*" element={<NotFound />} />
               </Routes>
