@@ -522,15 +522,15 @@ export default function Estoque() {
               .map((g) => (
                 <div
                   key={g.id}
-                  className={`rounded-lg border px-3 py-2.5 text-center transition-all hover:scale-[1.03] ${getSaborColor(g.sabores?.nome)}`}
+                  className={`rounded-2xl border px-4 py-3 text-center shadow-sm transition-all hover:scale-[1.03] hover:shadow-md ${getSaborColor(g.sabores?.nome)}`}
                 >
-                  <p className="text-[11px] font-semibold truncate">{g.sabores?.nome}</p>
-                  <p className="text-lg font-extrabold mt-0.5">{(g.quantidade || 0).toLocaleString()}</p>
+                  <p className="text-xs font-semibold truncate opacity-95">{g.sabores?.nome}</p>
+                  <p className="text-2xl font-extrabold mt-1 leading-none tracking-tight">{(g.quantidade || 0).toLocaleString()}</p>
                 </div>
               ))}
-            <div className="rounded-lg border px-3 py-2.5 text-center transition-all hover:scale-[1.03] bg-gray-700/90 text-white border-gray-800">
-              <p className="text-[11px] font-semibold truncate">TOTAL</p>
-              <p className="text-lg font-extrabold mt-0.5">{totalGelos.toLocaleString()}</p>
+            <div className="rounded-2xl border px-4 py-3 text-center shadow-sm transition-all hover:scale-[1.03] hover:shadow-md bg-slate-700 text-white border-slate-800">
+              <p className="text-xs font-semibold truncate opacity-95">TOTAL</p>
+              <p className="text-2xl font-extrabold mt-1 leading-none tracking-tight">{totalGelos.toLocaleString()}</p>
             </div>
           </div>
         </div>
