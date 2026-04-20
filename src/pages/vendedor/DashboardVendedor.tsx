@@ -540,21 +540,12 @@ export default function DashboardVendedor() {
         </div>
       </div>
 
-      {/* Meta mensal */}
-      <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2"><Target className="h-5 w-5 text-primary" /> Progresso da meta mensal</CardTitle></CardHeader>
-        <CardContent className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="font-medium">{unidadesMes} unidades · Bônus atual: R$ {bonus.toFixed(2)}</span>
-            <span className="text-muted-foreground">{proximaMeta ? `Próxima: ${proximaMeta} un.` : "Meta máxima atingida 🏆"}</span>
-          </div>
-          <Progress value={progresso} />
-          <div className="flex justify-between text-xs text-muted-foreground pt-1">
-            <span>1.000 un = +R$ 50</span>
-            <span>2.000 un = +R$ 100</span>
-          </div>
-        </CardContent>
-      </Card>
+      {/* === SEÇÃO 2: PERFORMANCE (Gráficos) === */}
+      <div className="flex items-center gap-2 pt-2">
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">Performance</span>
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
+      </div>
 
       {/* Gráficos: vendas diárias + mix sabores */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
