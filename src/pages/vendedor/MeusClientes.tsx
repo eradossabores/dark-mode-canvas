@@ -5,10 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
+import { geocodeClienteAddress, hasAddressForGeocoding } from "@/lib/geocoding";
 import { Plus, Users, Pencil } from "lucide-react";
 
 interface Cliente {
@@ -21,16 +23,23 @@ interface Cliente {
   ultima_compra: string | null;
 }
 
+const TAMANHOS_CUBO = ["2kg", "3kg", "4kg", "5kg"] as const;
+
+const emptyForm = {
+  nome: "", telefone: "", email: "", endereco: "", bairro: "", cidade: "",
+  estado: "RR", cep: "", cpf_cnpj: "", possui_freezer: false,
+  freezer_identificacao: "", preco_padrao_personalizado: "", observacoes: "",
+};
+
 export default function MeusClientes() {
   const { user, factoryId } = useAuth();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Cliente | null>(null);
-  const [nome, setNome] = useState("");
-  const [telefone, setTelefone] = useState("");
-  const [bairro, setBairro] = useState("");
-  const [endereco, setEndereco] = useState("");
+  const [form, setForm] = useState({ ...emptyForm });
+  const [vendeGeloCubo, setVendeGeloCubo] = useState(false);
+  const [geloCuboPrecos, setGeloCuboPrecos] = useState<Record<string, string>>({ "2kg": "", "3kg": "", "4kg": "", "5kg": "" });
 
   async function load() {
     setLoading(true);
@@ -47,32 +56,72 @@ export default function MeusClientes() {
     setLoading(false);
   }
 
-  useEffect(() => { load(); }, []);
+  async function loadFactoryConfig() {
+    if (!factoryId) return;
+    const { data } = await (supabase as any).from("factories").select("vende_gelo_cubo").eq("id", factoryId).single();
+    setVendeGeloCubo(data?.vende_gelo_cubo || false);
+  }
+
+  useEffect(() => { load(); loadFactoryConfig(); }, [factoryId]);
 
   function reset() {
     setEditing(null);
-    setNome(""); setTelefone(""); setBairro(""); setEndereco("");
+    setForm({ ...emptyForm });
+    setGeloCuboPrecos({ "2kg": "", "3kg": "", "4kg": "", "5kg": "" });
   }
 
-  function openEdit(c: Cliente) {
+  async function openEdit(c: any) {
     setEditing(c);
-    setNome(c.nome);
-    setTelefone(c.telefone || "");
-    setBairro(c.bairro || "");
-    setEndereco(c.endereco || "");
+    // Buscar dados completos
+    const { data: full } = await (supabase as any).from("clientes").select("*").eq("id", c.id).maybeSingle();
+    const src = full || c;
+    setForm({
+      nome: src.nome || "", telefone: src.telefone || "", email: src.email || "",
+      endereco: src.endereco || "", bairro: src.bairro || "", cidade: src.cidade || "",
+      estado: src.estado || "RR", cep: src.cep || "", cpf_cnpj: src.cpf_cnpj || "",
+      possui_freezer: src.possui_freezer || false,
+      freezer_identificacao: src.freezer_identificacao || "",
+      preco_padrao_personalizado: src.preco_padrao_personalizado ? String(src.preco_padrao_personalizado) : "",
+      observacoes: src.observacoes || "",
+    });
+    if (vendeGeloCubo) {
+      const { data: cuboPrecos } = await (supabase as any)
+        .from("cliente_gelo_cubo_preco")
+        .select("tamanho, preco")
+        .eq("cliente_id", c.id);
+      const map: Record<string, string> = { "2kg": "", "3kg": "", "4kg": "", "5kg": "" };
+      cuboPrecos?.forEach((p: any) => { map[p.tamanho] = String(p.preco).replace(".", ","); });
+      setGeloCuboPrecos(map);
+    }
     setOpen(true);
   }
 
   async function save() {
-    if (!nome.trim()) {
+    if (!form.nome.trim()) {
       toast({ title: "Informe o nome do cliente", variant: "destructive" });
       return;
     }
     try {
+      const payload: any = { ...form };
+      if (!payload.preco_padrao_personalizado) payload.preco_padrao_personalizado = null;
+      else payload.preco_padrao_personalizado = Number(payload.preco_padrao_personalizado);
+      if (!payload.cpf_cnpj) payload.cpf_cnpj = null;
+
+      // Geocodificação automática
+      if (hasAddressForGeocoding(payload)) {
+        const coords = await geocodeClienteAddress(payload);
+        if (coords) {
+          payload.latitude = coords.lat;
+          payload.longitude = coords.lng;
+        }
+      }
+
+      let clienteId = editing?.id ?? null;
+
       if (editing) {
         const { error } = await (supabase as any)
           .from("clientes")
-          .update({ nome, telefone, bairro, endereco })
+          .update(payload)
           .eq("id", editing.id);
         if (error) throw error;
         toast({ title: "Cliente atualizado" });
@@ -93,23 +142,48 @@ export default function MeusClientes() {
           toast({ title: "Fábrica não identificada", description: "Faça login novamente.", variant: "destructive" });
           return;
         }
+        payload.factory_id = fid;
         const { data, error } = await (supabase as any)
           .from("clientes")
-          .insert({ nome, telefone, bairro, endereco, factory_id: fid, estado: "RR" })
+          .insert(payload)
           .select()
           .single();
         if (error) throw error;
+        clienteId = data?.id;
         // Vínculo automático já é criado pelo trigger no Postgres,
         // mas garantimos aqui também (idempotente).
-        if (user && data?.id) {
+        if (user && clienteId) {
           await (supabase as any).from("cliente_vendedor").upsert({
-            cliente_id: data.id,
+            cliente_id: clienteId,
             vendedor_user_id: user.id,
             factory_id: fid,
           }, { onConflict: "cliente_id,vendedor_user_id" });
         }
         toast({ title: "Cliente cadastrado" });
       }
+
+      // Salvar preços de gelo em cubo
+      if (vendeGeloCubo && clienteId) {
+        for (const tam of TAMANHOS_CUBO) {
+          const val = geloCuboPrecos[tam]?.replace(",", ".");
+          const preco = parseFloat(val);
+          if (val && !isNaN(preco) && preco > 0) {
+            await (supabase as any)
+              .from("cliente_gelo_cubo_preco")
+              .upsert(
+                { cliente_id: clienteId, factory_id: factoryId, tamanho: tam, preco },
+                { onConflict: "cliente_id,tamanho" }
+              );
+          } else {
+            await (supabase as any)
+              .from("cliente_gelo_cubo_preco")
+              .delete()
+              .eq("cliente_id", clienteId)
+              .eq("tamanho", tam);
+          }
+        }
+      }
+
       setOpen(false);
       reset();
       load();
@@ -129,14 +203,61 @@ export default function MeusClientes() {
           <DialogTrigger asChild>
             <Button><Plus className="h-4 w-4 mr-2" /> Novo Cliente</Button>
           </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>{editing ? "Editar cliente" : "Cadastrar cliente"}</DialogTitle></DialogHeader>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader><DialogTitle>{editing ? "Editar Cliente" : "Novo Cliente"}</DialogTitle></DialogHeader>
             <div className="space-y-3">
-              <div><Label>Nome*</Label><Input value={nome} onChange={(e) => setNome(e.target.value)} /></div>
-              <div><Label>Telefone</Label><Input value={telefone} onChange={(e) => setTelefone(e.target.value)} /></div>
-              <div><Label>Bairro</Label><Input value={bairro} onChange={(e) => setBairro(e.target.value)} /></div>
-              <div><Label>Endereço</Label><Input value={endereco} onChange={(e) => setEndereco(e.target.value)} /></div>
-              <Button className="w-full" onClick={save}>{editing ? "Salvar alterações" : "Cadastrar"}</Button>
+              <div><Label>Nome *</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><Label>Telefone</Label><Input value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })} /></div>
+                <div><Label>Email</Label><Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
+              </div>
+              <div><Label>CPF/CNPJ</Label><Input value={form.cpf_cnpj} onChange={(e) => setForm({ ...form, cpf_cnpj: e.target.value })} /></div>
+              <div><Label>Endereço</Label><Input value={form.endereco} onChange={(e) => setForm({ ...form, endereco: e.target.value })} /></div>
+              <div className="grid grid-cols-3 gap-2">
+                <div><Label>Bairro</Label><Input value={form.bairro} onChange={(e) => setForm({ ...form, bairro: e.target.value })} /></div>
+                <div><Label>Cidade</Label><Input value={form.cidade} onChange={(e) => setForm({ ...form, cidade: e.target.value })} /></div>
+                <div><Label>Estado</Label><Input value={form.estado} onChange={(e) => setForm({ ...form, estado: e.target.value })} /></div>
+              </div>
+              <div><Label>CEP</Label><Input value={form.cep} onChange={(e) => setForm({ ...form, cep: e.target.value })} /></div>
+              <div className="flex items-center gap-3">
+                <Switch checked={form.possui_freezer} onCheckedChange={(v) => setForm({ ...form, possui_freezer: v })} />
+                <Label>Possui freezer em comodato</Label>
+              </div>
+              {form.possui_freezer && (
+                <div><Label>ID do Freezer</Label><Input value={form.freezer_identificacao} onChange={(e) => setForm({ ...form, freezer_identificacao: e.target.value })} /></div>
+              )}
+              <div><Label>Preço Padrão Personalizado (R$)</Label><Input type="number" step="0.01" value={form.preco_padrao_personalizado} onChange={(e) => setForm({ ...form, preco_padrao_personalizado: e.target.value })} /></div>
+
+              {vendeGeloCubo && (
+                <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">🧊</span>
+                    <div>
+                      <h4 className="text-sm font-semibold">Preço Gelo em Cubos</h4>
+                      <p className="text-xs text-muted-foreground">Deixe em branco para usar o preço padrão da fábrica</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-4 gap-3">
+                    {TAMANHOS_CUBO.map((tam) => (
+                      <div key={tam} className="text-center space-y-1">
+                        <Badge variant="outline" className="text-xs">{tam}</Badge>
+                        <div className="flex items-center gap-1 justify-center">
+                          <span className="text-xs text-muted-foreground">R$</span>
+                          <Input
+                            className="h-8 w-20 text-center text-sm font-medium"
+                            placeholder="0,00"
+                            value={geloCuboPrecos[tam]}
+                            onChange={(e) => setGeloCuboPrecos(prev => ({ ...prev, [tam]: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div><Label>Observações</Label><Input value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} /></div>
+              <Button className="w-full" onClick={save}>{editing ? "Salvar Alterações" : "Cadastrar"}</Button>
             </div>
           </DialogContent>
         </Dialog>
