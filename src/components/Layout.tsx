@@ -146,9 +146,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   };
 
   const filteredGroups = menuGroups
+    .filter((g) => {
+      // "Vendedor" group is exclusive to users with the vendedor role
+      if (g.label === "Vendedor") return role === "vendedor";
+      // Non-vendedor groups are hidden from vendedores
+      return role !== "vendedor";
+    })
     .map((g) => ({ ...g, items: g.items.filter((item) => isRouteAllowed(item.path, role)) }))
-    .filter((g) => g.items.length > 0)
-    .filter((g) => g.label !== "Vendedor" || role === "vendedor");
+    .filter((g) => g.items.length > 0);
 
   const handleLogout = async () => {
     await signOut();
