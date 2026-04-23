@@ -50,7 +50,7 @@ export default function PaymentBanner() {
         size="sm"
         variant="secondary"
         className="h-7 px-3 text-xs font-semibold ml-1"
-        onClick={() => window.open("https://wa.me/5511999999999?text=Quero%20regularizar%20minha%20mensalidade", "_blank")}
+        onClick={() => window.open("https://wa.me/5595991628214?text=Quero%20regularizar%20minha%20mensalidade", "_blank")}
       >
         {isOverdue ? "Regularizar agora" : "Pagar agora"}
       </Button>
