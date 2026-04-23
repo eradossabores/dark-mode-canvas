@@ -117,6 +117,12 @@ export default function MeusClientes() {
       }
 
       let clienteId = editing?.id ?? null;
+      // Sempre obtém o factory_id autoritativo do servidor (mesmo que o RLS espera)
+      let fid: string | null = factoryId ?? null;
+      if (user) {
+        const { data: rpcFid } = await (supabase as any).rpc("get_user_factory_id", { _user_id: user.id });
+        if (rpcFid) fid = rpcFid as string;
+      }
 
       if (editing) {
         const { error } = await (supabase as any)
@@ -126,18 +132,6 @@ export default function MeusClientes() {
         if (error) throw error;
         toast({ title: "Cliente atualizado" });
       } else {
-        // Garante factory_id: usa o do contexto ou busca do user_roles
-        let fid = factoryId;
-        if (!fid && user) {
-          const { data: ur } = await (supabase as any)
-            .from("user_roles")
-            .select("factory_id")
-            .eq("user_id", user.id)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          fid = ur?.factory_id ?? null;
-        }
         if (!fid) {
           toast({ title: "Fábrica não identificada", description: "Faça login novamente.", variant: "destructive" });
           return;
@@ -171,7 +165,7 @@ export default function MeusClientes() {
             await (supabase as any)
               .from("cliente_gelo_cubo_preco")
               .upsert(
-                { cliente_id: clienteId, factory_id: factoryId, tamanho: tam, preco },
+                { cliente_id: clienteId, factory_id: fid, tamanho: tam, preco },
                 { onConflict: "cliente_id,tamanho" }
               );
           } else {
