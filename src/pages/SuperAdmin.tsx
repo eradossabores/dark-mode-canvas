@@ -803,6 +803,16 @@ export default function SuperAdmin() {
                   <SelectItem value="blocked">Bloqueadas</SelectItem>
                 </SelectContent>
               </Select>
+              <Button
+                variant="outline"
+                onClick={handleCheckSubscriptionsNow}
+                disabled={checkingSubs}
+                className="gap-2 sm:w-auto"
+                title="Aplica imediatamente as regras de vencimento e bloqueio em todas as fábricas"
+              >
+                <RefreshCw className={`h-4 w-4 ${checkingSubs ? "animate-spin" : ""}`} />
+                {checkingSubs ? "Verificando..." : "Verificar Agora"}
+              </Button>
             </div>
 
             {/* KPI Stats */}
