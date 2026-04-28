@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Factory, Plus, Users, CreditCard, CheckCircle, XCircle, Clock, AlertTriangle, Upload, Pencil, Trash2, LogIn, Info, UserPlus, Activity, Search, TrendingUp, TrendingDown, Bell, Headphones, FileDown, ShieldAlert, BarChart3, FileText, Heart, Rocket, Tag } from "lucide-react";
+import { Factory, Plus, Users, CreditCard, CheckCircle, XCircle, Clock, AlertTriangle, Upload, Pencil, Trash2, LogIn, Info, UserPlus, Activity, Search, TrendingUp, TrendingDown, Bell, Headphones, FileDown, ShieldAlert, BarChart3, FileText, Heart, Rocket, Tag, RefreshCw } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
@@ -444,6 +444,34 @@ export default function SuperAdmin() {
     }
   }
 
+  const [checkingSubs, setCheckingSubs] = useState(false);
+  async function handleCheckSubscriptionsNow() {
+    setCheckingSubs(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-subscriptions`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        }
+      );
+      const result = await response.json();
+      if (!response.ok || !result.ok) throw new Error(result.error || "Falha ao verificar");
+      await logAudit("verificar_assinaturas", `Verificação manual: ${result.atualizadas} atualizada(s), ${result.bloqueadas} bloqueada(s), ${result.pendentes} pendente(s)`);
+      toast({
+        title: "Verificação concluída",
+        description: `${result.total_verificadas} assinaturas verificadas. ${result.atualizadas} atualizada(s), ${result.bloqueadas} bloqueada(s).`,
+      });
+      loadFactories();
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    } finally {
+      setCheckingSubs(false);
+    }
+  }
+
   async function handleDeleteFactory(factoryId: string) {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -775,6 +803,16 @@ export default function SuperAdmin() {
                   <SelectItem value="blocked">Bloqueadas</SelectItem>
                 </SelectContent>
               </Select>
+              <Button
+                variant="outline"
+                onClick={handleCheckSubscriptionsNow}
+                disabled={checkingSubs}
+                className="gap-2 sm:w-auto"
+                title="Aplica imediatamente as regras de vencimento e bloqueio em todas as fábricas"
+              >
+                <RefreshCw className={`h-4 w-4 ${checkingSubs ? "animate-spin" : ""}`} />
+                {checkingSubs ? "Verificando..." : "Verificar Agora"}
+              </Button>
             </div>
 
             {/* KPI Stats */}

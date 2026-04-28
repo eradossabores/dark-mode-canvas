@@ -2,7 +2,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock, XCircle, LogOut, Lock } from "lucide-react";
+import { Clock, XCircle, LogOut, Lock, MessageCircle } from "lucide-react";
 import logo from "@/assets/logo.png";
 
 // Routes collaborators (producao) can access
@@ -33,7 +33,7 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children, adminOnly, superAdminOnly }: ProtectedRouteProps) {
-  const { user, role, approvalStatus, loading, signOut, subscription } = useAuth();
+  const { user, role, approvalStatus, loading, signOut, subscription, factoryName } = useAuth();
   const navigate = useNavigate();
 
   if (loading) {
@@ -131,6 +131,9 @@ export default function ProtectedRoute({ children, adminOnly, superAdminOnly }: 
 
   // Subscription blocked (not for super_admin)
   if (role !== "super_admin" && subscription?.status === "blocked") {
+    const fname = factoryName || "minha fábrica";
+    const msg = `Olá, gostaria de reativar o acesso da minha fábrica ${fname}. Poderia me informar a forma de pagamento da mensalidade?`;
+    const whatsappUrl = `https://wa.me/5595991628214?text=${encodeURIComponent(msg)}`;
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-sky-100 via-sky-50 to-cyan-100 dark:from-sky-950 dark:via-gray-900 dark:to-cyan-950 px-4">
         <Card className="w-full max-w-md shadow-2xl border-destructive/30">
@@ -144,14 +147,22 @@ export default function ProtectedRoute({ children, adminOnly, superAdminOnly }: 
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <p className="text-muted-foreground">
-              Sua assinatura está vencida e o período de carência expirou. Entre em contato com o administrador para regularizar o pagamento.
+              Sua assinatura está em atraso. Para reativar o acesso da fábrica <strong>{fname}</strong>, entre em contato.
             </p>
             <p className="text-sm font-semibold text-destructive">
-              Valor: R$ 99,90/mês
+              Mensalidade: R$ 99,90
             </p>
-            <Button variant="outline" className="gap-2" onClick={async () => { await signOut(); navigate("/login"); }}>
-              <LogOut className="h-4 w-4" /> Sair
-            </Button>
+            <div className="flex flex-col gap-2">
+              <Button
+                className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                onClick={() => window.open(whatsappUrl, "_blank")}
+              >
+                <MessageCircle className="h-4 w-4" /> Reativar via WhatsApp
+              </Button>
+              <Button variant="outline" className="gap-2" onClick={async () => { await signOut(); navigate("/login"); }}>
+                <LogOut className="h-4 w-4" /> Sair
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
