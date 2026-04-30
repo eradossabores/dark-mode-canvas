@@ -84,31 +84,7 @@ export default function EstoqueDisponivel() {
         </div>
       )}
 
-      <Card>
-        <CardHeader><CardTitle>Gelos prontos</CardTitle></CardHeader>
-        <CardContent>
-          {loading ? (
-            <p className="text-muted-foreground text-sm">Carregando...</p>
-          ) : (
-            <Table>
-              <TableHeader><TableRow><TableHead>Sabor</TableHead><TableHead className="text-right">Disponível</TableHead><TableHead className="text-right">Status</TableHead></TableRow></TableHeader>
-              <TableBody>
-                {linhas.map((l) => (
-                  <TableRow key={l.id}>
-                    <TableCell className="font-medium">{l.nome}</TableCell>
-                    <TableCell className="text-right font-mono">{l.quantidade}</TableCell>
-                    <TableCell className="text-right">
-                      {l.quantidade <= 0 ? <Badge variant="destructive">Sem estoque</Badge>
-                        : l.quantidade < 50 ? <Badge variant="secondary">Baixo</Badge>
-                        : <Badge>OK</Badge>}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      {loading && <p className="text-muted-foreground text-sm">Carregando...</p>}
     </div>
   );
 }
