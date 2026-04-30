@@ -21,12 +21,16 @@ export default function HistoricoVendas() {
     if (!user || !factoryId) return;
     setLoading(true);
 
-    // Get vendor's clients
-    const { data: vinc } = await (supabase as any)
-      .from("cliente_vendedor")
-      .select("cliente_id")
-      .eq("vendedor_user_id", user.id);
-    const clienteIds = (vinc || []).map((v: any) => v.cliente_id);
+    // Get vendor's clients + AVULSO and AMOSTRAS
+    const [{ data: vinc }, { data: extras }] = await Promise.all([
+      (supabase as any).from("cliente_vendedor").select("cliente_id").eq("vendedor_user_id", user.id),
+      (supabase as any).from("clientes").select("id").in("nome", ["AVULSO", "AMOSTRAS"]).eq("factory_id", factoryId)
+    ]);
+
+    const clienteIds = [
+      ...(vinc || []).map((v: any) => v.cliente_id),
+      ...(extras || []).map((c: any) => c.id)
+    ];
 
     if (clienteIds.length === 0) {
       setVendas([]);
