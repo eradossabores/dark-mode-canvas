@@ -586,7 +586,7 @@ export default function NovoPedido() {
                 <div key={i} className="flex gap-2 items-center">
                   <Select value={item.tamanho} onValueChange={(v) => { const u = [...geloCuboItens]; u[i].tamanho = v; setGeloCuboItens(u); }}>
                     <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
-                    <SelectContent>{["2kg", "4kg", "5kg"].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                    <SelectContent>{["2kg", "3kg", "4kg", "5kg"].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                   </Select>
                   <Input type="number" min={1} className="w-20" value={item.quantidade} onChange={(e) => { const u = [...geloCuboItens]; u[i].quantidade = Number(e.target.value); setGeloCuboItens(u); }} placeholder="Qtd" />
                   <span className="text-xs text-muted-foreground whitespace-nowrap">R$ {((geloCuboPrecos[item.tamanho] || 0) * item.quantidade).toFixed(2)}</span>
