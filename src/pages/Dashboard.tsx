@@ -807,45 +807,45 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* New widgets row: Comparativo + Meta + Alertas + Eficiência */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-4 sm:mb-6 opacity-0 animate-fade-in" style={{ animationDelay: "600ms", animationFillMode: "forwards" }}>
-        <div className="relative rounded-xl border-[0.75px] border-border p-0.5 lg:col-span-2">
-          <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
-          <div className="relative"><ComparativoMensal factoryId={factoryId} /></div>
-        </div>
-        <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
-          <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
-          <div className="relative"><MetaVendas factoryId={factoryId} /></div>
-        </div>
-        <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
-          <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
-          <div className="relative"><EficienciaProducao factoryId={factoryId} /></div>
-        </div>
-      </div>
+       {/* Seção Principal: Metas e Inteligência */}
+       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 mb-4 sm:mb-6 opacity-0 animate-fade-in" style={{ animationDelay: "600ms", animationFillMode: "forwards" }}>
+         <div className="relative rounded-xl border-[0.75px] border-border p-0.5 lg:col-span-2">
+           <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
+           <div className="relative h-full"><MetaVendas factoryId={factoryId} /></div>
+         </div>
+         <div className="relative rounded-xl border-[0.75px] border-border p-0.5 lg:col-span-2">
+           <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
+           <div className="relative h-full"><EstoqueInteligente factoryId={factoryId} /></div>
+         </div>
+       </div>
 
-      {/* Widgets: Estoque Inteligente + Ranking + Clientes Inativos */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6 opacity-0 animate-fade-in" style={{ animationDelay: "700ms", animationFillMode: "forwards" }}>
-        <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
-          <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
-          <div className="relative"><EstoqueInteligente factoryId={factoryId} /></div>
-        </div>
-        <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
-          <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
-          <div className="relative"><RankingClientes factoryId={factoryId} /></div>
-        </div>
-        <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
-          <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
-          <div className="relative"><ClientesInativos factoryId={factoryId} /></div>
-        </div>
-      </div>
+       {/* Análise de Vendas e Performance */}
+       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6 opacity-0 animate-fade-in" style={{ animationDelay: "700ms", animationFillMode: "forwards" }}>
+         <div className="relative rounded-xl border-[0.75px] border-border p-0.5 lg:col-span-2">
+           <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
+           <div className="relative h-full"><ComparativoMensal factoryId={factoryId} /></div>
+         </div>
+         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
+           <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
+           <div className="relative h-full"><EficienciaProducao factoryId={factoryId} /></div>
+         </div>
+       </div>
 
-      {/* Classificação ABC */}
-      <div className="grid grid-cols-1 gap-4 sm:gap-6 mb-4 sm:mb-6 opacity-0 animate-fade-in" style={{ animationDelay: "750ms", animationFillMode: "forwards" }}>
-        <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
-          <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
-          <div className="relative"><ClassificacaoABC factoryId={factoryId} /></div>
-        </div>
-      </div>
+       {/* Insights de Clientes */}
+       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6 opacity-0 animate-fade-in" style={{ animationDelay: "800ms", animationFillMode: "forwards" }}>
+         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
+           <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
+           <div className="relative h-full"><RankingClientes factoryId={factoryId} /></div>
+         </div>
+         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
+           <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
+           <div className="relative h-full"><ClientesInativos factoryId={factoryId} /></div>
+         </div>
+         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
+           <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
+           <div className="relative h-full"><ClassificacaoABC factoryId={factoryId} /></div>
+         </div>
+       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 opacity-0 animate-fade-in" style={{ animationDelay: "900ms", animationFillMode: "forwards" }}>
         {/* Top 5 Sabores - Pie Chart */}
