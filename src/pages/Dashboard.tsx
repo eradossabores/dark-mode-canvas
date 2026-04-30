@@ -533,14 +533,14 @@ export default function Dashboard() {
                     className="saturate-150"
                   />
 
-           <div className={`relative min-h-[160px] h-full rounded-[inherit] border-2 ${postItColors[cat] || "bg-muted border-border"} p-4`}>
+                   <div className={`relative min-h-[160px] h-full rounded-[inherit] border-2 ${postItColors[cat] || "bg-muted border-border"} p-5 flex flex-col`}>
                     {/* Wave decoration top */}
                     <svg className="absolute top-0 left-0 right-0 w-full" viewBox="0 0 300 20" preserveAspectRatio="none" style={{ height: "14px" }}>
                       <path d="M0,10 Q30,0 60,10 T120,10 T180,10 T240,10 T300,10 L300,0 L0,0 Z" fill="currentColor" className="text-background/30" />
                     </svg>
 
-                    {/* Category label + count */}
-                    <div className="flex items-center justify-between mb-2">
+                     {/* Category label + count */}
+                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-1.5">
                         <AlertTriangle className={`h-3.5 w-3.5 ${postItLabelColors[cat] || "text-foreground"}`} />
                         <span className={`text-xs font-extrabold uppercase tracking-wide ${postItLabelColors[cat] || "text-foreground"}`}>
@@ -550,21 +550,43 @@ export default function Dashboard() {
                       <span className="text-xs font-bold text-muted-foreground">{items.length}</span>
                     </div>
 
-                    {/* Item info */}
-                    <p className="text-base font-bold text-foreground truncate mb-1">{item.nome}</p>
-                    <p className="text-sm text-foreground/80">
-                      Atual: <span className="font-bold text-primary">{item.atual}</span> / Mín: {item.minimo}
-                    </p>
+                     {/* Item info */}
+                     <div className="flex-1 min-w-0">
+                       <p className="text-lg font-black text-foreground truncate leading-tight mb-1">{item.nome}</p>
+                       <div className="flex items-center gap-2 text-sm text-foreground/70">
+                         <span className="flex items-center gap-1">
+                           <span className="text-[10px] uppercase font-bold opacity-60">Atual:</span>
+                           <span className="font-black text-primary">{item.atual}</span>
+                         </span>
+                         <span className="w-px h-3 bg-foreground/20" />
+                         <span className="flex items-center gap-1">
+                           <span className="text-[10px] uppercase font-bold opacity-60">Mín:</span>
+                           <span className="font-bold">{item.minimo}</span>
+                         </span>
+                       </div>
+                     </div>
 
-                    {/* Dots indicator */}
-                    <div className="flex gap-1 mt-3">
-                      {items.map((_: any, i: number) => (
-                        <span
-                          key={i}
-                          className={`w-2 h-2 rounded-full transition-colors ${i === itemIdx ? "bg-destructive" : "bg-foreground/20"}`}
-                        />
-                      ))}
-                    </div>
+                     {/* Dots indicator and Character */}
+                     <div className="flex items-center justify-between mt-4">
+                       <div className="flex gap-1">
+                         {items.map((_: any, i: number) => (
+                           <span
+                             key={i}
+                             className={`w-1.5 h-1.5 rounded-full transition-all ${i === itemIdx ? "w-4 bg-destructive shadow-sm" : "bg-foreground/20"}`}
+                           />
+                         ))}
+                       </div>
+
+                       {/* Character - absolute positioned but relative to this flex container to stay clean */}
+                       {isIceAgeFactory && (
+                         <img
+                           src={charImg}
+                           alt=""
+                           aria-hidden
+                           className="w-12 h-12 object-contain opacity-30 pointer-events-none select-none -mb-2 -mr-2"
+                         />
+                       )}
+                     </div>
 
                     {/* Character - only for Era dos Sabores */}
                     {isIceAgeFactory && (
