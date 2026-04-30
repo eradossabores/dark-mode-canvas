@@ -11,7 +11,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { insertRow } from "@/lib/supabase-helpers";
 import { geocodeClienteAddress, hasAddressForGeocoding } from "@/lib/geocoding";
 import { toast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, History, Map, ClipboardCheck } from "lucide-react";
@@ -126,6 +125,9 @@ export default function Clientes() {
 
       let clienteId = editingId;
 
+      const { data: userData } = await supabase.auth.getUser();
+      const isVendedor = (supabase as any).from("user_roles").select("roles(name)").eq("user_id", userData.user?.id).single();
+      
       if (editingId) {
         const { error } = await (supabase as any).from("clientes").update(payload).eq("id", editingId);
         if (error) throw error;
@@ -135,6 +137,22 @@ export default function Clientes() {
         const { data: newCliente, error } = await (supabase as any).from("clientes").insert(payload).select("id").single();
         if (error) throw error;
         clienteId = newCliente?.id;
+        
+        // Se for vendedor, vincula automaticamente
+        const { data: roleData } = await (supabase as any)
+          .from("user_roles")
+          .select("roles(name)")
+          .eq("user_id", userData.user?.id)
+          .single();
+        
+        if (roleData?.roles?.name === 'vendedor') {
+          await (supabase as any).from("cliente_vendedor").insert({
+            cliente_id: clienteId,
+            vendedor_user_id: userData.user?.id,
+            factory_id: factoryId
+          });
+        }
+        
         toast({ title: "Cliente cadastrado!" });
       }
 
