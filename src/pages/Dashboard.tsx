@@ -818,16 +818,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Alertas + Sugestão Compra + Classificação ABC */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6 opacity-0 animate-fade-in" style={{ animationDelay: "750ms", animationFillMode: "forwards" }}>
-        <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
-          <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
-          <div className="relative"><AlertasInteligentes factoryId={factoryId} /></div>
-        </div>
-        <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
-          <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
-          <div className="relative"><SugestaoCompra factoryId={factoryId} /></div>
-        </div>
+      {/* Classificação ABC */}
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 mb-4 sm:mb-6 opacity-0 animate-fade-in" style={{ animationDelay: "750ms", animationFillMode: "forwards" }}>
         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
           <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
           <div className="relative"><ClassificacaoABC factoryId={factoryId} /></div>
