@@ -495,6 +495,29 @@ export default function SuperAdmin() {
     }
   }
 
+  async function handleResetFactory(factoryId: string) {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      const fname = factories.find((f) => f.id === factoryId)?.name || factoryId;
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reset-factory`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ factory_id: factoryId }),
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Erro ao resetar");
+      await logAudit("resetar_fabrica", `Fábrica "${fname}" resetada (dados operacionais zerados)`);
+      toast({ title: "Fábrica resetada com sucesso!", description: `Todos os dados operacionais de "${fname}" foram zerados.` });
+      loadFactories();
+    } catch (e: any) {
+      toast({ title: "Erro ao resetar", description: e.message, variant: "destructive" });
+    }
+  }
+
   async function handleAddAdmin() {
     if (!addAdminFactory || !newAdmin.email || !newAdmin.password || !newAdmin.name) {
       toast({ title: "Preencha todos os campos", variant: "destructive" });
