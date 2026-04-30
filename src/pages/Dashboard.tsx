@@ -533,14 +533,14 @@ export default function Dashboard() {
                     className="saturate-150"
                   />
 
-           <div className={`relative min-h-[160px] h-full rounded-[inherit] border-2 ${postItColors[cat] || "bg-muted border-border"} p-4`}>
+                   <div className={`relative min-h-[160px] h-full rounded-[inherit] border-2 ${postItColors[cat] || "bg-muted border-border"} p-5 flex flex-col`}>
                     {/* Wave decoration top */}
                     <svg className="absolute top-0 left-0 right-0 w-full" viewBox="0 0 300 20" preserveAspectRatio="none" style={{ height: "14px" }}>
                       <path d="M0,10 Q30,0 60,10 T120,10 T180,10 T240,10 T300,10 L300,0 L0,0 Z" fill="currentColor" className="text-background/30" />
                     </svg>
 
-                    {/* Category label + count */}
-                    <div className="flex items-center justify-between mb-2">
+                     {/* Category label + count */}
+                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-1.5">
                         <AlertTriangle className={`h-3.5 w-3.5 ${postItLabelColors[cat] || "text-foreground"}`} />
                         <span className={`text-xs font-extrabold uppercase tracking-wide ${postItLabelColors[cat] || "text-foreground"}`}>
@@ -550,21 +550,43 @@ export default function Dashboard() {
                       <span className="text-xs font-bold text-muted-foreground">{items.length}</span>
                     </div>
 
-                    {/* Item info */}
-                    <p className="text-base font-bold text-foreground truncate mb-1">{item.nome}</p>
-                    <p className="text-sm text-foreground/80">
-                      Atual: <span className="font-bold text-primary">{item.atual}</span> / Mín: {item.minimo}
-                    </p>
+                     {/* Item info */}
+                     <div className="flex-1 min-w-0">
+                       <p className="text-lg font-black text-foreground truncate leading-tight mb-1">{item.nome}</p>
+                       <div className="flex items-center gap-2 text-sm text-foreground/70">
+                         <span className="flex items-center gap-1">
+                           <span className="text-[10px] uppercase font-bold opacity-60">Atual:</span>
+                           <span className="font-black text-primary">{item.atual}</span>
+                         </span>
+                         <span className="w-px h-3 bg-foreground/20" />
+                         <span className="flex items-center gap-1">
+                           <span className="text-[10px] uppercase font-bold opacity-60">Mín:</span>
+                           <span className="font-bold">{item.minimo}</span>
+                         </span>
+                       </div>
+                     </div>
 
-                    {/* Dots indicator */}
-                    <div className="flex gap-1 mt-3">
-                      {items.map((_: any, i: number) => (
-                        <span
-                          key={i}
-                          className={`w-2 h-2 rounded-full transition-colors ${i === itemIdx ? "bg-destructive" : "bg-foreground/20"}`}
-                        />
-                      ))}
-                    </div>
+                     {/* Dots indicator and Character */}
+                     <div className="flex items-center justify-between mt-4">
+                       <div className="flex gap-1">
+                         {items.map((_: any, i: number) => (
+                           <span
+                             key={i}
+                             className={`w-1.5 h-1.5 rounded-full transition-all ${i === itemIdx ? "w-4 bg-destructive shadow-sm" : "bg-foreground/20"}`}
+                           />
+                         ))}
+                       </div>
+
+                       {/* Character - absolute positioned but relative to this flex container to stay clean */}
+                       {isIceAgeFactory && (
+                         <img
+                           src={charImg}
+                           alt=""
+                           aria-hidden
+                           className="w-12 h-12 object-contain opacity-30 pointer-events-none select-none -mb-2 -mr-2"
+                         />
+                       )}
+                     </div>
 
                     {/* Character - only for Era dos Sabores */}
                     {isIceAgeFactory && (
@@ -648,26 +670,28 @@ export default function Dashboard() {
                borderWidth={4}
              />
              <Card
-               className="relative cursor-pointer rounded-[calc(var(--radius)-2px)] border-0 bg-[hsl(var(--kpi-surface))] text-[hsl(var(--kpi-surface-foreground))] transition-all hover:scale-[1.03] hover:shadow-md flex flex-col w-full min-h-[160px]"
+               className="relative cursor-pointer rounded-xl border-0 bg-card/40 backdrop-blur-md text-card-foreground transition-all hover:scale-[1.03] hover:shadow-lg flex flex-col w-full min-h-[160px] group"
                onClick={() => !c.isFaturamento && navigate(c.href)}
              >
-               <CardHeader className="flex flex-row items-center justify-between pb-2 shrink-0">
-                 <CardTitle className="text-xs font-medium text-[hsl(var(--kpi-surface-muted-foreground))] line-clamp-1">{c.title}</CardTitle>
-                 <c.icon className={`h-4 w-4 shrink-0 ${c.color}`} />
+               <CardHeader className="flex flex-row items-center justify-between pb-2 shrink-0 space-y-0">
+                 <CardTitle className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80 line-clamp-1">{c.title}</CardTitle>
+                 <div className={`p-1.5 rounded-lg bg-background/50 border border-border/50 transition-colors group-hover:border-primary/30`}>
+                   <c.icon className={`h-3.5 w-3.5 ${c.color}`} />
+                 </div>
                </CardHeader>
-               <CardContent className="flex flex-col flex-1 justify-between gap-3 pt-0">
-                 <p className="text-lg font-bold">{c.value}</p>
+               <CardContent className="flex flex-col flex-1 justify-between gap-4 pt-0">
+                 <p className="text-2xl font-black tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">{c.value}</p>
                  {c.periodo && c.onPeriodoChange ? (
                    <div className="space-y-1.5 mt-auto">
-                     <div className="flex flex-wrap gap-1">
+                     <div className="flex flex-wrap gap-1 bg-background/30 p-1 rounded-lg border border-border/20">
                        {RESUMO_PERIODOS.map(({ value, label }) => (
                          <button
                            key={value}
                            onClick={(e) => { e.stopPropagation(); c.onPeriodoChange(value); }}
-                           className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
+                           className={`flex-1 px-1.5 py-1 text-[9px] font-semibold rounded-md transition-all ${
                              c.periodo === value
-                               ? "bg-primary text-primary-foreground"
-                               : "bg-[hsl(var(--kpi-surface-muted))] text-[hsl(var(--kpi-surface-muted-foreground))] hover:brightness-110"
+                               ? "bg-primary text-primary-foreground shadow-sm"
+                               : "text-muted-foreground hover:bg-background/50 hover:text-foreground"
                            }`}
                          >
                            {label}
@@ -676,7 +700,7 @@ export default function Dashboard() {
                      </div>
                    </div>
                  ) : (
-                   <div className="h-[22px]" aria-hidden="true" /> // Espaçador para manter altura se não houver filtro
+                   <div className="h-[26px]" aria-hidden="true" />
                  )}
                </CardContent>
              </Card>
