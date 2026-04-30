@@ -420,6 +420,7 @@ export default function Clientes() {
                 <TableHead>Nome</TableHead>
                 <TableHead>Telefone</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Vendedor</TableHead>
                 <TableHead>Freezer</TableHead>
                 <TableHead>Preço Pers.</TableHead>
                 <TableHead>Dias s/ comprar</TableHead>
@@ -439,6 +440,13 @@ export default function Clientes() {
                         className="cursor-pointer"
                         onClick={() => handleToggleStatus(c)}
                       >{c.status}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {c.vendedor_nome ? (
+                        <Badge variant="secondary" className="text-xs">👤 {c.vendedor_nome}</Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
                     </TableCell>
                     <TableCell>{c.possui_freezer ? c.freezer_identificacao || "Sim" : "Não"}</TableCell>
                     <TableCell>{c.preco_padrao_personalizado ? `R$ ${Number(c.preco_padrao_personalizado).toFixed(2)}` : "-"}</TableCell>
@@ -462,7 +470,7 @@ export default function Clientes() {
                 );
               })}
               {clientesFiltrados.length === 0 && (
-                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Nenhum cliente encontrado.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Nenhum cliente encontrado.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
