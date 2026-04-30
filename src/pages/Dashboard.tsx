@@ -648,26 +648,28 @@ export default function Dashboard() {
                borderWidth={4}
              />
              <Card
-               className="relative cursor-pointer rounded-[calc(var(--radius)-2px)] border-0 bg-[hsl(var(--kpi-surface))] text-[hsl(var(--kpi-surface-foreground))] transition-all hover:scale-[1.03] hover:shadow-md flex flex-col w-full min-h-[160px]"
+               className="relative cursor-pointer rounded-xl border-0 bg-card/40 backdrop-blur-md text-card-foreground transition-all hover:scale-[1.03] hover:shadow-lg flex flex-col w-full min-h-[160px] group"
                onClick={() => !c.isFaturamento && navigate(c.href)}
              >
-               <CardHeader className="flex flex-row items-center justify-between pb-2 shrink-0">
-                 <CardTitle className="text-xs font-medium text-[hsl(var(--kpi-surface-muted-foreground))] line-clamp-1">{c.title}</CardTitle>
-                 <c.icon className={`h-4 w-4 shrink-0 ${c.color}`} />
+               <CardHeader className="flex flex-row items-center justify-between pb-2 shrink-0 space-y-0">
+                 <CardTitle className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80 line-clamp-1">{c.title}</CardTitle>
+                 <div className={`p-1.5 rounded-lg bg-background/50 border border-border/50 transition-colors group-hover:border-primary/30`}>
+                   <c.icon className={`h-3.5 w-3.5 ${c.color}`} />
+                 </div>
                </CardHeader>
-               <CardContent className="flex flex-col flex-1 justify-between gap-3 pt-0">
-                 <p className="text-lg font-bold">{c.value}</p>
+               <CardContent className="flex flex-col flex-1 justify-between gap-4 pt-0">
+                 <p className="text-2xl font-black tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">{c.value}</p>
                  {c.periodo && c.onPeriodoChange ? (
                    <div className="space-y-1.5 mt-auto">
-                     <div className="flex flex-wrap gap-1">
+                     <div className="flex flex-wrap gap-1 bg-background/30 p-1 rounded-lg border border-border/20">
                        {RESUMO_PERIODOS.map(({ value, label }) => (
                          <button
                            key={value}
                            onClick={(e) => { e.stopPropagation(); c.onPeriodoChange(value); }}
-                           className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
+                           className={`flex-1 px-1.5 py-1 text-[9px] font-semibold rounded-md transition-all ${
                              c.periodo === value
-                               ? "bg-primary text-primary-foreground"
-                               : "bg-[hsl(var(--kpi-surface-muted))] text-[hsl(var(--kpi-surface-muted-foreground))] hover:brightness-110"
+                               ? "bg-primary text-primary-foreground shadow-sm"
+                               : "text-muted-foreground hover:bg-background/50 hover:text-foreground"
                            }`}
                          >
                            {label}
@@ -676,7 +678,7 @@ export default function Dashboard() {
                      </div>
                    </div>
                  ) : (
-                   <div className="h-[22px]" aria-hidden="true" /> // Espaçador para manter altura se não houver filtro
+                   <div className="h-[26px]" aria-hidden="true" />
                  )}
                </CardContent>
              </Card>
