@@ -13,6 +13,26 @@ import { toast } from "@/hooks/use-toast";
 import { geocodeClienteAddress, hasAddressForGeocoding } from "@/lib/geocoding";
  import { Plus, Users, Pencil, Trash2 } from "lucide-react";
  import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+
+interface Cliente {
+  id: string;
+  nome: string;
+  telefone: string | null;
+  bairro: string | null;
+  endereco: string | null;
+  status: string;
+  ultima_compra: string | null;
+}
+
+const TAMANHOS_CUBO = ["2kg", "3kg", "4kg", "5kg"] as const;
+
+const emptyForm = {
+  nome: "", telefone: "", email: "", endereco: "", bairro: "", cidade: "",
+  estado: "RR", cep: "", cpf_cnpj: "", possui_freezer: false,
+  freezer_identificacao: "", preco_padrao_personalizado: "", observacoes: "",
+};
+
+ export default function MeusClientes() {
    async function handleDelete(id: string) {
      try {
        const { error } = await (supabase as any)
@@ -34,26 +54,6 @@ import { geocodeClienteAddress, hasAddressForGeocoding } from "@/lib/geocoding";
      }
    }
  
-
-interface Cliente {
-  id: string;
-  nome: string;
-  telefone: string | null;
-  bairro: string | null;
-  endereco: string | null;
-  status: string;
-  ultima_compra: string | null;
-}
-
-const TAMANHOS_CUBO = ["2kg", "3kg", "4kg", "5kg"] as const;
-
-const emptyForm = {
-  nome: "", telefone: "", email: "", endereco: "", bairro: "", cidade: "",
-  estado: "RR", cep: "", cpf_cnpj: "", possui_freezer: false,
-  freezer_identificacao: "", preco_padrao_personalizado: "", observacoes: "",
-};
-
-export default function MeusClientes() {
   const { user, factoryId } = useAuth();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
