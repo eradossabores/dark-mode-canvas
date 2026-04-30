@@ -1282,7 +1282,7 @@ export default function Vendas() {
                       <Select value={item.tamanho} onValueChange={(v) => { const u = [...geloCuboItens]; u[i].tamanho = v; setGeloCuboItens(u); }}>
                         <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          {["2kg", "4kg", "5kg"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                          {["2kg", "3kg", "4kg", "5kg"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                         </SelectContent>
                       </Select>
                       <Input type="number" min={1} className="w-20" value={item.quantidade} onChange={(e) => { const u = [...geloCuboItens]; u[i].quantidade = Number(e.target.value); setGeloCuboItens(u); }} placeholder="Qtd" />
