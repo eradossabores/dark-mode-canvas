@@ -533,7 +533,7 @@ export default function Dashboard() {
                     className="saturate-150"
                   />
 
-                  <div className={`relative min-h-[140px] rounded-[inherit] border-2 ${postItColors[cat] || "bg-muted border-border"} p-4`}>
+           <div className={`relative min-h-[160px] h-full rounded-[inherit] border-2 ${postItColors[cat] || "bg-muted border-border"} p-4`}>
                     {/* Wave decoration top */}
                     <svg className="absolute top-0 left-0 right-0 w-full" viewBox="0 0 300 20" preserveAspectRatio="none" style={{ height: "14px" }}>
                       <path d="M0,10 Q30,0 60,10 T120,10 T180,10 T240,10 T300,10 L300,0 L0,0 Z" fill="currentColor" className="text-background/30" />
@@ -598,7 +598,7 @@ export default function Dashboard() {
                 className="saturate-150"
               />
 
-              <div className="relative min-h-[140px] rounded-[inherit] border-2 border-green-200 dark:border-green-700 bg-green-100 dark:bg-green-900/40 p-4">
+               <div className="relative min-h-[160px] h-full rounded-[inherit] border-2 border-green-200 dark:border-green-700 bg-green-100 dark:bg-green-900/40 p-4">
                 {/* Wave decoration top */}
                 <svg className="absolute top-0 left-0 right-0 w-full" viewBox="0 0 300 20" preserveAspectRatio="none" style={{ height: "14px" }}>
                   <path d="M0,10 Q30,0 60,10 T120,10 T180,10 T240,10 T300,10 L300,0 L0,0 Z" fill="currentColor" className="text-background/30" />
