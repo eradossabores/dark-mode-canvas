@@ -60,7 +60,37 @@ export default function Clientes() {
     let q = (supabase as any).from("clientes").select("*").order("nome");
     if (factoryId) q = q.eq("factory_id", factoryId);
     const { data } = await q;
-    setClientes(data || []);
+    const lista = data || [];
+
+    // Carrega vínculos cliente-vendedor + nome do vendedor (profiles)
+    if (lista.length > 0 && factoryId) {
+      const ids = lista.map((c: any) => c.id);
+      const { data: vincs } = await (supabase as any)
+        .from("cliente_vendedor")
+        .select("cliente_id, vendedor_user_id")
+        .in("cliente_id", ids);
+
+      const userIds = Array.from(new Set((vincs || []).map((v: any) => v.vendedor_user_id)));
+      let profMap: Record<string, string> = {};
+      if (userIds.length > 0) {
+        const { data: profs } = await (supabase as any)
+          .from("profiles")
+          .select("id, nome, email")
+          .in("id", userIds);
+        (profs || []).forEach((p: any) => {
+          profMap[p.id] = p.nome || p.email || "Vendedor";
+        });
+      }
+
+      const vendMap: Record<string, string> = {};
+      (vincs || []).forEach((v: any) => {
+        vendMap[v.cliente_id] = profMap[v.vendedor_user_id] || "Vendedor";
+      });
+
+      lista.forEach((c: any) => { c.vendedor_nome = vendMap[c.id] || null; });
+    }
+
+    setClientes(lista);
   }
 
   function openNew() {
