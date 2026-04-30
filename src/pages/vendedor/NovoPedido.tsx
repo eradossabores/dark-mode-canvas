@@ -42,6 +42,8 @@ export default function NovoPedido() {
   const [clientes, setClientes] = useState<any[]>([]);
   const [sabores, setSabores] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [historicoVendas, setHistoricoVendas] = useState<any[]>([]);
+  const [loadingHistorico, setLoadingHistorico] = useState(false);
 
   // Form state (igual ao de Vendas)
   const [clienteId, setClienteId] = useState("");
@@ -154,7 +156,38 @@ export default function NovoPedido() {
     setItens(updated);
   }
 
+  async function fetchHistorico(cId: string) {
+    if (!cId) {
+      setHistoricoVendas([]);
+      return;
+    }
+    setLoadingHistorico(true);
+    try {
+      const { data, error } = await supabase
+        .from("vendas")
+        .select(`
+          id,
+          created_at,
+          total,
+          venda_itens (
+            quantidade,
+            sabores (nome)
+          )
+        `)
+        .eq("cliente_id", cId)
+        .order("created_at", { ascending: false })
+        .limit(3);
+
+      if (!error) setHistoricoVendas(data || []);
+    } catch (err) {
+      console.error("Erro ao buscar histórico:", err);
+    } finally {
+      setLoadingHistorico(false);
+    }
+  }
+
   async function recalcPrecos(cId: string) {
+    fetchHistorico(cId);
     recalcPrecosTotalComanda(itens, cId);
     if (factoryVendeGeloCubo && cId) {
       try {
@@ -402,6 +435,33 @@ export default function NovoPedido() {
               <SelectContent>{clientes.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
             </Select>
           </div>
+
+          {clienteId && (
+            <div className="bg-blue-50/50 dark:bg-blue-900/10 p-3 rounded-lg border border-blue-100 dark:border-blue-900/30">
+              <h4 className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-2 flex items-center gap-1">
+                <CalendarIcon className="h-3 w-3" /> Últimas 3 Compras
+              </h4>
+              {loadingHistorico ? (
+                <p className="text-[10px] text-muted-foreground animate-pulse">Carregando histórico...</p>
+              ) : historicoVendas.length === 0 ? (
+                <p className="text-[10px] text-muted-foreground italic">Nenhuma compra anterior encontrada.</p>
+              ) : (
+                <div className="space-y-2">
+                  {historicoVendas.map((venda) => (
+                    <div key={venda.id} className="text-[10px] border-b border-blue-100/50 dark:border-blue-900/20 pb-1 last:border-0 last:pb-0">
+                      <div className="flex justify-between font-medium">
+                        <span>{format(new Date(venda.created_at), "dd/MM/yyyy")}</span>
+                        <span>R$ {venda.total?.toFixed(2)}</span>
+                      </div>
+                      <div className="text-muted-foreground truncate">
+                        {venda.venda_itens?.map((it: any) => `${it.quantidade}x ${it.sabores?.nome}`).join(", ")}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Venda por Pacote */}
           {/* Itens */}
