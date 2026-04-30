@@ -60,7 +60,37 @@ export default function Clientes() {
     let q = (supabase as any).from("clientes").select("*").order("nome");
     if (factoryId) q = q.eq("factory_id", factoryId);
     const { data } = await q;
-    setClientes(data || []);
+    const lista = data || [];
+
+    // Carrega vínculos cliente-vendedor + nome do vendedor (profiles)
+    if (lista.length > 0 && factoryId) {
+      const ids = lista.map((c: any) => c.id);
+      const { data: vincs } = await (supabase as any)
+        .from("cliente_vendedor")
+        .select("cliente_id, vendedor_user_id")
+        .in("cliente_id", ids);
+
+      const userIds = Array.from(new Set((vincs || []).map((v: any) => v.vendedor_user_id)));
+      let profMap: Record<string, string> = {};
+      if (userIds.length > 0) {
+        const { data: profs } = await (supabase as any)
+          .from("profiles")
+          .select("id, nome, email")
+          .in("id", userIds);
+        (profs || []).forEach((p: any) => {
+          profMap[p.id] = p.nome || p.email || "Vendedor";
+        });
+      }
+
+      const vendMap: Record<string, string> = {};
+      (vincs || []).forEach((v: any) => {
+        vendMap[v.cliente_id] = profMap[v.vendedor_user_id] || "Vendedor";
+      });
+
+      lista.forEach((c: any) => { c.vendedor_nome = vendMap[c.id] || null; });
+    }
+
+    setClientes(lista);
   }
 
   function openNew() {
@@ -368,6 +398,9 @@ export default function Clientes() {
                       {c.preco_padrao_personalizado && <Badge variant="secondary" className="text-[10px]">R$ {Number(c.preco_padrao_personalizado).toFixed(2)}</Badge>}
                     </div>
                   )}
+                  {c.vendedor_nome && (
+                    <div className="text-[10px] text-muted-foreground">👤 Vendedor: <span className="font-medium text-foreground">{c.vendedor_nome}</span></div>
+                  )}
                   <div className="flex items-center gap-1 pt-1 border-t">
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openClienteOnMap(c.id)}><Map className="h-3.5 w-3.5" /></Button>
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setSituacaoCliente({ id: c.id, nome: c.nome })} title="Situação"><ClipboardCheck className="h-3.5 w-3.5" /></Button>
@@ -390,6 +423,7 @@ export default function Clientes() {
                 <TableHead>Nome</TableHead>
                 <TableHead>Telefone</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Vendedor</TableHead>
                 <TableHead>Freezer</TableHead>
                 <TableHead>Preço Pers.</TableHead>
                 <TableHead>Dias s/ comprar</TableHead>
@@ -409,6 +443,13 @@ export default function Clientes() {
                         className="cursor-pointer"
                         onClick={() => handleToggleStatus(c)}
                       >{c.status}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {c.vendedor_nome ? (
+                        <Badge variant="secondary" className="text-xs">👤 {c.vendedor_nome}</Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
                     </TableCell>
                     <TableCell>{c.possui_freezer ? c.freezer_identificacao || "Sim" : "Não"}</TableCell>
                     <TableCell>{c.preco_padrao_personalizado ? `R$ ${Number(c.preco_padrao_personalizado).toFixed(2)}` : "-"}</TableCell>
@@ -432,7 +473,7 @@ export default function Clientes() {
                 );
               })}
               {clientesFiltrados.length === 0 && (
-                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Nenhum cliente encontrado.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Nenhum cliente encontrado.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
