@@ -43,7 +43,7 @@ export default function Clientes() {
 
   // Gelo cubo config
   const [vendeGeloCubo, setVendeGeloCubo] = useState(false);
-  const [geloCuboPrecos, setGeloCuboPrecos] = useState<Record<string, string>>({ "2kg": "", "4kg": "", "5kg": "" });
+  const [geloCuboPrecos, setGeloCuboPrecos] = useState<Record<string, string>>({ "2kg": "", "3kg": "", "4kg": "", "5kg": "" });
 
   const clientesFiltrados = clientes.filter((c) =>
     c.nome?.toLowerCase().includes(busca.toLowerCase())
@@ -67,7 +67,7 @@ export default function Clientes() {
   function openNew() {
     setEditingId(null);
     setForm({ ...emptyForm });
-    setGeloCuboPrecos({ "2kg": "", "4kg": "", "5kg": "" });
+    setGeloCuboPrecos({ "2kg": "", "3kg": "", "4kg": "", "5kg": "" });
     setOpen(true);
   }
 
@@ -91,13 +91,13 @@ export default function Clientes() {
         .from("cliente_gelo_cubo_preco")
         .select("tamanho, preco")
         .eq("cliente_id", c.id);
-      const map: Record<string, string> = { "2kg": "", "4kg": "", "5kg": "" };
+      const map: Record<string, string> = { "2kg": "", "3kg": "", "4kg": "", "5kg": "" };
       if (cuboPrecos) {
         cuboPrecos.forEach((p: any) => { map[p.tamanho] = String(p.preco).replace(".", ","); });
       }
       setGeloCuboPrecos(map);
     } else {
-      setGeloCuboPrecos({ "2kg": "", "4kg": "", "5kg": "" });
+      setGeloCuboPrecos({ "2kg": "", "3kg": "", "4kg": "", "5kg": "" });
     }
 
     setOpen(true);
@@ -164,7 +164,7 @@ export default function Clientes() {
       setOpen(false);
       setForm({ ...emptyForm });
       setEditingId(null);
-      setGeloCuboPrecos({ "2kg": "", "4kg": "", "5kg": "" });
+      setGeloCuboPrecos({ "2kg": "", "3kg": "", "4kg": "", "5kg": "" });
       loadData();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
