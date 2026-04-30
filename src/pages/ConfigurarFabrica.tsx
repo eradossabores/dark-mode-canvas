@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Settings, Save, Loader2, Package, MapPin, Users, DollarSign, Cog, Building2, Search, FileText, Eye, EyeOff, CheckCircle, XCircle, AlertTriangle, RefreshCw, CheckCircle2, Circle } from "lucide-react";
+import { Settings, Save, Loader2, Package, MapPin, Users, DollarSign, Cog, Building2, Search, FileText, Eye, EyeOff, CheckCircle, XCircle, AlertTriangle, RefreshCw, CheckCircle2, Circle, IceCream2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -443,7 +443,7 @@ export default function ConfigurarFabrica() {
         {/* Grupo: Operacional */}
         <div className="space-y-2">
           <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-1">Operacional</p>
-          <TabsList className="grid w-full grid-cols-3 h-auto gap-1 p-1">
+          <TabsList className="grid w-full grid-cols-4 h-auto gap-1 p-1">
             <TabsTrigger value="vendas" className="gap-1.5 text-xs sm:text-sm py-2.5">
               <DollarSign className="h-4 w-4" />
               <span>Preços</span>
@@ -455,6 +455,10 @@ export default function ConfigurarFabrica() {
             <TabsTrigger value="sacos" className="gap-1.5 text-xs sm:text-sm py-2.5">
               <Package className="h-4 w-4" />
               <span>Sacos</span>
+            </TabsTrigger>
+            <TabsTrigger value="gelocubo" className="gap-1.5 text-xs sm:text-sm py-2.5">
+              <IceCream2 className="h-4 w-4" />
+              <span>Gelo Cubo</span>
             </TabsTrigger>
           </TabsList>
         </div>
@@ -484,6 +488,10 @@ export default function ConfigurarFabrica() {
         <TabsContent value="vendas" className="space-y-6">
           <ConfigVendasSection factoryId={factoryId} />
           <ConfigPrecoSaborSection factoryId={factoryId} />
+        </TabsContent>
+
+        {/* ═══════ GELO EM CUBO ═══════ */}
+        <TabsContent value="gelocubo" className="space-y-6">
           <ConfigGeloCuboSection factoryId={factoryId} />
         </TabsContent>
 
