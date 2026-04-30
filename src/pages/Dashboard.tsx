@@ -620,37 +620,46 @@ export default function Dashboard() {
                 className="saturate-150"
               />
 
-               <div className="relative min-h-[160px] h-full rounded-[inherit] border-2 border-green-200 dark:border-green-700 bg-green-100 dark:bg-green-900/40 p-4">
+               <div className="relative min-h-[160px] h-full rounded-[inherit] border-2 border-green-200 dark:border-green-700 bg-green-100 dark:bg-green-900/40 p-5 flex flex-col">
                 {/* Wave decoration top */}
                 <svg className="absolute top-0 left-0 right-0 w-full" viewBox="0 0 300 20" preserveAspectRatio="none" style={{ height: "14px" }}>
                   <path d="M0,10 Q30,0 60,10 T120,10 T180,10 T240,10 T300,10 L300,0 L0,0 Z" fill="currentColor" className="text-background/30" />
                 </svg>
 
-                <div className="flex items-center justify-between mb-1">
+                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-1.5">
                     <Bell className="h-3.5 w-3.5 text-foreground" />
                     <span className="text-xs font-extrabold uppercase tracking-wide text-foreground">Resumo</span>
                   </div>
-                  {/* Character top-right - only for Era dos Sabores */}
-                  {isIceAgeFactory && (
-                    <img
-                      src={postItCharacters[3 % postItCharacters.length]}
-                      alt=""
-                      aria-hidden
-                      className="w-10 h-10 object-contain opacity-30 pointer-events-none select-none"
-                    />
-                  )}
-                </div>
+                 </div>
 
-                <p className="text-3xl font-black text-foreground">{alertasEstoque.length}</p>
-                <p className="text-xs text-muted-foreground mb-2">alertas ativos</p>
+                 <div className="flex-1">
+                   <div className="flex items-baseline gap-2 mb-1">
+                     <p className="text-3xl font-black text-foreground leading-none">{alertasEstoque.length}</p>
+                     <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground/70">alertas ativos</p>
+                   </div>
 
-                {categories.map((cat) => (
-                  <div key={cat} className="flex items-center justify-between text-sm">
-                    <span className="text-foreground/80">{cat}</span>
-                    <span className="font-bold text-foreground">{grouped[cat].length}</span>
-                  </div>
-                ))}
+                   <div className="space-y-1">
+                     {categories.map((cat) => (
+                       <div key={cat} className="flex items-center justify-between text-[11px] font-medium">
+                         <span className="text-foreground/70">{cat}</span>
+                         <span className="font-bold text-foreground bg-foreground/5 px-1.5 rounded-sm">{grouped[cat].length}</span>
+                       </div>
+                     ))}
+                   </div>
+                 </div>
+
+                 {/* Character - only for Era dos Sabores */}
+                 {isIceAgeFactory && (
+                   <div className="flex justify-end -mb-3 -mr-3">
+                     <img
+                       src={postItCharacters[3 % postItCharacters.length]}
+                       alt=""
+                       aria-hidden
+                       className="w-12 h-12 object-contain opacity-30 pointer-events-none select-none"
+                     />
+                   </div>
+                 )}
               </div>
             </motion.div>
           </div>
