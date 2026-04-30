@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 export default function PaymentBanner() {
   const { role, subscription } = useAuth();
 
-  if (role === "super_admin" || !subscription) return null;
+  if (role === "super_admin" || role === "vendedor" || !subscription) return null;
 
   const { status, daysUntilDue } = subscription;
 
