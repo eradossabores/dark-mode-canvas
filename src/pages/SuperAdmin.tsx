@@ -1048,6 +1048,34 @@ export default function SuperAdmin() {
                       </div>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
+                          <Button size="sm" variant="ghost" className="w-full text-amber-500 hover:text-amber-500 hover:bg-amber-500/10 mt-1">
+                            <RefreshCw className="h-3.5 w-3.5 mr-1" /> Resetar Fábrica
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Resetar "{factory.name}"?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Esta ação irá <strong>apagar permanentemente</strong> todos os dados operacionais desta fábrica:
+                              vendas, produções, movimentações de estoque, abatimentos, pedidos, contas a pagar, prospecções, avarias e auditoria.
+                              <br /><br />
+                              Os estoques (gelos, freezer, matérias-primas, embalagens) serão <strong>zerados</strong>.
+                              <br /><br />
+                              <span className="text-emerald-600">Serão preservados:</span> cadastro da fábrica, usuários, sabores, receitas, clientes, funcionários e configurações.
+                              <br /><br />
+                              <strong className="text-destructive">Esta ação é irreversível.</strong>
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction className="bg-amber-500 text-white hover:bg-amber-600" onClick={() => handleResetFactory(factory.id)}>
+                              Sim, resetar fábrica
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
                           <Button size="sm" variant="ghost" className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 mt-1">
                             <Trash2 className="h-3.5 w-3.5 mr-1" /> Excluir Fábrica
                           </Button>
