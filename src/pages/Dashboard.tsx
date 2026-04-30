@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { Package, ShoppingCart, Factory, Users, AlertTriangle, TrendingUp, DollarSign, Bell, Sparkles } from "lucide-react";
@@ -9,6 +10,7 @@ import { GradientDots } from "@/components/ui/gradient-dots";
 import { useNavigate } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
 import { useAuth } from "@/contexts/AuthContext";
+import { UserPlus, PlusCircle } from "lucide-react";
 import sidImg from "@/assets/sid.png";
 import buckImg from "@/assets/buck.png";
 import scrat3dImg from "@/assets/scrat-3d.png";
@@ -151,7 +153,7 @@ function getDailyMessage(userId: string) {
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { user, factoryId } = useAuth();
+  const { user, factoryId, role } = useAuth();
   const isIceAgeFactory = factoryId === ERA_DOS_SABORES_ID;
   const [userName, setUserName] = useState("");
   const [stats, setStats] = useState({
@@ -453,7 +455,28 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Dashboard</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold">Dashboard</h1>
+        
+        {role === "vendedor" && (
+          <div className="flex items-center gap-2">
+            <Button 
+              onClick={() => navigate("/painel/vendedor/clientes")}
+              className="flex-1 sm:flex-none gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-5 px-6 rounded-xl shadow-lg transition-all hover:scale-105 active:scale-95"
+            >
+              <UserPlus className="h-5 w-5" />
+              + NOVO CLIENTE
+            </Button>
+            <Button 
+              onClick={() => navigate("/painel/vendedor/novo-pedido")}
+              className="flex-1 sm:flex-none gap-2 bg-accent hover:bg-accent/90 text-accent-foreground font-bold py-5 px-6 rounded-xl shadow-lg transition-all hover:scale-105 active:scale-95"
+            >
+              <PlusCircle className="h-5 w-5" />
+              + NOVO PEDIDO
+            </Button>
+          </div>
+        )}
+      </div>
 
       {/* Alertas de Estoque - Post-it Cards com Carrossel */}
       {alertasEstoque.length > 0 && (() => {
