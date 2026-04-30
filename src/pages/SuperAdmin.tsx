@@ -495,6 +495,29 @@ export default function SuperAdmin() {
     }
   }
 
+  async function handleResetFactory(factoryId: string) {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      const fname = factories.find((f) => f.id === factoryId)?.name || factoryId;
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reset-factory`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ factory_id: factoryId }),
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Erro ao resetar");
+      await logAudit("resetar_fabrica", `Fábrica "${fname}" resetada (dados operacionais zerados)`);
+      toast({ title: "Fábrica resetada com sucesso!", description: `Todos os dados operacionais de "${fname}" foram zerados.` });
+      loadFactories();
+    } catch (e: any) {
+      toast({ title: "Erro ao resetar", description: e.message, variant: "destructive" });
+    }
+  }
+
   async function handleAddAdmin() {
     if (!addAdminFactory || !newAdmin.email || !newAdmin.password || !newAdmin.name) {
       toast({ title: "Preencha todos os campos", variant: "destructive" });
@@ -1023,6 +1046,34 @@ export default function SuperAdmin() {
                           </Button>
                         )}
                       </div>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button size="sm" variant="ghost" className="w-full text-amber-500 hover:text-amber-500 hover:bg-amber-500/10 mt-1">
+                            <RefreshCw className="h-3.5 w-3.5 mr-1" /> Resetar Fábrica
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Resetar "{factory.name}"?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Esta ação irá <strong>apagar permanentemente</strong> todos os dados operacionais desta fábrica:
+                              vendas, produções, movimentações de estoque, abatimentos, pedidos, contas a pagar, prospecções, avarias e auditoria.
+                              <br /><br />
+                              Os estoques (gelos, freezer, matérias-primas, embalagens) serão <strong>zerados</strong>.
+                              <br /><br />
+                              <span className="text-emerald-600">Serão preservados:</span> cadastro da fábrica, usuários, sabores, receitas, clientes, funcionários e configurações.
+                              <br /><br />
+                              <strong className="text-destructive">Esta ação é irreversível.</strong>
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction className="bg-amber-500 text-white hover:bg-amber-600" onClick={() => handleResetFactory(factory.id)}>
+                              Sim, resetar fábrica
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button size="sm" variant="ghost" className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 mt-1">
