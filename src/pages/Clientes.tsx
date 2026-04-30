@@ -398,6 +398,9 @@ export default function Clientes() {
                       {c.preco_padrao_personalizado && <Badge variant="secondary" className="text-[10px]">R$ {Number(c.preco_padrao_personalizado).toFixed(2)}</Badge>}
                     </div>
                   )}
+                  {c.vendedor_nome && (
+                    <div className="text-[10px] text-muted-foreground">👤 Vendedor: <span className="font-medium text-foreground">{c.vendedor_nome}</span></div>
+                  )}
                   <div className="flex items-center gap-1 pt-1 border-t">
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openClienteOnMap(c.id)}><Map className="h-3.5 w-3.5" /></Button>
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setSituacaoCliente({ id: c.id, nome: c.nome })} title="Situação"><ClipboardCheck className="h-3.5 w-3.5" /></Button>
