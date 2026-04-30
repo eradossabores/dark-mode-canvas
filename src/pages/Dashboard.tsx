@@ -533,7 +533,7 @@ export default function Dashboard() {
                     className="saturate-150"
                   />
 
-                  <div className={`relative min-h-[140px] rounded-[inherit] border-2 ${postItColors[cat] || "bg-muted border-border"} p-4`}>
+           <div className={`relative min-h-[160px] h-full rounded-[inherit] border-2 ${postItColors[cat] || "bg-muted border-border"} p-4`}>
                     {/* Wave decoration top */}
                     <svg className="absolute top-0 left-0 right-0 w-full" viewBox="0 0 300 20" preserveAspectRatio="none" style={{ height: "14px" }}>
                       <path d="M0,10 Q30,0 60,10 T120,10 T180,10 T240,10 T300,10 L300,0 L0,0 Z" fill="currentColor" className="text-background/30" />
@@ -598,7 +598,7 @@ export default function Dashboard() {
                 className="saturate-150"
               />
 
-              <div className="relative min-h-[140px] rounded-[inherit] border-2 border-green-200 dark:border-green-700 bg-green-100 dark:bg-green-900/40 p-4">
+               <div className="relative min-h-[160px] h-full rounded-[inherit] border-2 border-green-200 dark:border-green-700 bg-green-100 dark:bg-green-900/40 p-4">
                 {/* Wave decoration top */}
                 <svg className="absolute top-0 left-0 right-0 w-full" viewBox="0 0 300 20" preserveAspectRatio="none" style={{ height: "14px" }}>
                   <path d="M0,10 Q30,0 60,10 T120,10 T180,10 T240,10 T300,10 L300,0 L0,0 Z" fill="currentColor" className="text-background/30" />
@@ -635,52 +635,54 @@ export default function Dashboard() {
         );
       })()}
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mb-4 sm:mb-6">
-        {cards.map((c: any, idx: number) => (
-          <div key={c.title} className="relative self-start overflow-hidden rounded-xl border border-transparent p-0.5 opacity-0 animate-fade-in" style={{ animationDelay: `${idx * 80}ms`, animationFillMode: "forwards" }}>
-            <GlowingEffect
-              spread={40}
-              glow={true}
-              disabled={false}
-              proximity={64}
-              inactiveZone={0.01}
-              borderWidth={4}
-            />
-            <Card
-              className="relative cursor-pointer rounded-[calc(var(--radius)-2px)] border-0 bg-[hsl(var(--kpi-surface))] text-[hsl(var(--kpi-surface-foreground))] transition-all hover:scale-[1.03] hover:shadow-md"
-              onClick={() => !c.isFaturamento && navigate(c.href)}
-            >
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-medium text-[hsl(var(--kpi-surface-muted-foreground))]">{c.title}</CardTitle>
-                <c.icon className={`h-4 w-4 ${c.color}`} />
-              </CardHeader>
-              <CardContent className={c.periodo ? "flex min-h-[92px] flex-col justify-between gap-3" : undefined}>
-                <p className="text-lg font-bold">{c.value}</p>
-                {c.periodo && c.onPeriodoChange && (
-                  <div className="space-y-1.5">
-                    <div className="flex flex-wrap gap-1">
-                      {RESUMO_PERIODOS.map(({ value, label }) => (
-                        <button
-                          key={value}
-                          onClick={(e) => { e.stopPropagation(); c.onPeriodoChange(value); }}
-                          className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
-                            c.periodo === value
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-[hsl(var(--kpi-surface-muted))] text-[hsl(var(--kpi-surface-muted-foreground))] hover:brightness-110"
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        ))}
-      </div>
+       {/* KPI Cards */}
+       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mb-4 sm:mb-6">
+         {cards.map((c: any, idx: number) => (
+           <div key={c.title} className="relative overflow-hidden rounded-xl border border-transparent p-0.5 opacity-0 animate-fade-in flex" style={{ animationDelay: `${idx * 80}ms`, animationFillMode: "forwards" }}>
+             <GlowingEffect
+               spread={40}
+               glow={true}
+               disabled={false}
+               proximity={64}
+               inactiveZone={0.01}
+               borderWidth={4}
+             />
+             <Card
+               className="relative cursor-pointer rounded-[calc(var(--radius)-2px)] border-0 bg-[hsl(var(--kpi-surface))] text-[hsl(var(--kpi-surface-foreground))] transition-all hover:scale-[1.03] hover:shadow-md flex flex-col w-full min-h-[160px]"
+               onClick={() => !c.isFaturamento && navigate(c.href)}
+             >
+               <CardHeader className="flex flex-row items-center justify-between pb-2 shrink-0">
+                 <CardTitle className="text-xs font-medium text-[hsl(var(--kpi-surface-muted-foreground))] line-clamp-1">{c.title}</CardTitle>
+                 <c.icon className={`h-4 w-4 shrink-0 ${c.color}`} />
+               </CardHeader>
+               <CardContent className="flex flex-col flex-1 justify-between gap-3 pt-0">
+                 <p className="text-lg font-bold">{c.value}</p>
+                 {c.periodo && c.onPeriodoChange ? (
+                   <div className="space-y-1.5 mt-auto">
+                     <div className="flex flex-wrap gap-1">
+                       {RESUMO_PERIODOS.map(({ value, label }) => (
+                         <button
+                           key={value}
+                           onClick={(e) => { e.stopPropagation(); c.onPeriodoChange(value); }}
+                           className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
+                             c.periodo === value
+                               ? "bg-primary text-primary-foreground"
+                               : "bg-[hsl(var(--kpi-surface-muted))] text-[hsl(var(--kpi-surface-muted-foreground))] hover:brightness-110"
+                           }`}
+                         >
+                           {label}
+                         </button>
+                       ))}
+                     </div>
+                   </div>
+                 ) : (
+                   <div className="h-[22px]" aria-hidden="true" /> // Espaçador para manter altura se não houver filtro
+                 )}
+               </CardContent>
+             </Card>
+           </div>
+         ))}
+       </div>
 
       {/* Gráficos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6 opacity-0 animate-fade-in" style={{ animationDelay: "500ms", animationFillMode: "forwards" }}>
