@@ -11,7 +11,29 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { geocodeClienteAddress, hasAddressForGeocoding } from "@/lib/geocoding";
-import { Plus, Users, Pencil } from "lucide-react";
+ import { Plus, Users, Pencil, Trash2 } from "lucide-react";
+ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+   async function handleDelete(id: string) {
+     try {
+       const { error } = await (supabase as any)
+         .from("clientes")
+         .delete()
+         .eq("id", id);
+       
+       if (error) {
+         if (error.code === "23503") {
+           throw new Error("Não é possível excluir este cliente pois existem vendas ou pedidos vinculados a ele.");
+         }
+         throw error;
+       }
+       
+       toast({ title: "Cliente excluído com sucesso" });
+       load();
+     } catch (e: any) {
+       toast({ title: "Erro ao excluir", description: e.message, variant: "destructive" });
+     }
+   }
+ 
 
 interface Cliente {
   id: string;
@@ -282,9 +304,34 @@ export default function MeusClientes() {
                     <TableCell>{c.telefone || "—"}</TableCell>
                     <TableCell>{c.bairro || "—"}</TableCell>
                     <TableCell><Badge variant={c.status === "ativo" ? "default" : "secondary"}>{c.status}</Badge></TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
-                    </TableCell>
+                     <TableCell className="text-right">
+                       <div className="flex justify-end gap-2">
+                         <Button variant="ghost" size="sm" onClick={() => openEdit(c)}>
+                           <Pencil className="h-4 w-4" />
+                         </Button>
+                         <AlertDialog>
+                           <AlertDialogTrigger asChild>
+                             <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                               <Trash2 className="h-4 w-4" />
+                             </Button>
+                           </AlertDialogTrigger>
+                           <AlertDialogContent>
+                             <AlertDialogHeader>
+                               <AlertDialogTitle>Excluir cliente?</AlertDialogTitle>
+                               <AlertDialogDescription>
+                                 Esta ação não pode ser desfeita. O cliente e todos os seus dados de contato serão removidos permanentemente.
+                               </AlertDialogDescription>
+                             </AlertDialogHeader>
+                             <AlertDialogFooter>
+                               <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                               <AlertDialogAction onClick={() => handleDelete(c.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                 Excluir
+                               </AlertDialogAction>
+                             </AlertDialogFooter>
+                           </AlertDialogContent>
+                         </AlertDialog>
+                       </div>
+                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
