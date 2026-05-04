@@ -43,6 +43,7 @@ export default function HistoricoVendas() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [comissoesMap, setComissoesMap] = useState<Record<string, number>>({});
   const [totalComissao, setTotalComissao] = useState(0);
+  const [periodoComissao, setPeriodoComissao] = useState<string>("mes");
 
   async function load() {
     if (!user || !factoryId) return;
@@ -105,10 +106,16 @@ export default function HistoricoVendas() {
   }, [vendas, search, statusFilter]);
 
   const totals = useMemo(() => {
-    const comissao = filtered.reduce((s, v) => s + (comissoesMap[v.id] || 0), 0);
+    const now = new Date();
+    const dias = periodoComissao === "semana" ? 7 : periodoComissao === "quinzena" ? 15 : periodoComissao === "mes" ? 30 : null;
+    const limite = dias ? new Date(now.getTime() - dias * 86400000) : null;
+    const comissao = filtered.reduce((s, v) => {
+      if (limite && new Date(v.created_at) < limite) return s;
+      return s + (comissoesMap[v.id] || 0);
+    }, 0);
     const unidades = filtered.reduce((s, v) => s + (v.venda_itens || []).reduce((x: number, i: any) => x + Number(i.quantidade || 0), 0), 0);
     return { comissao, unidades, count: filtered.length };
-  }, [filtered, comissoesMap]);
+  }, [filtered, comissoesMap, periodoComissao]);
 
   function getStatusBadge(status: string) {
     const colors: Record<string, string> = {
@@ -200,7 +207,20 @@ export default function HistoricoVendas() {
           <CardContent><p className="text-3xl font-bold">{totals.unidades}</p></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><DollarSign className="h-4 w-4" /> Comissão</CardTitle></CardHeader>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="text-sm flex items-center gap-2"><DollarSign className="h-4 w-4" /> Comissão</CardTitle>
+              <Select value={periodoComissao} onValueChange={setPeriodoComissao}>
+                <SelectTrigger className="h-7 w-[110px] text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="semana">7 dias</SelectItem>
+                  <SelectItem value="quinzena">15 dias</SelectItem>
+                  <SelectItem value="mes">30 dias</SelectItem>
+                  <SelectItem value="todos">Tudo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold text-primary">R$ {totals.comissao.toFixed(2)}</p>
             <p className="text-xs text-muted-foreground mt-1">Apenas vendas pagas geram comissão</p>
