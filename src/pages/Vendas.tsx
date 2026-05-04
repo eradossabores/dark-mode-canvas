@@ -1796,6 +1796,15 @@ export default function Vendas() {
                 {FORMAS_PAGAMENTO.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
               </SelectContent>
             </Select>
+            {role !== "vendedor" && vendedores.length > 0 && (
+              <Select value={filtroVendedor} onValueChange={(v) => { setFiltroVendedor(v); setPage(0); }}>
+                <SelectTrigger className="col-span-2 sm:col-span-1 h-9 text-xs sm:text-sm sm:w-[160px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos vendedores</SelectItem>
+                  {vendedores.map(v => <SelectItem key={v.id} value={v.id}>{v.nome}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            )}
           </div>
         </CardHeader>
         <CardContent className="px-3 sm:px-6">
