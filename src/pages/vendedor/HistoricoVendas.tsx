@@ -43,6 +43,7 @@ export default function HistoricoVendas() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [comissoesMap, setComissoesMap] = useState<Record<string, number>>({});
   const [totalComissao, setTotalComissao] = useState(0);
+  const [periodoComissao, setPeriodoComissao] = useState<string>("mes");
 
   async function load() {
     if (!user || !factoryId) return;
@@ -105,10 +106,16 @@ export default function HistoricoVendas() {
   }, [vendas, search, statusFilter]);
 
   const totals = useMemo(() => {
-    const comissao = filtered.reduce((s, v) => s + (comissoesMap[v.id] || 0), 0);
+    const now = new Date();
+    const dias = periodoComissao === "semana" ? 7 : periodoComissao === "quinzena" ? 15 : periodoComissao === "mes" ? 30 : null;
+    const limite = dias ? new Date(now.getTime() - dias * 86400000) : null;
+    const comissao = filtered.reduce((s, v) => {
+      if (limite && new Date(v.created_at) < limite) return s;
+      return s + (comissoesMap[v.id] || 0);
+    }, 0);
     const unidades = filtered.reduce((s, v) => s + (v.venda_itens || []).reduce((x: number, i: any) => x + Number(i.quantidade || 0), 0), 0);
     return { comissao, unidades, count: filtered.length };
-  }, [filtered, comissoesMap]);
+  }, [filtered, comissoesMap, periodoComissao]);
 
   function getStatusBadge(status: string) {
     const colors: Record<string, string> = {
