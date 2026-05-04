@@ -41,6 +41,8 @@ export default function HistoricoVendas() {
   const [editForma, setEditForma] = useState("dinheiro");
   const [editObs, setEditObs] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [comissoesMap, setComissoesMap] = useState<Record<string, number>>({});
+  const [totalComissao, setTotalComissao] = useState(0);
 
   async function load() {
     if (!user || !factoryId) return;
@@ -73,6 +75,21 @@ export default function HistoricoVendas() {
 
     setVendas(data || []);
     setLoading(false);
+
+    // Carregar comissões do vendedor
+    const { data: coms } = await (supabase as any)
+      .from("comissoes_vendas")
+      .select("venda_id, valor_comissao")
+      .eq("vendedor_user_id", user.id)
+      .eq("factory_id", factoryId);
+    const map: Record<string, number> = {};
+    let total = 0;
+    (coms || []).forEach((c: any) => {
+      map[c.venda_id] = Number(c.valor_comissao || 0);
+      total += Number(c.valor_comissao || 0);
+    });
+    setComissoesMap(map);
+    setTotalComissao(total);
   }
 
   useEffect(() => {
@@ -88,10 +105,10 @@ export default function HistoricoVendas() {
   }, [vendas, search, statusFilter]);
 
   const totals = useMemo(() => {
-    const total = filtered.reduce((s, v) => s + Number(v.total || 0), 0);
+    const comissao = filtered.reduce((s, v) => s + (comissoesMap[v.id] || 0), 0);
     const unidades = filtered.reduce((s, v) => s + (v.venda_itens || []).reduce((x: number, i: any) => x + Number(i.quantidade || 0), 0), 0);
-    return { total, unidades, count: filtered.length };
-  }, [filtered]);
+    return { comissao, unidades, count: filtered.length };
+  }, [filtered, comissoesMap]);
 
   function getStatusBadge(status: string) {
     const colors: Record<string, string> = {
@@ -183,8 +200,11 @@ export default function HistoricoVendas() {
           <CardContent><p className="text-3xl font-bold">{totals.unidades}</p></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><DollarSign className="h-4 w-4" /> Faturamento</CardTitle></CardHeader>
-          <CardContent><p className="text-3xl font-bold text-primary">R$ {totals.total.toFixed(2)}</p></CardContent>
+          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><DollarSign className="h-4 w-4" /> Comissão</CardTitle></CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-primary">R$ {totals.comissao.toFixed(2)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Apenas vendas pagas geram comissão</p>
+          </CardContent>
         </Card>
       </div>
 
