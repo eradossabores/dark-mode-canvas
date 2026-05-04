@@ -6,9 +6,27 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { History, DollarSign, Package, Search } from "lucide-react";
+import { History, DollarSign, Package, Search, Eye, MessageCircle, Pencil, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { toast } from "@/hooks/use-toast";
+import ReciboVenda from "@/components/vendas/ReciboVenda";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+
+const FORMAS_PAGAMENTO = [
+  { value: "amostra", label: "Amostra (Grátis)" },
+  { value: "dinheiro", label: "Dinheiro" },
+  { value: "pix", label: "PIX" },
+  { value: "cartao_credito", label: "Cartão de Crédito" },
+  { value: "cartao_debito", label: "Cartão de Débito" },
+  { value: "boleto", label: "Boleto" },
+  { value: "parcelado", label: "Parcelado" },
+  { value: "fiado", label: "A Prazo" },
+];
 
 export default function HistoricoVendas() {
   const { user, factoryId } = useAuth();
@@ -16,6 +34,13 @@ export default function HistoricoVendas() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
+  const [reciboOpen, setReciboOpen] = useState(false);
+  const [reciboData, setReciboData] = useState<any>(null);
+  const [editVenda, setEditVenda] = useState<any>(null);
+  const [editStatus, setEditStatus] = useState("pendente");
+  const [editForma, setEditForma] = useState("dinheiro");
+  const [editObs, setEditObs] = useState("");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   async function load() {
     if (!user || !factoryId) return;
@@ -40,7 +65,7 @@ export default function HistoricoVendas() {
 
     const { data } = await (supabase as any)
       .from("vendas")
-      .select("id, numero_pedido, created_at, total, status, forma_pagamento, observacoes, clientes(nome), venda_itens(quantidade, subtotal, sabores(nome)), abatimentos_historico(valor)")
+      .select("id, numero_pedido, created_at, total, status, forma_pagamento, observacoes, valor_frete, frete_pago_por, valor_pago, clientes(nome, telefone), venda_itens(quantidade, preco_unitario, subtotal, sabores(nome)), abatimentos_historico(valor)")
       .in("cliente_id", clienteIds)
       .eq("factory_id", factoryId)
       .order("created_at", { ascending: false })
@@ -71,11 +96,71 @@ export default function HistoricoVendas() {
   function getStatusBadge(status: string) {
     const colors: Record<string, string> = {
       pago: "bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/30",
+      paga: "bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/30",
       pendente: "bg-yellow-500/20 text-yellow-700 dark:text-yellow-300 border-yellow-500/30",
       parcial: "bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30",
       cancelada: "bg-red-500/20 text-red-700 dark:text-red-300 border-red-500/30",
     };
     return colors[status] || "bg-muted text-muted-foreground";
+  }
+
+  function handleView(v: any) {
+    setReciboData({
+      cliente_nome: v.clientes?.nome || "?",
+      data: format(new Date(v.created_at), "dd/MM/yyyy", { locale: ptBR }),
+      forma_pagamento: FORMAS_PAGAMENTO.find(f => f.value === v.forma_pagamento)?.label || v.forma_pagamento || "-",
+      numero_pedido: v.numero_pedido,
+      total: Number(v.total || 0),
+      observacoes: v.observacoes || undefined,
+      telefone: v.clientes?.telefone,
+      status: v.status,
+      valor_pago: Number(v.valor_pago || 0),
+      valor_frete: Number(v.valor_frete || 0),
+      frete_pago_por: v.frete_pago_por,
+      itens: (v.venda_itens || []).map((it: any) => ({
+        sabor_nome: it.sabores?.nome || "?",
+        quantidade: it.quantidade,
+        preco_unitario: Number(it.preco_unitario || 0),
+        subtotal: Number(it.subtotal || 0),
+      })),
+    });
+    setReciboOpen(true);
+  }
+
+  function handleWhatsApp(v: any) {
+    const tel = (v.clientes?.telefone || "").replace(/\D/g, "");
+    const itens = (v.venda_itens || []).map((i: any) => `• ${i.quantidade}x ${i.sabores?.nome || ""}`).join("\n");
+    const msg = `*Pedido #${v.numero_pedido || "-"}*\nCliente: ${v.clientes?.nome || "-"}\nData: ${format(new Date(v.created_at), "dd/MM/yyyy", { locale: ptBR })}\n\n${itens}\n\n*Total: R$ ${Number(v.total || 0).toFixed(2)}*\nStatus: ${v.status || "-"}`;
+    const full = tel.startsWith("55") ? tel : `55${tel}`;
+    const url = tel ? `https://wa.me/${full}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    window.open(url, "_blank");
+  }
+
+  function openEdit(v: any) {
+    setEditVenda(v);
+    setEditStatus(v.status || "pendente");
+    setEditForma(v.forma_pagamento || "dinheiro");
+    setEditObs(v.observacoes || "");
+  }
+
+  async function saveEdit() {
+    if (!editVenda) return;
+    const { error } = await (supabase as any).from("vendas")
+      .update({ status: editStatus, forma_pagamento: editForma, observacoes: editObs })
+      .eq("id", editVenda.id);
+    if (error) { toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Venda atualizada" });
+    setEditVenda(null);
+    load();
+  }
+
+  async function confirmDelete() {
+    if (!deleteId) return;
+    const { error } = await (supabase as any).from("vendas").delete().eq("id", deleteId);
+    if (error) { toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Venda excluída" });
+    setDeleteId(null);
+    load();
   }
 
   return (
@@ -143,6 +228,7 @@ export default function HistoricoVendas() {
                     <TableHead className="text-right">Total</TableHead>
                     <TableHead>Pagto</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -159,6 +245,22 @@ export default function HistoricoVendas() {
                         <TableCell className="text-right font-semibold">R$ {Number(v.total || 0).toFixed(2)}</TableCell>
                         <TableCell className="text-xs capitalize">{v.forma_pagamento || "-"}</TableCell>
                         <TableCell><Badge variant="outline" className={getStatusBadge(v.status)}>{v.status || "-"}</Badge></TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button size="icon" variant="ghost" className="h-8 w-8" title="Visualizar comanda" onClick={() => handleView(v)}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-green-600 hover:text-green-700" title="Enviar pelo WhatsApp" onClick={() => handleWhatsApp(v)}>
+                              <MessageCircle className="h-4 w-4" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8" title="Editar" onClick={() => openEdit(v)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" title="Excluir" onClick={() => setDeleteId(v.id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
                       </TableRow>
                     );
                   })}
@@ -168,6 +270,61 @@ export default function HistoricoVendas() {
           )}
         </CardContent>
       </Card>
+
+      <ReciboVenda open={reciboOpen} onOpenChange={setReciboOpen} data={reciboData} />
+
+      <Dialog open={!!editVenda} onOpenChange={(o) => !o && setEditVenda(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Venda #{editVenda?.numero_pedido || "-"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Status</Label>
+              <Select value={editStatus} onValueChange={setEditStatus}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pendente">Pendente</SelectItem>
+                  <SelectItem value="paga">Paga</SelectItem>
+                  <SelectItem value="cancelada">Cancelada</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Forma de pagamento</Label>
+              <Select value={editForma} onValueChange={setEditForma}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {FORMAS_PAGAMENTO.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Observações</Label>
+              <Textarea value={editObs} onChange={(e) => setEditObs(e.target.value)} rows={3} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditVenda(null)}>Cancelar</Button>
+            <Button onClick={saveEdit}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir venda?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação é permanente e o estoque será revertido automaticamente. Deseja continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
