@@ -98,6 +98,9 @@ export default function Vendas() {
   const [filtroData, setFiltroData] = useState("ultimo_mes");
   const [filtroStatus, setFiltroStatus] = useState("todos");
   const [filtroPagamento, setFiltroPagamento] = useState("todos");
+  const [filtroVendedor, setFiltroVendedor] = useState("todos");
+  const [vendedores, setVendedores] = useState<{ id: string; nome: string }[]>([]);
+  const [clienteVendedorMap, setClienteVendedorMap] = useState<Record<string, string[]>>({});
   const PAGE_SIZE = 20;
 
   // Edit state
@@ -138,6 +141,12 @@ export default function Vendas() {
     if (filtroPagamento !== "todos") {
       filtered = filtered.filter(v => v.forma_pagamento === filtroPagamento);
     }
+    if (filtroVendedor !== "todos") {
+      filtered = filtered.filter(v => {
+        const vendedoresDoCliente = clienteVendedorMap[v.cliente_id] || [];
+        return vendedoresDoCliente.includes(filtroVendedor);
+      });
+    }
     if (filtroData !== "todos") {
       const now = new Date();
       let start: Date;
@@ -160,7 +169,7 @@ export default function Vendas() {
       });
     }
     return filtered;
-  }, [vendas, clienteFilter, searchCliente, filtroStatus, filtroPagamento, filtroData]);
+  }, [vendas, clienteFilter, searchCliente, filtroStatus, filtroPagamento, filtroData, filtroVendedor, clienteVendedorMap]);
 
   useEffect(() => {
     if (role !== "super_admin" && !factoryId) {
@@ -249,6 +258,29 @@ export default function Vendas() {
     const [c, s, v, vi, pp] = await Promise.all([cQ, sQ, vQ, viQ, ppQ]);
     setClientes(c.data || []);
     setSabores(s.data || []);
+
+    // Load vendedores (user_roles + profiles) and cliente_vendedor mapping
+    if (factoryId) {
+      const [{ data: roles }, { data: vinc }] = await Promise.all([
+        (supabase as any).from("user_roles").select("user_id").eq("role", "vendedor").eq("factory_id", factoryId),
+        (supabase as any).from("cliente_vendedor").select("cliente_id, vendedor_user_id").eq("factory_id", factoryId),
+      ]);
+      const vendedorIds = (roles || []).map((r: any) => r.user_id);
+      if (vendedorIds.length > 0) {
+        const { data: profs } = await (supabase as any)
+          .from("profiles").select("id, nome, email").in("id", vendedorIds);
+        setVendedores((profs || []).map((p: any) => ({ id: p.id, nome: p.nome || p.email || "Vendedor" })));
+      } else {
+        setVendedores([]);
+      }
+      const map: Record<string, string[]> = {};
+      (vinc || []).forEach((vc: any) => {
+        if (!map[vc.cliente_id]) map[vc.cliente_id] = [];
+        map[vc.cliente_id].push(vc.vendedor_user_id);
+      });
+      setClienteVendedorMap(map);
+    }
+
     // Build units map per venda
     const unitsMap: Record<string, number> = {};
     (vi.data || []).forEach((it: any) => {
@@ -1764,6 +1796,15 @@ export default function Vendas() {
                 {FORMAS_PAGAMENTO.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
               </SelectContent>
             </Select>
+            {role !== "vendedor" && vendedores.length > 0 && (
+              <Select value={filtroVendedor} onValueChange={(v) => { setFiltroVendedor(v); setPage(0); }}>
+                <SelectTrigger className="col-span-2 sm:col-span-1 h-9 text-xs sm:text-sm sm:w-[160px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos vendedores</SelectItem>
+                  {vendedores.map(v => <SelectItem key={v.id} value={v.id}>{v.nome}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            )}
           </div>
         </CardHeader>
         <CardContent className="px-3 sm:px-6">
