@@ -207,7 +207,20 @@ export default function HistoricoVendas() {
           <CardContent><p className="text-3xl font-bold">{totals.unidades}</p></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><DollarSign className="h-4 w-4" /> Comissão</CardTitle></CardHeader>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="text-sm flex items-center gap-2"><DollarSign className="h-4 w-4" /> Comissão</CardTitle>
+              <Select value={periodoComissao} onValueChange={setPeriodoComissao}>
+                <SelectTrigger className="h-7 w-[110px] text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="semana">7 dias</SelectItem>
+                  <SelectItem value="quinzena">15 dias</SelectItem>
+                  <SelectItem value="mes">30 dias</SelectItem>
+                  <SelectItem value="todos">Tudo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold text-primary">R$ {totals.comissao.toFixed(2)}</p>
             <p className="text-xs text-muted-foreground mt-1">Apenas vendas pagas geram comissão</p>
