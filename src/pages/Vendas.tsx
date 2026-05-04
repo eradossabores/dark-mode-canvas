@@ -258,6 +258,29 @@ export default function Vendas() {
     const [c, s, v, vi, pp] = await Promise.all([cQ, sQ, vQ, viQ, ppQ]);
     setClientes(c.data || []);
     setSabores(s.data || []);
+
+    // Load vendedores (user_roles + profiles) and cliente_vendedor mapping
+    if (factoryId) {
+      const [{ data: roles }, { data: vinc }] = await Promise.all([
+        (supabase as any).from("user_roles").select("user_id").eq("role", "vendedor").eq("factory_id", factoryId),
+        (supabase as any).from("cliente_vendedor").select("cliente_id, vendedor_user_id").eq("factory_id", factoryId),
+      ]);
+      const vendedorIds = (roles || []).map((r: any) => r.user_id);
+      if (vendedorIds.length > 0) {
+        const { data: profs } = await (supabase as any)
+          .from("profiles").select("id, nome, email").in("id", vendedorIds);
+        setVendedores((profs || []).map((p: any) => ({ id: p.id, nome: p.nome || p.email || "Vendedor" })));
+      } else {
+        setVendedores([]);
+      }
+      const map: Record<string, string[]> = {};
+      (vinc || []).forEach((vc: any) => {
+        if (!map[vc.cliente_id]) map[vc.cliente_id] = [];
+        map[vc.cliente_id].push(vc.vendedor_user_id);
+      });
+      setClienteVendedorMap(map);
+    }
+
     // Build units map per venda
     const unitsMap: Record<string, number> = {};
     (vi.data || []).forEach((it: any) => {
