@@ -263,7 +263,7 @@ export default function Vendas() {
     if (factoryId) {
       const [{ data: roles }, { data: vinc }] = await Promise.all([
         (supabase as any).from("user_roles").select("user_id").eq("role", "vendedor").eq("factory_id", factoryId),
-        (supabase as any).from("cliente_vendedor").select("cliente_id, vendedor_user_id").eq("factory_id", factoryId),
+        (supabase as any).from("cliente_vendedor").select("cliente_id, vendedor_user_id, factory_id").or(`factory_id.eq.${factoryId},factory_id.is.null`),
       ]);
       const vendedorIds = (roles || []).map((r: any) => r.user_id);
       if (vendedorIds.length > 0) {
