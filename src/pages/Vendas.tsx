@@ -98,6 +98,9 @@ export default function Vendas() {
   const [filtroData, setFiltroData] = useState("ultimo_mes");
   const [filtroStatus, setFiltroStatus] = useState("todos");
   const [filtroPagamento, setFiltroPagamento] = useState("todos");
+  const [filtroVendedor, setFiltroVendedor] = useState("todos");
+  const [vendedores, setVendedores] = useState<{ id: string; nome: string }[]>([]);
+  const [clienteVendedorMap, setClienteVendedorMap] = useState<Record<string, string[]>>({});
   const PAGE_SIZE = 20;
 
   // Edit state
@@ -138,6 +141,12 @@ export default function Vendas() {
     if (filtroPagamento !== "todos") {
       filtered = filtered.filter(v => v.forma_pagamento === filtroPagamento);
     }
+    if (filtroVendedor !== "todos") {
+      filtered = filtered.filter(v => {
+        const vendedoresDoCliente = clienteVendedorMap[v.cliente_id] || [];
+        return vendedoresDoCliente.includes(filtroVendedor);
+      });
+    }
     if (filtroData !== "todos") {
       const now = new Date();
       let start: Date;
@@ -160,7 +169,7 @@ export default function Vendas() {
       });
     }
     return filtered;
-  }, [vendas, clienteFilter, searchCliente, filtroStatus, filtroPagamento, filtroData]);
+  }, [vendas, clienteFilter, searchCliente, filtroStatus, filtroPagamento, filtroData, filtroVendedor, clienteVendedorMap]);
 
   useEffect(() => {
     if (role !== "super_admin" && !factoryId) {
