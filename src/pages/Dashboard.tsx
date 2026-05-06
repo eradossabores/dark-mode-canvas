@@ -987,7 +987,7 @@ export default function Dashboard() {
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
                               <span className={`text-sm font-bold ${isVencida ? "text-destructive" : ""}`}>
-                                R$ {Number(v.total).toFixed(2)}
+                                R$ {(Number(v.total) - Number(v.valor_pago || 0)).toFixed(2)}
                               </span>
                               {isVencida && <Badge variant="destructive" className="text-[9px] px-1.5">Vencida</Badge>}
                             </div>
