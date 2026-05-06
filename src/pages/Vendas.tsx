@@ -195,9 +195,11 @@ export default function Vendas() {
     const { data: itensData } = await (supabase as any)
       .from("venda_itens").select("*, sabores(nome)").eq("venda_id", v.id);
     const { data: clienteData } = await (supabase as any)
-      .from("clientes").select("telefone").eq("id", v.cliente_id).single();
+      .from("clientes").select("telefone, endereco, bairro, cidade").eq("id", v.cliente_id).single();
+    const enderecoCompleto = [clienteData?.endereco, clienteData?.bairro, clienteData?.cidade].filter(Boolean).join(", ") || undefined;
     setReciboData({
       cliente_nome: v.clientes?.nome || "?",
+      endereco: enderecoCompleto,
       data: new Date(v.created_at).toLocaleDateString("pt-BR"),
       forma_pagamento: getFormaPagamentoLabel(v),
       numero_nf: v.numero_nf || undefined,
@@ -558,12 +560,14 @@ export default function Vendas() {
       const vendaId = latestVenda?.[0]?.id;
       if (vendaId) {
         const { data: clienteFull } = await (supabase as any)
-          .from("clientes").select("telefone").eq("id", clienteId).single();
+          .from("clientes").select("telefone, endereco, bairro, cidade").eq("id", clienteId).single();
         if (clienteFull?.telefone) {
           const { data: itensData } = await (supabase as any)
             .from("venda_itens").select("*, sabores(nome)").eq("venda_id", vendaId);
+          const enderecoCompleto = [clienteFull?.endereco, clienteFull?.bairro, clienteFull?.cidade].filter(Boolean).join(", ") || undefined;
           setReciboData({
             cliente_nome: clienteObj?.nome || "?",
+            endereco: enderecoCompleto,
             data: dataVenda.toLocaleDateString("pt-BR"),
             forma_pagamento: FORMAS_PAGAMENTO.find(f => f.value === formaPagamento)?.label || formaPagamento,
             numero_nf: numeroNf.trim() || undefined,
