@@ -16,6 +16,7 @@ interface ReciboItem {
 
 interface ReciboData {
   cliente_nome: string;
+  endereco?: string;
   data: string;
   forma_pagamento: string;
   numero_nf?: string;
@@ -130,6 +131,16 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     };
 
     infoLabel("Cliente:", data.cliente_nome, y); y += 3.5;
+    if (data.endereco) {
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(100, 100, 100);
+      doc.text("Endereco:", 6, y);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(30, 30, 30);
+      const enderecoLines = doc.splitTextToSize(data.endereco, w - 34);
+      doc.text(enderecoLines, 28, y);
+      y += 3.5 * enderecoLines.length;
+    }
     if (data.numero_pedido) { infoLabel("Pedido:", `#${data.numero_pedido}`, y); y += 3.5; }
     infoLabel("Data:", data.data, y); y += 3.5;
     infoLabel("Pgto:", data.forma_pagamento, y); y += 3.5;
@@ -362,6 +373,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
 
           <div className="space-y-1">
             <p><strong>Cliente:</strong> {data.cliente_nome}</p>
+            {data.endereco && <p><strong>Endereço:</strong> {data.endereco}</p>}
             {data.numero_pedido && <p><strong>Pedido:</strong> #{data.numero_pedido}</p>}
             <p><strong>Data:</strong> {data.data}</p>
             <p><strong>Pagamento:</strong> {data.forma_pagamento}</p>
