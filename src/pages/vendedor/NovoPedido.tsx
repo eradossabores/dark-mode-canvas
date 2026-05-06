@@ -365,14 +365,16 @@ export default function NovoPedido() {
       const clienteObj = clientes.find((c) => c.id === clienteId);
       if (vendaId) {
         const { data: clienteFull } = await (supabase as any)
-          .from("clientes").select("telefone").eq("id", clienteId).single();
+          .from("clientes").select("telefone, endereco, bairro, cidade").eq("id", clienteId).single();
         const { data: itensData } = await (supabase as any)
           .from("venda_itens").select("*, sabores(nome)").eq("venda_id", vendaId);
         const brindeSaborIdsAudit = brindes.filter((b) => Number(b.quantidade) > 0 && b.sabor_id).map((b) => b.sabor_id);
         const totalVenda = itensValidos.filter((i) => !brindeSaborIdsAudit.includes(i.sabor_id))
           .reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0);
+        const enderecoCompleto = [clienteFull?.endereco, clienteFull?.bairro, clienteFull?.cidade].filter(Boolean).join(", ") || undefined;
         setReciboData({
           cliente_nome: clienteObj?.nome || "?",
+          endereco: enderecoCompleto,
           data: dataVenda.toLocaleDateString("pt-BR"),
           forma_pagamento: FORMAS_PAGAMENTO.find((f) => f.value === formaPagamento)?.label || formaPagamento,
           numero_nf: numeroNf.trim() || undefined,
