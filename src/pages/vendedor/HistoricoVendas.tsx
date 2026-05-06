@@ -68,7 +68,7 @@ export default function HistoricoVendas() {
 
     const { data } = await (supabase as any)
       .from("vendas")
-      .select("id, numero_pedido, created_at, total, status, forma_pagamento, observacoes, valor_frete, frete_pago_por, valor_pago, clientes(nome, telefone), venda_itens(quantidade, preco_unitario, subtotal, sabores(nome)), abatimentos_historico(valor)")
+      .select("id, numero_pedido, created_at, total, status, forma_pagamento, observacoes, valor_frete, frete_pago_por, valor_pago, clientes(nome, telefone, endereco, bairro, cidade), venda_itens(quantidade, preco_unitario, subtotal, sabores(nome)), abatimentos_historico(valor)")
       .in("cliente_id", clienteIds)
       .eq("factory_id", factoryId)
       .order("created_at", { ascending: false })
@@ -129,8 +129,10 @@ export default function HistoricoVendas() {
   }
 
   function handleView(v: any) {
+    const enderecoCompleto = [v.clientes?.endereco, v.clientes?.bairro, v.clientes?.cidade].filter(Boolean).join(", ") || undefined;
     setReciboData({
       cliente_nome: v.clientes?.nome || "?",
+      endereco: enderecoCompleto,
       data: format(new Date(v.created_at), "dd/MM/yyyy", { locale: ptBR }),
       forma_pagamento: FORMAS_PAGAMENTO.find(f => f.value === v.forma_pagamento)?.label || v.forma_pagamento || "-",
       numero_pedido: v.numero_pedido,

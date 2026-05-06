@@ -311,7 +311,7 @@ export default function Dashboard() {
       const pendentes = (vendas.data || []).filter((v: any) => v.status === "pendente");
       const hoje = new Date().toISOString().split("T")[0];
       setContasReceber({
-        total: pendentes.reduce((s: number, v: any) => s + Number(v.total), 0),
+        total: pendentes.reduce((s: number, v: any) => s + (Number(v.total) - Number(v.valor_pago || 0)), 0),
         vencidas: pendentes.filter((v: any) => v.created_at.split("T")[0] < hoje).length,
         quantidade: pendentes.length,
       });
@@ -348,7 +348,7 @@ export default function Dashboard() {
     );
 
     return {
-      total: pendentesFiltradas.reduce((s: number, v: any) => s + Number(v.total), 0),
+      total: pendentesFiltradas.reduce((s: number, v: any) => s + (Number(v.total) - Number(v.valor_pago || 0)), 0),
       quantidade: pendentesFiltradas.length,
       vencidas: pendentesFiltradas.filter((v: any) => v.created_at.split("T")[0] < hoje).length,
     };
@@ -987,7 +987,7 @@ export default function Dashboard() {
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
                               <span className={`text-sm font-bold ${isVencida ? "text-destructive" : ""}`}>
-                                R$ {Number(v.total).toFixed(2)}
+                                R$ {(Number(v.total) - Number(v.valor_pago || 0)).toFixed(2)}
                               </span>
                               {isVencida && <Badge variant="destructive" className="text-[9px] px-1.5">Vencida</Badge>}
                             </div>
