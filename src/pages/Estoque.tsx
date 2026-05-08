@@ -12,8 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Settings2, Trash2, Snowflake, AlertTriangle, Pencil } from "lucide-react";
+import { Plus, Settings2, Trash2, Snowflake, AlertTriangle, Pencil, Layers } from "lucide-react";
 import SacosTab from "@/components/estoque/SacosTab";
+import LotesDialog from "@/components/estoque/LotesDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -28,6 +29,7 @@ export default function Estoque() {
   const [sabores, setSabores] = useState<any[]>([]);
   const [geloCuboEstoque, setGeloCuboEstoque] = useState<any[]>([]);
   const [vendeGeloCubo, setVendeGeloCubo] = useState(false);
+  const [lotesItem, setLotesItem] = useState<string | null>(null);
 
   // Freezer dialog
   const [openFreezer, setOpenFreezer] = useState(false);
