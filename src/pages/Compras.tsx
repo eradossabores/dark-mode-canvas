@@ -41,6 +41,9 @@ interface Compra {
   custo_unitario_com_frete: number;
   observacoes: string | null;
   created_at: string;
+  numero_lote?: string | null;
+  data_fabricacao?: string | null;
+  data_vencimento?: string | null;
 }
 
 export default function Compras() {
@@ -151,6 +154,9 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const [itemUnits, setItemUnits] = useState<Record<string, string>>({});
   const [obs, setObs] = useState("");
   const [dataCompra, setDataCompra] = useState(() => format(new Date(), "yyyy-MM-dd"));
+  const [numeroLote, setNumeroLote] = useState("");
+  const [dataFabricacao, setDataFabricacao] = useState("");
+  const [dataVencimento, setDataVencimento] = useState("");
   const [saving, setSaving] = useState(false);
   const [filterTipo, setFilterTipo] = useState("todos");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -255,6 +261,9 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
         custo_unitario_com_frete: +custoUnitarioComFrete.toFixed(2),
         observacoes: obs || null, factory_id: factoryId,
         created_at: new Date(dataCompra + "T12:00:00").toISOString(),
+        numero_lote: numeroLote.trim() || null,
+        data_fabricacao: dataFabricacao || null,
+        data_vencimento: dataVencimento || null,
       };
     });
     const { error } = await (supabase as any).from("compras").insert(rows);
@@ -282,6 +291,9 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
       custo_total_com_frete: ctf, custo_unitario_com_frete: cuf,
       observacoes: obs || null,
       created_at: new Date(dataCompra + "T12:00:00").toISOString(),
+      numero_lote: numeroLote.trim() || null,
+      data_fabricacao: dataFabricacao || null,
+      data_vencimento: dataVencimento || null,
     }).eq("id", editingId);
     setSaving(false);
     if (error) { toast.error("Erro ao salvar"); return; }
@@ -300,6 +312,9 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     setValorFrete(String(c.valor_frete));
     setObs(c.observacoes || "");
     setDataCompra(format(new Date(c.created_at), "yyyy-MM-dd"));
+    setNumeroLote(c.numero_lote || "");
+    setDataFabricacao(c.data_fabricacao || "");
+    setDataVencimento(c.data_vencimento || "");
     setOpen(true);
   };
 
@@ -307,6 +322,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     setTipo("insumo"); setFornecedorId(""); setValorTotalInput("");
     setTemFrete(false); setTipoFrete("sedex"); setValorFrete(""); setItemUnits({}); setObs("");
     setDataCompra(format(new Date(), "yyyy-MM-dd"));
+    setNumeroLote(""); setDataFabricacao(""); setDataVencimento("");
     setItemQuantities({}); setCustomItems([]); setNewCustomItem("");
     setEditingId(null); setEditItemNome(""); setEditQuantidade("");
   };
