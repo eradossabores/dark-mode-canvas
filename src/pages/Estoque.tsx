@@ -1111,6 +1111,9 @@ export default function Estoque() {
                         <TableCell>{e.nome}</TableCell>
                         <TableCell>{e.estoque_atual} un. <span className="text-xs text-muted-foreground">({((e.estoque_atual || 0) / BOBINA_FATOR).toFixed(2)} kg)</span></TableCell>
                         <TableCell className="text-right">
+                          <Button variant="outline" size="sm" className="mr-2" onClick={() => setLotesItem(e.nome)}>
+                            <Layers className="h-3 w-3 mr-1" /> Lotes
+                          </Button>
                           <Button variant="outline" size="sm" onClick={() => openAjusteDialog("emb", e.id, e.estoque_atual)}>
                             <Settings2 className="h-3 w-3 mr-1" /> Ajustar
                           </Button>
