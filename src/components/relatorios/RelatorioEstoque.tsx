@@ -240,6 +240,52 @@ export default function RelatorioEstoque() {
               </Table>
             </CardContent>
           </Card>
+
+          {lotes.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle className="text-sm">📋 Lotes Cadastrados</CardTitle></CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Item</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Nº Lote</TableHead>
+                      <TableHead>Fabricação</TableHead>
+                      <TableHead>Vencimento</TableHead>
+                      <TableHead className="text-right">Quantidade</TableHead>
+                      <TableHead>Fornecedor</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {lotes.slice(0, 100).map((l) => {
+                      const today = new Date(); today.setHours(0, 0, 0, 0);
+                      const in7 = new Date(today); in7.setDate(today.getDate() + 7);
+                      const venc = l.data_vencimento ? new Date(l.data_vencimento + "T12:00:00") : null;
+                      let status: { label: string; variant: "default" | "destructive" | "secondary" } = { label: "OK", variant: "secondary" };
+                      if (venc) {
+                        if (venc < today) status = { label: "Vencido", variant: "destructive" };
+                        else if (venc <= in7) status = { label: "Vence em 7d", variant: "default" };
+                      }
+                      return (
+                        <TableRow key={l.id}>
+                          <TableCell className="font-medium">{l.item_nome}</TableCell>
+                          <TableCell className="capitalize">{l.tipo}</TableCell>
+                          <TableCell className="font-mono text-xs">{l.numero_lote}</TableCell>
+                          <TableCell>{l.data_fabricacao ? new Date(l.data_fabricacao + "T12:00:00").toLocaleDateString("pt-BR") : "—"}</TableCell>
+                          <TableCell>{l.data_vencimento ? new Date(l.data_vencimento + "T12:00:00").toLocaleDateString("pt-BR") : "—"}</TableCell>
+                          <TableCell className="text-right">{Number(l.quantidade).toLocaleString("pt-BR")}</TableCell>
+                          <TableCell className="text-sm">{l.fornecedores?.nome || "—"}</TableCell>
+                          <TableCell><Badge variant={status.variant}>{status.label}</Badge></TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
         </>
       )}
     </div>
