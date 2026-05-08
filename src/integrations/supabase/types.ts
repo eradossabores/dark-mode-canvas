@@ -615,11 +615,14 @@ export type Database = {
           created_at: string
           custo_total_com_frete: number
           custo_unitario_com_frete: number
+          data_fabricacao: string | null
+          data_vencimento: string | null
           factory_id: string | null
           fornecedor_id: string | null
           id: string
           item_id: string | null
           item_nome: string
+          numero_lote: string | null
           observacoes: string | null
           quantidade: number
           tem_frete: boolean
@@ -633,11 +636,14 @@ export type Database = {
           created_at?: string
           custo_total_com_frete?: number
           custo_unitario_com_frete?: number
+          data_fabricacao?: string | null
+          data_vencimento?: string | null
           factory_id?: string | null
           fornecedor_id?: string | null
           id?: string
           item_id?: string | null
           item_nome: string
+          numero_lote?: string | null
           observacoes?: string | null
           quantidade?: number
           tem_frete?: boolean
@@ -651,11 +657,14 @@ export type Database = {
           created_at?: string
           custo_total_com_frete?: number
           custo_unitario_com_frete?: number
+          data_fabricacao?: string | null
+          data_vencimento?: string | null
           factory_id?: string | null
           fornecedor_id?: string | null
           id?: string
           item_id?: string | null
           item_nome?: string
+          numero_lote?: string | null
           observacoes?: string | null
           quantidade?: number
           tem_frete?: boolean

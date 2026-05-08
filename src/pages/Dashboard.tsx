@@ -305,6 +305,27 @@ export default function Dashboard() {
       (gelos.data || []).filter((g: any) => g.quantidade <= 0).forEach((g: any) => {
         alertas.push({ nome: g.sabores?.nome || "?", tipo: "Gelo", atual: g.quantidade, minimo: 0 });
       });
+      // Alertas de vencimento de lotes (compras com data_vencimento até 7 dias ou já vencidas)
+      let lotesQuery = (supabase as any)
+        .from("compras")
+        .select("item_nome, numero_lote, data_vencimento, quantidade")
+        .not("data_vencimento", "is", null);
+      if (factoryId) lotesQuery = lotesQuery.eq("factory_id", factoryId);
+      const lotesRes = await lotesQuery;
+      const hojeMs = new Date(); hojeMs.setHours(0, 0, 0, 0);
+      const limite = new Date(hojeMs); limite.setDate(limite.getDate() + 7);
+      (lotesRes.data || []).forEach((l: any) => {
+        const venc = new Date(l.data_vencimento + "T12:00:00");
+        if (venc <= limite) {
+          const vencido = venc < hojeMs;
+          alertas.push({
+            nome: `${l.item_nome}${l.numero_lote ? ` (Lote ${l.numero_lote})` : ""}`,
+            tipo: vencido ? "Vencido" : "Vence em breve",
+            atual: Number(l.quantidade),
+            minimo: 0,
+          });
+        }
+      });
       setAlertasEstoque(alertas);
 
       // Contas a receber (vendas pendentes)

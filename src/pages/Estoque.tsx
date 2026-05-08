@@ -12,8 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Settings2, Trash2, Snowflake, AlertTriangle, Pencil } from "lucide-react";
+import { Plus, Settings2, Trash2, Snowflake, AlertTriangle, Pencil, Layers } from "lucide-react";
 import SacosTab from "@/components/estoque/SacosTab";
+import LotesDialog from "@/components/estoque/LotesDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -28,6 +29,7 @@ export default function Estoque() {
   const [sabores, setSabores] = useState<any[]>([]);
   const [geloCuboEstoque, setGeloCuboEstoque] = useState<any[]>([]);
   const [vendeGeloCubo, setVendeGeloCubo] = useState(false);
+  const [lotesItem, setLotesItem] = useState<string | null>(null);
 
   // Freezer dialog
   const [openFreezer, setOpenFreezer] = useState(false);
@@ -940,6 +942,9 @@ export default function Estoque() {
                         <TableCell>{Number(m.estoque_atual).toLocaleString()}</TableCell>
                         <TableCell>{m.unidade}</TableCell>
                         <TableCell className="text-right">
+                          <Button variant="outline" size="sm" className="mr-2" onClick={() => setLotesItem(m.nome)}>
+                            <Layers className="h-3 w-3 mr-1" /> Lotes
+                          </Button>
                           <Button variant="outline" size="sm" onClick={() => openAjusteDialog("mp", m.id, m.estoque_atual)}>
                             <Settings2 className="h-3 w-3 mr-1" /> Ajustar
                           </Button>
@@ -1106,6 +1111,9 @@ export default function Estoque() {
                         <TableCell>{e.nome}</TableCell>
                         <TableCell>{e.estoque_atual} un. <span className="text-xs text-muted-foreground">({((e.estoque_atual || 0) / BOBINA_FATOR).toFixed(2)} kg)</span></TableCell>
                         <TableCell className="text-right">
+                          <Button variant="outline" size="sm" className="mr-2" onClick={() => setLotesItem(e.nome)}>
+                            <Layers className="h-3 w-3 mr-1" /> Lotes
+                          </Button>
                           <Button variant="outline" size="sm" onClick={() => openAjusteDialog("emb", e.id, e.estoque_atual)}>
                             <Settings2 className="h-3 w-3 mr-1" /> Ajustar
                           </Button>
@@ -1323,6 +1331,7 @@ export default function Estoque() {
           </Card>
         </TabsContent>
       </Tabs>
+      <LotesDialog open={!!lotesItem} onOpenChange={(v) => !v && setLotesItem(null)} itemNome={lotesItem} />
     </div>
   );
 }

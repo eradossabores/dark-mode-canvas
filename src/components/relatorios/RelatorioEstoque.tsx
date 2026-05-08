@@ -19,6 +19,7 @@ export default function RelatorioEstoque() {
   const [materias, setMaterias] = useState<any[]>([]);
   const [embalagens, setEmbalagens] = useState<any[]>([]);
   const [movimentacoes, setMovimentacoes] = useState<any[]>([]);
+  const [lotes, setLotes] = useState<any[]>([]);
   const [startDate, setStartDate] = useState<Date | undefined>(
     new Date(new Date().getFullYear(), new Date().getMonth(), 1)
   );
@@ -35,12 +36,18 @@ export default function RelatorioEstoque() {
     let mQ = (supabase as any).from("materias_primas").select("*");
     let eQ = (supabase as any).from("embalagens").select("*");
     let mvQ = (supabase as any).from("movimentacoes_estoque").select("*").order("created_at", { ascending: false }).limit(500);
-    if (factoryId) { gQ = gQ.eq("factory_id", factoryId); mQ = mQ.eq("factory_id", factoryId); eQ = eQ.eq("factory_id", factoryId); mvQ = mvQ.eq("factory_id", factoryId); }
-    const [g, m, e, mv] = await Promise.all([gQ, mQ, eQ, mvQ]);
+    let lotesQ = (supabase as any)
+      .from("compras")
+      .select("id, item_nome, tipo, numero_lote, data_fabricacao, data_vencimento, quantidade, created_at, fornecedores(nome)")
+      .not("numero_lote", "is", null)
+      .order("data_vencimento", { ascending: true, nullsFirst: false });
+    if (factoryId) { gQ = gQ.eq("factory_id", factoryId); mQ = mQ.eq("factory_id", factoryId); eQ = eQ.eq("factory_id", factoryId); mvQ = mvQ.eq("factory_id", factoryId); lotesQ = lotesQ.eq("factory_id", factoryId); }
+    const [g, m, e, mv, lt] = await Promise.all([gQ, mQ, eQ, mvQ, lotesQ]);
     setGelos(g.data || []);
     setMaterias(m.data || []);
     setEmbalagens(e.data || []);
     setMovimentacoes(mv.data || []);
+    setLotes(lt.data || []);
   }
 
   const filteredMov = useMemo(() => {
@@ -233,6 +240,52 @@ export default function RelatorioEstoque() {
               </Table>
             </CardContent>
           </Card>
+
+          {lotes.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle className="text-sm">📋 Lotes Cadastrados</CardTitle></CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Item</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Nº Lote</TableHead>
+                      <TableHead>Fabricação</TableHead>
+                      <TableHead>Vencimento</TableHead>
+                      <TableHead className="text-right">Quantidade</TableHead>
+                      <TableHead>Fornecedor</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {lotes.slice(0, 100).map((l) => {
+                      const today = new Date(); today.setHours(0, 0, 0, 0);
+                      const in7 = new Date(today); in7.setDate(today.getDate() + 7);
+                      const venc = l.data_vencimento ? new Date(l.data_vencimento + "T12:00:00") : null;
+                      let status: { label: string; variant: "default" | "destructive" | "secondary" } = { label: "OK", variant: "secondary" };
+                      if (venc) {
+                        if (venc < today) status = { label: "Vencido", variant: "destructive" };
+                        else if (venc <= in7) status = { label: "Vence em 7d", variant: "default" };
+                      }
+                      return (
+                        <TableRow key={l.id}>
+                          <TableCell className="font-medium">{l.item_nome}</TableCell>
+                          <TableCell className="capitalize">{l.tipo}</TableCell>
+                          <TableCell className="font-mono text-xs">{l.numero_lote}</TableCell>
+                          <TableCell>{l.data_fabricacao ? new Date(l.data_fabricacao + "T12:00:00").toLocaleDateString("pt-BR") : "—"}</TableCell>
+                          <TableCell>{l.data_vencimento ? new Date(l.data_vencimento + "T12:00:00").toLocaleDateString("pt-BR") : "—"}</TableCell>
+                          <TableCell className="text-right">{Number(l.quantidade).toLocaleString("pt-BR")}</TableCell>
+                          <TableCell className="text-sm">{l.fornecedores?.nome || "—"}</TableCell>
+                          <TableCell><Badge variant={status.variant}>{status.label}</Badge></TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
         </>
       )}
     </div>
