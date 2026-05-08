@@ -1331,6 +1331,7 @@ export default function Estoque() {
           </Card>
         </TabsContent>
       </Tabs>
+      <LotesDialog open={!!lotesItem} onOpenChange={(v) => !v && setLotesItem(null)} itemNome={lotesItem} />
     </div>
   );
 }
