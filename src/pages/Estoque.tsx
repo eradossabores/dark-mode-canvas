@@ -942,6 +942,9 @@ export default function Estoque() {
                         <TableCell>{Number(m.estoque_atual).toLocaleString()}</TableCell>
                         <TableCell>{m.unidade}</TableCell>
                         <TableCell className="text-right">
+                          <Button variant="outline" size="sm" className="mr-2" onClick={() => setLotesItem(m.nome)}>
+                            <Layers className="h-3 w-3 mr-1" /> Lotes
+                          </Button>
                           <Button variant="outline" size="sm" onClick={() => openAjusteDialog("mp", m.id, m.estoque_atual)}>
                             <Settings2 className="h-3 w-3 mr-1" /> Ajustar
                           </Button>
