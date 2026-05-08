@@ -19,6 +19,7 @@ export default function RelatorioEstoque() {
   const [materias, setMaterias] = useState<any[]>([]);
   const [embalagens, setEmbalagens] = useState<any[]>([]);
   const [movimentacoes, setMovimentacoes] = useState<any[]>([]);
+  const [lotes, setLotes] = useState<any[]>([]);
   const [startDate, setStartDate] = useState<Date | undefined>(
     new Date(new Date().getFullYear(), new Date().getMonth(), 1)
   );
@@ -35,12 +36,18 @@ export default function RelatorioEstoque() {
     let mQ = (supabase as any).from("materias_primas").select("*");
     let eQ = (supabase as any).from("embalagens").select("*");
     let mvQ = (supabase as any).from("movimentacoes_estoque").select("*").order("created_at", { ascending: false }).limit(500);
-    if (factoryId) { gQ = gQ.eq("factory_id", factoryId); mQ = mQ.eq("factory_id", factoryId); eQ = eQ.eq("factory_id", factoryId); mvQ = mvQ.eq("factory_id", factoryId); }
-    const [g, m, e, mv] = await Promise.all([gQ, mQ, eQ, mvQ]);
+    let lotesQ = (supabase as any)
+      .from("compras")
+      .select("id, item_nome, tipo, numero_lote, data_fabricacao, data_vencimento, quantidade, created_at, fornecedores(nome)")
+      .not("numero_lote", "is", null)
+      .order("data_vencimento", { ascending: true, nullsFirst: false });
+    if (factoryId) { gQ = gQ.eq("factory_id", factoryId); mQ = mQ.eq("factory_id", factoryId); eQ = eQ.eq("factory_id", factoryId); mvQ = mvQ.eq("factory_id", factoryId); lotesQ = lotesQ.eq("factory_id", factoryId); }
+    const [g, m, e, mv, lt] = await Promise.all([gQ, mQ, eQ, mvQ, lotesQ]);
     setGelos(g.data || []);
     setMaterias(m.data || []);
     setEmbalagens(e.data || []);
     setMovimentacoes(mv.data || []);
+    setLotes(lt.data || []);
   }
 
   const filteredMov = useMemo(() => {
