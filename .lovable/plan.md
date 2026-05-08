@@ -1,86 +1,129 @@
-## Fase 1 — Correções de Segurança Críticas
+## Sistema de Compras, Estoque e Produção com Rastreabilidade de Lotes
 
-### 1.1 Corrigir `get_user_factory_id` (adicionar ORDER BY)
-- Migration: `ALTER FUNCTION` com `ORDER BY created_at DESC`
+Vou estender os módulos existentes (Compras, Estoque e Produção) para suportar **rastreabilidade completa por lote**, com datas de fabricação/vencimento, alertas automáticos e relatórios detalhados.
 
-### 1.2 Isolar chaves NF-e da tabela `factories`
-- Criar tabela `factory_secrets` com RLS restrito a owner/super_admin
-- Mover `nfe_api_key` e `nfe_company_id` para nova tabela
-- Atualizar Edge Functions `emit-nfe` e `check-nfe-status`
+### Visão geral
 
-### 1.3 Proteger convites contra escalação de privilégios
-- Remover policy UPDATE direta da tabela `invites`
-- Toda redenção via Edge Function `process-invite` (já existente)
+O projeto já possui:
+- `compras` (registra compras de matérias-primas e embalagens)
+- `materias_primas` / `embalagens` (estoque atual)
+- `producoes` + `sabor_receita` (consome matérias-primas e produz gelo)
+- `movimentacoes_estoque` (histórico)
 
-### 1.4 Validar pedidos públicos
-- Restringir INSERT policy: validar que `factory_id` existe em `factories`
+O que **falta** e será criado: **camada de lotes** (batches) ligando compras → estoque → produção, com validade.
 
 ---
 
-## Fase 2 — Dashboard & Produção
+### 1. Banco de Dados (novas tabelas)
 
-### 2.1 Comparativo mensal
-- Gráfico lado a lado: mês atual vs anterior (faturamento, vendas, produção)
+**`lotes_estoque`** — um lote por compra/item
+- `item_tipo` ('materia_prima' | 'embalagem')
+- `item_id`
+- `numero_lote` (alfanumérico, único por fábrica/item)
+- `compra_id` (origem)
+- `fornecedor_id`
+- `quantidade_inicial`, `quantidade_atual`
+- `data_fabricacao`, `data_vencimento`
+- `custo_unitario`
+- `factory_id`, `created_at`
 
-### 2.2 Meta de vendas
-- Tabela `metas_vendas` (factory_id, mes, valor_meta)
-- Barra de progresso visual no Dashboard
+**`producao_lotes_consumidos`** — rastreabilidade reversa
+- `producao_id`
+- `lote_id` (FK lotes_estoque)
+- `quantidade_usada`
 
-### 2.3 Alertas inteligentes
-- Cards de alerta: estoque crítico, contas vencendo hoje, clientes inativos >30d
+**`producoes`** — adicionar colunas:
+- `numero_lote_producao` (auto-gerado: `PROD-YYYYMMDD-NNN`)
+- `data_vencimento` (opcional, configurável por sabor)
 
-### 2.4 Indicador de eficiência de produção
-- Taxa: produção total / (produção + avarias) × 100%
-
-### 2.5 Histórico por funcionário
-- Dashboard individual de produtividade com gráficos
-
----
-
-## Fase 3 — Vendas & Estoque
-
-### 3.1 Comissão de vendedores
-- Tabela `comissoes_config` (factory_id, percentual, vendedor_id)
-- Cálculo automático exibido em relatórios
-
-### 3.2 Recorrência de clientes
-- Análise de padrão de compra (frequência média, última compra)
-- Badge de sugestão de reposição
-
-### 3.3 Alerta de validade
-- Coluna `validade` em `producoes`
-- Destaque visual para lotes próximos do vencimento
-
-### 3.4 Sugestão de compra automática
-- Baseado no consumo médio dos últimos 30 dias vs estoque atual
+**Triggers/funções**:
+- Ao inserir em `compras`: criar `lotes_estoque` automaticamente e somar ao estoque do item.
+- Ao realizar produção: consumir dos lotes mais antigos (FIFO) e registrar em `producao_lotes_consumidos`.
+- Auto-numeração de lote produção.
 
 ---
 
-## Fase 4 — Clientes & Relatórios
+### 2. Tela de Compras (atualizada)
 
-### 4.1 Classificação ABC
-- Categorizar por faturamento: A (80%), B (15%), C (5%)
-- Badge visual na lista de clientes
+Adicionar à tela `Compras.tsx` os campos por item:
+- **Data de Fabricação** (date picker)
+- **Data de Vencimento** (date picker)
+- **Número do Lote** (texto; sugestão automática `LOTE-YYYYMMDD-XXX`)
 
-### 4.2 Inadimplência preditiva
-- Score de risco baseado em histórico de pagamentos
-
-### 4.3 Relatório de margem de lucro
-- Custo de produção (matéria-prima + embalagem) vs preço de venda por sabor
-
-### 4.4 DRE simplificado
-- Receitas (vendas) - Custos (compras + produção) - Despesas (contas a pagar)
-
-### 4.5 Relatório de sazonalidade
-- Gráfico de vendas por mês para identificar tendências
+Mantém: fornecedor, produtos múltiplos, frete, total automático.
 
 ---
 
-## Fase 5 — Super Admin
+### 3. Tela de Estoque (atualizada)
 
-### 5.1 Painel de saúde geral
-- Resumo de todas as fábricas: status, faturamento, atividade, risco de churn
+Em cada linha de matéria-prima/embalagem, adicionar **botão "Ver Lotes"** que abre dialog com:
+- Nº Lote, Quantidade restante, Data Fabricação, Data Vencimento, Compra/Fornecedor de origem
+- Destaque visual: **vermelho** se vencido, **amarelo** se vence em ≤7 dias
 
-### 5.2 Onboarding automatizado
-- Checklist guiado para novas fábricas (sabores, receita, cliente, primeira venda)
-- Tabela `onboarding_progress` com tracking de etapas
+---
+
+### 4. Tela de Produção (atualizada)
+
+- Exibir **lotes disponíveis** (FIFO) ao escolher sabor
+- Após produzir, mostrar **Lote de Produção gerado** + lotes de origem consumidos
+- Nova aba "Rastreabilidade" para buscar um lote de produção e ver a árvore: lote produção → lotes matérias-primas → compras → fornecedores
+
+---
+
+### 5. Alertas
+
+Adicionar ao Dashboard (componente `AlertasInteligentes` existente) cards:
+- **Lotes vencendo em 7 dias** (lista com sabor/MP, lote, dias restantes)
+- **Lotes vencidos** (em vermelho)
+- Estoque baixo já existe, mantido.
+
+---
+
+### 6. Relatórios
+
+Estender `RelatorioEstoque.tsx` e criar nova seção em `Relatorios.tsx`:
+- **Relatório de Compras por período** (já existe parcial — adicionar coluna Lote, Validade)
+- **Relatório de Lotes** (todos os lotes com saldo, fornecedor, validade)
+- **Relatório de Rastreabilidade** (dado um lote produção, mostrar árvore completa)
+
+Exportação PDF/Excel via `export-utils` já existente.
+
+---
+
+### 7. Integração financeira
+
+Já existe: compras alimentam custos. Adicionar custo médio ponderado por lote ao calcular margem em `RelatorioMargem.tsx`.
+
+---
+
+### Detalhes técnicos
+
+**Migrations necessárias (1 migration consolidada):**
+1. `CREATE TABLE lotes_estoque` + RLS por `factory_id`
+2. `CREATE TABLE producao_lotes_consumidos` + RLS
+3. `ALTER TABLE producoes ADD COLUMN numero_lote_producao TEXT, data_vencimento DATE`
+4. Função `gerar_lote_producao(factory_id) RETURNS TEXT`
+5. Trigger `apos_compra_criar_lote` em `compras`
+6. Atualizar `realizar_producao` para consumir FIFO e gravar `producao_lotes_consumidos`
+7. View `lotes_vencendo` para alertas
+
+**Arquivos frontend a editar/criar:**
+- `src/pages/Compras.tsx` — campos lote/datas
+- `src/pages/Estoque.tsx` — botão Ver Lotes
+- `src/components/estoque/LotesDialog.tsx` (novo)
+- `src/pages/Producao.tsx` — exibir lotes consumidos
+- `src/components/producao/RastreabilidadeDialog.tsx` (novo)
+- `src/components/dashboard/AlertasVencimento.tsx` (novo) + integrar no Dashboard
+- `src/components/relatorios/RelatorioLotes.tsx` (novo) + adicionar tab em `Relatorios.tsx`
+
+---
+
+### Escopo / pergunta antes de iniciar
+
+Esse é um trabalho **grande** (1 migration complexa + ~10 arquivos frontend). Antes de implementar tudo de uma vez, quero confirmar:
+
+1. **Confirma criar a camada de lotes do zero** (hoje compras só somam ao estoque sem rastrear lote individual)?
+2. **FIFO** automático na produção é OK, ou prefere escolher manualmente o lote a consumir?
+3. **Data de vencimento do produto fabricado**: calcular automaticamente (ex: 6 meses após produção, configurável por sabor) ou pedir ao operador a cada produção?
+
+Se confirmar, executo tudo numa única passada.
