@@ -584,6 +584,34 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                 <Label>Observações</Label>
                 <Textarea value={obs} onChange={e => setObs(e.target.value)} placeholder="Notas sobre a compra..." />
               </div>
+              <Card className="bg-muted/30 border-dashed">
+                <CardContent className="py-3 space-y-3">
+                  <Label className="text-sm font-semibold">📋 Rastreabilidade do Lote (opcional)</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div>
+                      <Label className="text-xs">Nº Lote</Label>
+                      <Input
+                        placeholder="Ex: L00123"
+                        value={numeroLote}
+                        onChange={e => setNumeroLote(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Data Fabricação</Label>
+                      <Input type="date" value={dataFabricacao} onChange={e => setDataFabricacao(e.target.value)} />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Data Vencimento</Label>
+                      <Input type="date" value={dataVencimento} onChange={e => setDataVencimento(e.target.value)} />
+                    </div>
+                  </div>
+                  {!editingId && filledItems.length > 1 && (numeroLote || dataFabricacao || dataVencimento) && (
+                    <p className="text-xs text-muted-foreground">
+                      Estes dados serão aplicados a todos os {filledItems.length} itens da comanda.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
               {((editingId ? (parseFloat(editQuantidade) || 0) : totalQty) > 0 && valorTotal > 0) && (
                 <Card className="bg-primary/5 border-primary/20">
                   <CardContent className="py-3">
