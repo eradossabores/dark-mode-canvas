@@ -1608,6 +1608,19 @@ export default function Vendas() {
                     <p className="font-semibold text-sm">#{detailVenda.numero_pedido}</p>
                   </div>
                 )}
+                {(() => {
+                  const vendIds = clienteVendedorMap[detailVenda.cliente_id] || [];
+                  const nomes = vendIds
+                    .map(id => vendedores.find(v => v.id === id)?.nome)
+                    .filter(Boolean) as string[];
+                  if (nomes.length === 0) return null;
+                  return (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Vendedor</p>
+                      <p className="font-semibold text-sm">{nomes.join(", ")}</p>
+                    </div>
+                  );
+                })()}
               </div>
               {detailVenda.observacoes && (
                 <div className="p-3 rounded-lg bg-muted/30 border">
