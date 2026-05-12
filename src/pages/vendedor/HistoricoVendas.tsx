@@ -72,7 +72,7 @@ export default function HistoricoVendas() {
 
     const { data } = await (supabase as any)
       .from("vendas")
-      .select("id, numero_pedido, created_at, total, status, forma_pagamento, observacoes, valor_frete, frete_pago_por, valor_pago, clientes(nome, telefone, endereco, bairro, cidade), venda_itens(quantidade, preco_unitario, subtotal, sabores(nome)), abatimentos_historico(valor)")
+      .select("id, cliente_id, numero_pedido, created_at, total, status, forma_pagamento, observacoes, valor_frete, frete_pago_por, valor_pago, clientes(nome, telefone, endereco, bairro, cidade), venda_itens(quantidade, preco_unitario, subtotal, sabores(nome)), abatimentos_historico(valor)")
       .in("cliente_id", clienteIds)
       .eq("factory_id", factoryId)
       .order("created_at", { ascending: false })
