@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { History, DollarSign, Package, Search, Eye, MessageCircle, Pencil, Trash2 } from "lucide-react";
+import { History, DollarSign, Package, Search, Eye, MessageCircle, Pencil, Trash2, Sparkles, Repeat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -44,6 +44,10 @@ export default function HistoricoVendas() {
   const [comissoesMap, setComissoesMap] = useState<Record<string, number>>({});
   const [totalComissao, setTotalComissao] = useState(0);
   const [periodoComissao, setPeriodoComissao] = useState<string>("mes");
+
+  // Yuri's special commission rule (first sale = full / repeat = half)
+  const YURI_USER_ID = "c311e314-e569-4303-96f7-e26bfe17a5f1";
+  const isYuri = user?.id === YURI_USER_ID;
 
   async function load() {
     if (!user || !factoryId) return;
@@ -104,6 +108,38 @@ export default function HistoricoVendas() {
       return matchSearch && matchStatus;
     });
   }, [vendas, search, statusFilter]);
+
+  // Mapa: venda_id -> "primeira" | "reposicao" (apenas Yuri)
+  const tipoVendaMap = useMemo(() => {
+    const map: Record<string, "primeira" | "reposicao"> = {};
+    if (!isYuri) return map;
+    const porCliente: Record<string, any[]> = {};
+    vendas.forEach((v) => {
+      const cid = v.clientes?.nome ? `${v.clientes?.nome}` : v.id;
+      // Use cliente_id real via lookup: vendas têm clientes(nome) só; melhor agrupar por v.cliente_id se existir
+      const key = (v as any).cliente_id || cid;
+      (porCliente[key] = porCliente[key] || []).push(v);
+    });
+    Object.values(porCliente).forEach((arr) => {
+      arr.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      arr.forEach((v, idx) => {
+        map[v.id] = idx === 0 ? "primeira" : "reposicao";
+      });
+    });
+    return map;
+  }, [vendas, isYuri]);
+
+  const yuriStats = useMemo(() => {
+    if (!isYuri) return null;
+    let primeiras = 0, reposicoes = 0, comInt = 0, comRed = 0;
+    filtered.forEach((v) => {
+      const t = tipoVendaMap[v.id];
+      const com = comissoesMap[v.id] || 0;
+      if (t === "primeira") { primeiras++; comInt += com; }
+      else if (t === "reposicao") { reposicoes++; comRed += com; }
+    });
+    return { primeiras, reposicoes, comInt, comRed };
+  }, [filtered, tipoVendaMap, comissoesMap, isYuri]);
 
   const totals = useMemo(() => {
     const now = new Date();
@@ -230,6 +266,27 @@ export default function HistoricoVendas() {
         </Card>
       </div>
 
+      {isYuri && yuriStats && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Card className="border-primary/30">
+            <CardHeader className="pb-1"><CardTitle className="text-xs flex items-center gap-1.5"><Sparkles className="h-3.5 w-3.5 text-amber-500" /> Primeiras Compras</CardTitle></CardHeader>
+            <CardContent><p className="text-2xl font-bold">{yuriStats.primeiras}</p></CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-1"><CardTitle className="text-xs flex items-center gap-1.5"><Repeat className="h-3.5 w-3.5 text-blue-500" /> Reposições</CardTitle></CardHeader>
+            <CardContent><p className="text-2xl font-bold">{yuriStats.reposicoes}</p></CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-1"><CardTitle className="text-xs">Comissão Integral</CardTitle></CardHeader>
+            <CardContent><p className="text-xl font-bold text-green-600">R$ {yuriStats.comInt.toFixed(2)}</p></CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-1"><CardTitle className="text-xs">Comissão Reduzida (50%)</CardTitle></CardHeader>
+            <CardContent><p className="text-xl font-bold text-blue-600">R$ {yuriStats.comRed.toFixed(2)}</p></CardContent>
+          </Card>
+        </div>
+      )}
+
       <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
@@ -270,6 +327,7 @@ export default function HistoricoVendas() {
                     <TableHead className="text-right">Total</TableHead>
                     <TableHead>Pagto</TableHead>
                     <TableHead>Status</TableHead>
+                    {isYuri && <TableHead>Tipo</TableHead>}
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -287,6 +345,15 @@ export default function HistoricoVendas() {
                         <TableCell className="text-right font-semibold">R$ {Number(v.total || 0).toFixed(2)}</TableCell>
                         <TableCell className="text-xs capitalize">{v.forma_pagamento || "-"}</TableCell>
                         <TableCell><Badge variant="outline" className={getStatusBadge(v.status)}>{v.status || "-"}</Badge></TableCell>
+                        {isYuri && (
+                          <TableCell>
+                            {tipoVendaMap[v.id] === "primeira" ? (
+                              <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 gap-1"><Sparkles className="h-3 w-3" /> Primeira</Badge>
+                            ) : tipoVendaMap[v.id] === "reposicao" ? (
+                              <Badge className="bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30 gap-1"><Repeat className="h-3 w-3" /> Reposição</Badge>
+                            ) : null}
+                          </TableCell>
+                        )}
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
                             <Button size="icon" variant="ghost" className="h-8 w-8" title="Visualizar comanda" onClick={() => handleView(v)}>
