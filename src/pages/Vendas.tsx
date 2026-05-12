@@ -22,7 +22,7 @@ import { ptBR } from "date-fns/locale";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Plus, Trash2, ShoppingCart, Pencil, Eye, CalendarIcon, X, Truck, Package, History, CalendarClock, Receipt, CopyPlus } from "lucide-react";
+import { Plus, Trash2, ShoppingCart, Pencil, Eye, CalendarIcon, X, Truck, Package, History, CalendarClock, Receipt, CopyPlus, Sparkles, Repeat } from "lucide-react";
 import ReciboVenda from "@/components/vendas/ReciboVenda";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ToastAction } from "@/components/ui/toast";
@@ -170,6 +170,23 @@ export default function Vendas() {
     }
     return filtered;
   }, [vendas, clienteFilter, searchCliente, filtroStatus, filtroPagamento, filtroData, filtroVendedor, clienteVendedorMap]);
+
+  // Yuri: identificar primeira compra vs reposição por cliente
+  const YURI_USER_ID = "c311e314-e569-4303-96f7-e26bfe17a5f1";
+  const tipoVendaYuriMap = useMemo(() => {
+    const map: Record<string, "primeira" | "reposicao"> = {};
+    const porCliente: Record<string, any[]> = {};
+    vendas.forEach((v) => {
+      const vendIds = clienteVendedorMap[v.cliente_id] || [];
+      if (!vendIds.includes(YURI_USER_ID)) return;
+      (porCliente[v.cliente_id] = porCliente[v.cliente_id] || []).push(v);
+    });
+    Object.values(porCliente).forEach((arr) => {
+      arr.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      arr.forEach((v, idx) => { map[v.id] = idx === 0 ? "primeira" : "reposicao"; });
+    });
+    return map;
+  }, [vendas, clienteVendedorMap]);
 
   useEffect(() => {
     if (role !== "super_admin" && !factoryId) {
