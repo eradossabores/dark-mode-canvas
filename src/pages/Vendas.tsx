@@ -1638,6 +1638,16 @@ export default function Vendas() {
                     </div>
                   );
                 })()}
+                {tipoVendaYuriMap[detailVenda.id] && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Tipo (Yuri)</p>
+                    {tipoVendaYuriMap[detailVenda.id] === "primeira" ? (
+                      <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 gap-1 mt-0.5"><Sparkles className="h-3 w-3" /> Primeira Compra</Badge>
+                    ) : (
+                      <Badge className="bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30 gap-1 mt-0.5"><Repeat className="h-3 w-3" /> Reposição</Badge>
+                    )}
+                  </div>
+                )}
               </div>
               {detailVenda.observacoes && (
                 <div className="p-3 rounded-lg bg-muted/30 border">
