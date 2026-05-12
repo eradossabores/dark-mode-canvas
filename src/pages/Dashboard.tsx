@@ -27,6 +27,7 @@ import EficienciaProducao from "@/components/dashboard/EficienciaProducao";
 import ClassificacaoABC from "@/components/dashboard/ClassificacaoABC";
 import HistoricoProdutividade from "@/components/dashboard/HistoricoProdutividade";
 import RankingProdutividade from "@/components/dashboard/RankingProdutividade";
+import DesempenhoVendedores from "@/components/dashboard/DesempenhoVendedores";
 
 const postItCharacters = [sidImg, scratAcornImg, buckImg, scrat3dImg, scratStandingImg, scratHangingImg];
 const ERA_DOS_SABORES_ID = "00000000-0000-0000-0000-000000000001";
@@ -886,6 +887,16 @@ export default function Dashboard() {
            <div className="relative h-full"><EficienciaProducao factoryId={factoryId} /></div>
          </div>
        </div>
+
+       {/* Desempenho dos Vendedores */}
+       {role !== "vendedor" && (
+         <div className="grid grid-cols-1 gap-4 sm:gap-6 mb-4 sm:mb-6 opacity-0 animate-fade-in" style={{ animationDelay: "750ms", animationFillMode: "forwards" }}>
+           <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
+             <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
+             <div className="relative h-full"><DesempenhoVendedores factoryId={factoryId} /></div>
+           </div>
+         </div>
+       )}
 
        {/* Insights de Clientes */}
        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6 opacity-0 animate-fade-in" style={{ animationDelay: "800ms", animationFillMode: "forwards" }}>
