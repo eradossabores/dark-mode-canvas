@@ -1876,7 +1876,15 @@ export default function Vendas() {
                 <div key={v.id} className="rounded-lg border bg-card p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-semibold text-sm truncate max-w-[60%]">{v.clientes?.nome}</span>
-                    <Badge variant={v.status === "paga" ? "default" : v.status === "cancelada" ? "destructive" : "secondary"} className="text-[10px]">{v.status}</Badge>
+                    <div className="flex items-center gap-1">
+                      {tipoVendaYuriMap[v.id] === "primeira" && (
+                        <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 gap-0.5 text-[10px]"><Sparkles className="h-2.5 w-2.5" /> 1ª</Badge>
+                      )}
+                      {tipoVendaYuriMap[v.id] === "reposicao" && (
+                        <Badge className="bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30 gap-0.5 text-[10px]"><Repeat className="h-2.5 w-2.5" /> Rep.</Badge>
+                      )}
+                      <Badge variant={v.status === "paga" ? "default" : v.status === "cancelada" ? "destructive" : "secondary"} className="text-[10px]">{v.status}</Badge>
+                    </div>
                   </div>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>{new Date(v.created_at).toLocaleDateString("pt-BR")}</span>
@@ -1937,13 +1945,14 @@ export default function Vendas() {
                 <TableHead>Pagamento</TableHead>
                 <TableHead>NF</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Tipo</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {(() => {
                 if (filteredVendas.length === 0) return (
-                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground">Nenhuma venda{clienteFilter ? ` para "${clienteFilter}"` : ""}.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground">Nenhuma venda{clienteFilter ? ` para "${clienteFilter}"` : ""}.</TableCell></TableRow>
                 );
                 return filteredVendas.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((v) => (
                   <TableRow key={v.id}>
@@ -1956,6 +1965,15 @@ export default function Vendas() {
                     <TableCell>{v.numero_nf || "-"}</TableCell>
                     <TableCell>
                       <Badge variant={v.status === "paga" ? "default" : v.status === "cancelada" ? "destructive" : "secondary"}>{v.status}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {tipoVendaYuriMap[v.id] === "primeira" ? (
+                        <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 gap-1"><Sparkles className="h-3 w-3" /> Primeira</Badge>
+                      ) : tipoVendaYuriMap[v.id] === "reposicao" ? (
+                        <Badge className="bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30 gap-1"><Repeat className="h-3 w-3" /> Reposição</Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-0.5">
