@@ -22,7 +22,7 @@ import { ptBR } from "date-fns/locale";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Plus, Trash2, ShoppingCart, Pencil, Eye, CalendarIcon, X, Truck, Package, History, CalendarClock, Receipt, CopyPlus } from "lucide-react";
+import { Plus, Trash2, ShoppingCart, Pencil, Eye, CalendarIcon, X, Truck, Package, History, CalendarClock, Receipt, CopyPlus, Sparkles, Repeat } from "lucide-react";
 import ReciboVenda from "@/components/vendas/ReciboVenda";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ToastAction } from "@/components/ui/toast";
@@ -170,6 +170,23 @@ export default function Vendas() {
     }
     return filtered;
   }, [vendas, clienteFilter, searchCliente, filtroStatus, filtroPagamento, filtroData, filtroVendedor, clienteVendedorMap]);
+
+  // Yuri: identificar primeira compra vs reposição por cliente
+  const YURI_USER_ID = "c311e314-e569-4303-96f7-e26bfe17a5f1";
+  const tipoVendaYuriMap = useMemo(() => {
+    const map: Record<string, "primeira" | "reposicao"> = {};
+    const porCliente: Record<string, any[]> = {};
+    vendas.forEach((v) => {
+      const vendIds = clienteVendedorMap[v.cliente_id] || [];
+      if (!vendIds.includes(YURI_USER_ID)) return;
+      (porCliente[v.cliente_id] = porCliente[v.cliente_id] || []).push(v);
+    });
+    Object.values(porCliente).forEach((arr) => {
+      arr.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      arr.forEach((v, idx) => { map[v.id] = idx === 0 ? "primeira" : "reposicao"; });
+    });
+    return map;
+  }, [vendas, clienteVendedorMap]);
 
   useEffect(() => {
     if (role !== "super_admin" && !factoryId) {
@@ -1621,6 +1638,16 @@ export default function Vendas() {
                     </div>
                   );
                 })()}
+                {tipoVendaYuriMap[detailVenda.id] && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Tipo (Yuri)</p>
+                    {tipoVendaYuriMap[detailVenda.id] === "primeira" ? (
+                      <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 gap-1 mt-0.5"><Sparkles className="h-3 w-3" /> Primeira Compra</Badge>
+                    ) : (
+                      <Badge className="bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30 gap-1 mt-0.5"><Repeat className="h-3 w-3" /> Reposição</Badge>
+                    )}
+                  </div>
+                )}
               </div>
               {detailVenda.observacoes && (
                 <div className="p-3 rounded-lg bg-muted/30 border">
@@ -1849,7 +1876,15 @@ export default function Vendas() {
                 <div key={v.id} className="rounded-lg border bg-card p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-semibold text-sm truncate max-w-[60%]">{v.clientes?.nome}</span>
-                    <Badge variant={v.status === "paga" ? "default" : v.status === "cancelada" ? "destructive" : "secondary"} className="text-[10px]">{v.status}</Badge>
+                    <div className="flex items-center gap-1">
+                      {tipoVendaYuriMap[v.id] === "primeira" && (
+                        <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 gap-0.5 text-[10px]"><Sparkles className="h-2.5 w-2.5" /> 1ª</Badge>
+                      )}
+                      {tipoVendaYuriMap[v.id] === "reposicao" && (
+                        <Badge className="bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30 gap-0.5 text-[10px]"><Repeat className="h-2.5 w-2.5" /> Rep.</Badge>
+                      )}
+                      <Badge variant={v.status === "paga" ? "default" : v.status === "cancelada" ? "destructive" : "secondary"} className="text-[10px]">{v.status}</Badge>
+                    </div>
                   </div>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>{new Date(v.created_at).toLocaleDateString("pt-BR")}</span>
@@ -1910,13 +1945,14 @@ export default function Vendas() {
                 <TableHead>Pagamento</TableHead>
                 <TableHead>NF</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Tipo</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {(() => {
                 if (filteredVendas.length === 0) return (
-                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground">Nenhuma venda{clienteFilter ? ` para "${clienteFilter}"` : ""}.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground">Nenhuma venda{clienteFilter ? ` para "${clienteFilter}"` : ""}.</TableCell></TableRow>
                 );
                 return filteredVendas.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((v) => (
                   <TableRow key={v.id}>
@@ -1929,6 +1965,15 @@ export default function Vendas() {
                     <TableCell>{v.numero_nf || "-"}</TableCell>
                     <TableCell>
                       <Badge variant={v.status === "paga" ? "default" : v.status === "cancelada" ? "destructive" : "secondary"}>{v.status}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {tipoVendaYuriMap[v.id] === "primeira" ? (
+                        <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 gap-1"><Sparkles className="h-3 w-3" /> Primeira</Badge>
+                      ) : tipoVendaYuriMap[v.id] === "reposicao" ? (
+                        <Badge className="bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30 gap-1"><Repeat className="h-3 w-3" /> Reposição</Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-0.5">
