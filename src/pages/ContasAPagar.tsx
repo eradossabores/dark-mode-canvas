@@ -189,7 +189,7 @@ export default function ContasAPagar() {
               
               if (c.valor_restante <= 0) {
                 const lastPayment = ultimosPagamentos[c.id];
-                if (lastPayment) endLimit = new Date(lastPayment);
+              if (lastPayment) endLimit = new Date(lastPayment + "T12:00:00");
               }
               
               return start <= yearEnd && endLimit >= yearStart;
@@ -202,7 +202,7 @@ export default function ContasAPagar() {
             if (c.valor_restante <= 0) {
               const lastPayment = ultimosPagamentos[c.id];
               if (lastPayment) {
-                const finalizedMonth = startOfMonth(new Date(lastPayment));
+                const finalizedMonth = startOfMonth(new Date(lastPayment + "T12:00:00"));
                 if (targetDate > finalizedMonth) return false;
               }
             }
@@ -255,7 +255,7 @@ export default function ContasAPagar() {
         if (c.valor_restante <= 0) {
           const lastPayment = ultimosPagamentos[c.id];
           if (lastPayment) {
-            const finalizedMonth = startOfMonth(new Date(lastPayment));
+            const finalizedMonth = startOfMonth(new Date(lastPayment + "T12:00:00"));
             if (thisMonth > finalizedMonth) return false;
           }
         }
@@ -295,7 +295,7 @@ export default function ContasAPagar() {
         if (c.valor_restante <= 0) {
           const lastPayment = ultimosPagamentos[c.id];
           if (lastPayment) {
-            const finalizedMonth = startOfMonth(new Date(lastPayment));
+            const finalizedMonth = startOfMonth(new Date(lastPayment + "T12:00:00"));
             if (thisMonth > finalizedMonth) return false;
           }
         }
