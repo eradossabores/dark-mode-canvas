@@ -1057,7 +1057,7 @@ export default function ContasAPagar() {
             </div>
           </CardContent>
         </Card>
-      )}
+        
         {/* Gastos por categoria */}
         <Card>
           <CardHeader className="pb-2">
@@ -1106,7 +1106,7 @@ export default function ContasAPagar() {
             </div>
           </CardContent>
         </Card>
-
+      )}
       {/* Contas Parceladas */}
       <Card>
         <CardHeader className="pb-3">
