@@ -887,7 +887,7 @@ export default function ContasAPagar() {
             </div>
           </CardContent>
         </Card>
-
+      )}
       {/* Filtros */}
       <div className="flex flex-wrap items-end gap-3 p-4 bg-card rounded-lg border">
         <div>
@@ -1106,7 +1106,6 @@ export default function ContasAPagar() {
             </div>
           </CardContent>
         </Card>
-      )}
 
       {/* Contas Parceladas */}
       <Card>
