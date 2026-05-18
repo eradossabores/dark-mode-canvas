@@ -97,8 +97,10 @@ export default function ContasAPagar() {
   // Filters
   const [busca, setBusca] = useState("");
   const [filtroTipo, setFiltroTipo] = useState("todos");
-  const [filtroCategoria, setFiltroCategoria] = useState("todos");
-  const [filtroStatus, setFiltroStatus] = useState("todos");
+   const [filtroCategoria, setFiltroCategoria] = useState("todos");
+   const [filtroStatus, setFiltroStatus] = useState("todos");
+   const [filtroMes, setFiltroMes] = useState(new Date().getMonth().toString());
+   const [filtroAno, setFiltroAno] = useState(new Date().getFullYear().toString());
 
   // Form state
   const [descricao, setDescricao] = useState("");
@@ -138,16 +140,53 @@ export default function ContasAPagar() {
   const calcValorParcela = calcTotalParcelas > 0 ? calcRestanteParaParcelar / calcTotalParcelas : 0;
 
   // Filtered contas
-  const contasFiltradas = useMemo(() => {
-    return contas.filter(c => {
-      if (busca.trim() && !c.descricao.toLowerCase().includes(busca.toLowerCase()) && !(c.responsavel || "").toLowerCase().includes(busca.toLowerCase())) return false;
-      if (filtroTipo !== "todos" && c.tipo !== filtroTipo) return false;
-      if (filtroCategoria !== "todos" && c.categoria !== filtroCategoria) return false;
-      if (filtroStatus === "pago" && !c.pago_mes) return false;
-      if (filtroStatus === "pendente" && c.pago_mes) return false;
-      return true;
-    });
-  }, [contas, busca, filtroTipo, filtroCategoria, filtroStatus]);
+   const anosDisponiveis = useMemo(() => {
+     const currentYear = new Date().getFullYear();
+     const years = [];
+     for (let i = currentYear - 2; i <= currentYear + 5; i++) {
+       years.push(i.toString());
+     }
+     return years;
+   }, []);
+ 
+   const contasFiltradas = useMemo(() => {
+     return contas.filter(c => {
+       if (busca.trim() && !c.descricao.toLowerCase().includes(busca.toLowerCase()) && !(c.responsavel || "").toLowerCase().includes(busca.toLowerCase())) return false;
+       if (filtroTipo !== "todos" && c.tipo !== filtroTipo) return false;
+       if (filtroCategoria !== "todos" && c.categoria !== filtroCategoria) return false;
+       if (filtroStatus === "pago" && !c.pago_mes) return false;
+       if (filtroStatus === "pendente" && c.pago_mes) return false;
+       
+       if (filtroMes !== "todos" || filtroAno !== "todos") {
+         const targetMonth = filtroMes === "todos" ? null : parseInt(filtroMes);
+         const targetYear = filtroAno === "todos" ? null : parseInt(filtroAno);
+         
+         if (c.tipo === "fixo") {
+           // Custo fixo sempre existe em todos os meses/anos ativos
+           return true;
+         } else {
+           // Parcelado: verificar se a parcela cai no mês/ano selecionado
+           const created = new Date(c.created_at || "");
+           const start = startOfMonth(created);
+           
+           // Se selecionou apenas ano
+           if (targetYear && !targetMonth && targetMonth !== 0) {
+             const yearStart = new Date(targetYear, 0, 1);
+             const yearEnd = new Date(targetYear, 11, 31);
+             const installmentsEnd = addMonths(start, c.total_parcelas - 1);
+             return start <= yearEnd && installmentsEnd >= yearStart;
+           }
+           
+           // Se selecionou mês e ano (ou apenas mês)
+           const targetDate = new Date(targetYear || new Date().getFullYear(), targetMonth ?? 0, 1);
+           const monthsElapsed = (targetDate.getFullYear() - start.getFullYear()) * 12 + (targetDate.getMonth() - start.getMonth());
+           return monthsElapsed >= 0 && monthsElapsed < (c.total_parcelas || 1);
+         }
+       }
+       
+       return true;
+     });
+   }, [contas, busca, filtroTipo, filtroCategoria, filtroStatus, filtroMes, filtroAno]);
 
   // Alertas de vencimento (próximos 3 dias)
   const alertasVencimento = useMemo(() => {
@@ -880,17 +919,41 @@ export default function ContasAPagar() {
             </SelectContent>
           </Select>
         </div>
-        <div>
-          <Label className="text-xs mb-1 block">Status</Label>
-          <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-            <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos</SelectItem>
-              <SelectItem value="pago">Pago</SelectItem>
-              <SelectItem value="pendente">Pendente</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+         <div>
+           <Label className="text-xs mb-1 block">Status</Label>
+           <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+             <SelectTrigger className="w-[110px]"><SelectValue /></SelectTrigger>
+             <SelectContent>
+               <SelectItem value="todos">Todos</SelectItem>
+               <SelectItem value="pago">Pago</SelectItem>
+               <SelectItem value="pendente">Pendente</SelectItem>
+             </SelectContent>
+           </Select>
+         </div>
+         <div>
+           <Label className="text-xs mb-1 block">Mês</Label>
+           <Select value={filtroMes} onValueChange={setFiltroMes}>
+             <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
+             <SelectContent>
+               <SelectItem value="todos">Todos</SelectItem>
+               {MESES_PT.map((m, i) => (
+                 <SelectItem key={m} value={i.toString()}>{m}</SelectItem>
+               ))}
+             </SelectContent>
+           </Select>
+         </div>
+         <div>
+           <Label className="text-xs mb-1 block">Ano</Label>
+           <Select value={filtroAno} onValueChange={setFiltroAno}>
+             <SelectTrigger className="w-[90px]"><SelectValue /></SelectTrigger>
+             <SelectContent>
+               <SelectItem value="todos">Todos</SelectItem>
+               {anosDisponiveis.map(ano => (
+                 <SelectItem key={ano} value={ano}>{ano}</SelectItem>
+               ))}
+             </SelectContent>
+           </Select>
+         </div>
       </div>
 
       {/* KPIs */}
