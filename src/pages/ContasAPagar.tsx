@@ -170,12 +170,13 @@ export default function ContasAPagar() {
            const start = startOfMonth(created);
            
            // Se selecionou apenas ano
-           if (targetYear && !targetMonth && targetMonth !== 0) {
-             const yearStart = new Date(targetYear, 0, 1);
-             const yearEnd = new Date(targetYear, 11, 31);
-             const installmentsEnd = addMonths(start, c.total_parcelas - 1);
-             return start <= yearEnd && installmentsEnd >= yearStart;
-           }
+            if (targetYear && !targetMonth && targetMonth !== 0) {
+              const yearStart = new Date(targetYear, 0, 1);
+              const yearEnd = new Date(targetYear, 11, 31);
+              const totalMonths = (c.valor_restante <= 0) ? c.parcela_atual : c.total_parcelas;
+              const installmentsEnd = addMonths(start, Math.max(1, totalMonths) - 1);
+              return start <= yearEnd && installmentsEnd >= yearStart;
+            }
            
             // Se selecionou mês e ano (ou apenas mês)
             const targetDate = new Date(targetYear || new Date().getFullYear(), targetMonth ?? 0, 1);
