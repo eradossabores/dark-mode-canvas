@@ -1057,7 +1057,7 @@ export default function ContasAPagar() {
             </div>
           </CardContent>
         </Card>
-
+      )}
         {/* Gastos por categoria */}
         <Card>
           <CardHeader className="pb-2">
@@ -1252,7 +1252,6 @@ export default function ContasAPagar() {
             </div>
           </CardContent>
         </Card>
-      )}
 
       {/* Custos Fixos */}
       {fixas.length > 0 && (
