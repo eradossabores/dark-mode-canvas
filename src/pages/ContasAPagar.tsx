@@ -169,26 +169,41 @@ export default function ContasAPagar() {
            const created = new Date(c.created_at || "");
            const start = startOfMonth(created);
            
-           // Se selecionou apenas ano
+            // Se selecionou apenas ano
             if (targetYear && !targetMonth && targetMonth !== 0) {
               const yearStart = new Date(targetYear, 0, 1);
               const yearEnd = new Date(targetYear, 11, 31);
-              const totalMonths = (c.valor_restante <= 0) ? c.parcela_atual : c.total_parcelas;
-              const installmentsEnd = addMonths(start, Math.max(1, totalMonths) - 1);
-              return start <= yearEnd && installmentsEnd >= yearStart;
+              const installmentsEnd = addMonths(start, (c.total_parcelas || 1) - 1);
+              let endLimit = installmentsEnd;
+              
+              if (c.valor_restante <= 0) {
+                const lastPayment = ultimosPagamentos[c.id];
+                if (lastPayment) endLimit = new Date(lastPayment);
+              }
+              
+              return start <= yearEnd && endLimit >= yearStart;
             }
-           
+
             // Se selecionou mês e ano (ou apenas mês)
             const targetDate = new Date(targetYear || new Date().getFullYear(), targetMonth ?? 0, 1);
+            
+            // Verificação de finalização antecipada
+            if (c.valor_restante <= 0) {
+              const lastPayment = ultimosPagamentos[c.id];
+              if (lastPayment) {
+                const finalizedMonth = startOfMonth(new Date(lastPayment));
+                if (targetDate > finalizedMonth) return false;
+              }
+            }
+
             const monthsElapsed = (targetDate.getFullYear() - start.getFullYear()) * 12 + (targetDate.getMonth() - start.getMonth());
-            const totalMonths = (c.valor_restante <= 0) ? c.parcela_atual : c.total_parcelas;
-            return monthsElapsed >= 0 && monthsElapsed < Math.max(1, totalMonths);
+            return monthsElapsed >= 0 && monthsElapsed < (c.total_parcelas || 1);
          }
        }
        
        return true;
      });
-   }, [contas, busca, filtroTipo, filtroCategoria, filtroStatus, filtroMes, filtroAno]);
+    }, [contas, busca, filtroTipo, filtroCategoria, filtroStatus, filtroMes, filtroAno, ultimosPagamentos]);
 
   // Alertas de vencimento (próximos 3 dias)
   const alertasVencimento = useMemo(() => {
