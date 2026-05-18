@@ -250,9 +250,18 @@ export default function ContasAPagar() {
         const createdMonth = startOfMonth(created);
         const thisMonth = startOfMonth(monthDate);
         if (createdMonth > thisMonth) return false;
+
+        // Verificação de finalização antecipada
+        if (c.valor_restante <= 0) {
+          const lastPayment = ultimosPagamentos[c.id];
+          if (lastPayment) {
+            const finalizedMonth = startOfMonth(new Date(lastPayment));
+            if (thisMonth > finalizedMonth) return false;
+          }
+        }
+
         const monthsElapsed = (thisMonth.getFullYear() - createdMonth.getFullYear()) * 12 + (thisMonth.getMonth() - createdMonth.getMonth());
-        const totalMonths = (c.valor_restante <= 0) ? c.parcela_atual : c.total_parcelas;
-        return monthsElapsed < Math.max(1, totalMonths);
+        return monthsElapsed < (c.total_parcelas || 1);
       }).reduce((s, c) => s + c.valor_parcela, 0);
       
       months.push({
@@ -266,7 +275,7 @@ export default function ContasAPagar() {
     }
     
     return months;
-  }, [contas]);
+  }, [contas, ultimosPagamentos]);
 
   // Previsão de gastos (próximos 3 meses)
   const previsao = useMemo(() => {
@@ -281,14 +290,23 @@ export default function ContasAPagar() {
         const createdMonth = startOfMonth(created);
         const thisMonth = startOfMonth(futureDate);
         if (createdMonth > thisMonth) return false;
+
+        // Verificação de finalização antecipada
+        if (c.valor_restante <= 0) {
+          const lastPayment = ultimosPagamentos[c.id];
+          if (lastPayment) {
+            const finalizedMonth = startOfMonth(new Date(lastPayment));
+            if (thisMonth > finalizedMonth) return false;
+          }
+        }
+
         const monthsElapsed = (thisMonth.getFullYear() - createdMonth.getFullYear()) * 12 + (thisMonth.getMonth() - createdMonth.getMonth());
-        const totalMonths = (c.valor_restante <= 0) ? c.parcela_atual : c.total_parcelas;
-        return monthsElapsed < Math.max(1, totalMonths);
+        return monthsElapsed < (c.total_parcelas || 1);
       }).reduce((s, c) => s + c.valor_parcela, 0);
       meses.push({ label: format(futureDate, "MMM/yy", { locale: ptBR }), valor: fixoTotal + parceladoTotal });
     }
     return meses;
-  }, [contas]);
+  }, [contas, ultimosPagamentos]);
 
   // Gastos por categoria
   const gastosPorCategoria = useMemo(() => {
