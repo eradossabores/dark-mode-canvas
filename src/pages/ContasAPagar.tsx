@@ -146,10 +146,21 @@ export default function ContasAPagar() {
      for (let i = currentYear - 2; i <= currentYear + 5; i++) {
        years.push(i.toString());
      }
-     return years;
-   }, []);
- 
-   const contasFiltradas = useMemo(() => {
+    return years;
+  }, []);
+
+  // Mapear última data de pagamento por conta
+  const ultimosPagamentos = useMemo(() => {
+    const map: Record<string, string> = {};
+    pagamentos.forEach(p => {
+      if (!map[p.conta_id] || p.data_pagamento > map[p.conta_id]) {
+        map[p.conta_id] = p.data_pagamento;
+      }
+    });
+    return map;
+  }, [pagamentos]);
+
+  const contasFiltradas = useMemo(() => {
      return contas.filter(c => {
        if (busca.trim() && !c.descricao.toLowerCase().includes(busca.toLowerCase()) && !(c.responsavel || "").toLowerCase().includes(busca.toLowerCase())) return false;
        if (filtroTipo !== "todos" && c.tipo !== filtroTipo) return false;
@@ -256,17 +267,6 @@ export default function ContasAPagar() {
     
     return months;
   }, [contas]);
-
-  // Mapear última data de pagamento por conta
-  const ultimosPagamentos = useMemo(() => {
-    const map: Record<string, string> = {};
-    pagamentos.forEach(p => {
-      if (!map[p.conta_id] || p.data_pagamento > map[p.conta_id]) {
-        map[p.conta_id] = p.data_pagamento;
-      }
-    });
-    return map;
-  }, [pagamentos]);
 
   // Previsão de gastos (próximos 3 meses)
   const previsao = useMemo(() => {
