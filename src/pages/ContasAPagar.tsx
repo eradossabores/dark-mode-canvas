@@ -146,10 +146,21 @@ export default function ContasAPagar() {
      for (let i = currentYear - 2; i <= currentYear + 5; i++) {
        years.push(i.toString());
      }
-     return years;
-   }, []);
- 
-   const contasFiltradas = useMemo(() => {
+    return years;
+  }, []);
+
+  // Mapear última data de pagamento por conta
+  const ultimosPagamentos = useMemo(() => {
+    const map: Record<string, string> = {};
+    pagamentos.forEach(p => {
+      if (!map[p.conta_id] || p.data_pagamento > map[p.conta_id]) {
+        map[p.conta_id] = p.data_pagamento;
+      }
+    });
+    return map;
+  }, [pagamentos]);
+
+  const contasFiltradas = useMemo(() => {
      return contas.filter(c => {
        if (busca.trim() && !c.descricao.toLowerCase().includes(busca.toLowerCase()) && !(c.responsavel || "").toLowerCase().includes(busca.toLowerCase())) return false;
        if (filtroTipo !== "todos" && c.tipo !== filtroTipo) return false;
@@ -169,24 +180,41 @@ export default function ContasAPagar() {
            const created = new Date(c.created_at || "");
            const start = startOfMonth(created);
            
-           // Se selecionou apenas ano
-           if (targetYear && !targetMonth && targetMonth !== 0) {
-             const yearStart = new Date(targetYear, 0, 1);
-             const yearEnd = new Date(targetYear, 11, 31);
-             const installmentsEnd = addMonths(start, c.total_parcelas - 1);
-             return start <= yearEnd && installmentsEnd >= yearStart;
-           }
-           
-           // Se selecionou mês e ano (ou apenas mês)
-           const targetDate = new Date(targetYear || new Date().getFullYear(), targetMonth ?? 0, 1);
-           const monthsElapsed = (targetDate.getFullYear() - start.getFullYear()) * 12 + (targetDate.getMonth() - start.getMonth());
-           return monthsElapsed >= 0 && monthsElapsed < (c.total_parcelas || 1);
+            // Se selecionou apenas ano
+            if (targetYear && !targetMonth && targetMonth !== 0) {
+              const yearStart = new Date(targetYear, 0, 1);
+              const yearEnd = new Date(targetYear, 11, 31);
+              const installmentsEnd = addMonths(start, (c.total_parcelas || 1) - 1);
+              let endLimit = installmentsEnd;
+              
+              if (c.valor_restante <= 0) {
+                const lastPayment = ultimosPagamentos[c.id];
+              if (lastPayment) endLimit = new Date(lastPayment + "T12:00:00");
+              }
+              
+              return start <= yearEnd && endLimit >= yearStart;
+            }
+
+            // Se selecionou mês e ano (ou apenas mês)
+            const targetDate = new Date(targetYear || new Date().getFullYear(), targetMonth ?? 0, 1);
+            
+            // Verificação de finalização antecipada
+            if (c.valor_restante <= 0) {
+              const lastPayment = ultimosPagamentos[c.id];
+              if (lastPayment) {
+                const finalizedMonth = startOfMonth(new Date(lastPayment + "T12:00:00"));
+                if (targetDate > finalizedMonth) return false;
+              }
+            }
+
+            const monthsElapsed = (targetDate.getFullYear() - start.getFullYear()) * 12 + (targetDate.getMonth() - start.getMonth());
+            return monthsElapsed >= 0 && monthsElapsed < (c.total_parcelas || 1);
          }
        }
        
        return true;
      });
-   }, [contas, busca, filtroTipo, filtroCategoria, filtroStatus, filtroMes, filtroAno]);
+    }, [contas, busca, filtroTipo, filtroCategoria, filtroStatus, filtroMes, filtroAno, ultimosPagamentos]);
 
   // Alertas de vencimento (próximos 3 dias)
   const alertasVencimento = useMemo(() => {
@@ -222,6 +250,16 @@ export default function ContasAPagar() {
         const createdMonth = startOfMonth(created);
         const thisMonth = startOfMonth(monthDate);
         if (createdMonth > thisMonth) return false;
+
+        // Verificação de finalização antecipada
+        if (c.valor_restante <= 0) {
+          const lastPayment = ultimosPagamentos[c.id];
+          if (lastPayment) {
+            const finalizedMonth = startOfMonth(new Date(lastPayment + "T12:00:00"));
+            if (thisMonth > finalizedMonth) return false;
+          }
+        }
+
         const monthsElapsed = (thisMonth.getFullYear() - createdMonth.getFullYear()) * 12 + (thisMonth.getMonth() - createdMonth.getMonth());
         return monthsElapsed < (c.total_parcelas || 1);
       }).reduce((s, c) => s + c.valor_parcela, 0);
@@ -237,7 +275,7 @@ export default function ContasAPagar() {
     }
     
     return months;
-  }, [contas]);
+  }, [contas, ultimosPagamentos]);
 
   // Previsão de gastos (próximos 3 meses)
   const previsao = useMemo(() => {
@@ -252,13 +290,23 @@ export default function ContasAPagar() {
         const createdMonth = startOfMonth(created);
         const thisMonth = startOfMonth(futureDate);
         if (createdMonth > thisMonth) return false;
+
+        // Verificação de finalização antecipada
+        if (c.valor_restante <= 0) {
+          const lastPayment = ultimosPagamentos[c.id];
+          if (lastPayment) {
+            const finalizedMonth = startOfMonth(new Date(lastPayment + "T12:00:00"));
+            if (thisMonth > finalizedMonth) return false;
+          }
+        }
+
         const monthsElapsed = (thisMonth.getFullYear() - createdMonth.getFullYear()) * 12 + (thisMonth.getMonth() - createdMonth.getMonth());
         return monthsElapsed < (c.total_parcelas || 1);
       }).reduce((s, c) => s + c.valor_parcela, 0);
       meses.push({ label: format(futureDate, "MMM/yy", { locale: ptBR }), valor: fixoTotal + parceladoTotal });
     }
     return meses;
-  }, [contas]);
+  }, [contas, ultimosPagamentos]);
 
   // Gastos por categoria
   const gastosPorCategoria = useMemo(() => {
