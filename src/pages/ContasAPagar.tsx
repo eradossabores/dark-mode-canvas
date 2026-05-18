@@ -177,10 +177,11 @@ export default function ContasAPagar() {
              return start <= yearEnd && installmentsEnd >= yearStart;
            }
            
-           // Se selecionou mês e ano (ou apenas mês)
-           const targetDate = new Date(targetYear || new Date().getFullYear(), targetMonth ?? 0, 1);
-           const monthsElapsed = (targetDate.getFullYear() - start.getFullYear()) * 12 + (targetDate.getMonth() - start.getMonth());
-           return monthsElapsed >= 0 && monthsElapsed < (c.total_parcelas || 1);
+            // Se selecionou mês e ano (ou apenas mês)
+            const targetDate = new Date(targetYear || new Date().getFullYear(), targetMonth ?? 0, 1);
+            const monthsElapsed = (targetDate.getFullYear() - start.getFullYear()) * 12 + (targetDate.getMonth() - start.getMonth());
+            const totalMonths = (c.valor_restante <= 0) ? c.parcela_atual : c.total_parcelas;
+            return monthsElapsed >= 0 && monthsElapsed < Math.max(1, totalMonths);
          }
        }
        
