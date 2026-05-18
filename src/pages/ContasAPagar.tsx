@@ -1110,19 +1110,45 @@ export default function ContasAPagar() {
       )}
 
       {/* Contas Parceladas */}
-      {parceladas.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                📋 Contas Parceladas
-                <Badge variant="secondary" className="text-xs">{parceladas.length}</Badge>
-              </CardTitle>
-              <div className="text-xs text-muted-foreground">
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <CardTitle className="text-base flex items-center gap-2">
+              📋 Contas Parceladas
+              <Badge variant="secondary" className="text-xs">{parceladas.length}</Badge>
+            </CardTitle>
+            
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
+                <Label className="text-[10px] uppercase font-bold text-muted-foreground whitespace-nowrap">Mês</Label>
+                <Select value={filtroMes} onValueChange={setFiltroMes}>
+                  <SelectTrigger className="h-8 w-[100px] text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    {MESES_PT.map((m, i) => (
+                      <SelectItem key={m} value={i.toString()}>{m}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Label className="text-[10px] uppercase font-bold text-muted-foreground whitespace-nowrap">Ano</Label>
+                <Select value={filtroAno} onValueChange={setFiltroAno}>
+                  <SelectTrigger className="h-8 w-[80px] text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    {anosDisponiveis.map(ano => (
+                      <SelectItem key={ano} value={ano}>{ano}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="ml-2 text-xs text-muted-foreground">
                 Saldo total: <span className="font-bold text-destructive">{R(totalRestante)}</span>
               </div>
             </div>
-          </CardHeader>
+          </div>
+        </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <Table>
