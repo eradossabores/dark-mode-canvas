@@ -242,6 +242,17 @@ export default function ContasAPagar() {
     return months;
   }, [contas]);
 
+  // Mapear última data de pagamento por conta
+  const ultimosPagamentos = useMemo(() => {
+    const map: Record<string, string> = {};
+    pagamentos.forEach(p => {
+      if (!map[p.conta_id] || p.data_pagamento > map[p.conta_id]) {
+        map[p.conta_id] = p.data_pagamento;
+      }
+    });
+    return map;
+  }, [pagamentos]);
+
   // Previsão de gastos (próximos 3 meses)
   const previsao = useMemo(() => {
     const now = new Date();
