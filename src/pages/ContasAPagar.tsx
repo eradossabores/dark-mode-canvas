@@ -224,7 +224,8 @@ export default function ContasAPagar() {
         const thisMonth = startOfMonth(monthDate);
         if (createdMonth > thisMonth) return false;
         const monthsElapsed = (thisMonth.getFullYear() - createdMonth.getFullYear()) * 12 + (thisMonth.getMonth() - createdMonth.getMonth());
-        return monthsElapsed < (c.total_parcelas || 1);
+        const totalMonths = (c.valor_restante <= 0) ? c.parcela_atual : c.total_parcelas;
+        return monthsElapsed < Math.max(1, totalMonths);
       }).reduce((s, c) => s + c.valor_parcela, 0);
       
       months.push({
@@ -254,7 +255,8 @@ export default function ContasAPagar() {
         const thisMonth = startOfMonth(futureDate);
         if (createdMonth > thisMonth) return false;
         const monthsElapsed = (thisMonth.getFullYear() - createdMonth.getFullYear()) * 12 + (thisMonth.getMonth() - createdMonth.getMonth());
-        return monthsElapsed < (c.total_parcelas || 1);
+        const totalMonths = (c.valor_restante <= 0) ? c.parcela_atual : c.total_parcelas;
+        return monthsElapsed < Math.max(1, totalMonths);
       }).reduce((s, c) => s + c.valor_parcela, 0);
       meses.push({ label: format(futureDate, "MMM/yy", { locale: ptBR }), valor: fixoTotal + parceladoTotal });
     }
