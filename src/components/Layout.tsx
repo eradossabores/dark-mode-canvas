@@ -13,6 +13,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { isRouteAllowed } from "@/components/ProtectedRoute";
 import useKeyboardShortcuts from "@/hooks/useKeyboardShortcuts";
 
+const ERA_DOS_SABORES_ID = "00000000-0000-0000-0000-000000000001";
+
 interface MenuItem {
   path: string;
   label: string;
@@ -152,7 +154,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       // Non-vendedor groups are hidden from vendedores
       return role !== "vendedor";
     })
-    .map((g) => ({ ...g, items: g.items.filter((item) => isRouteAllowed(item.path, role)) }))
+    .map((g) => ({
+      ...g,
+      items: g.items.filter((item) => {
+        if (item.path === "/painel/vendedores" && factoryId !== ERA_DOS_SABORES_ID) return false;
+        return isRouteAllowed(item.path, role);
+      }),
+    }))
     .filter((g) => g.items.length > 0);
 
   const handleLogout = async () => {
