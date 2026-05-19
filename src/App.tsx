@@ -44,6 +44,7 @@ import Suporte from "@/pages/Suporte";
 import ConfigurarFabrica from "@/pages/ConfigurarFabrica";
 import NotFound from "@/pages/NotFound";
 import Compras from "@/pages/Compras";
+import Vendedores from "@/pages/Vendedores";
 import MeusClientes from "@/pages/vendedor/MeusClientes";
 import NovoPedido from "@/pages/vendedor/NovoPedido";
 import EstoqueDisponivel from "@/pages/vendedor/EstoqueDisponivel";
@@ -93,6 +94,7 @@ const App = () => (
               {/* Admin only routes */}
               <Route path="/painel" element={<AdminRoute><Dashboard /></AdminRoute>} />
               <Route path="/painel/vendas" element={<AdminRoute><Vendas /></AdminRoute>} />
+              <Route path="/painel/vendedores" element={<AdminRoute><Vendedores /></AdminRoute>} />
               <Route path="/painel/a-receber" element={<AdminRoute><AReceber /></AdminRoute>} />
               <Route path="/painel/contas-a-pagar" element={<AdminRoute><ContasAPagar /></AdminRoute>} />
               <Route path="/painel/compras" element={<AdminRoute><Compras /></AdminRoute>} />
