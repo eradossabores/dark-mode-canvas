@@ -13,6 +13,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { isRouteAllowed } from "@/components/ProtectedRoute";
 import useKeyboardShortcuts from "@/hooks/useKeyboardShortcuts";
 
+const ERA_DOS_SABORES_ID = "00000000-0000-0000-0000-000000000001";
+
 interface MenuItem {
   path: string;
   label: string;
@@ -62,6 +64,7 @@ const menuGroups: MenuGroup[] = [
     label: "Comercial",
     items: [
       { path: "/painel/vendas", label: "Vendas", icon: ShoppingCart },
+      { path: "/painel/vendedores", label: "Vendedores", icon: UserCog },
       { path: "/painel/a-receber", label: "A Receber", icon: DollarSign },
       { path: "/painel/contas-a-pagar", label: "Contas a Pagar", icon: ClipboardList },
       { path: "/painel/compras", label: "Compras", icon: ShoppingBag },
@@ -103,7 +106,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
   const location = useLocation();
   const navigate = useNavigate();
-  const { role, signOut, factoryName, branding, impersonatingFactory, clearImpersonation } = useAuth();
+  const { role, signOut, factoryName, factoryId, branding, impersonatingFactory, clearImpersonation } = useAuth();
   useKeyboardShortcuts();
 
   // Apply factory theme
@@ -152,7 +155,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       // Non-vendedor groups are hidden from vendedores
       return role !== "vendedor";
     })
-    .map((g) => ({ ...g, items: g.items.filter((item) => isRouteAllowed(item.path, role)) }))
+    .map((g) => ({
+      ...g,
+      items: g.items.filter((item) => {
+        if (item.path === "/painel/vendedores" && factoryId !== ERA_DOS_SABORES_ID) return false;
+        return isRouteAllowed(item.path, role);
+      }),
+    }))
     .filter((g) => g.items.length > 0);
 
   const handleLogout = async () => {
