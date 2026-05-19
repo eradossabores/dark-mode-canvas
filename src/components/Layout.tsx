@@ -105,7 +105,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
   const location = useLocation();
   const navigate = useNavigate();
-  const { role, signOut, factoryName, branding, impersonatingFactory, clearImpersonation } = useAuth();
+  const { role, signOut, factoryName, factoryId, branding, impersonatingFactory, clearImpersonation } = useAuth();
   useKeyboardShortcuts();
 
   // Apply factory theme
