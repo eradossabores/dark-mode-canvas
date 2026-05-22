@@ -109,10 +109,10 @@ export default function HistoricoVendas() {
     });
   }, [vendas, search, statusFilter]);
 
-  // Mapa: venda_id -> "primeira" | "reposicao" (apenas Yuri)
+  // Mapa: venda_id -> "primeira" | "reposicao" (apenas Iury)
   const tipoVendaMap = useMemo(() => {
     const map: Record<string, "primeira" | "reposicao"> = {};
-    if (!isYuri) return map;
+    if (!isIury) return map;
     const porCliente: Record<string, any[]> = {};
     vendas.forEach((v) => {
       const cid = v.clientes?.nome ? `${v.clientes?.nome}` : v.id;
@@ -127,10 +127,10 @@ export default function HistoricoVendas() {
       });
     });
     return map;
-  }, [vendas, isYuri]);
+  }, [vendas, isIury]);
 
-  const yuriStats = useMemo(() => {
-    if (!isYuri) return null;
+  const iuryStats = useMemo(() => {
+    if (!isIury) return null;
     let primeiras = 0, reposicoes = 0, comInt = 0, comRed = 0;
     filtered.forEach((v) => {
       const t = tipoVendaMap[v.id];
@@ -139,7 +139,7 @@ export default function HistoricoVendas() {
       else if (t === "reposicao") { reposicoes++; comRed += com; }
     });
     return { primeiras, reposicoes, comInt, comRed };
-  }, [filtered, tipoVendaMap, comissoesMap, isYuri]);
+  }, [filtered, tipoVendaMap, comissoesMap, isIury]);
 
   const totals = useMemo(() => {
     const now = new Date();
@@ -266,23 +266,23 @@ export default function HistoricoVendas() {
         </Card>
       </div>
 
-      {isYuri && yuriStats && (
+      {isIury && iuryStats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Card className="border-primary/30">
             <CardHeader className="pb-1"><CardTitle className="text-xs flex items-center gap-1.5"><Sparkles className="h-3.5 w-3.5 text-amber-500" /> Primeiras Compras</CardTitle></CardHeader>
-            <CardContent><p className="text-2xl font-bold">{yuriStats.primeiras}</p></CardContent>
+            <CardContent><p className="text-2xl font-bold">{iuryStats.primeiras}</p></CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-1"><CardTitle className="text-xs flex items-center gap-1.5"><Repeat className="h-3.5 w-3.5 text-blue-500" /> Reposições</CardTitle></CardHeader>
-            <CardContent><p className="text-2xl font-bold">{yuriStats.reposicoes}</p></CardContent>
+            <CardContent><p className="text-2xl font-bold">{iuryStats.reposicoes}</p></CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-1"><CardTitle className="text-xs">Comissão Integral</CardTitle></CardHeader>
-            <CardContent><p className="text-xl font-bold text-green-600">R$ {yuriStats.comInt.toFixed(2)}</p></CardContent>
+            <CardContent><p className="text-xl font-bold text-green-600">R$ {iuryStats.comInt.toFixed(2)}</p></CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-1"><CardTitle className="text-xs">Comissão Reduzida (50%)</CardTitle></CardHeader>
-            <CardContent><p className="text-xl font-bold text-blue-600">R$ {yuriStats.comRed.toFixed(2)}</p></CardContent>
+            <CardContent><p className="text-xl font-bold text-blue-600">R$ {iuryStats.comRed.toFixed(2)}</p></CardContent>
           </Card>
         </div>
       )}
@@ -327,7 +327,7 @@ export default function HistoricoVendas() {
                     <TableHead className="text-right">Total</TableHead>
                     <TableHead>Pagto</TableHead>
                     <TableHead>Status</TableHead>
-                    {isYuri && <TableHead>Tipo</TableHead>}
+                    {isIury && <TableHead>Tipo</TableHead>}
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -345,7 +345,7 @@ export default function HistoricoVendas() {
                         <TableCell className="text-right font-semibold">R$ {Number(v.total || 0).toFixed(2)}</TableCell>
                         <TableCell className="text-xs capitalize">{v.forma_pagamento || "-"}</TableCell>
                         <TableCell><Badge variant="outline" className={getStatusBadge(v.status)}>{v.status || "-"}</Badge></TableCell>
-                        {isYuri && (
+                        {isIury && (
                           <TableCell>
                             {tipoVendaMap[v.id] === "primeira" ? (
                               <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 gap-1"><Sparkles className="h-3 w-3" /> Primeira</Badge>
