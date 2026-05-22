@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Plus, Truck, Package, ShoppingCart, BarChart3, Trash2, Edit, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Truck, Package, ShoppingCart, BarChart3, Trash2, Edit, ChevronDown, ChevronRight, Eye } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -162,6 +162,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const [saving, setSaving] = useState(false);
   const [filterTipo, setFilterTipo] = useState("todos");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [viewingId, setViewingId] = useState<string | null>(null);
   const [editItemNome, setEditItemNome] = useState("");
   const [editQuantidade, setEditQuantidade] = useState("");
 
@@ -402,13 +403,30 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     setOpen(true);
   };
 
+  const handleView = (c: Compra) => {
+    setViewingId(c.id);
+    setTipo(c.tipo);
+    setEditItemNome(c.item_nome);
+    setEditQuantidade(String(c.quantidade));
+    setFornecedorId(c.fornecedor_id || "");
+    setValorTotalInput(String(c.valor_total));
+    setTemFrete(c.tem_frete);
+    setValorFrete(String(c.valor_frete));
+    setObs(c.observacoes || "");
+    setDataCompra(format(new Date(c.created_at), "yyyy-MM-dd"));
+    setNumeroLote(c.numero_lote || "");
+    setDataFabricacao(c.data_fabricacao || "");
+    setDataVencimento(c.data_vencimento || "");
+    setOpen(true);
+  };
+
   const resetForm = () => {
     setTipo("insumo"); setFornecedorId(""); setValorTotalInput("");
     setTemFrete(false); setTipoFrete("sedex"); setValorFrete(""); setItemUnits({}); setObs("");
     setDataCompra(format(new Date(), "yyyy-MM-dd"));
     setNumeroLote(""); setDataFabricacao(""); setDataVencimento("");
     setItemQuantities({}); setCustomItems([]); setNewCustomItem("");
-    setEditingId(null); setEditItemNome(""); setEditQuantidade("");
+    setEditingId(null); setViewingId(null); setEditItemNome(""); setEditQuantidade("");
   };
 
 
@@ -786,8 +804,17 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                         <TableCell className="text-right font-bold text-primary">{totalCustoGroup.toFixed(2)}</TableCell>
                         <TableCell>
                           <div className="flex gap-1" onClick={e => e.stopPropagation()}>
-                            {isSingle && <Button variant="ghost" size="icon" onClick={() => handleEdit(first)}><Edit className="h-4 w-4" /></Button>}
-                            <Button variant="ghost" size="icon" onClick={() => isSingle ? handleDelete(first.id) : handleDeleteGroup(items)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                            {isSingle ? (
+                              <>
+                                <Button variant="ghost" size="icon" onClick={() => handleView(first)} title="Visualizar"><Eye className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => handleEdit(first)} title="Editar"><Edit className="h-4 w-4" /></Button>
+                              </>
+                            ) : (
+                              <Button variant="ghost" size="icon" onClick={() => toggleGroup(key)} title={isExpanded ? "Recolher" : "Visualizar Itens"}>
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            )}
+                            <Button variant="ghost" size="icon" onClick={() => isSingle ? handleDelete(first.id) : handleDeleteGroup(items)} title="Excluir"><Trash2 className="h-4 w-4 text-destructive" /></Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -804,8 +831,9 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                           <TableCell className="text-right text-sm">{Number(c.custo_total_com_frete).toFixed(2)}</TableCell>
                           <TableCell>
                             <div className="flex gap-1">
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(c)}><Edit className="h-3 w-3" /></Button>
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDelete(c.id)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleView(c)} title="Visualizar"><Eye className="h-3 w-3" /></Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(c)} title="Editar"><Edit className="h-3 w-3" /></Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDelete(c.id)} title="Excluir"><Trash2 className="h-3 w-3 text-destructive" /></Button>
                             </div>
                           </TableCell>
                         </TableRow>
