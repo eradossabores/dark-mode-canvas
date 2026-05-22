@@ -905,20 +905,52 @@ function FornecedoresTab({ factoryId, fornecedores, onRefresh }: {
   const [email, setEmail] = useState("");
   const [obs, setObs] = useState("");
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const resetForm = () => {
+    setEditingId(null);
+    setNome("");
+    setTipo("insumo");
+    setTelefone("");
+    setEmail("");
+    setObs("");
+  };
 
   const handleSave = async () => {
     if (!factoryId || !nome.trim()) { toast.error("Informe o nome"); return; }
     setSaving(true);
-    const { error } = await (supabase as any).from("fornecedores").insert({
-      nome: nome.trim(), tipo, telefone: telefone || null, email: email || null,
-      observacoes: obs || null, factory_id: factoryId,
-    });
+    
+    const payload = {
+      nome: nome.trim(),
+      tipo,
+      telefone: telefone || null,
+      email: email || null,
+      observacoes: obs || null,
+      factory_id: factoryId,
+    };
+
+    const { error } = editingId 
+      ? await (supabase as any).from("fornecedores").update(payload).eq("id", editingId)
+      : await (supabase as any).from("fornecedores").insert(payload);
+
     setSaving(false);
     if (error) { toast.error("Erro ao salvar"); return; }
-    toast.success("Fornecedor cadastrado!");
-    setOpen(false); setNome(""); setTipo("insumo"); setTelefone(""); setEmail(""); setObs("");
+    toast.success(editingId ? "Fornecedor atualizado!" : "Fornecedor cadastrado!");
+    setOpen(false); 
+    resetForm();
     onRefresh();
   };
+
+  const handleEdit = (f: Fornecedor) => {
+    setEditingId(f.id);
+    setNome(f.nome);
+    setTipo(f.tipo);
+    setTelefone(f.telefone || "");
+    setEmail(f.email || "");
+    setObs(f.observacoes || "");
+    setOpen(true);
+  };
+
 
   const toggleAtivo = async (f: Fornecedor) => {
     await (supabase as any).from("fornecedores").update({ ativo: !f.ativo }).eq("id", f.id);
@@ -934,12 +966,13 @@ function FornecedoresTab({ factoryId, fornecedores, onRefresh }: {
 
   return (
     <div className="space-y-4">
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
         <DialogTrigger asChild>
           <Button className="gap-2"><Plus className="h-4 w-4" /> Novo Fornecedor</Button>
         </DialogTrigger>
         <DialogContent>
-          <DialogHeader><DialogTitle>Cadastrar Fornecedor</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editingId ? "Editar Fornecedor" : "Cadastrar Fornecedor"}</DialogTitle></DialogHeader>
+
           <div className="space-y-3">
             <div><Label>Nome *</Label><Input value={nome} onChange={e => setNome(e.target.value)} /></div>
             <div>
@@ -956,7 +989,7 @@ function FornecedoresTab({ factoryId, fornecedores, onRefresh }: {
             <div><Label>Telefone</Label><Input value={telefone} onChange={e => setTelefone(e.target.value)} /></div>
             <div><Label>E-mail</Label><Input value={email} onChange={e => setEmail(e.target.value)} /></div>
             <div><Label>Observações</Label><Textarea value={obs} onChange={e => setObs(e.target.value)} /></div>
-            <Button onClick={handleSave} disabled={saving} className="w-full">{saving ? "Salvando..." : "Cadastrar"}</Button>
+            <Button onClick={handleSave} disabled={saving} className="w-full">{saving ? "Salvando..." : editingId ? "Salvar Alterações" : "Cadastrar"}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -990,14 +1023,20 @@ function FornecedoresTab({ factoryId, fornecedores, onRefresh }: {
                   <TableCell>
                     <Badge variant={f.ativo ? "default" : "secondary"}>{f.ativo ? "Ativo" : "Inativo"}</Badge>
                   </TableCell>
-                  <TableCell className="flex gap-1">
-                    <Button variant="ghost" size="sm" onClick={() => toggleAtivo(f)}>
-                      {f.ativo ? "Desativar" : "Ativar"}
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(f.id)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="sm" onClick={() => toggleAtivo(f)}>
+                        {f.ativo ? "Desativar" : "Ativar"}
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleEdit(f)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(f.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </TableCell>
+
                 </TableRow>
               ))}
             </TableBody>
