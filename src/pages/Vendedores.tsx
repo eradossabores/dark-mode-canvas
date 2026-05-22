@@ -42,7 +42,7 @@ function calcularFaixa(qtd: number, recorrente: boolean) {
 const isPago = (s: string) => ["pago", "paga", "pago_total", "quitado", "quitada"].includes((s || "").toLowerCase());
 
 export default function Vendedores() {
-  const { factoryId } = useAuth();
+  const { factoryId, role } = useAuth();
   const [vendedores, setVendedores] = useState<Vendedor[]>([]);
   const [selected, setSelected] = useState<Vendedor | null>(null);
   const [loading, setLoading] = useState(true);
