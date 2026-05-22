@@ -109,15 +109,12 @@ export default function HistoricoVendas() {
     });
   }, [vendas, search, statusFilter]);
 
-  // Mapa: venda_id -> "primeira" | "reposicao" (apenas Iury)
+  // Mapa: venda_id -> "primeira" | "reposicao"
   const tipoVendaMap = useMemo(() => {
     const map: Record<string, "primeira" | "reposicao"> = {};
-    if (!isIury) return map;
     const porCliente: Record<string, any[]> = {};
     vendas.forEach((v) => {
-      const cid = v.clientes?.nome ? `${v.clientes?.nome}` : v.id;
-      // Use cliente_id real via lookup: vendas têm clientes(nome) só; melhor agrupar por v.cliente_id se existir
-      const key = (v as any).cliente_id || cid;
+      const key = (v as any).cliente_id || (v.clientes?.nome ? `${v.clientes?.nome}` : v.id);
       (porCliente[key] = porCliente[key] || []).push(v);
     });
     Object.values(porCliente).forEach((arr) => {
@@ -127,7 +124,7 @@ export default function HistoricoVendas() {
       });
     });
     return map;
-  }, [vendas, isIury]);
+  }, [vendas]);
 
   const iuryStats = useMemo(() => {
     if (!isIury) return null;
@@ -327,7 +324,7 @@ export default function HistoricoVendas() {
                     <TableHead className="text-right">Total</TableHead>
                     <TableHead>Pagto</TableHead>
                     <TableHead>Status</TableHead>
-                    {isIury && <TableHead>Tipo</TableHead>}
+                    <TableHead>Tipo</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -345,15 +342,13 @@ export default function HistoricoVendas() {
                         <TableCell className="text-right font-semibold">R$ {Number(v.total || 0).toFixed(2)}</TableCell>
                         <TableCell className="text-xs capitalize">{v.forma_pagamento || "-"}</TableCell>
                         <TableCell><Badge variant="outline" className={getStatusBadge(v.status)}>{v.status || "-"}</Badge></TableCell>
-                        {isIury && (
-                          <TableCell>
-                            {tipoVendaMap[v.id] === "primeira" ? (
-                              <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 gap-1"><Sparkles className="h-3 w-3" /> Primeira Compra</Badge>
-                            ) : tipoVendaMap[v.id] === "reposicao" ? (
-                              <Badge className="bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30 gap-1"><Repeat className="h-3 w-3" /> Reposição</Badge>
-                            ) : null}
-                          </TableCell>
-                        )}
+                        <TableCell>
+                          {tipoVendaMap[v.id] === "primeira" ? (
+                            <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 gap-1"><Sparkles className="h-3 w-3" /> Primeira Compra</Badge>
+                          ) : tipoVendaMap[v.id] === "reposicao" ? (
+                            <Badge className="bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30 gap-1"><Repeat className="h-3 w-3" /> Reposição</Badge>
+                          ) : null}
+                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
                             <Button size="icon" variant="ghost" className="h-8 w-8" title="Visualizar comanda" onClick={() => handleView(v)}>
