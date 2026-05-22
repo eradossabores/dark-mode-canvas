@@ -105,6 +105,10 @@ export default function DashboardVendedor() {
   // Streak
   const [streak, setStreak] = useState(0);
 
+  // Bonificações extras
+  const [bonusFidelizacao, setBonusFidelizacao] = useState(0);
+  const [recomprasConsecutivas, setRecomprasConsecutivas] = useState(0);
+
   async function load() {
     if (!user) return;
     setLoading(true);
@@ -302,6 +306,55 @@ export default function DashboardVendedor() {
       else cPend += v;
     });
     setComissaoPaga(cP); setComissaoPendente(cPend);
+
+    // Calcular bônus de fidelização (3 ou 6 meses de recompra)
+    // Para simplificar no dashboard, verificamos se o vendedor tem clientes que recompram há 3 ou 6 meses
+    if (ids.length > 0) {
+      const mesesParaVerificar = [1, 2, 3, 4, 5, 6];
+      const vendasPorMes: Record<number, Set<string>> = {};
+      
+      mesesParaVerificar.forEach(m => {
+        vendasPorMes[m] = new Set();
+      });
+
+      const { data: vendasAntTudo } = await (supabase as any)
+        .from("vendas")
+        .select("cliente_id, created_at")
+        .in("cliente_id", ids)
+        .eq("status", "paga")
+        .gte("created_at", subMonths(startOfMonth(hoje), 6).toISOString());
+
+      (vendasAntTudo || []).forEach((v: any) => {
+        const dt = new Date(v.created_at);
+        for (let i = 1; i <= 6; i++) {
+          const ini = startOfMonth(subMonths(hoje, i));
+          const fim = endOfMonth(subMonths(hoje, i));
+          if (dt >= ini && dt <= fim) {
+            vendasPorMes[i].add(v.cliente_id);
+          }
+        }
+      });
+
+      let maxConsecutivo = 0;
+      let totalBonusFid = 0;
+
+      // Simplificação: Se algum cliente comprou nos últimos 3 meses consecutivos
+      ids.forEach(cid => {
+        let consec = 0;
+        if (vendasPorMes[1].has(cid) && vendasPorMes[2].has(cid) && vendasPorMes[3].has(cid)) {
+          consec = 3;
+          if (vendasPorMes[4].has(cid) && vendasPorMes[5].has(cid) && vendasPorMes[6].has(cid)) {
+            consec = 6;
+          }
+        }
+        if (consec > maxConsecutivo) maxConsecutivo = consec;
+        if (consec === 6) totalBonusFid += 100;
+        else if (consec === 3) totalBonusFid += 50;
+      });
+
+      setRecomprasConsecutivas(maxConsecutivo);
+      setBonusFidelizacao(totalBonusFid);
+    }
 
     setLoading(false);
   }
@@ -532,6 +585,57 @@ export default function DashboardVendedor() {
             </CardContent>
           </Card>
         </div>
+      </div>
+
+      {/* Bonificações Extras */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" /> 
+              Bônus por Volume
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-2xl font-bold">R$ {bonus.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {unidadesMes >= 2000 ? "Bônus máximo atingido!" : 
+                   unidadesMes >= 1000 ? "Meta 1k batida! Próximo: 2k (R$ 100)" : 
+                   "Venda 1.000 un para ganhar R$ 50"}
+                </p>
+              </div>
+              <Badge className={bonus > 0 ? "bg-primary" : "bg-muted text-muted-foreground"}>
+                {unidadesMes >= 2000 ? "Nível 2" : unidadesMes >= 1000 ? "Nível 1" : "Pendente"}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-accent/20 bg-accent/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Users className="h-4 w-4 text-accent" /> 
+              Bônus Fidelização
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-2xl font-bold">R$ {bonusFidelizacao.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {recomprasConsecutivas >= 6 ? "Bônus 6 meses atingido!" :
+                   recomprasConsecutivas >= 3 ? "3 meses seguidos! Próximo: 6 meses" :
+                   "Recompra por 3 meses = R$ 50"}
+                </p>
+              </div>
+              <Badge className={bonusFidelizacao > 0 ? "bg-accent" : "bg-muted text-muted-foreground"}>
+                {recomprasConsecutivas >= 6 ? "6 Meses" : recomprasConsecutivas >= 3 ? "3 Meses" : "Iniciando"}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* KPIs secundários */}
