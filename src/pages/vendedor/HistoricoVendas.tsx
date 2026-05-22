@@ -116,6 +116,7 @@ export default function HistoricoVendas() {
     
     // Agrupar todas as vendas por cliente
     vendas.forEach((v) => {
+      // Usar cliente_id se disponível, caso contrário usar nome do cliente (para AVULSO/AMOSTRAS)
       const key = v.cliente_id || (v.clientes?.nome ? `${v.clientes?.nome}` : v.id);
       (porCliente[key] = porCliente[key] || []).push(v);
     });
@@ -123,9 +124,13 @@ export default function HistoricoVendas() {
     Object.values(porCliente).forEach((arr) => {
       // Ordenar por data de criação (antiga para nova)
       const sorted = [...arr].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-      sorted.forEach((v, idx) => {
-        // A primeira venda de cada cliente é "primeira", as demais são "reposicao"
-        map[v.id] = idx === 0 ? "primeira" : "reposicao";
+      
+      // Identificar a primeira venda PAGA ou a primeira venda cronológica se nenhuma estiver paga ainda
+      // para garantir consistência com o que o Iury espera
+      const primeiraVenda = sorted[0];
+      
+      sorted.forEach((v) => {
+        map[v.id] = v.id === primeiraVenda.id ? "primeira" : "reposicao";
       });
     });
     return map;
