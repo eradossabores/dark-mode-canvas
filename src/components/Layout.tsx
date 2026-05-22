@@ -158,6 +158,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     .map((g) => ({
       ...g,
       items: g.items.filter((item) => {
+        // Log para depuração
+        if (item.path === "/painel/vendedores") {
+           console.log("Vendedores item check:", { factoryId, isEra: factoryId === ERA_DOS_SABORES_ID, role });
+        }
+        
         if (item.path === "/painel/vendedores" && factoryId !== ERA_DOS_SABORES_ID && role !== "super_admin") return false;
         return isRouteAllowed(item.path, role);
       }),
