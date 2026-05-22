@@ -1490,9 +1490,14 @@ export default function ContasAPagar() {
                   </PopoverContent>
                 </Popover>
               </div>
-              <Button className="w-full" onClick={() => avancarParcela(pagarConta, pagarData)}>
-                💰 Confirmar Pagamento
-              </Button>
+              <div className="flex flex-col gap-2 pt-2">
+                <Button className="w-full" onClick={() => avancarParcela(pagarConta, pagarData)}>
+                  💰 Confirmar Pagamento
+                </Button>
+                <Button variant="secondary" className="w-full border-primary/20 hover:bg-primary/5 text-primary" onClick={() => quitarConta(pagarConta)}>
+                  🏁 Quitar Conta Total ({R(pagarConta.valor_restante)})
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
