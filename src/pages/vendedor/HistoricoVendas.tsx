@@ -357,11 +357,11 @@ export default function HistoricoVendas() {
                             <Badge variant="default" className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none font-bold text-[10px] py-0 gap-1 uppercase">
                               <Sparkles className="h-3 w-3" /> Primeira Compra
                             </Badge>
-                          ) : tipoVendaMap[v.id] === "reposicao" ? (
+                          ) : (
                             <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-none font-bold text-[10px] py-0 gap-1 uppercase">
                               <Repeat className="h-3 w-3" /> Reposição
                             </Badge>
-                          ) : null}
+                          )}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
