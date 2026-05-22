@@ -44,7 +44,22 @@ export default function MinhasComissoes() {
 
     const { data: com } = await (supabase as any)
       .from("comissoes_vendas")
-      .select("id, created_at, quantidade_unidades, faixa, valor_base, recorrente, valor_comissao, status, venda_id")
+      .select(`
+        id, 
+        created_at, 
+        quantidade_unidades, 
+        faixa, 
+        valor_base, 
+        recorrente, 
+        valor_comissao, 
+        status, 
+        venda_id,
+        vendas!venda_id (
+          clientes (
+            nome
+          )
+        )
+      `)
       .eq("vendedor_user_id", user.id)
       .gte("created_at", inicio)
       .lte("created_at", fim)
@@ -278,6 +293,7 @@ export default function MinhasComissoes() {
                   <TableHeader>
                     <TableRow className="hover:bg-transparent bg-muted/20">
                       <TableHead className="w-[120px] font-bold">Data</TableHead>
+                      <TableHead className="font-bold">Cliente</TableHead>
                       <TableHead className="font-bold">Unidades</TableHead>
                       <TableHead className="font-bold">Tipo</TableHead>
                       <TableHead className="text-right font-bold">Comissão</TableHead>
@@ -289,6 +305,9 @@ export default function MinhasComissoes() {
                       <TableRow key={c.id} className="group transition-colors">
                         <TableCell className="font-medium">
                           {format(new Date(c.created_at), "dd/MM/yyyy")}
+                        </TableCell>
+                        <TableCell className="font-semibold text-sm">
+                          {(c.vendas as any)?.clientes?.nome || "Cliente avulso"}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
