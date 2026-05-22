@@ -59,11 +59,21 @@ export default function MinhasComissoes() {
       .from("cliente_vendedor").select("cliente_id").eq("vendedor_user_id", user.id);
     const ids = (vinculos || []).map((v: any) => v.cliente_id);
     
-    if (ids.length > 0) {
+    // Buscar também clientes AVULSO e AMOSTRAS do factoryId
+    const { data: extras } = await (supabase as any)
+      .from("clientes")
+      .select("id")
+      .in("nome", ["AVULSO", "AMOSTRAS"]);
+    
+    const allIds = [...ids, ...(extras || []).map((e: any) => e.id)];
+    
+    if (allIds.length > 0) {
+      // Unidades do mês considerando vendas pagas e também REPOSIÇÕES
       const { data: vendas } = await (supabase as any)
-        .from("vendas").select("id, created_at, cliente_id")
-        .in("cliente_id", ids).gte("created_at", inicio).lte("created_at", fim)
-        .eq("status", "paga"); // Correctly counting only paid sales
+        .from("vendas").select("id, created_at, cliente_id, status")
+        .in("cliente_id", allIds).gte("created_at", inicio).lte("created_at", fim)
+        .or("status.eq.paga,status.eq.pago,status.eq.reposicao");
+      
       const vendaIds = (vendas || []).map((v: any) => v.id);
       
       if (vendaIds.length > 0) {
@@ -79,8 +89,8 @@ export default function MinhasComissoes() {
       const { data: vendasAntTudo } = await (supabase as any)
         .from("vendas")
         .select("cliente_id, created_at")
-        .in("cliente_id", ids)
-        .eq("status", "paga")
+        .in("cliente_id", allIds)
+        .or("status.eq.paga,status.eq.pago,status.eq.reposicao")
         .gte("created_at", subMonths(startOfMonth(hoje), 6).toISOString());
 
       const vendasPorMes: Record<number, Set<string>> = { 1: new Set(), 2: new Set(), 3: new Set(), 4: new Set(), 5: new Set(), 6: new Set() };
@@ -94,7 +104,7 @@ export default function MinhasComissoes() {
       });
 
       let totalBonusFid = 0;
-      ids.forEach(cid => {
+      allIds.forEach(cid => {
         let consec = 0;
         if (vendasPorMes[1].has(cid) && vendasPorMes[2].has(cid) && vendasPorMes[3].has(cid)) {
           consec = 3;
@@ -124,7 +134,7 @@ export default function MinhasComissoes() {
 
   const totalComissao = useMemo(() => {
     return comissoes
-      .filter(c => c.status === "paga" || c.status === "pago")
+      .filter(c => ["paga", "pago", "reposicao"].includes(c.status))
       .reduce((s, c) => s + Number(c.valor_comissao || 0), 0);
   }, [comissoes]);
 
@@ -300,7 +310,7 @@ export default function MinhasComissoes() {
                         </TableCell>
                         <TableCell className="text-center">
                           <div className="flex justify-center">
-                            {c.status === "paga" ? (
+                            {["paga", "pago", "reposicao"].includes(c.status) ? (
                               <div className="bg-green-500/10 p-1 rounded-full">
                                 <CheckCircle2 className="h-4 w-4 text-green-600" />
                               </div>
