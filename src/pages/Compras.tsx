@@ -290,9 +290,14 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
 
         if (itemData) {
           const novoEstoque = Number(itemData.estoque_atual || 0) + Number(item.quantidade);
+          console.log(`Atualizando ${item.item_nome} em ${table}: ${itemData.estoque_atual} + ${item.quantidade} = ${novoEstoque}`);
+          
           const { error: updateError } = await (supabase as any)
             .from(table)
-            .update({ estoque_atual: item.tipo === "embalagem" ? Math.round(novoEstoque) : novoEstoque })
+            .update({ 
+              estoque_atual: item.tipo === "embalagem" ? Math.round(novoEstoque) : novoEstoque,
+              updated_at: new Date().toISOString()
+            })
             .eq("id", itemData.id);
             
           if (updateError) {
@@ -311,6 +316,37 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
           }
         } else {
           console.warn(`Item ${item.item_nome} não encontrado na tabela ${table} para a fábrica ${factoryId}`);
+          
+          // Se não encontrou pelo nome exato, tentar buscar por ILIKE para ser mais resiliente
+          const { data: fuzzyData } = await (supabase as any)
+            .from(table)
+            .select("id, estoque_atual, nome")
+            .eq("factory_id", factoryId)
+            .ilike("nome", `%${item.item_nome}%`)
+            .limit(1)
+            .maybeSingle();
+            
+          if (fuzzyData) {
+            console.log(`Item encontrado por busca aproximada: ${item.item_nome} -> ${fuzzyData.nome}`);
+            const novoEstoque = Number(fuzzyData.estoque_atual || 0) + Number(item.quantidade);
+            await (supabase as any)
+              .from(table)
+              .update({ 
+                estoque_atual: item.tipo === "embalagem" ? Math.round(novoEstoque) : novoEstoque,
+                updated_at: new Date().toISOString()
+              })
+              .eq("id", fuzzyData.id);
+              
+            await (supabase as any).from("movimentacoes_estoque").insert({
+              factory_id: factoryId,
+              tipo_item: item.tipo,
+              item_id: fuzzyData.id,
+              quantidade: item.quantidade,
+              tipo_movimentacao: 'entrada',
+              descricao: `Compra (Fuzzy): ${item.item_nome}`,
+              data_movimentacao: item.created_at
+            });
+          }
         }
       }
     }
