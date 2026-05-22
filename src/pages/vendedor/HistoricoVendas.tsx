@@ -45,9 +45,9 @@ export default function HistoricoVendas() {
   const [totalComissao, setTotalComissao] = useState(0);
   const [periodoComissao, setPeriodoComissao] = useState<string>("mes");
 
-  // Yuri's special commission rule (first sale = full / repeat = half)
-  const YURI_USER_ID = "c311e314-e569-4303-96f7-e26bfe17a5f1";
-  const isYuri = user?.id === YURI_USER_ID;
+  // Iury's special commission rule (first sale = full / repeat = half)
+  const IURY_USER_ID = "c311e314-e569-4303-96f7-e26bfe17a5f1";
+  const isIury = user?.id === IURY_USER_ID;
 
   async function load() {
     if (!user || !factoryId) return;

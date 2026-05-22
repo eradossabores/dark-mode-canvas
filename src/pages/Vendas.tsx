@@ -171,9 +171,9 @@ export default function Vendas() {
     return filtered;
   }, [vendas, clienteFilter, searchCliente, filtroStatus, filtroPagamento, filtroData, filtroVendedor, clienteVendedorMap]);
 
-  // Yuri: identificar primeira compra vs reposição por cliente
-  const YURI_USER_ID = "c311e314-e569-4303-96f7-e26bfe17a5f1";
-  const tipoVendaYuriMap = useMemo(() => {
+  // Iury: identificar primeira compra vs reposição por cliente
+  const IURY_USER_ID = "c311e314-e569-4303-96f7-e26bfe17a5f1";
+  const tipoVendaIuryMap = useMemo(() => {
     const map: Record<string, "primeira" | "reposicao"> = {};
     const porCliente: Record<string, any[]> = {};
     vendas.forEach((v) => {
