@@ -484,9 +484,11 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                 <Select value={fornecedorId} onValueChange={setFornecedorId}>
                   <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                   <SelectContent>
-                    {fornecedores.filter(f => f.ativo).map(f => (
-                      <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>
-                    ))}
+                    {fornecedores
+                      .filter(f => f.ativo && (tipo === "misto" || f.tipo === tipo))
+                      .map(f => (
+                        <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
