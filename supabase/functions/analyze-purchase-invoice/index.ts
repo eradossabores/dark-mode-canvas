@@ -20,6 +20,31 @@ serve(async (req) => {
       throw new Error("Missing fileUrl");
     }
 
+    // Convert file to base64 if it's an image or PDF
+    let contentObj;
+    if (fileUrl.toLowerCase().endsWith('.pdf')) {
+      // Use document intelligence for PDF
+      contentObj = { type: "text", text: `Analise este arquivo (URL): ${fileUrl}` };
+    } else {
+      // For images, we'll try to fetch and send as base64 to be safer with Gemini
+      try {
+        const imageRes = await fetch(fileUrl);
+        const imageBlob = await imageRes.blob();
+        const arrayBuffer = await imageBlob.arrayBuffer();
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+        const mimeType = imageBlob.type || "image/png";
+        
+        contentObj = { 
+          type: "image_url", 
+          image_url: { url: `data:${mimeType};base64,${base64}` } 
+        };
+      } catch (e) {
+        console.warn("Failed to convert image to base64, falling back to URL:", e.message);
+        contentObj = { type: "image_url", image_url: { url: fileUrl } };
+      }
+    }
+
+
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY not configured");
     }
@@ -58,7 +83,8 @@ serve(async (req) => {
             role: "user",
             content: [
               { type: "text", text: prompt },
-              { type: "image_url", image_url: { url: fileUrl } }
+              contentObj
+
             ],
           },
         ],
