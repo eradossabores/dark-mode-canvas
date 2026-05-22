@@ -163,60 +163,85 @@ export default function ContasAPagar() {
   }, [pagamentos]);
 
   const contasFiltradas = useMemo(() => {
-     return contas.filter(c => {
-       if (busca.trim() && !c.descricao.toLowerCase().includes(busca.toLowerCase()) && !(c.responsavel || "").toLowerCase().includes(busca.toLowerCase())) return false;
-       if (filtroTipo !== "todos" && c.tipo !== filtroTipo) return false;
-       if (filtroCategoria !== "todos" && c.categoria !== filtroCategoria) return false;
-       if (filtroStatus === "pago" && !c.pago_mes) return false;
-       if (filtroStatus === "pendente" && c.pago_mes) return false;
-       
-       if (filtroMes !== "todos" || filtroAno !== "todos") {
-         const targetMonth = filtroMes === "todos" ? null : parseInt(filtroMes);
-         const targetYear = filtroAno === "todos" ? null : parseInt(filtroAno);
-         
-         if (c.tipo === "fixo") {
-           // Custo fixo sempre existe em todos os meses/anos ativos
-           return true;
-         } else {
-           // Parcelado: verificar se a parcela cai no mês/ano selecionado
-           const created = new Date(c.created_at || "");
-           const start = startOfMonth(created);
-           
-            // Se selecionou apenas ano
-            if (targetYear && !targetMonth && targetMonth !== 0) {
-              const yearStart = new Date(targetYear, 0, 1);
-              const yearEnd = new Date(targetYear, 11, 31);
-              const installmentsEnd = addMonths(start, (c.total_parcelas || 1) - 1);
-              let endLimit = installmentsEnd;
-              
-              if (c.valor_restante <= 0) {
-                const lastPayment = ultimosPagamentos[c.id];
-              if (lastPayment) endLimit = new Date(lastPayment + "T12:00:00");
-              }
-              
-              return start <= yearEnd && endLimit >= yearStart;
-            }
+    return contas.filter(c => {
+      if (busca.trim() && !c.descricao.toLowerCase().includes(busca.toLowerCase()) && !(c.responsavel || "").toLowerCase().includes(busca.toLowerCase())) return false;
+      if (filtroTipo !== "todos" && c.tipo !== filtroTipo) return false;
+      if (filtroCategoria !== "todos" && c.categoria !== filtroCategoria) return false;
+      
+      const targetMonth = filtroMes === "todos" ? null : parseInt(filtroMes);
+      const targetYear = filtroAno === "todos" ? null : parseInt(filtroAno);
+      const isViewingCurrentMonth = (targetMonth === null || targetMonth === new Date().getMonth()) && (targetYear === null || targetYear === new Date().getFullYear());
 
-            // Se selecionou mês e ano (ou apenas mês)
-            const targetDate = new Date(targetYear || new Date().getFullYear(), targetMonth ?? 0, 1);
+      // Status filter logic
+      if (filtroStatus === "pago") {
+        if (isViewingCurrentMonth) {
+          if (!c.pago_mes) return false;
+        } else if (c.tipo === "parcelado" && targetMonth !== null && targetYear !== null) {
+          // Verify if this specific installment was paid in the past
+          const hasPayment = pagamentos.some(p => {
+            const pDate = new Date(p.data_pagamento);
+            return p.conta_id === c.id && pDate.getMonth() === targetMonth && pDate.getFullYear() === targetYear;
+          });
+          if (!hasPayment) return false;
+        } else {
+          // For other cases, we can only rely on the current flag or history
+          if (!c.pago_mes) return false;
+        }
+      }
+      
+      if (filtroStatus === "pendente") {
+        if (isViewingCurrentMonth) {
+          if (c.pago_mes) return false;
+        } else if (c.tipo === "parcelado" && targetMonth !== null && targetYear !== null) {
+          const hasPayment = pagamentos.some(p => {
+            const pDate = new Date(p.data_pagamento);
+            return p.conta_id === c.id && pDate.getMonth() === targetMonth && pDate.getFullYear() === targetYear;
+          });
+          if (hasPayment) return false;
+        } else {
+          if (c.pago_mes) return false;
+        }
+      }
+      
+      if (filtroMes !== "todos" || filtroAno !== "todos") {
+        if (c.tipo === "fixo") {
+          return true;
+        } else {
+          const created = new Date(c.created_at || "");
+          const start = startOfMonth(created);
+          
+          if (targetYear && !targetMonth && targetMonth !== 0) {
+            const yearStart = new Date(targetYear, 0, 1);
+            const yearEnd = new Date(targetYear, 11, 31);
+            const installmentsEnd = addMonths(start, (c.total_parcelas || 1) - 1);
+            let endLimit = installmentsEnd;
             
-            // Verificação de finalização antecipada
             if (c.valor_restante <= 0) {
               const lastPayment = ultimosPagamentos[c.id];
-              if (lastPayment) {
-                const finalizedMonth = startOfMonth(new Date(lastPayment + "T12:00:00"));
-                if (targetDate > finalizedMonth) return false;
-              }
+              if (lastPayment) endLimit = new Date(lastPayment + "T12:00:00");
             }
+            return start <= yearEnd && endLimit >= yearStart;
+          }
 
-            const monthsElapsed = (targetDate.getFullYear() - start.getFullYear()) * 12 + (targetDate.getMonth() - start.getMonth());
-            return monthsElapsed >= 0 && monthsElapsed < (c.total_parcelas || 1);
-         }
-       }
-       
-       return true;
-     });
-    }, [contas, busca, filtroTipo, filtroCategoria, filtroStatus, filtroMes, filtroAno, ultimosPagamentos]);
+          const targetDate = new Date(targetYear || new Date().getFullYear(), targetMonth ?? 0, 1);
+          
+          if (c.valor_restante <= 0) {
+            const lastPayment = ultimosPagamentos[c.id];
+            if (lastPayment) {
+              const finalizedMonth = startOfMonth(new Date(lastPayment + "T12:00:00"));
+              if (targetDate > finalizedMonth) return false;
+            }
+          }
+
+          const monthsElapsed = (targetDate.getFullYear() - start.getFullYear()) * 12 + (targetDate.getMonth() - start.getMonth());
+          return monthsElapsed >= 0 && monthsElapsed < (c.total_parcelas || 1);
+        }
+      }
+      
+      return true;
+    });
+  }, [contas, busca, filtroTipo, filtroCategoria, filtroStatus, filtroMes, filtroAno, ultimosPagamentos, pagamentos]);
+
 
   // Alertas de vencimento (próximos 3 dias)
   const alertasVencimento = useMemo(() => {
@@ -1279,6 +1304,19 @@ export default function ContasAPagar() {
                     const quaseQuitando = c.parcela_atual >= c.total_parcelas - 2 && c.parcela_atual < c.total_parcelas;
                     const quitado = c.parcela_atual >= c.total_parcelas;
                     const descParts = c.descricao.split(" — ");
+                    
+                    const targetMonth = filtroMes === "todos" ? null : parseInt(filtroMes);
+                    const targetYear = filtroAno === "todos" ? null : parseInt(filtroAno);
+                    const isViewingCurrentMonth = (targetMonth === null || targetMonth === new Date().getMonth()) && (targetYear === null || targetYear === new Date().getFullYear());
+                    
+                    // Check if paid in the selected month
+                    const isPaidInSelectedMonth = isViewingCurrentMonth 
+                      ? c.pago_mes 
+                      : pagamentos.some(p => {
+                          const pDate = new Date(p.data_pagamento);
+                          return p.conta_id === c.id && pDate.getMonth() === targetMonth && pDate.getFullYear() === targetYear;
+                        });
+
                     return (
                       <TableRow key={c.id} className={quitado ? "opacity-60" : ""}>
                         <TableCell className="font-medium">
@@ -1294,17 +1332,18 @@ export default function ContasAPagar() {
                         <TableCell className="text-center">
                           <Button
                             size="sm"
-                            variant={c.pago_mes ? "default" : "outline"}
+                            variant={isPaidInSelectedMonth ? "default" : "outline"}
                             className={cn(
-                              "h-7 w-7 p-0 transition-all",
-                              c.pago_mes ? "bg-green-600 hover:bg-green-700 shadow-sm" : "hover:bg-destructive/10"
+                              "h-7 w-7 p-0 transition-all cursor-default",
+                              isPaidInSelectedMonth ? "bg-green-600 hover:bg-green-700 shadow-sm" : "hover:bg-destructive/10"
                             )}
-                            onClick={() => togglePagoMes(c)}
-                            title={c.pago_mes ? "Parcela do mês paga ✅" : "Parcela do mês pendente"}
+                            onClick={() => isViewingCurrentMonth && togglePagoMes(c)}
+                            title={isPaidInSelectedMonth ? "Parcela paga ✅" : "Parcela pendente"}
                           >
-                            {c.pago_mes ? <Check className="h-4 w-4 text-white" /> : <X className="h-4 w-4 text-destructive" />}
+                            {isPaidInSelectedMonth ? <Check className="h-4 w-4 text-white" /> : <X className="h-4 w-4 text-destructive" />}
                           </Button>
                         </TableCell>
+
                         <TableCell className="text-right font-mono text-sm">{R(c.valor_parcela)}</TableCell>
                         <TableCell>
                           {c.proxima_parcela_data ? (
