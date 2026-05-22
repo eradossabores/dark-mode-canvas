@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Plus, Truck, Package, ShoppingCart, BarChart3, Trash2, Edit, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Truck, Package, ShoppingCart, BarChart3, Trash2, Edit, ChevronDown, ChevronRight, FileUp, Loader2 } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -158,6 +158,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const [dataFabricacao, setDataFabricacao] = useState("");
   const [dataVencimento, setDataVencimento] = useState("");
   const [saving, setSaving] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
   const [filterTipo, setFilterTipo] = useState("todos");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editItemNome, setEditItemNome] = useState("");
@@ -325,6 +326,68 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     setNumeroLote(""); setDataFabricacao(""); setDataVencimento("");
     setItemQuantities({}); setCustomItems([]); setNewCustomItem("");
     setEditingId(null); setEditItemNome(""); setEditQuantidade("");
+    setAnalyzing(false);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setAnalyzing(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `invoices/${fileName}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('compras_anexos')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('compras_anexos')
+        .getPublicUrl(filePath);
+
+      const { data, error } = await supabase.functions.invoke('analyze-purchase-invoice', {
+        body: { fileUrl: publicUrl }
+      });
+
+      if (error) throw error;
+
+      if (data) {
+        if (data.fornecedor) {
+          const matchedFornecedor = fornecedores.find(f => 
+            f.nome.toLowerCase().includes(data.fornecedor.toLowerCase())
+          );
+          if (matchedFornecedor) setFornecedorId(matchedFornecedor.id);
+          else setObs(prev => `Fornecedor identificado: ${data.fornecedor}\n${prev}`);
+        }
+
+        if (data.data) setDataCompra(data.data);
+        if (data.valor_total) setValorTotalInput(String(data.valor_total));
+        if (data.valor_frete > 0) {
+          setTemFrete(true);
+          setValorFrete(String(data.valor_frete));
+        }
+
+        if (data.itens && Array.isArray(data.itens)) {
+          const newItems: ItemQty[] = data.itens.map((it: any) => ({
+            nome: it.nome,
+            quantidade: it.quantidade,
+            tipo: tipo === "misto" ? "insumo" : tipo
+          }));
+          setCustomItems(prev => [...prev, ...newItems]);
+        }
+        
+        toast.success("Informações extraídas com sucesso!");
+      }
+    } catch (error: any) {
+      console.error("Erro no processamento:", error);
+      toast.error("Erro ao analisar arquivo: " + error.message);
+    } finally {
+      setAnalyzing(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -374,6 +437,30 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>{editingId ? "Editar Compra" : "Registrar Compra"}</DialogTitle></DialogHeader>
             <div className="space-y-4">
+              {!editingId && (
+                <div className="p-3 border-2 border-dashed border-primary/30 rounded-lg bg-primary/5 flex flex-col items-center gap-2">
+                  <Label htmlFor="invoice-upload" className="cursor-pointer flex flex-col items-center gap-1">
+                    {analyzing ? (
+                      <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                    ) : (
+                      <FileUp className="h-8 w-8 text-primary" />
+                    )}
+                    <span className="text-xs font-bold text-primary uppercase">
+                      {analyzing ? "Analisando Arquivo..." : "Anexar Nota / Comprovante"}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">Extração automática por IA</span>
+                  </Label>
+                  <Input 
+                    id="invoice-upload" 
+                    type="file" 
+                    className="hidden" 
+                    accept="image/*,application/pdf"
+                    onChange={handleFileUpload}
+                    disabled={analyzing}
+                  />
+                </div>
+              )}
+
               <div className="grid gap-3 grid-cols-2">
                 <div>
                   <Label>Tipo</Label>
