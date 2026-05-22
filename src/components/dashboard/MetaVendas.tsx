@@ -62,7 +62,7 @@ export default function MetaVendas({ factoryId, vendedorId, vendedorNome }: Prop
         .gte("created_at", inicioMes)
         .lte("created_at", fimMes)
         .neq("status", "cancelada")
-        .eq("status", "paga");
+        .in("status", ["paga", "parcial"]);
 
       if (vendedorId) {
         const { data: vinc } = await (supabase as any)
