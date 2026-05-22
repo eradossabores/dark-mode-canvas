@@ -9,7 +9,9 @@ import {
   Trophy, Medal, UserPlus, Target, TrendingUp, TrendingDown, DollarSign, Users,
   Sparkles, AlertTriangle, Flame, Award, MapPin, Phone, Plus, ClipboardList,
   CalendarClock, ArrowUpRight, ArrowDownRight, PieChart as PieIcon, Activity,
+  ShoppingCart, CheckCircle2, Clock
 } from "lucide-react";
+import MetaVendas from "@/components/dashboard/MetaVendas";
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, subMonths, format,
   differenceInDays, getDate, getDaysInMonth, eachDayOfInterval, subDays, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
