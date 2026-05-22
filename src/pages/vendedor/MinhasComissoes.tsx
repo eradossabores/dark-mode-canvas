@@ -255,8 +255,8 @@ export default function MinhasComissoes() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-1 shadow-lg border-primary/10 overflow-hidden">
+      <div className="grid grid-cols-1 gap-6">
+        <Card className="shadow-lg border-primary/10 overflow-hidden">
           <CardHeader className="bg-primary/5 pb-4">
             <CardTitle className="text-lg flex items-center gap-2">
               <Target className="h-5 w-5 text-primary" />
