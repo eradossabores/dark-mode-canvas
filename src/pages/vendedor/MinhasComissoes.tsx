@@ -456,6 +456,9 @@ export default function MinhasComissoes() {
                             <TableCell className="text-center text-xs font-medium">
                               {c.quantidade_unidades || 0}
                             </TableCell>
+                            <TableCell className="text-xs font-mono text-muted-foreground">
+                              {c.quantidade_unidades || 0} x R$ 0,20
+                            </TableCell>
                             <TableCell>
                               <Badge variant="outline" className="bg-[#E8F1FF] text-[#0066FF] border-none text-[10px] py-0.5 px-2 uppercase font-bold rounded-md">
                                 1ª Compra
