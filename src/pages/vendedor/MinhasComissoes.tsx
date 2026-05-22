@@ -385,7 +385,6 @@ export default function MinhasComissoes() {
                               <Badge variant="secondary" className="bg-blue-100 text-blue-700 border-none font-bold text-[10px] py-0">REPOSIÇÃO</Badge>
                             )}
                           </TableCell>
-                          </TableCell>
                           <TableCell className="text-right">
                             <span className="font-mono font-bold text-primary">
                               R$ {Number(c.valor_comissao).toFixed(2)}
