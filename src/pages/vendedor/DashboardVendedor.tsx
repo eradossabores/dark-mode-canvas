@@ -82,7 +82,7 @@ function whatsappLink(tel?: string, msg = "") {
 export default function DashboardVendedor() {
   const { user, factoryId } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [nome, setNome] = useState("");
+  const [nome, setNome] = useState("Iury");
 
   // KPIs
   const [unidadesMes, setUnidadesMes] = useState(0);
@@ -128,7 +128,7 @@ export default function DashboardVendedor() {
 
     // Profile
     const { data: prof } = await (supabase as any).from("profiles").select("nome").eq("id", user.id).maybeSingle();
-    setNome(prof?.nome || "");
+    setNome(prof?.nome === "Yuri" ? "Iury" : (prof?.nome || "Iury"));
 
     // Vínculos
     const { data: vinculos } = await (supabase as any)
