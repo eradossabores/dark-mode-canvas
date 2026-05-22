@@ -123,8 +123,11 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground overflow-x-hidden w-full;
     font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
+  }
+  #root {
+    @apply w-full overflow-x-hidden;
   }
   code, pre {
     font-family: 'Fira Code', monospace;

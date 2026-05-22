@@ -366,9 +366,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen w-full overflow-hidden bg-background fixed inset-0">
       {/* ─── MOBILE HEADER ─── */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 h-14 bg-sidebar border-b border-sidebar-border flex items-center px-4 gap-3 shadow-sm text-sidebar-foreground">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 h-14 bg-sidebar border-b border-sidebar-border flex items-center px-4 gap-3 shadow-sm text-sidebar-foreground w-full">
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
           className="p-1.5 rounded-lg hover:bg-muted transition-colors"
@@ -471,7 +471,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* ─── MAIN CONTENT ─── */}
-      <main className="flex-1 overflow-auto flex flex-col min-w-0">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col min-w-0 w-full relative">
         <PaymentBanner />
         {impersonatingFactory && (
           <div className="bg-primary text-primary-foreground px-4 py-2 flex items-center justify-between text-sm font-medium">
@@ -484,7 +484,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         )}
-        <div className="flex-1 p-4 md:p-6 pt-16 md:pt-6">{children}</div>
+        <div className="flex-1 p-4 md:p-6 pt-16 md:pt-6 w-full max-w-full overflow-x-hidden">{children}</div>
       </main>
     </div>
   );
