@@ -613,7 +613,8 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                               placeholder="0"
                               value={itemQuantities[`embalagem:${name}`] || ""}
                               onChange={e => setItemQuantities(prev => ({ ...prev, [`embalagem:${name}`]: parseFloat(e.target.value) || 0 }))}
-                            />
+                             />
+                            <span className="text-xs font-medium text-muted-foreground w-8">unid</span>
                           </div>
                         ))}
                         {embOtherItems.length > 0 && (
@@ -628,7 +629,8 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                               placeholder="0"
                               value={itemQuantities[`embalagem:${name}`] || ""}
                               onChange={e => setItemQuantities(prev => ({ ...prev, [`embalagem:${name}`]: parseFloat(e.target.value) || 0 }))}
-                            />
+                             />
+                            <span className="text-xs font-medium text-muted-foreground w-8">unid</span>
                           </div>
                         ))}
                       </>
@@ -641,8 +643,9 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                           className="h-8 w-24 text-center text-sm"
                           placeholder="0"
                           value={ci.quantidade || ""}
-                          onChange={e => setCustomItems(prev => prev.map((c, i) => i === idx ? { ...c, quantidade: parseFloat(e.target.value) || 0 } : c))}
+                           onChange={e => setCustomItems(prev => prev.map((c, i) => i === idx ? { ...c, quantidade: parseFloat(e.target.value) || 0 } : c))}
                         />
+                        {ci.tipo === "embalagem" && <span className="text-xs font-medium text-muted-foreground w-8">unid</span>}
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCustomItems(prev => prev.filter((_, i) => i !== idx))}>
                           <Trash2 className="h-3 w-3 text-destructive" />
                         </Button>
