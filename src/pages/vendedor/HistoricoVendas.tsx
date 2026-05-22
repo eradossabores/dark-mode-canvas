@@ -348,7 +348,7 @@ export default function HistoricoVendas() {
                         {isIury && (
                           <TableCell>
                             {tipoVendaMap[v.id] === "primeira" ? (
-                              <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 gap-1"><Sparkles className="h-3 w-3" /> Primeira</Badge>
+                              <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 gap-1"><Sparkles className="h-3 w-3" /> Primeira Compra</Badge>
                             ) : tipoVendaMap[v.id] === "reposicao" ? (
                               <Badge className="bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30 gap-1"><Repeat className="h-3 w-3" /> Reposição</Badge>
                             ) : null}

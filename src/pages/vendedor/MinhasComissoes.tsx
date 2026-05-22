@@ -356,9 +356,9 @@ export default function MinhasComissoes() {
                           </TableCell>
                           <TableCell>
                             {c.recorrente ? (
-                              <Badge variant="secondary" className="bg-blue-100 text-blue-700 border-none font-bold text-[10px] py-0">RECOMPRA</Badge>
+                              <Badge variant="secondary" className="bg-blue-100 text-blue-700 border-none font-bold text-[10px] py-0">REPOSIÇÃO</Badge>
                             ) : (
-                              <Badge variant="default" className="bg-green-100 text-green-700 border-none font-bold text-[10px] py-0">NOVA VENDA</Badge>
+                              <Badge variant="default" className="bg-amber-100 text-amber-700 border-none font-bold text-[10px] py-0">PRIMEIRA COMPRA</Badge>
                             )}
                           </TableCell>
                           <TableCell className="text-right">
