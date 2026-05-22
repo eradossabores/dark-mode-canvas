@@ -228,18 +228,7 @@ export default function MinhasComissoes() {
           { 
             label: "Volume Vendido", 
             value: unidadesMes, 
-            sub: (
-              <div className="flex flex-col gap-0.5 mt-1">
-                <div className="flex justify-between items-center text-[10px] bg-green-50 text-green-700 px-1.5 py-0.5 rounded border border-green-100">
-                  <span className="font-bold">PRIMEIRAS:</span>
-                  <span className="font-black">{comissoes.filter(c => !c.recorrente).reduce((s, c) => s + Number(c.quantidade_unidades || 0), 0)}</span>
-                </div>
-                <div className="flex justify-between items-center text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100">
-                  <span className="font-bold">REPOSIÇÕES:</span>
-                  <span className="font-black">{comissoes.filter(c => c.recorrente).reduce((s, c) => s + Number(c.quantidade_unidades || 0), 0)}</span>
-                </div>
-              </div>
-            ), 
+            sub: null, 
             icon: TrendingUp, 
             color: "text-blue-500", 
             bg: "bg-blue-50" 
