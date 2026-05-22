@@ -158,7 +158,7 @@ export default function HistoricoVendas() {
       pago: "bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/30",
       paga: "bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/30",
       pendente: "bg-yellow-500/20 text-yellow-700 dark:text-yellow-300 border-yellow-500/30",
-      parcial: "bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30",
+      
       cancelada: "bg-red-500/20 text-red-700 dark:text-red-300 border-red-500/30",
     };
     return colors[status] || "bg-muted text-muted-foreground";
@@ -302,7 +302,7 @@ export default function HistoricoVendas() {
                   <SelectItem value="todos">Todos status</SelectItem>
                   <SelectItem value="pago">Pago</SelectItem>
                   <SelectItem value="pendente">Pendente</SelectItem>
-                  <SelectItem value="parcial">Parcial</SelectItem>
+                  
                   <SelectItem value="cancelada">Cancelada</SelectItem>
                 </SelectContent>
               </Select>

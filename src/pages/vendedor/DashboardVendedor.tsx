@@ -212,7 +212,7 @@ export default function DashboardVendedor() {
 
         // Inadimplência
         const st = String(v.status || "").toLowerCase();
-        if (ehMesAtual && (st === "pendente" || st === "parcial")) {
+        if (ehMesAtual && st === "pendente") {
           // só estima saldo (não temos abatimentos aqui)
         }
       });
