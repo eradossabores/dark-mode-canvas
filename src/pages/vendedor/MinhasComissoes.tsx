@@ -421,6 +421,9 @@ export default function MinhasComissoes() {
                             <TableCell className="text-center text-xs font-medium">
                               {g.quantidade}
                             </TableCell>
+                            <TableCell className="text-xs font-mono text-muted-foreground">
+                              {g.quantidade} x R$ 0,10
+                            </TableCell>
                             <TableCell>
                               <Badge variant="outline" className="bg-[#E7F7EF] text-[#0D9488] border-none text-[10px] py-0.5 px-2 uppercase font-bold rounded-md">
                                 Reposição
