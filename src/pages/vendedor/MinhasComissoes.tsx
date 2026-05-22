@@ -42,6 +42,7 @@ export default function MinhasComissoes() {
     const inicio = startOfMonth(new Date()).toISOString();
     const fim = endOfMonth(new Date()).toISOString();
 
+    // 1. Carregar todas as comissões do mês atual (Fonte de verdade para unidades e ganhos)
     const { data: com } = await (supabase as any)
       .from("comissoes_vendas")
       .select(`
@@ -65,16 +66,18 @@ export default function MinhasComissoes() {
       .lte("created_at", fim)
       .order("created_at", { ascending: false });
 
-    // Filter by paid sales status if needed, or map it. 
-    // Usually comissoes_vendas are only created/active when sales are paid,
-    // but we'll reflect the actual state.
-    setComissoes(com || []);
+    const comList = com || [];
+    setComissoes(comList);
 
+    // 2. Calcular total de unidades baseada nas comissões geradas no mês
+    const totalUnidadesComissao = comList.reduce((acc: number, curr: any) => acc + Number(curr.quantidade_unidades || 0), 0);
+    setUnidadesMes(totalUnidadesComissao);
+
+    // 3. Lógica de Bônus de Fidelidade (permanece baseada no histórico de vendas dos clientes)
     const { data: vinculos } = await (supabase as any)
       .from("cliente_vendedor").select("cliente_id").eq("vendedor_user_id", user.id);
     const ids = (vinculos || []).map((v: any) => v.cliente_id);
     
-    // Buscar também clientes AVULSO e AMOSTRAS do factoryId
     const { data: extras } = await (supabase as any)
       .from("clientes")
       .select("id")
@@ -83,29 +86,12 @@ export default function MinhasComissoes() {
     const allIds = [...ids, ...(extras || []).map((e: any) => e.id)];
     
     if (allIds.length > 0) {
-      // Unidades do mês considerando vendas pagas e também REPOSIÇÕES
-      const { data: vendas } = await (supabase as any)
-        .from("vendas").select("id, created_at, cliente_id, status")
-        .in("cliente_id", allIds).gte("created_at", inicio).lte("created_at", fim)
-        .or("status.eq.paga,status.eq.pago,status.eq.reposicao");
-      
-      const vendaIds = (vendas || []).map((v: any) => v.id);
-      
-      if (vendaIds.length > 0) {
-        const { data: itens } = await (supabase as any)
-          .from("venda_itens").select("quantidade, venda_id").in("venda_id", vendaIds);
-        const total = (itens || []).reduce((s: number, it: any) => s + Number(it.quantidade || 0), 0);
-        setUnidadesMes(total);
-      } else {
-        setUnidadesMes(0);
-      }
-
       const hoje = new Date();
       const { data: vendasAntTudo } = await (supabase as any)
         .from("vendas")
         .select("cliente_id, created_at")
         .in("cliente_id", allIds)
-        .or("status.eq.paga,status.eq.pago,status.eq.reposicao")
+        .eq("status", "paga")
         .gte("created_at", subMonths(startOfMonth(hoje), 6).toISOString());
 
       const vendasPorMes: Record<number, Set<string>> = { 1: new Set(), 2: new Set(), 3: new Set(), 4: new Set(), 5: new Set(), 6: new Set() };
@@ -129,9 +115,8 @@ export default function MinhasComissoes() {
         else if (consec === 3) totalBonusFid += 50;
       });
       setBonusFidelizacao(totalBonusFid);
-    } else {
-      setUnidadesMes(0);
     }
+    
     setLoading(false);
   }
 
