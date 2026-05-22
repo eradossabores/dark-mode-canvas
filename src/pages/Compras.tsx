@@ -33,6 +33,7 @@ interface Compra {
   item_nome: string;
   fornecedor_id: string | null;
   quantidade: number;
+  unidade?: string;
   valor_unitario: number;
   valor_total: number;
   tem_frete: boolean;
@@ -165,6 +166,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [editItemNome, setEditItemNome] = useState("");
   const [editQuantidade, setEditQuantidade] = useState("");
+  const [editUnidade, setEditUnidade] = useState("g");
 
   // Items with quantities
   const [itemQuantities, setItemQuantities] = useState<Record<string, number>>({});
@@ -240,9 +242,33 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const custoUnitarioComFrete = totalQty > 0 ? custoTotalComFrete / totalQty : 0;
 
   const filledItems = [
-    ...(showInsumos ? [...insumoTopItems, ...insumoOtherItems].filter(n => (itemQuantities[`insumo:${n}`] || 0) > 0).map(n => ({ nome: n, quantidade: itemQuantities[`insumo:${n}`], tipo: "insumo" })) : []),
-    ...(showEmbalagens ? [...embTopItems, ...embOtherItems].filter(n => (itemQuantities[`embalagem:${n}`] || 0) > 0).map(n => ({ nome: n, quantidade: itemQuantities[`embalagem:${n}`], tipo: "embalagem" })) : []),
-    ...customItems.filter(ci => ci.quantidade > 0),
+    ...(showInsumos ? [...insumoTopItems, ...insumoOtherItems].filter(n => (itemQuantities[`insumo:${n}`] || 0) > 0).map(n => {
+      const qty = itemQuantities[`insumo:${n}`];
+      const unit = itemUnits[`insumo:${n}`] || "g";
+      return { 
+        nome: n, 
+        quantidade: unit === "kg" ? qty * 1000 : qty, 
+        original_quantidade: qty,
+        original_unidade: unit,
+        tipo: "insumo" 
+      };
+    }) : []),
+    ...(showEmbalagens ? [...embTopItems, ...embOtherItems].filter(n => (itemQuantities[`embalagem:${n}`] || 0) > 0).map(n => ({ 
+      nome: n, 
+      quantidade: itemQuantities[`embalagem:${n}`], 
+      original_quantidade: itemQuantities[`embalagem:${n}`],
+      original_unidade: "unid",
+      tipo: "embalagem" 
+    })) : []),
+    ...customItems.filter(ci => ci.quantidade > 0).map(ci => {
+      const unit = ci.tipo === "insumo" ? (itemUnits[`custom:${ci.nome}`] || "g") : "unid";
+      return {
+        ...ci,
+        original_quantidade: ci.quantidade,
+        original_unidade: unit,
+        quantidade: (ci.tipo === "insumo" && unit === "kg") ? ci.quantidade * 1000 : ci.quantidade
+      };
+    }),
   ];
 
   const handleSave = async () => {
@@ -257,6 +283,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
       return {
         tipo: item.tipo, item_nome: item.nome, fornecedor_id: fornecedorId || null,
         quantidade: item.quantidade,
+        unidade: (item as any).original_unidade,
         valor_unitario: unitPrice,
         valor_total: +(valorTotal * proportion).toFixed(2),
         tem_frete: temFrete, valor_frete: +(freight * proportion).toFixed(2),
@@ -364,14 +391,17 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     if (!editingId || !editItemNome.trim() || !editQuantidade || valorTotal <= 0) {
       toast.error("Preencha todos os campos"); return;
     }
-    const qty = parseFloat(editQuantidade) || 0;
+    const rawQty = parseFloat(editQuantidade) || 0;
+    const qty = (tipo === "insumo" && editUnidade === "kg") ? rawQty * 1000 : rawQty;
     const up = qty > 0 ? valorTotal / qty : 0;
     const ctf = valorTotal + freight;
     const cuf = qty > 0 ? ctf / qty : 0;
     setSaving(true);
     const { error } = await (supabase as any).from("compras").update({
       tipo, item_nome: editItemNome.trim(), fornecedor_id: fornecedorId || null,
-      quantidade: qty, valor_unitario: up, valor_total: valorTotal,
+      quantidade: qty, 
+      unidade: editUnidade,
+      valor_unitario: up, valor_total: valorTotal,
       tem_frete: temFrete, valor_frete: freight,
       custo_total_com_frete: ctf, custo_unitario_com_frete: cuf,
       observacoes: obs || null,
@@ -390,7 +420,8 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     setEditingId(c.id);
     setTipo(c.tipo);
     setEditItemNome(c.item_nome);
-    setEditQuantidade(String(c.quantidade));
+    setEditQuantidade(String(c.unidade === "kg" ? c.quantidade / 1000 : c.quantidade));
+    setEditUnidade(c.unidade || (c.tipo === "insumo" ? "g" : "unid"));
     setFornecedorId(c.fornecedor_id || "");
     setValorTotalInput(String(c.valor_total));
     setTemFrete(c.tem_frete);
@@ -407,7 +438,8 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     setViewingId(c.id);
     setTipo(c.tipo);
     setEditItemNome(c.item_nome);
-    setEditQuantidade(String(c.quantidade));
+    setEditQuantidade(String(c.unidade === "kg" ? c.quantidade / 1000 : c.quantidade));
+    setEditUnidade(c.unidade || (c.tipo === "insumo" ? "g" : "unid"));
     setFornecedorId(c.fornecedor_id || "");
     setValorTotalInput(String(c.valor_total));
     setTemFrete(c.tem_frete);
@@ -426,7 +458,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     setDataCompra(format(new Date(), "yyyy-MM-dd"));
     setNumeroLote(""); setDataFabricacao(""); setDataVencimento("");
     setItemQuantities({}); setCustomItems([]); setNewCustomItem("");
-    setEditingId(null); setViewingId(null); setEditItemNome(""); setEditQuantidade("");
+    setEditingId(null); setViewingId(null); setEditItemNome(""); setEditQuantidade(""); setEditUnidade("g");
   };
 
 
@@ -534,16 +566,30 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                       disabled={!!viewingId}
                     />
                   </div>
-                  <div>
-                    <Label>Quantidade</Label>
-                    <Input 
-                      type="number" 
-                      min="0" 
-                      step="0.01" 
-                      value={editQuantidade} 
-                      onChange={e => setEditQuantidade(e.target.value)} 
-                      disabled={!!viewingId}
-                    />
+                  <div className="flex gap-2 items-end">
+                    <div className="flex-1">
+                      <Label>Quantidade</Label>
+                      <Input 
+                        type="number" 
+                        min="0" 
+                        step="0.01" 
+                        value={editQuantidade} 
+                        onChange={e => setEditQuantidade(e.target.value)} 
+                        disabled={!!viewingId}
+                      />
+                    </div>
+                    {tipo === "insumo" && (
+                      <div className="w-20">
+                        <Label>Unidade</Label>
+                        <Select value={editUnidade} onValueChange={setEditUnidade} disabled={!!viewingId}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="g">g</SelectItem>
+                            <SelectItem value="kg">kg</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -649,7 +695,18 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                           value={ci.quantidade || ""}
                            onChange={e => setCustomItems(prev => prev.map((c, i) => i === idx ? { ...c, quantidade: parseFloat(e.target.value) || 0 } : c))}
                         />
-                        {ci.tipo === "embalagem" && <span className="text-xs font-medium text-muted-foreground w-8">unid</span>}
+                        {ci.tipo === "insumo" ? (
+                          <select
+                            className="h-8 rounded-md border border-input bg-background px-1.5 text-xs font-medium"
+                            value={itemUnits[`custom:${ci.nome}`] || "g"}
+                            onChange={e => setItemUnits(prev => ({ ...prev, [`custom:${ci.nome}`]: e.target.value }))}
+                          >
+                            <option value="g">g</option>
+                            <option value="kg">kg</option>
+                          </select>
+                        ) : (
+                          <span className="text-xs font-medium text-muted-foreground w-8 text-center">unid</span>
+                        )}
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCustomItems(prev => prev.filter((_, i) => i !== idx))}>
                           <Trash2 className="h-3 w-3 text-destructive" />
                         </Button>
@@ -848,7 +905,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                 ) : grouped.map(([key, items]) => {
                   const isExpanded = expandedGroups[key];
                   const first = items[0];
-                  const totalQtyGroup = items.reduce((s, c) => s + Number(c.quantidade), 0);
+                  const totalQtyGroup = items.reduce((s, c) => s + (c.unidade === 'kg' ? Number(c.quantidade) / 1000 : Number(c.quantidade)), 0);
                   const totalValorGroup = items.reduce((s, c) => s + Number(c.valor_total), 0);
                   const totalFreteGroup = items.reduce((s, c) => s + Number(c.valor_frete), 0);
                   const totalCustoGroup = items.reduce((s, c) => s + Number(c.custo_total_com_frete), 0);
@@ -867,7 +924,9 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                           {isSingle ? first.item_nome : `${items.length} itens`}
                         </TableCell>
                         <TableCell>{first.fornecedor_id ? fornecedorMap[first.fornecedor_id] || "—" : "—"}</TableCell>
-                        <TableCell className="text-right font-medium">{totalQtyGroup.toLocaleString("pt-BR")}</TableCell>
+                        <TableCell className="text-right font-medium">
+                          {totalQtyGroup.toLocaleString("pt-BR")} {isSingle ? (first.unidade || (first.tipo === 'insumo' ? 'g' : 'unid')) : (first.tipo === 'insumo' ? (first.unidade || 'g') : 'unid')}
+                        </TableCell>
                         <TableCell className="text-right">{totalValorGroup.toFixed(2)}</TableCell>
                         <TableCell className="text-right">{first.tem_frete ? `R$ ${totalFreteGroup.toFixed(2)}` : "—"}</TableCell>
                         <TableCell className="text-right font-bold text-primary">{totalCustoGroup.toFixed(2)}</TableCell>
@@ -894,7 +953,9 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                           <TableCell></TableCell>
                           <TableCell className="text-sm pl-6">↳ {c.item_nome}</TableCell>
                           <TableCell></TableCell>
-                          <TableCell className="text-right text-sm">{Number(c.quantidade).toLocaleString("pt-BR")}</TableCell>
+                          <TableCell className="text-right text-sm">
+                            {c.unidade === 'kg' ? (Number(c.quantidade) / 1000).toLocaleString("pt-BR") : Number(c.quantidade).toLocaleString("pt-BR")} {c.unidade || (c.tipo === 'insumo' ? 'g' : 'unid')}
+                          </TableCell>
                           <TableCell className="text-right text-sm">{Number(c.valor_total).toFixed(2)}</TableCell>
                           <TableCell className="text-right text-sm">{c.tem_frete ? Number(c.valor_frete).toFixed(2) : "—"}</TableCell>
                           <TableCell className="text-right text-sm">{Number(c.custo_total_com_frete).toFixed(2)}</TableCell>
