@@ -130,22 +130,12 @@ export default function HistoricoVendas() {
       const primeiraVenda = sorted[0];
       
       sorted.forEach((v) => {
-        const clienteNome = v.clientes?.nome;
-        const isBlackLounge = clienteNome === "BLACK LOUNGE";
-        const isBlackLoungeBar = clienteNome === "BLACK LOUNGE BAR";
-        const isSwellSmoke = clienteNome === "SWELL SMOKE";
-        const isEcom = clienteNome === "ECOM";
+        const isBlackLounge = v.clientes?.nome === "BLACK LOUNGE";
+        const isBlackLoungeBar = v.clientes?.nome === "BLACK LOUNGE BAR";
+        const isSwellSmoke = v.clientes?.nome === "SWELL SMOKE";
+        const isEcom = v.clientes?.nome === "ECOM";
         
-        const unid = (v.venda_itens || []).reduce((s: number, i: any) => s + Number(i.quantidade || 0), 0);
-        // Regra especial: 50, 60 e 116 unidades da YOU são reposição. O resto é primeira compra.
-        const isYouReposicao = clienteNome === "YOU" && [50, 60, 116].includes(unid);
-        const isYou = clienteNome === "YOU";
-        
-        if (isYou) {
-          map[v.id] = isYouReposicao ? "reposicao" : "primeira";
-        } else {
-          map[v.id] = (v.id === primeiraVenda.id || isBlackLounge || isBlackLoungeBar || isSwellSmoke || isEcom) ? "primeira" : "reposicao";
-        }
+        map[v.id] = (v.id === primeiraVenda.id || isBlackLounge || isBlackLoungeBar || isSwellSmoke || isEcom) ? "primeira" : "reposicao";
       });
     });
     return map;
