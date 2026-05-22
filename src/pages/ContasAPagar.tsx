@@ -1233,24 +1233,44 @@ export default function ContasAPagar() {
           </div>
         </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Custo</TableHead>
-                    <TableHead>Cat.</TableHead>
-                    <TableHead>Responsável</TableHead>
-                    <TableHead className="text-center">Mês Pago?</TableHead>
-                    <TableHead className="text-right">Parcela</TableHead>
-                    <TableHead>Próx. Vencimento</TableHead>
-                    <TableHead className="text-center">Progresso</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="text-right">Faltam</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {parceladas.map(c => {
+            <Tabs defaultValue="abertas" value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
+              <div className="flex items-center justify-between mb-4">
+                <TabsList className="grid w-[300px] grid-cols-2">
+                  <TabsTrigger value="abertas" className="flex items-center gap-2">
+                    Em Aberto 
+                    <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+                      {parceladas.filter(c => !c.pago_mes).length}
+                    </Badge>
+                  </TabsTrigger>
+                  <TabsTrigger value="pagas" className="flex items-center gap-2">
+                    Pagas (Mês)
+                    <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+                      {parceladas.filter(c => c.pago_mes).length}
+                    </Badge>
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Custo</TableHead>
+                      <TableHead>Cat.</TableHead>
+                      <TableHead>Responsável</TableHead>
+                      <TableHead className="text-center">Mês Pago?</TableHead>
+                      <TableHead className="text-right">Parcela</TableHead>
+                      <TableHead>Próx. Vencimento</TableHead>
+                      <TableHead className="text-center">Progresso</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                      <TableHead className="text-right">Faltam</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {parceladas
+                      .filter(c => activeTab === "abertas" ? !c.pago_mes : c.pago_mes)
+                      .map(c => {
                     const pct = c.total_parcelas > 0 ? Math.round((c.parcela_atual / c.total_parcelas) * 100) : 0;
                     const quaseQuitando = c.parcela_atual >= c.total_parcelas - 2 && c.parcela_atual < c.total_parcelas;
                     const quitado = c.parcela_atual >= c.total_parcelas;
