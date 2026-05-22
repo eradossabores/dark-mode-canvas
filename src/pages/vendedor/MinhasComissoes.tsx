@@ -124,15 +124,14 @@ export default function MinhasComissoes() {
       
       const key = clienteId || (clienteNome ? `${clienteNome}` : "avulso");
       
-      // Explicit rules: 50, 60, and 116 units are reposição. 
-      // Everything else is primeira compra according to the user's latest request.
+      // Regras explícitas: 50, 60, e 116 unidades são reposição. 
+      // Todo o resto é primeira compra.
       const isExceptionReposicao = [50, 60, 116].includes(unidades);
-      
       const isPrimeira = !isExceptionReposicao;
 
-      // Applying commission rules:
-      // Primeira Compra: R$ 0,20 per unit (default base)
-      // Reposição: R$ 0,10 per unit (50% of primeira)
+      // Aplicando cálculos de comissão:
+      // Primeira Compra: R$ 0,20 por unidade
+      // Reposição: R$ 0,10 por unidade (50% da primeira compra)
       const comissaoPorUnidade = isPrimeira ? 0.20 : 0.10;
       const valorFinalComissao = unidades * comissaoPorUnidade;
       
@@ -140,7 +139,8 @@ export default function MinhasComissoes() {
         ...c,
         display_date: c.vendas?.created_at || c.created_at,
         is_primeira_automatic: isPrimeira,
-        valor_comissao: valorFinalComissao
+        valor_comissao: valorFinalComissao,
+        comissao_por_unidade: comissaoPorUnidade
       };
     });
 
