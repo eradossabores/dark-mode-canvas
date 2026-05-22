@@ -448,8 +448,8 @@ export default function ContasAPagar() {
   async function avancarParcela(c: ContaPagar, proximaData?: Date) {
     if (c.tipo !== "parcelado" || c.parcela_atual >= c.total_parcelas) return;
     const valorPago = parseFloat(pagarValor || String(c.valor_parcela));
-    const novaParcela = c.parcela_atual + 1;
     const novoRestante = Math.max(0, c.valor_restante - valorPago);
+    const novaParcela = novoRestante <= 0 ? c.total_parcelas : c.parcela_atual + 1;
     const formaLabel = FORMAS_PAGAMENTO.find(f => f.value === pagarForma)?.label || pagarForma;
     await (supabase as any).from("contas_a_pagar").update({
       parcela_atual: novaParcela,
@@ -470,6 +470,41 @@ export default function ContasAPagar() {
     setPagarData(undefined);
     setPagarValor("");
     loadContas();
+  }
+
+  async function quitarConta(c: ContaPagar) {
+    if (c.tipo !== "parcelado" || c.valor_restante <= 0) return;
+    
+    const valorPago = c.valor_restante;
+    const novaParcela = c.total_parcelas;
+    const formaLabel = FORMAS_PAGAMENTO.find(f => f.value === pagarForma)?.label || pagarForma;
+    
+    setSaving(true);
+    
+    try {
+      await (supabase as any).from("contas_a_pagar").update({
+        parcela_atual: novaParcela,
+        valor_restante: 0,
+        pago_mes: true,
+        proxima_parcela_data: null,
+      }).eq("id", c.id);
+
+      // Register payment history
+      await registrarPagamento(c.id, valorPago, pagarForma, novaParcela, `Quitação Total`);
+
+      toast({ title: `Conta "${c.descricao.split(" — ")[0]}" quitada! (${formaLabel})` });
+      
+      const descName = c.descricao.split(" — ")[0];
+      await gerarComprovante(descName, valorPago, formaLabel, "parcelado", "QUITAÇÃO");
+      
+      setPagarConta(null);
+      setPagarValor("");
+      loadContas();
+    } catch (error: any) {
+      toast({ title: "Erro ao quitar conta", description: error.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function togglePagoMes(c: ContaPagar) {
@@ -1271,9 +1306,14 @@ export default function ContasAPagar() {
                               <History className="h-3.5 w-3.5" />
                             </Button>
                             {!quitado && (
-                              <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => { setPagarConta(c); setPagarData(undefined); setPagarValor(String(c.valor_parcela)); }} title="Pagar próxima parcela">
-                                💰 Pagar
-                              </Button>
+                              <div className="flex gap-1">
+                                <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => { setPagarConta(c); setPagarData(undefined); setPagarValor(String(c.valor_parcela)); }} title="Pagar próxima parcela">
+                                  💰 Pagar
+                                </Button>
+                                <Button size="sm" variant="secondary" className="h-7 text-xs px-2 border-primary/10" onClick={() => { setPagarConta(c); setPagarForma("pix"); setPagarValor(String(c.valor_restante)); }} title="Quitar conta">
+                                  🏁 Quitar
+                                </Button>
+                              </div>
                             )}
                             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(c)}>
                               <Pencil className="h-3.5 w-3.5" />
@@ -1455,9 +1495,14 @@ export default function ContasAPagar() {
                   </PopoverContent>
                 </Popover>
               </div>
-              <Button className="w-full" onClick={() => avancarParcela(pagarConta, pagarData)}>
-                💰 Confirmar Pagamento
-              </Button>
+              <div className="flex flex-col gap-2 pt-2">
+                <Button className="w-full" onClick={() => avancarParcela(pagarConta, pagarData)}>
+                  💰 Confirmar Pagamento
+                </Button>
+                <Button variant="secondary" className="w-full border-primary/20 hover:bg-primary/5 text-primary" onClick={() => quitarConta(pagarConta)}>
+                  🏁 Quitar Conta Total ({R(pagarConta.valor_restante)})
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
