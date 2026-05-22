@@ -123,15 +123,12 @@ export default function MinhasComissoes() {
       const unidades = Number(c.quantidade_unidades || 0);
       
       const key = clienteId || (clienteNome ? `${clienteNome}` : "avulso");
-      const isBlackLounge = clienteNome === "BLACK LOUNGE";
-      const isBlackLoungeBar = clienteNome === "BLACK LOUNGE BAR";
-      const isSwellSmoke = clienteNome === "SWELL SMOKE";
-      const isEcom = clienteNome === "ECOM";
       
-      // Explicit rules: 50, 60, and 116 units are reposição. Everything else is primeira compra for these accounts.
+      // Explicit rules: 50, 60, and 116 units are reposição. 
+      // Everything else is primeira compra according to the user's latest request.
       const isExceptionReposicao = [50, 60, 116].includes(unidades);
       
-      const isPrimeira = (primeiraVendaPorCliente[key] === c.venda_id || isBlackLounge || isBlackLoungeBar || isSwellSmoke || isEcom) && !isExceptionReposicao;
+      const isPrimeira = !isExceptionReposicao;
       
       return {
         ...c,
