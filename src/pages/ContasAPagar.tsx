@@ -472,6 +472,41 @@ export default function ContasAPagar() {
     loadContas();
   }
 
+  async function quitarConta(c: ContaPagar) {
+    if (c.tipo !== "parcelado" || c.valor_restante <= 0) return;
+    
+    const valorPago = c.valor_restante;
+    const novaParcela = c.total_parcelas;
+    const formaLabel = FORMAS_PAGAMENTO.find(f => f.value === pagarForma)?.label || pagarForma;
+    
+    setSaving(true);
+    
+    try {
+      await (supabase as any).from("contas_a_pagar").update({
+        parcela_atual: novaParcela,
+        valor_restante: 0,
+        pago_mes: true,
+        proxima_parcela_data: null,
+      }).eq("id", c.id);
+
+      // Register payment history
+      await registrarPagamento(c.id, valorPago, pagarForma, novaParcela, `Quitação Total`);
+
+      toast({ title: `Conta "${c.descricao.split(" — ")[0]}" quitada! (${formaLabel})` });
+      
+      const descName = c.descricao.split(" — ")[0];
+      await gerarComprovante(descName, valorPago, formaLabel, "parcelado", "QUITAÇÃO");
+      
+      setPagarConta(null);
+      setPagarValor("");
+      loadContas();
+    } catch (error: any) {
+      toast({ title: "Erro ao quitar conta", description: error.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function togglePagoMes(c: ContaPagar) {
     const novo = !c.pago_mes;
     await (supabase as any).from("contas_a_pagar").update({ pago_mes: novo }).eq("id", c.id);
