@@ -180,7 +180,12 @@ export default function MetaVendas({ factoryId, vendedorId, vendedorNome }: Prop
               <div className={`h-full rounded-full transition-all duration-700 ${progressColor}`} style={{ width: `${progress}%` }} />
             </div>
             {progress >= 100 && (
-              <p className="text-xs text-green-500 font-medium text-center">🎉 Meta atingida!</p>
+              <div className="space-y-1">
+                <p className="text-xs text-green-500 font-medium text-center">🎉 Meta atingida!</p>
+                <p className="text-[10px] text-green-600 font-bold text-center italic">
+                  Bônus Extra: R$ {progressoAtual >= 2000 ? "100,00" : "50,00"} garantido!
+                </p>
+              </div>
             )}
           </div>
         ) : (
