@@ -171,13 +171,30 @@ export default function MinhasComissoes() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Volume Vendido", value: unidadesMes, sub: "unidades", icon: TrendingUp, color: "text-blue-500", bg: "bg-blue-50" },
-          { label: "Comissões", value: `R$ ${totalComissao.toFixed(2)}`, sub: `${comissoes.length} vendas pagas`, icon: Receipt, color: "text-green-500", bg: "bg-green-50" },
-          { label: "Bônus Meta", value: `R$ ${bonusMeta.toFixed(2)}`, sub: bonusMeta > 0 ? "Meta atingida!" : `Próxima: ${metaAtiva} un.`, icon: Target, color: "text-purple-500", bg: "bg-purple-50" },
-          { label: "Bônus Fidelidade", value: `R$ ${bonusFidelizacao.toFixed(2)}`, sub: "Recompras", icon: Award, color: "text-amber-500", bg: "bg-amber-50" },
-          { label: "Ajuda de Custo", value: `R$ ${ajudaCusto.toFixed(2)}`, sub: `${semanasNoMes} ${semanasNoMes === 1 ? 'semana' : 'semanas'}`, icon: Wallet, color: "text-rose-500", bg: "bg-rose-50" },
+          { 
+            label: "Volume Vendido", 
+            value: unidadesMes, 
+            sub: (
+              <div className="flex flex-col gap-0.5 mt-1">
+                <div className="flex justify-between items-center text-[10px] bg-green-50 text-green-700 px-1.5 py-0.5 rounded border border-green-100">
+                  <span className="font-bold">PRIMEIRAS:</span>
+                  <span className="font-black">{comissoes.filter(c => !c.recorrente).reduce((s, c) => s + Number(c.quantidade_unidades || 0), 0)}</span>
+                </div>
+                <div className="flex justify-between items-center text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100">
+                  <span className="font-bold">REPOSIÇÕES:</span>
+                  <span className="font-black">{comissoes.filter(c => c.recorrente).reduce((s, c) => s + Number(c.quantidade_unidades || 0), 0)}</span>
+                </div>
+              </div>
+            ), 
+            icon: TrendingUp, 
+            color: "text-blue-500", 
+            bg: "bg-blue-50" 
+          },
+          { label: "Comissões", value: `R$ ${totalComissao.toFixed(2)}`, sub: <p className="text-[10px] uppercase font-bold text-muted-foreground/60">{comissoes.length} vendas pagas</p>, icon: Receipt, color: "text-green-500", bg: "bg-green-50" },
+          { label: "Bônus Fidelidade", value: `R$ ${bonusFidelizacao.toFixed(2)}`, sub: <p className="text-[10px] uppercase font-bold text-muted-foreground/60">Recompras</p>, icon: Award, color: "text-amber-500", bg: "bg-amber-50" },
+          { label: "Ajuda de Custo", value: `R$ ${ajudaCusto.toFixed(2)}`, sub: <p className="text-[10px] uppercase font-bold text-muted-foreground/60">{semanasNoMes} {semanasNoMes === 1 ? 'semana' : 'semanas'}</p>, icon: Wallet, color: "text-rose-500", bg: "bg-rose-50" },
         ].map((item, i) => (
           <Card key={i} className="overflow-hidden border-none shadow-md hover:shadow-xl transition-all duration-300 group">
             <CardContent className="p-5">
@@ -190,7 +207,7 @@ export default function MinhasComissoes() {
               <div className="space-y-1">
                 <p className="text-2xl font-black tracking-tight">{item.value}</p>
                 <p className="text-xs font-medium text-muted-foreground truncate">{item.label}</p>
-                <p className="text-[10px] uppercase font-bold text-muted-foreground/60">{item.sub}</p>
+                {item.sub}
               </div>
             </CardContent>
           </Card>
@@ -225,13 +242,21 @@ export default function MinhasComissoes() {
               <div className="bg-muted/50 p-3 rounded-xl border border-dashed border-muted-foreground/20">
                 <p className="text-[10px] font-bold text-muted-foreground uppercase">Meta Bronze</p>
                 <p className="font-bold">1.000 un</p>
-                <p className="text-xs text-green-600 font-bold">+R$ 50,00</p>
+                <p className="text-xs text-green-600 font-bold">Bônus: R$ 50,00</p>
               </div>
               <div className="bg-muted/50 p-3 rounded-xl border border-dashed border-muted-foreground/20">
                 <p className="text-[10px] font-bold text-muted-foreground uppercase">Meta Ouro</p>
                 <p className="font-bold">2.000 un</p>
-                <p className="text-xs text-green-600 font-bold">+R$ 100,00</p>
+                <p className="text-xs text-green-600 font-bold">Bônus: R$ 100,00</p>
               </div>
+            </div>
+
+            <div className="p-3 bg-purple-50 rounded-xl border border-purple-100 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-bold text-purple-700 uppercase">Bônus de Meta Atual</p>
+                <p className="text-lg font-black text-purple-900">R$ {bonusMeta.toFixed(2)}</p>
+              </div>
+              <Target className="h-5 w-5 text-purple-400" />
             </div>
 
             <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10">
