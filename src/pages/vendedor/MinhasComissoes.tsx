@@ -86,11 +86,27 @@ export default function MinhasComissoes() {
       .eq("vendedor_user_id", user.id)
       .order("created_at", { ascending: false });
 
-    // Use the actual sale date (from history) if available, otherwise commission date
-    const comList = (com || []).map((c: any) => ({
-      ...c,
-      display_date: c.vendas?.created_at || c.created_at
-    }));
+    // Identificar tipo de venda (Primeira Compra vs Reposição)
+    const porCliente: Record<string, any[]> = {};
+    (com || []).forEach((c: any) => {
+      const key = c.vendas?.cliente_id || (c.vendas?.clientes?.nome ? `${c.vendas?.clientes?.nome}` : c.id);
+      (porCliente[key] = porCliente[key] || []).push(c);
+    });
+
+    const comList = (com || []).map((c: any) => {
+      const key = c.vendas?.cliente_id || (c.vendas?.clientes?.nome ? `${c.vendas?.clientes?.nome}` : c.id);
+      const clienteVendas = porCliente[key] || [];
+      // Ordenar vendas do cliente por data para identificar a primeira
+      clienteVendas.sort((a, b) => new Date(a.vendas?.created_at || a.created_at).getTime() - new Date(b.vendas?.created_at || b.created_at).getTime());
+      
+      const isPrimeira = clienteVendas[0]?.id === c.id;
+      
+      return {
+        ...c,
+        display_date: c.vendas?.created_at || c.created_at,
+        is_primeira_automatic: isPrimeira
+      };
+    });
 
     setComissoes(comList);
 
@@ -355,7 +371,7 @@ export default function MinhasComissoes() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            {c.recorrente ? (
+                            {!c.is_primeira_automatic ? (
                               <Badge variant="secondary" className="bg-blue-100 text-blue-700 border-none font-bold text-[10px] py-0">REPOSIÇÃO</Badge>
                             ) : (
                               <Badge variant="default" className="bg-amber-100 text-amber-700 border-none font-bold text-[10px] py-0">PRIMEIRA COMPRA</Badge>
