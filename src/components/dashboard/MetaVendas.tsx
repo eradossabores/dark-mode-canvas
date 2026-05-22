@@ -15,7 +15,7 @@ interface Props {
 
 export default function MetaVendas({ factoryId, vendedorId, vendedorNome }: Props) {
   const [meta, setMeta] = useState(0);
-  const [faturamento, setFaturamento] = useState(0);
+  const [progressoAtual, setProgressoAtual] = useState(0); // Mudamos de faturamento para progresso quantitativo
   const [editing, setEditing] = useState(false);
   const [inputMeta, setInputMeta] = useState("");
   const [loading, setLoading] = useState(true);
@@ -51,20 +51,19 @@ export default function MetaVendas({ factoryId, vendedorId, vendedorNome }: Prop
         setInputMeta(String(metaData.valor_meta));
       }
 
-      // Load current month sales
+      // Load current month progress (count of items/ice sold)
       const inicioMes = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
       const fimMes = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
 
       let salesQuery = (supabase as any)
         .from("vendas")
-        .select("total, cliente_id")
+        .select("id, total, cliente_id")
         .eq("factory_id", factoryId)
         .gte("created_at", inicioMes)
         .lte("created_at", fimMes)
         .neq("status", "cancelada");
 
       if (vendedorId) {
-        // Se temos vendedorId, precisamos filtrar as vendas que pertencem a esse vendedor
         const { data: vinc } = await (supabase as any)
           .from("cliente_vendedor")
           .select("cliente_id")
@@ -74,17 +73,28 @@ export default function MetaVendas({ factoryId, vendedorId, vendedorNome }: Prop
         if (cliIds.length > 0) {
           salesQuery = salesQuery.in("cliente_id", cliIds);
         } else {
-          // Se o vendedor não tem clientes, faturamento é 0
-          setFaturamento(0);
+          setProgressoAtual(0);
           setLoading(false);
           return;
         }
       }
 
       const { data: vendas } = await salesQuery;
-
-      const total = (vendas || []).reduce((s: number, v: any) => s + Number(v.total), 0);
-      setFaturamento(total);
+      
+      if (vendas && vendas.length > 0) {
+        const vendaIds = vendas.map(v => v.id);
+        
+        // Sum total quantity of items sold in these sales
+        const { data: itens } = await (supabase as any)
+          .from("venda_itens")
+          .select("quantidade")
+          .in("venda_id", vendaIds);
+          
+        const totalQuantidade = (itens || []).reduce((s: number, i: any) => s + Number(i.quantidade), 0);
+        setProgressoAtual(totalQuantidade);
+      } else {
+        setProgressoAtual(0);
+      }
     } catch (e) {
       console.error(e);
     }
@@ -120,7 +130,7 @@ export default function MetaVendas({ factoryId, vendedorId, vendedorNome }: Prop
     }
   }
 
-  const progress = meta > 0 ? Math.min((faturamento / meta) * 100, 100) : 0;
+  const progress = meta > 0 ? Math.min((progressoAtual / meta) * 100, 100) : 0;
   const progressColor = progress >= 100 ? "bg-green-500" : progress >= 70 ? "bg-primary" : progress >= 40 ? "bg-yellow-500" : "bg-destructive";
 
   if (loading) return null;
@@ -144,7 +154,7 @@ export default function MetaVendas({ factoryId, vendedorId, vendedorNome }: Prop
                 value={inputMeta}
                 onChange={(e) => setInputMeta(e.target.value)}
                 className="h-6 w-28 text-xs"
-                placeholder="R$ Meta"
+                placeholder="Meta (Unidades)"
               />
               <Button variant="ghost" size="sm" className="h-6 px-2" onClick={saveMeta}>
                 <Check className="h-3 w-3" />
@@ -158,8 +168,8 @@ export default function MetaVendas({ factoryId, vendedorId, vendedorNome }: Prop
           <div className="space-y-3">
             <div className="flex items-end justify-between">
               <div>
-                <p className="text-2xl font-bold">R$ {faturamento.toFixed(2)}</p>
-                <p className="text-xs text-muted-foreground">de R$ {meta.toFixed(2)}</p>
+                <p className="text-2xl font-bold">{progressoAtual} gelos</p>
+                <p className="text-xs text-muted-foreground">de {meta} gelos vendidos</p>
               </div>
               <span className={`text-lg font-bold ${progress >= 100 ? "text-green-500" : ""}`}>
                 {progress.toFixed(0)}%
