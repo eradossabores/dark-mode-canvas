@@ -337,18 +337,17 @@ export default function MinhasComissoes() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>Itens</TableHead>
-                    <TableHead className="text-right">Unid.</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead className="text-right">Comissão</TableHead>
+                    <TableHead className="text-xs font-bold text-black uppercase">Data</TableHead>
+                    <TableHead className="text-xs font-bold text-black uppercase">Itens</TableHead>
+                    <TableHead className="text-xs font-bold text-black uppercase text-center">Unid</TableHead>
+                    <TableHead className="text-xs font-bold text-black uppercase">Tipo</TableHead>
+                    <TableHead className="text-xs font-bold text-black uppercase text-right">Comissão</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {comissoes.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                         Nenhuma venda registrada este mês.
                       </TableCell>
                     </TableRow>
@@ -361,29 +360,26 @@ export default function MinhasComissoes() {
                       return (
                         <TableRow key={c.id}>
                           <TableCell className="text-xs whitespace-nowrap">
-                            {format(new Date(c.display_date), "dd/MM/yy HH:mm", { locale: ptBR })}
+                            {format(new Date(c.display_date), "dd/MM/yyyy")}
                           </TableCell>
-                          <TableCell className="font-medium text-sm">
-                            {(c.vendas as any)?.clientes?.nome || "Avulso"}
-                          </TableCell>
-                          <TableCell className="text-xs max-w-[200px] truncate" title={itens}>
+                          <TableCell className="text-xs font-medium max-w-[250px] truncate" title={itens}>
                             {itens}
                           </TableCell>
-                          <TableCell className="text-right text-xs">
+                          <TableCell className="text-center text-xs font-medium">
                             {c.quantidade_unidades || 0}
                           </TableCell>
                           <TableCell>
                             {c.is_primeira_automatic ? (
-                              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] py-0 px-1.5 uppercase font-bold">
-                                <Sparkles className="h-2.5 w-2.5 mr-1" /> 1ª Compra
+                              <Badge variant="outline" className="bg-[#E8F1FF] text-[#0066FF] border-none text-[10px] py-0.5 px-2 uppercase font-bold rounded-md">
+                                1ª Compra
                               </Badge>
                             ) : (
-                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] py-0 px-1.5 uppercase font-bold">
-                                <Repeat className="h-2.5 w-2.5 mr-1" /> Reposição
+                              <Badge variant="outline" className="bg-[#E7F7EF] text-[#0D9488] border-none text-[10px] py-0.5 px-2 uppercase font-bold rounded-md">
+                                Reposição
                               </Badge>
                             )}
                           </TableCell>
-                          <TableCell className="text-right font-bold text-green-600">
+                          <TableCell className="text-right font-bold text-black">
                             R$ {Number(c.valor_comissao || 0).toFixed(2)}
                           </TableCell>
                         </TableRow>
