@@ -131,7 +131,16 @@ export default function MetaVendas({ factoryId, vendedorId, vendedorNome }: Prop
     }
   }
 
-  const progress = meta > 0 ? Math.min((progressoAtual / meta) * 100, 100) : 0;
+  // Definição das metas por volume conforme solicitado pelo usuário
+  const meta1 = 1000;
+  const meta2 = 2000;
+  
+  // A meta ativa é 1000 até ser batida, depois vira 2000
+  const metaAtiva = progressoAtual < meta1 ? meta1 : meta2;
+  const metaAlcancada = progressoAtual >= metaAtiva;
+  const bonusEstimado = progressoAtual >= 2000 ? 100 : (progressoAtual >= 1000 ? 50 : 0);
+
+  const progress = Math.min((progressoAtual / metaAtiva) * 100, 100);
   const progressColor = progress >= 100 ? "bg-green-500" : progress >= 70 ? "bg-primary" : progress >= 40 ? "bg-yellow-500" : "bg-destructive";
 
   if (loading) return null;
@@ -165,37 +174,56 @@ export default function MetaVendas({ factoryId, vendedorId, vendedorNome }: Prop
         </div>
       </CardHeader>
       <CardContent>
-        {meta > 0 ? (
+        <div className="space-y-4">
           <div className="space-y-3">
             <div className="flex items-end justify-between">
               <div>
                 <p className="text-2xl font-bold">{progressoAtual} gelos</p>
-                <p className="text-xs text-muted-foreground">de {meta} gelos vendidos</p>
-              </div>
-              <span className={`text-lg font-bold ${progress >= 100 ? "text-green-500" : ""}`}>
-                {progress.toFixed(0)}%
-              </span>
-            </div>
-            <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
-              <div className={`h-full rounded-full transition-all duration-700 ${progressColor}`} style={{ width: `${progress}%` }} />
-            </div>
-            {progress >= 100 && (
-              <div className="space-y-1">
-                <p className="text-xs text-green-500 font-medium text-center">🎉 Meta atingida!</p>
-                <p className="text-[10px] text-green-600 font-bold text-center italic">
-                  Bônus Extra: R$ {progressoAtual >= 2000 ? "100,00" : "50,00"} garantido!
+                <p className="text-xs text-muted-foreground">
+                  Meta Atual: {metaAtiva} unidades
+                  {progressoAtual >= meta1 && progressoAtual < meta2 && " (Nível 2)"}
                 </p>
+              </div>
+              <div className="text-right">
+                <span className={`text-lg font-bold ${progress >= 100 ? "text-green-500" : ""}`}>
+                  {progress.toFixed(0)}%
+                </span>
+                {bonusEstimado > 0 && (
+                  <p className="text-[10px] text-green-600 font-bold">Bônus: R$ {bonusEstimado.toFixed(2)}</p>
+                )}
+              </div>
+            </div>
+            <div className="w-full bg-muted rounded-full h-3 overflow-hidden border border-muted-foreground/10">
+              <div 
+                className={`h-full rounded-full transition-all duration-700 ${progressColor} shadow-[0_0_10px_rgba(0,0,0,0.1)]`} 
+                style={{ width: `${progress}%` }} 
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-2">
+              <div className={`p-2 rounded-lg border text-center ${progressoAtual >= meta1 ? 'bg-green-50 border-green-200' : 'bg-muted/30 border-dashed'}`}>
+                <p className="text-[10px] font-medium text-muted-foreground">META 1 (1.000)</p>
+                <p className={`text-xs font-bold ${progressoAtual >= meta1 ? 'text-green-600' : ''}`}>R$ 50,00</p>
+              </div>
+              <div className={`p-2 rounded-lg border text-center ${progressoAtual >= meta2 ? 'bg-green-50 border-green-200' : 'bg-muted/30 border-dashed'}`}>
+                <p className="text-[10px] font-medium text-muted-foreground">META 2 (2.000)</p>
+                <p className={`text-xs font-bold ${progressoAtual >= meta2 ? 'text-green-600' : ''}`}>R$ 100,00</p>
+              </div>
+            </div>
+
+            {progressoAtual >= meta1 && progressoAtual < meta2 && (
+              <p className="text-[10px] text-blue-600 font-medium text-center animate-pulse">
+                🚀 Próximo objetivo: 2.000 unidades!
+              </p>
+            )}
+            
+            {progressoAtual >= meta2 && (
+              <div className="space-y-1">
+                <p className="text-xs text-green-500 font-medium text-center">🎉 Todas as metas batidas!</p>
               </div>
             )}
           </div>
-        ) : (
-          <div className="text-center py-4">
-            <p className="text-sm text-muted-foreground">Nenhuma meta definida</p>
-            <Button variant="outline" size="sm" className="mt-2" onClick={() => setEditing(true)}>
-              Definir Meta
-            </Button>
-          </div>
-        )}
+        </div>
       </CardContent>
     </Card>
   );
