@@ -288,11 +288,11 @@ export default function MinhasComissoes() {
                         <TableCell className="text-center">
                           <div className="flex justify-center">
                             {c.status === "paga" ? (
-                              <div className="bg-green-500/10 p-1 rounded-full" title="Confirmada">
+                              <div className="bg-green-500/10 p-1 rounded-full">
                                 <CheckCircle2 className="h-4 w-4 text-green-600" />
                               </div>
                             ) : (
-                              <Clock className="h-4 w-4 text-amber-500" title="Pendente" />
+                              <Clock className="h-4 w-4 text-amber-500" />
                             )}
                           </div>
                         </TableCell>
