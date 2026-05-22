@@ -390,9 +390,17 @@ export default function DashboardVendedor() {
   useEffect(() => { loadMetaVendedor(); }, [user?.id]);
 
   const bonus = calcularBonus(unidadesMes);
-  // Se houver meta definida no banco, usamos ela, senão usamos as faixas fixas de 1k/2k
-  const proximaMeta = metaDefinida > 0 ? metaDefinida : (unidadesMes >= 2000 ? null : (unidadesMes >= 1000 ? 2000 : 1000));
-  const progresso = proximaMeta ? Math.min(100, (unidadesMes / proximaMeta) * 100) : 100;
+  // Definição das metas por volume conforme solicitado pelo usuário
+  const meta1 = 1000;
+  const meta2 = 2000;
+  
+  // A meta ativa é 1000 até ser batida, depois vira 2000
+  const metaAtiva = unidadesMes < meta1 ? meta1 : meta2;
+  const metaAlcancada = unidadesMes >= metaAtiva;
+  
+  // Se houver meta customizada no banco, podemos considerar como meta base ou adicional
+  const proximaMeta = metaAtiva;
+  const progresso = Math.min(100, (unidadesMes / proximaMeta) * 100);
   const maxRank = ranking[0]?.totalUnidades || 1;
 
   // Variações
