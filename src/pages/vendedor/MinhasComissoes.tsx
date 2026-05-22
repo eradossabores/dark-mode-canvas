@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { DollarSign, Target, TrendingUp, Wallet } from "lucide-react";
+import { DollarSign, Target, TrendingUp, Wallet, Award } from "lucide-react";
 import { startOfMonth, endOfMonth, format, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -158,7 +158,7 @@ export default function MinhasComissoes() {
         <CardContent className="space-y-2">
           <div className="flex justify-between text-sm">
             <span>{unidadesMes} unidades</span>
-            <span>{proximaMeta ? `Meta: ${proximaMeta}` : "Meta máxima atingida 🎉"}</span>
+            <span>{metaAtiva ? `Meta: ${metaAtiva}` : "Meta máxima atingida 🎉"}</span>
           </div>
           <Progress value={progresso} />
           <div className="flex justify-between text-xs text-muted-foreground pt-2">
