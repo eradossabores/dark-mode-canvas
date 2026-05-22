@@ -255,8 +255,8 @@ export default function MinhasComissoes() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-1 shadow-lg border-primary/10 overflow-hidden">
+      <div className="grid grid-cols-1 gap-6">
+        <Card className="shadow-lg border-primary/10 overflow-hidden">
           <CardHeader className="bg-primary/5 pb-4">
             <CardTitle className="text-lg flex items-center gap-2">
               <Target className="h-5 w-5 text-primary" />
@@ -314,81 +314,7 @@ export default function MinhasComissoes() {
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-2 shadow-lg border-none overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/30">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Receipt className="h-5 w-5 text-primary" />
-              Extrato Detalhado
-            </CardTitle>
-            <Badge variant="outline" className="font-mono">{comissoes.length} itens</Badge>
-          </CardHeader>
-          <CardContent className="p-0">
-            {loading ? (
-              <div className="p-20 text-center space-y-3">
-                <Clock className="h-10 w-10 text-primary/20 animate-spin mx-auto" />
-                <p className="text-sm text-muted-foreground">Sincronizando dados...</p>
-              </div>
-            ) : comissoes.length === 0 ? (
-              <div className="p-20 text-center space-y-4">
-                <div className="bg-muted w-16 h-16 rounded-full flex items-center justify-center mx-auto">
-                  <Receipt className="h-8 w-8 text-muted-foreground/30" />
-                </div>
-                <div className="max-w-[250px] mx-auto">
-                  <p className="font-bold">Nenhuma comissão</p>
-                  <p className="text-sm text-muted-foreground">As comissões aparecem aqui automaticamente após o pagamento da venda.</p>
-                </div>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent bg-muted/20">
-                      <TableHead className="w-[120px] font-bold text-xs uppercase tracking-wider">Data</TableHead>
-                      <TableHead className="font-bold text-xs uppercase tracking-wider">Cliente</TableHead>
-                      <TableHead className="font-bold text-xs uppercase tracking-wider">Itens</TableHead>
-                      <TableHead className="font-bold text-xs uppercase tracking-wider">Tipo</TableHead>
-                      <TableHead className="text-right font-bold text-xs uppercase tracking-wider">Comissão</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {comissoes.map((c) => {
-                      const itensRaw = (c.vendas as any)?.venda_itens || [];
-                      const itensStr = itensRaw.length > 0 
-                        ? itensRaw.map((it: any) => `${it.quantidade}x ${it.sabores?.nome || "?"}`).join(", ")
-                        : "-";
-                      
-                      return (
-                        <TableRow key={c.id} className="group transition-colors border-b last:border-0">
-                          <TableCell className="text-xs font-medium whitespace-nowrap">
-                            {format(new Date(c.display_date), "dd/MM/yyyy HH:mm")}
-                          </TableCell>
-                          <TableCell className="font-bold text-sm text-foreground">
-                            {(c.vendas as any)?.clientes?.nome || "Cliente avulso"}
-                          </TableCell>
-                          <TableCell className="text-[11px] max-w-[200px] truncate text-muted-foreground" title={itensStr}>
-                            {itensStr}
-                          </TableCell>
-                          <TableCell>
-                            {c.is_primeira_automatic ? (
-                              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 font-bold text-[10px] py-0 px-2 rounded-full h-5">Primeira Compra</Badge>
-                            ) : (
-                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-bold text-[10px] py-0 px-2 rounded-full h-5">Reposição</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <span className="font-black text-sm text-green-600">
-                              R$ {Number(c.valor_comissao || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {/* Removed detailed extract section */}
       </div>
     </div>
   );
