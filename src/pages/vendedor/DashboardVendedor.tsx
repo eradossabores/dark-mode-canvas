@@ -540,8 +540,8 @@ export default function DashboardVendedor() {
 
       {/* === SEÇÃO 1: HERO KPI + META === */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Hero KPI: Unidades do Mês (span 2) */}
-        <div className="relative rounded-2xl border-[0.75px] border-border p-0.5 lg:col-span-2 animate-fade-in">
+        {/* Hero KPI: Unidades do Mês (span 3) */}
+        <div className="relative rounded-2xl border-[0.75px] border-border p-0.5 lg:col-span-3 animate-fade-in">
           <GlowingEffect spread={50} glow disabled={false} proximity={48} inactiveZone={0.15} borderWidth={3} />
           <Card className="relative border-0 bg-gradient-to-br from-card via-card to-primary/5 h-full">
             <CardContent className="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 h-full">
@@ -569,6 +569,7 @@ export default function DashboardVendedor() {
             </CardContent>
           </Card>
         </div>
+      </div>
 
 
       {/* Bonificações Extras */}
