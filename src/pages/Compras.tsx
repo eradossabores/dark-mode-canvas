@@ -475,34 +475,47 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
             <Button className="gap-2"><Plus className="h-4 w-4" /> Nova Compra</Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>{editingId ? "Editar Compra" : "Registrar Compra"}</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{viewingId ? "Visualizar Compra" : editingId ? "Editar Compra" : "Registrar Compra"}</DialogTitle></DialogHeader>
             <div className="space-y-4">
 
               <div className="grid gap-3 grid-cols-2">
                 <div>
                   <Label>Tipo</Label>
-                  <Select value={tipo} onValueChange={(v) => { setTipo(v); setItemQuantities({}); setCustomItems([]); }}>
+                  <Select 
+                    value={tipo} 
+                    onValueChange={(v) => { setTipo(v); setItemQuantities({}); setCustomItems([]); }}
+                    disabled={!!viewingId}
+                  >
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="insumo">Insumo</SelectItem>
                       <SelectItem value="embalagem">Embalagem</SelectItem>
-                      <SelectItem value="misto">Misto (Insumo + Embalagem)</SelectItem>
+                      {!viewingId && !editingId && <SelectItem value="misto">Misto (Insumo + Embalagem)</SelectItem>}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
                   <Label>Data da Compra</Label>
-                  <Input type="date" value={dataCompra} onChange={e => setDataCompra(e.target.value)} />
+                  <Input 
+                    type="date" 
+                    value={dataCompra} 
+                    onChange={e => setDataCompra(e.target.value)} 
+                    disabled={!!viewingId}
+                  />
                 </div>
               </div>
 
               <div>
                 <Label>Fornecedor</Label>
-                <Select value={fornecedorId} onValueChange={setFornecedorId}>
+                <Select 
+                  value={fornecedorId} 
+                  onValueChange={setFornecedorId}
+                  disabled={!!viewingId}
+                >
                   <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                   <SelectContent>
                     {fornecedores
-                      .filter(f => f.ativo && (tipo === "misto" || f.tipo === tipo))
+                      .filter(f => viewingId || (f.ativo && (tipo === "misto" || f.tipo === tipo || f.tipo === "ambos")))
                       .map(f => (
                         <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>
                       ))}
@@ -511,15 +524,26 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
               </div>
 
               {/* EDIT MODE: single item */}
-              {editingId ? (
+              {editingId || viewingId ? (
                 <div className="space-y-3">
                   <div>
                     <Label>Item</Label>
-                    <Input value={editItemNome} onChange={e => setEditItemNome(e.target.value)} />
+                    <Input 
+                      value={editItemNome} 
+                      onChange={e => setEditItemNome(e.target.value)} 
+                      disabled={!!viewingId}
+                    />
                   </div>
                   <div>
                     <Label>Quantidade</Label>
-                    <Input type="number" min="0" step="0.01" value={editQuantidade} onChange={e => setEditQuantidade(e.target.value)} />
+                    <Input 
+                      type="number" 
+                      min="0" 
+                      step="0.01" 
+                      value={editQuantidade} 
+                      onChange={e => setEditQuantidade(e.target.value)} 
+                      disabled={!!viewingId}
+                    />
                   </div>
                 </div>
               ) : (
@@ -655,7 +679,14 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
 
               <div>
                 <Label>Valor Total (R$) *</Label>
-                <Input type="number" min="0" step="0.01" value={valorTotalInput} onChange={e => setValorTotalInput(e.target.value)} />
+                <Input 
+                  type="number" 
+                  min="0" 
+                  step="0.01" 
+                  value={valorTotalInput} 
+                  onChange={e => setValorTotalInput(e.target.value)} 
+                  disabled={!!viewingId}
+                />
               </div>
               {totalQty > 0 && valorTotal > 0 && (
                 <div className="text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
@@ -666,7 +697,11 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                 <CardContent className="py-3 space-y-3">
                   <div className="flex items-center justify-between">
                     <Label className="text-sm">Possui frete?</Label>
-                    <Switch checked={temFrete} onCheckedChange={setTemFrete} />
+                    <Switch 
+                      checked={temFrete} 
+                      onCheckedChange={setTemFrete} 
+                      disabled={!!viewingId}
+                    />
                   </div>
 
 
@@ -674,7 +709,11 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                     <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
                       <div>
                         <Label>Tipo de Frete</Label>
-                        <Select value={tipoFrete} onValueChange={setTipoFrete}>
+                        <Select 
+                          value={tipoFrete} 
+                          onValueChange={setTipoFrete}
+                          disabled={!!viewingId}
+                        >
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="sedex">SEDEX</SelectItem>
@@ -685,7 +724,14 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                       </div>
                       <div>
                         <Label>Valor do Frete (R$)</Label>
-                        <Input type="number" min="0" step="0.01" value={valorFrete} onChange={e => setValorFrete(e.target.value)} />
+                        <Input 
+                          type="number" 
+                          min="0" 
+                          step="0.01" 
+                          value={valorFrete} 
+                          onChange={e => setValorFrete(e.target.value)} 
+                          disabled={!!viewingId}
+                        />
                       </div>
                     </div>
                   )}
@@ -694,7 +740,12 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
               </Card>
               <div>
                 <Label>Observações</Label>
-                <Textarea value={obs} onChange={e => setObs(e.target.value)} placeholder="Notas sobre a compra..." />
+                <Textarea 
+                  value={obs} 
+                  onChange={e => setObs(e.target.value)} 
+                  placeholder="Notas sobre a compra..." 
+                  disabled={!!viewingId}
+                />
               </div>
               <Card className="bg-muted/30 border-dashed">
                 <CardContent className="py-3 space-y-3">
@@ -706,15 +757,26 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                         placeholder="Ex: L00123"
                         value={numeroLote}
                         onChange={e => setNumeroLote(e.target.value)}
+                        disabled={!!viewingId}
                       />
                     </div>
                     <div>
                       <Label className="text-xs">Data Fabricação</Label>
-                      <Input type="date" value={dataFabricacao} onChange={e => setDataFabricacao(e.target.value)} />
+                      <Input 
+                        type="date" 
+                        value={dataFabricacao} 
+                        onChange={e => setDataFabricacao(e.target.value)} 
+                        disabled={!!viewingId}
+                      />
                     </div>
                     <div>
                       <Label className="text-xs">Data Vencimento</Label>
-                      <Input type="date" value={dataVencimento} onChange={e => setDataVencimento(e.target.value)} />
+                      <Input 
+                        type="date" 
+                        value={dataVencimento} 
+                        onChange={e => setDataVencimento(e.target.value)} 
+                        disabled={!!viewingId}
+                      />
                     </div>
                   </div>
                   {!editingId && filledItems.length > 1 && (numeroLote || dataFabricacao || dataVencimento) && (
@@ -739,9 +801,16 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                   </CardContent>
                 </Card>
               )}
-              <Button onClick={editingId ? handleEditSave : handleSave} disabled={saving} className="w-full">
-                {saving ? "Salvando..." : editingId ? "Salvar Alterações" : "Registrar Compra"}
-              </Button>
+              {!viewingId && (
+                <Button onClick={editingId ? handleEditSave : handleSave} disabled={saving} className="w-full">
+                  {saving ? "Salvando..." : editingId ? "Salvar Alterações" : "Registrar Compra"}
+                </Button>
+              )}
+              {viewingId && (
+                <Button onClick={() => setOpen(false)} variant="outline" className="w-full">
+                  Fechar
+                </Button>
+              )}
             </div>
           </DialogContent>
         </Dialog>
