@@ -97,7 +97,6 @@ export default function MinhasComissoes() {
       .order("created_at", { ascending: true });
 
     const primeiraVendaPorCliente: Record<string, string> = {};
-    const primeiraVendaPorCliente: Record<string, string> = {};
     const todasVendasArray = todasVendasVendedor || [];
     
     // Agrupar por cliente para encontrar a primeira venda de cada um
