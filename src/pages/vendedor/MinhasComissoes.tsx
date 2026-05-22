@@ -21,6 +21,7 @@ export default function MinhasComissoes() {
   const { user, factoryId } = useAuth();
   const [comissoes, setComissoes] = useState<any[]>([]);
   const [unidadesMes, setUnidadesMes] = useState(0);
+  const [bonusFidelizacao, setBonusFidelizacao] = useState(0);
   const [loading, setLoading] = useState(true);
 
   async function load() {
