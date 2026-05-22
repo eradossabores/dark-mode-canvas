@@ -448,8 +448,8 @@ export default function ContasAPagar() {
   async function avancarParcela(c: ContaPagar, proximaData?: Date) {
     if (c.tipo !== "parcelado" || c.parcela_atual >= c.total_parcelas) return;
     const valorPago = parseFloat(pagarValor || String(c.valor_parcela));
-    const novaParcela = c.parcela_atual + 1;
     const novoRestante = Math.max(0, c.valor_restante - valorPago);
+    const novaParcela = novoRestante <= 0 ? c.total_parcelas : c.parcela_atual + 1;
     const formaLabel = FORMAS_PAGAMENTO.find(f => f.value === pagarForma)?.label || pagarForma;
     await (supabase as any).from("contas_a_pagar").update({
       parcela_atual: novaParcela,
