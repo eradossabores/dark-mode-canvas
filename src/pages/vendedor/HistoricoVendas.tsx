@@ -130,7 +130,8 @@ export default function HistoricoVendas() {
       const primeiraVenda = sorted[0];
       
       sorted.forEach((v) => {
-        map[v.id] = v.id === primeiraVenda.id ? "primeira" : "reposicao";
+        const isBlackLounge = v.clientes?.nome === "BLACK LOUNGE";
+        map[v.id] = (v.id === primeiraVenda.id || isBlackLounge) ? "primeira" : "reposicao";
       });
     });
     return map;

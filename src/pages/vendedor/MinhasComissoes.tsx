@@ -118,8 +118,11 @@ export default function MinhasComissoes() {
     });
 
     const comList = (com || []).map((c: any) => {
-      const key = (c.vendas as any)?.cliente_id || (c.vendas as any)?.clientes?.nome || "avulso";
-      const isPrimeira = primeiraVendaPorCliente[key] === c.venda_id;
+      const clienteNome = (c.vendas as any)?.clientes?.nome;
+      const clienteId = (c.vendas as any)?.cliente_id;
+      
+      const key = clienteId || (clienteNome ? `${clienteNome}` : "avulso");
+      const isPrimeira = primeiraVendaPorCliente[key] === c.venda_id || (clienteNome === "BLACK LOUNGE");
       
       return {
         ...c,
