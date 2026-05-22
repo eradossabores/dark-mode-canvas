@@ -60,18 +60,53 @@ export default function MinhasComissoes() {
     } else {
       setUnidadesMes(0);
     }
+
+    // Bônus de Fidelização (3 ou 6 meses de recompra)
+    if (ids.length > 0) {
+      const hoje = new Date();
+      const { data: vendasAntTudo } = await (supabase as any)
+        .from("vendas")
+        .select("cliente_id, created_at")
+        .in("cliente_id", ids)
+        .eq("status", "paga")
+        .gte("created_at", subMonths(startOfMonth(hoje), 6).toISOString());
+
+      const vendasPorMes: Record<number, Set<string>> = { 1: new Set(), 2: new Set(), 3: new Set(), 4: new Set(), 5: new Set(), 6: new Set() };
+      (vendasAntTudo || []).forEach((v: any) => {
+        const dt = new Date(v.created_at);
+        for (let i = 1; i <= 6; i++) {
+          const ini = startOfMonth(subMonths(hoje, i));
+          const fim = endOfMonth(subMonths(hoje, i));
+          if (dt >= ini && dt <= fim) vendasPorMes[i].add(v.cliente_id);
+        }
+      });
+
+      let totalBonusFid = 0;
+      ids.forEach(cid => {
+        let consec = 0;
+        if (vendasPorMes[1].has(cid) && vendasPorMes[2].has(cid) && vendasPorMes[3].has(cid)) {
+          consec = 3;
+          if (vendasPorMes[4].has(cid) && vendasPorMes[5].has(cid) && vendasPorMes[6].has(cid)) consec = 6;
+        }
+        if (consec === 6) totalBonusFid += 100;
+        else if (consec === 3) totalBonusFid += 50;
+      });
+      setBonusFidelizacao(totalBonusFid);
+    }
     setLoading(false);
   }
 
   useEffect(() => { load(); }, [user?.id]);
 
   const totalComissao = useMemo(() => comissoes.reduce((s, c) => s + Number(c.valor_comissao || 0), 0), [comissoes]);
-  const bonus = calcularBonus(unidadesMes);
-  const ajudaCusto = AJUDA_CUSTO_SEMANAL * 4; // estimativa mensal
-  const totalGeral = totalComissao + bonus + ajudaCusto;
+  const bonusMeta = calcularBonus(unidadesMes);
+  const ajudaCusto = AJUDA_CUSTO_SEMANAL * 4; 
+  const totalGeral = totalComissao + bonusMeta + bonusFidelizacao + ajudaCusto;
 
-  const proximaMeta = unidadesMes >= 2000 ? null : (unidadesMes >= 1000 ? 2000 : 1000);
-  const progresso = proximaMeta ? Math.min(100, (unidadesMes / proximaMeta) * 100) : 100;
+  const meta1 = 1000;
+  const meta2 = 2000;
+  const metaAtiva = unidadesMes < meta1 ? meta1 : meta2;
+  const progresso = Math.min(100, (unidadesMes / metaAtiva) * 100);
 
   return (
     <div className="space-y-6">
