@@ -387,7 +387,8 @@ export default function MinhasComissoes() {
                               itens: [],
                               quantidade: 0,
                               comissao: 0,
-                              ids: []
+                              ids: [],
+                              calculo: "0.10"
                             };
                           }
                           
