@@ -5,9 +5,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { DollarSign, Target, TrendingUp, Wallet, Award } from "lucide-react";
+import { 
+  DollarSign, 
+  Target, 
+  TrendingUp, 
+  Wallet, 
+  Award, 
+  Calendar, 
+  Receipt,
+  CheckCircle2,
+  Clock,
+  ChevronRight
+} from "lucide-react";
 import { startOfMonth, endOfMonth, format, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 const AJUDA_CUSTO_SEMANAL = 80;
 
@@ -18,7 +30,7 @@ function calcularBonus(unidades: number) {
 }
 
 export default function MinhasComissoes() {
-  const { user, factoryId } = useAuth();
+  const { user } = useAuth();
   const [comissoes, setComissoes] = useState<any[]>([]);
   const [unidadesMes, setUnidadesMes] = useState(0);
   const [bonusFidelizacao, setBonusFidelizacao] = useState(0);
@@ -30,7 +42,6 @@ export default function MinhasComissoes() {
     const inicio = startOfMonth(new Date()).toISOString();
     const fim = endOfMonth(new Date()).toISOString();
 
-    // Comissões registradas (já contabilizadas via trigger ao marcar venda como paga)
     const { data: com } = await (supabase as any)
       .from("comissoes_vendas")
       .select("id, created_at, quantidade_unidades, faixa, valor_base, recorrente, valor_comissao, status, venda_id")
@@ -40,16 +51,17 @@ export default function MinhasComissoes() {
       .order("created_at", { ascending: false });
     setComissoes(com || []);
 
-    // Unidades vendidas no mês (de TODAS as vendas dos clientes do vendedor)
     const { data: vinculos } = await (supabase as any)
       .from("cliente_vendedor").select("cliente_id").eq("vendedor_user_id", user.id);
     const ids = (vinculos || []).map((v: any) => v.cliente_id);
+    
     if (ids.length > 0) {
       const { data: vendas } = await (supabase as any)
         .from("vendas").select("id, created_at, cliente_id")
         .in("cliente_id", ids).gte("created_at", inicio).lte("created_at", fim)
         .eq("status", "paga");
       const vendaIds = (vendas || []).map((v: any) => v.id);
+      
       if (vendaIds.length > 0) {
         const { data: itens } = await (supabase as any)
           .from("venda_itens").select("quantidade, venda_id").in("venda_id", vendaIds);
@@ -58,12 +70,7 @@ export default function MinhasComissoes() {
       } else {
         setUnidadesMes(0);
       }
-    } else {
-      setUnidadesMes(0);
-    }
 
-    // Bônus de Fidelização (3 ou 6 meses de recompra)
-    if (ids.length > 0) {
       const hoje = new Date();
       const { data: vendasAntTudo } = await (supabase as any)
         .from("vendas")
@@ -93,6 +100,8 @@ export default function MinhasComissoes() {
         else if (consec === 3) totalBonusFid += 50;
       });
       setBonusFidelizacao(totalBonusFid);
+    } else {
+      setUnidadesMes(0);
     }
     setLoading(false);
   }
@@ -102,7 +111,6 @@ export default function MinhasComissoes() {
   const semanasNoMes = useMemo(() => {
     const hoje = new Date();
     const diaAtual = hoje.getDate();
-    // 1 a 7 = 1 semana, 8 a 14 = 2 semanas, etc.
     return Math.ceil(diaAtual / 7);
   }, []);
 
@@ -117,92 +125,186 @@ export default function MinhasComissoes() {
   const progresso = Math.min(100, (unidadesMes / metaAtiva) * 100);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2"><DollarSign className="h-6 w-6" /> Minhas Comissões</h1>
-        <p className="text-sm text-muted-foreground">Resumo do mês de {format(new Date(), "MMMM 'de' yyyy", { locale: ptBR })}.</p>
+    <div className="space-y-6 pb-10">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-primary/10 via-background to-background p-6 rounded-2xl border border-primary/20">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-3">
+            <div className="bg-primary p-2 rounded-lg text-primary-foreground shadow-lg">
+              <DollarSign className="h-7 w-7" />
+            </div>
+            Minhas Comissões
+          </h1>
+          <p className="text-muted-foreground mt-1 flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            Período: {format(new Date(), "MMMM 'de' yyyy", { locale: ptBR })}
+          </p>
+        </div>
+        
+        <div className="flex flex-col items-end">
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Estimado</span>
+          <div className="text-3xl font-black text-primary">
+            R$ {totalGeral.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="h-4 w-4" /> Volume vendido</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{unidadesMes}</p>
-            <p className="text-xs text-muted-foreground">unidades este mês</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {[
+          { label: "Volume Vendido", value: unidadesMes, sub: "unidades", icon: TrendingUp, color: "text-blue-500", bg: "bg-blue-50" },
+          { label: "Comissões", value: `R$ ${totalComissao.toFixed(2)}`, sub: `${comissoes.length} vendas pagas`, icon: Receipt, color: "text-green-500", bg: "bg-green-50" },
+          { label: "Bônus Meta", value: `R$ ${bonusMeta.toFixed(2)}`, sub: bonusMeta > 0 ? "Meta atingida!" : `Próxima: ${metaAtiva} un.`, icon: Target, color: "text-purple-500", bg: "bg-purple-50" },
+          { label: "Bônus Fidelidade", value: `R$ ${bonusFidelizacao.toFixed(2)}`, sub: "Recompras", icon: Award, color: "text-amber-500", bg: "bg-amber-50" },
+          { label: "Ajuda de Custo", value: `R$ ${ajudaCusto.toFixed(2)}`, sub: `${semanasNoMes} ${semanasNoMes === 1 ? 'semana' : 'semanas'}`, icon: Wallet, color: "text-rose-500", bg: "bg-rose-50" },
+        ].map((item, i) => (
+          <Card key={i} className="overflow-hidden border-none shadow-md hover:shadow-xl transition-all duration-300 group">
+            <CardContent className="p-5">
+              <div className="flex justify-between items-start mb-4">
+                <div className={cn("p-2 rounded-xl transition-colors", item.bg, item.color)}>
+                  <item.icon className="h-5 w-5" />
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-primary transition-colors" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-2xl font-black tracking-tight">{item.value}</p>
+                <p className="text-xs font-medium text-muted-foreground truncate">{item.label}</p>
+                <p className="text-[10px] uppercase font-bold text-muted-foreground/60">{item.sub}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-1 shadow-lg border-primary/10 overflow-hidden">
+          <CardHeader className="bg-primary/5 pb-4">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Target className="h-5 w-5 text-primary" />
+              Progresso Mensal
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-6">
+            <div className="space-y-2">
+              <div className="flex justify-between items-end">
+                <span className="text-3xl font-black">{unidadesMes} <span className="text-sm font-normal text-muted-foreground">un</span></span>
+                <span className="text-sm font-semibold text-primary bg-primary/10 px-2 py-1 rounded">Meta: {metaAtiva}</span>
+              </div>
+              <div className="relative pt-2">
+                <Progress value={progresso} className="h-3 shadow-inner" />
+                {progresso >= 100 && (
+                  <div className="absolute -right-1 -top-1 bg-green-500 text-white rounded-full p-1 shadow-lg animate-bounce">
+                    <CheckCircle2 className="h-3 w-3" />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="bg-muted/50 p-3 rounded-xl border border-dashed border-muted-foreground/20">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase">Meta Bronze</p>
+                <p className="font-bold">1.000 un</p>
+                <p className="text-xs text-green-600 font-bold">+R$ 50,00</p>
+              </div>
+              <div className="bg-muted/50 p-3 rounded-xl border border-dashed border-muted-foreground/20">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase">Meta Ouro</p>
+                <p className="font-bold">2.000 un</p>
+                <p className="text-xs text-green-600 font-bold">+R$ 100,00</p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10">
+              <div className="flex items-center gap-3">
+                <div className="bg-primary/20 p-2 rounded-full">
+                  <Award className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-primary uppercase">Dica de Iury</p>
+                  <p className="text-xs text-muted-foreground">Faltam {Math.max(0, metaAtiva - unidadesMes)} unidades para o próximo bônus!</p>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><DollarSign className="h-4 w-4" /> Comissão (paga)</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">R$ {totalComissao.toFixed(2)}</p>
-            <p className="text-xs text-muted-foreground">{comissoes.length} venda(s) com comissão</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Target className="h-4 w-4" /> Bônus de meta</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">R$ {bonusMeta.toFixed(2)}</p>
-            <p className="text-xs text-muted-foreground">{bonusMeta > 0 ? `Meta atingida` : `Próxima: ${metaAtiva} un.`}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Award className="h-4 w-4" /> Bônus Fidelidade</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">R$ {bonusFidelizacao.toFixed(2)}</p>
-            <p className="text-xs text-muted-foreground">Recompras consecutivas</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Wallet className="h-4 w-4" /> Ajuda de custo</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">R$ {ajudaCusto.toFixed(2)}</p>
-            <p className="text-xs text-muted-foreground">R$ {AJUDA_CUSTO_SEMANAL}/semana × {semanasNoMes} {semanasNoMes === 1 ? 'semana' : 'semanas'}</p>
+
+        <Card className="lg:col-span-2 shadow-lg border-none overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/30">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Receipt className="h-5 w-5 text-primary" />
+              Extrato Detalhado
+            </CardTitle>
+            <Badge variant="outline" className="font-mono">{comissoes.length} itens</Badge>
+          </CardHeader>
+          <CardContent className="p-0">
+            {loading ? (
+              <div className="p-20 text-center space-y-3">
+                <Clock className="h-10 w-10 text-primary/20 animate-spin mx-auto" />
+                <p className="text-sm text-muted-foreground">Sincronizando dados...</p>
+              </div>
+            ) : comissoes.length === 0 ? (
+              <div className="p-20 text-center space-y-4">
+                <div className="bg-muted w-16 h-16 rounded-full flex items-center justify-center mx-auto">
+                  <Receipt className="h-8 w-8 text-muted-foreground/30" />
+                </div>
+                <div className="max-w-[250px] mx-auto">
+                  <p className="font-bold">Nenhuma comissão</p>
+                  <p className="text-sm text-muted-foreground">As comissões aparecem aqui automaticamente após o pagamento da venda.</p>
+                </div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent bg-muted/20">
+                      <TableHead className="w-[120px] font-bold">Data</TableHead>
+                      <TableHead className="font-bold">Unidades</TableHead>
+                      <TableHead className="font-bold">Tipo</TableHead>
+                      <TableHead className="text-right font-bold">Comissão</TableHead>
+                      <TableHead className="w-[100px] text-center font-bold">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {comissoes.map((c) => (
+                      <TableRow key={c.id} className="group transition-colors">
+                        <TableCell className="font-medium">
+                          {format(new Date(c.created_at), "dd/MM/yyyy")}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold">{c.quantidade_unidades}</span>
+                            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-tighter">un</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {c.recorrente ? (
+                            <Badge variant="secondary" className="bg-blue-100 text-blue-700 border-none font-bold text-[10px] py-0">RECOMPRA</Badge>
+                          ) : (
+                            <Badge variant="default" className="bg-green-100 text-green-700 border-none font-bold text-[10px] py-0">NOVA VENDA</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span className="font-mono font-bold text-primary">
+                            R$ {Number(c.valor_comissao).toFixed(2)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex justify-center">
+                            {c.status === "paga" ? (
+                              <div className="bg-green-500/10 p-1 rounded-full">
+                                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                              </div>
+                            ) : (
+                              <Clock className="h-4 w-4 text-amber-500" />
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
-
-      <Card>
-        <CardHeader><CardTitle>Progresso de meta mensal</CardTitle></CardHeader>
-        <CardContent className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span>{unidadesMes} unidades</span>
-            <span>{metaAtiva ? `Meta: ${metaAtiva}` : "Meta máxima atingida 🎉"}</span>
-          </div>
-          <Progress value={progresso} />
-          <div className="flex justify-between text-xs text-muted-foreground pt-2">
-            <span>1.000 un = +R$ 50</span>
-            <span>2.000 un = +R$ 100</span>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader><CardTitle>Total a receber no mês: R$ {totalGeral.toFixed(2)}</CardTitle></CardHeader>
-        <CardContent>
-          {loading ? <p className="text-sm text-muted-foreground">Carregando...</p> : comissoes.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhuma comissão registrada ainda este mês. As comissões aparecem aqui quando a venda é marcada como paga.</p>
-          ) : (
-            <Table>
-              <TableHeader><TableRow>
-                <TableHead>Data</TableHead><TableHead>Unidades</TableHead><TableHead>Faixa</TableHead>
-                <TableHead>Tipo</TableHead><TableHead className="text-right">Valor</TableHead><TableHead>Status</TableHead>
-              </TableRow></TableHeader>
-              <TableBody>
-                {comissoes.map((c) => (
-                  <TableRow key={c.id}>
-                    <TableCell>{format(new Date(c.created_at), "dd/MM/yyyy")}</TableCell>
-                    <TableCell>{c.quantidade_unidades}</TableCell>
-                    <TableCell>{c.faixa}</TableCell>
-                    <TableCell>{c.recorrente ? <Badge variant="secondary">Recompra (50%)</Badge> : <Badge>Nova</Badge>}</TableCell>
-                    <TableCell className="text-right font-mono">R$ {Number(c.valor_comissao).toFixed(2)}</TableCell>
-                    <TableCell><Badge variant={c.status === "paga" ? "default" : "outline"}>{c.status}</Badge></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }
