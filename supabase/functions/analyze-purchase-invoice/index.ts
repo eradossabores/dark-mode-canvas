@@ -94,7 +94,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "anthropic/claude-3.5-sonnet",
+        model: "google/gemini-2.5-pro",
         messages: [
           {
             role: "user",
