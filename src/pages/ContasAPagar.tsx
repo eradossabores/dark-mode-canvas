@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,14 +94,15 @@ export default function ContasAPagar() {
   const [pagarFixoValor, setPagarFixoValor] = useState("");
   const [pagarFixoForma, setPagarFixoForma] = useState<string>("pix");
   const [historicoContaId, setHistoricoContaId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"abertas" | "pagas">("abertas");
 
   // Filters
   const [busca, setBusca] = useState("");
   const [filtroTipo, setFiltroTipo] = useState("todos");
-   const [filtroCategoria, setFiltroCategoria] = useState("todos");
-   const [filtroStatus, setFiltroStatus] = useState("todos");
-   const [filtroMes, setFiltroMes] = useState(new Date().getMonth().toString());
-   const [filtroAno, setFiltroAno] = useState(new Date().getFullYear().toString());
+  const [filtroCategoria, setFiltroCategoria] = useState("todos");
+  const [filtroStatus, setFiltroStatus] = useState("todos");
+  const [filtroMes, setFiltroMes] = useState(new Date().getMonth().toString());
+  const [filtroAno, setFiltroAno] = useState(new Date().getFullYear().toString());
 
   // Form state
   const [descricao, setDescricao] = useState("");
@@ -1231,24 +1233,44 @@ export default function ContasAPagar() {
           </div>
         </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Custo</TableHead>
-                    <TableHead>Cat.</TableHead>
-                    <TableHead>Responsável</TableHead>
-                    <TableHead className="text-center">Mês Pago?</TableHead>
-                    <TableHead className="text-right">Parcela</TableHead>
-                    <TableHead>Próx. Vencimento</TableHead>
-                    <TableHead className="text-center">Progresso</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="text-right">Faltam</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {parceladas.map(c => {
+            <Tabs defaultValue="abertas" value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
+              <div className="flex items-center justify-between mb-4">
+                <TabsList className="grid w-[300px] grid-cols-2">
+                  <TabsTrigger value="abertas" className="flex items-center gap-2">
+                    Em Aberto 
+                    <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+                      {parceladas.filter(c => !c.pago_mes).length}
+                    </Badge>
+                  </TabsTrigger>
+                  <TabsTrigger value="pagas" className="flex items-center gap-2">
+                    Pagas (Mês)
+                    <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+                      {parceladas.filter(c => c.pago_mes).length}
+                    </Badge>
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Custo</TableHead>
+                      <TableHead>Cat.</TableHead>
+                      <TableHead>Responsável</TableHead>
+                      <TableHead className="text-center">Mês Pago?</TableHead>
+                      <TableHead className="text-right">Parcela</TableHead>
+                      <TableHead>Próx. Vencimento</TableHead>
+                      <TableHead className="text-center">Progresso</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                      <TableHead className="text-right">Faltam</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {parceladas
+                      .filter(c => activeTab === "abertas" ? !c.pago_mes : c.pago_mes)
+                      .map(c => {
                     const pct = c.total_parcelas > 0 ? Math.round((c.parcela_atual / c.total_parcelas) * 100) : 0;
                     const quaseQuitando = c.parcela_atual >= c.total_parcelas - 2 && c.parcela_atual < c.total_parcelas;
                     const quitado = c.parcela_atual >= c.total_parcelas;
@@ -1335,9 +1357,10 @@ export default function ContasAPagar() {
                     <TableCell className="text-right font-mono text-destructive">{R(totalRestante)}</TableCell>
                     <TableCell />
                   </TableRow>
-                </TableBody>
-              </Table>
-            </div>
+                  </TableBody>
+                </Table>
+              </div>
+            </Tabs>
           </CardContent>
         </Card>
 
