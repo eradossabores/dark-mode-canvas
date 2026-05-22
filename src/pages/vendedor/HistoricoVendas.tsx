@@ -131,7 +131,11 @@ export default function HistoricoVendas() {
       
       sorted.forEach((v) => {
         const isBlackLounge = v.clientes?.nome === "BLACK LOUNGE";
-        map[v.id] = (v.id === primeiraVenda.id || isBlackLounge) ? "primeira" : "reposicao";
+        const isBlackLoungeBar = v.clientes?.nome === "BLACK LOUNGE BAR";
+        const isSwellSmoke = v.clientes?.nome === "SWELL SMOKE";
+        const isEcom = v.clientes?.nome === "ECOM";
+        
+        map[v.id] = (v.id === primeiraVenda.id || isBlackLounge || isBlackLoungeBar || isSwellSmoke || isEcom) ? "primeira" : "reposicao";
       });
     });
     return map;
