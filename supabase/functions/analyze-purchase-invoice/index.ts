@@ -67,19 +67,34 @@ serve(async (req) => {
     });
 
     const data = await response.json();
+    console.log("AI Gateway response:", JSON.stringify(data));
+
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error("Unexpected AI response structure:", data);
+      throw new Error("Erro na resposta da IA: Estrutura inválida ou limite atingido.");
+    }
+
     const content = data.choices[0].message.content;
     
     // Clean up potential markdown code blocks if the model ignored instructions
     const jsonString = content.replace(/```json\n?|\n?```/g, "").trim();
-    const extractedData = JSON.parse(jsonString);
+    let extractedData;
+    try {
+      extractedData = JSON.parse(jsonString);
+    } catch (e) {
+      console.error("Failed to parse AI content as JSON:", content);
+      throw new Error("A IA não retornou um formato JSON válido.");
+    }
 
     return new Response(JSON.stringify(extractedData), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
+    console.error("Function error:", error.message);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
+
 });
