@@ -87,18 +87,15 @@ export default function MinhasComissoes() {
       .order("created_at", { ascending: false });
 
     // Identificar tipo de venda (Primeira Compra vs Reposição)
-    const porCliente: Record<string, any[]> = {};
-    
-    // Primeiro, precisamos de todas as vendas pagas desse vendedor para determinar o que é primeira compra real
-    const { data: todasVendasPagas } = await (supabase as any)
+    // Para ser IDÊNTICO ao histórico de vendas, precisamos carregar TODAS as vendas do vendedor
+    const { data: todasVendasVendedor } = await (supabase as any)
       .from("vendas")
       .select("id, cliente_id, created_at, clientes(nome)")
       .in("cliente_id", allRelevantClientIds)
-      .eq("status", "paga")
       .order("created_at", { ascending: true });
 
     const primeiraVendaPorCliente: Record<string, string> = {};
-    (todasVendasPagas || []).forEach((v: any) => {
+    (todasVendasVendedor || []).forEach((v: any) => {
       const key = v.cliente_id || v.clientes?.nome || "avulso";
       if (!primeiraVendaPorCliente[key]) {
         primeiraVendaPorCliente[key] = v.id;
@@ -106,7 +103,7 @@ export default function MinhasComissoes() {
     });
 
     const comList = (com || []).map((c: any) => {
-      const key = c.vendas?.cliente_id || c.vendas?.clientes?.nome || "avulso";
+      const key = c.vendas?.cliente_id || (c.vendas as any)?.clientes?.nome || "avulso";
       const isPrimeira = primeiraVendaPorCliente[key] === c.venda_id;
       
       return {
