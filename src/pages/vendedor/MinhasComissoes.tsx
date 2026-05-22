@@ -370,6 +370,7 @@ export default function MinhasComissoes() {
                         quantidade: number;
                         comissao: number;
                         ids: string[];
+                        calculo: string;
                       }> = {};
                       
                       const regularItems: any[] = [];
