@@ -130,12 +130,11 @@ export default function MinhasComissoes() {
       
       const isPrimeira = !isExceptionReposicao;
 
-      // Applying 50% commission for reposição (non-primeira)
-      // Logic: if not primeira, comissao should be half of what it would be as primeira
-      // The DB already has a value, but we might need to adjust display/total logic if it wasn't already handled.
-      // However, the user is asking to apply it now, so we'll ensure the calculation reflects this.
-      const valorBaseComissao = Number(c.valor_comissao || 0);
-      const valorFinalComissao = isPrimeira ? valorBaseComissao : valorBaseComissao * 0.5;
+      // Applying commission rules:
+      // Primeira Compra: R$ 0,20 per unit (default base)
+      // Reposição: R$ 0,10 per unit (50% of primeira)
+      const comissaoPorUnidade = isPrimeira ? 0.20 : 0.10;
+      const valorFinalComissao = unidades * comissaoPorUnidade;
       
       return {
         ...c,
