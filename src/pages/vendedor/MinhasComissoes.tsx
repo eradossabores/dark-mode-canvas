@@ -129,11 +129,19 @@ export default function MinhasComissoes() {
       const isExceptionReposicao = [50, 60, 116].includes(unidades);
       
       const isPrimeira = !isExceptionReposicao;
+
+      // Applying 50% commission for reposição (non-primeira)
+      // Logic: if not primeira, comissao should be half of what it would be as primeira
+      // The DB already has a value, but we might need to adjust display/total logic if it wasn't already handled.
+      // However, the user is asking to apply it now, so we'll ensure the calculation reflects this.
+      const valorBaseComissao = Number(c.valor_comissao || 0);
+      const valorFinalComissao = isPrimeira ? valorBaseComissao : valorBaseComissao * 0.5;
       
       return {
         ...c,
         display_date: c.vendas?.created_at || c.created_at,
-        is_primeira_automatic: isPrimeira
+        is_primeira_automatic: isPrimeira,
+        valor_comissao: valorFinalComissao
       };
     });
 
