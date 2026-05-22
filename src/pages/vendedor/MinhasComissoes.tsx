@@ -354,43 +354,109 @@ export default function MinhasComissoes() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    comissoes.map((c) => {
-                      const cliente = (c.vendas as any)?.clientes?.nome || "-";
-                      const itens = (c.vendas as any)?.venda_itens?.map((it: any) => 
-                        `${it.quantidade}x ${it.sabores?.nome || "?"}`
-                      ).join(", ") || "-";
+                    (() => {
+                      const groupedReposicao: Record<string, {
+                        display_date: string;
+                        cliente: string;
+                        itens: string[];
+                        quantidade: number;
+                        comissao: number;
+                        ids: string[];
+                      }> = {};
                       
-                      return (
-                        <TableRow key={c.id}>
-                          <TableCell className="text-xs whitespace-nowrap">
-                            {format(new Date(c.display_date), "dd/MM/yyyy")}
-                          </TableCell>
-                          <TableCell className="text-xs font-medium uppercase">
-                            {cliente}
-                          </TableCell>
-                          <TableCell className="text-xs font-medium max-w-[200px] truncate" title={itens}>
-                            {itens}
-                          </TableCell>
-                          <TableCell className="text-center text-xs font-medium">
-                            {c.quantidade_unidades || 0}
-                          </TableCell>
-                          <TableCell>
-                            {c.is_primeira_automatic ? (
-                              <Badge variant="outline" className="bg-[#E8F1FF] text-[#0066FF] border-none text-[10px] py-0.5 px-2 uppercase font-bold rounded-md">
-                                1ª Compra
-                              </Badge>
-                            ) : (
+                      const regularItems: any[] = [];
+
+                      comissoes.forEach((c) => {
+                        const isReposicao = !c.is_primeira_automatic;
+                        const cliente = (c.vendas as any)?.clientes?.nome || "-";
+                        
+                        if (isReposicao && cliente !== "-") {
+                          if (!groupedReposicao[cliente]) {
+                            groupedReposicao[cliente] = {
+                              display_date: c.display_date,
+                              cliente: cliente,
+                              itens: [],
+                              quantidade: 0,
+                              comissao: 0,
+                              ids: []
+                            };
+                          }
+                          
+                          const itemStr = (c.vendas as any)?.venda_itens?.map((it: any) => 
+                            `${it.quantidade}x ${it.sabores?.nome || "?"}`
+                          ).join(", ") || "-";
+                          
+                          if (itemStr !== "-") groupedReposicao[cliente].itens.push(itemStr);
+                          groupedReposicao[cliente].quantidade += Number(c.quantidade_unidades || 0);
+                          groupedReposicao[cliente].comissao += Number(c.valor_comissao || 0);
+                          groupedReposicao[cliente].ids.push(c.id);
+                        } else {
+                          regularItems.push(c);
+                        }
+                      });
+
+                      const reposicaoRows = Object.values(groupedReposicao).map((g) => {
+                        const combinedItens = g.itens.join(" | ");
+                        return (
+                          <TableRow key={`group-${g.cliente}`}>
+                            <TableCell className="text-xs whitespace-nowrap">
+                              {format(new Date(g.display_date), "dd/MM/yyyy")}
+                            </TableCell>
+                            <TableCell className="text-xs font-medium uppercase">
+                              {g.cliente}
+                            </TableCell>
+                            <TableCell className="text-xs font-medium max-w-[200px] truncate" title={combinedItens}>
+                              {combinedItens}
+                            </TableCell>
+                            <TableCell className="text-center text-xs font-medium">
+                              {g.quantidade}
+                            </TableCell>
+                            <TableCell>
                               <Badge variant="outline" className="bg-[#E7F7EF] text-[#0D9488] border-none text-[10px] py-0.5 px-2 uppercase font-bold rounded-md">
                                 Reposição
                               </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right font-bold text-black">
-                            R$ {Number(c.valor_comissao || 0).toFixed(2)}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
+                            </TableCell>
+                            <TableCell className="text-right font-bold text-black">
+                              R$ {g.comissao.toFixed(2)}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      });
+
+                      const firstPurchaseRows = regularItems.map((c) => {
+                        const cliente = (c.vendas as any)?.clientes?.nome || "-";
+                        const itens = (c.vendas as any)?.venda_itens?.map((it: any) => 
+                          `${it.quantidade}x ${it.sabores?.nome || "?"}`
+                        ).join(", ") || "-";
+                        
+                        return (
+                          <TableRow key={c.id}>
+                            <TableCell className="text-xs whitespace-nowrap">
+                              {format(new Date(c.display_date), "dd/MM/yyyy")}
+                            </TableCell>
+                            <TableCell className="text-xs font-medium uppercase">
+                              {cliente}
+                            </TableCell>
+                            <TableCell className="text-xs font-medium max-w-[200px] truncate" title={itens}>
+                              {itens}
+                            </TableCell>
+                            <TableCell className="text-center text-xs font-medium">
+                              {c.quantidade_unidades || 0}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="bg-[#E8F1FF] text-[#0066FF] border-none text-[10px] py-0.5 px-2 uppercase font-bold rounded-md">
+                                1ª Compra
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right font-bold text-black">
+                              R$ {Number(c.valor_comissao || 0).toFixed(2)}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      });
+
+                      return [...firstPurchaseRows, ...reposicaoRows];
+                    })()
                   )}
                 </TableBody>
               </Table>
