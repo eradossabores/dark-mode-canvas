@@ -151,6 +151,8 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const [temFrete, setTemFrete] = useState(false);
   const [tipoFrete, setTipoFrete] = useState("sedex");
   const [valorFrete, setValorFrete] = useState("");
+  const [showFreightAsk, setShowFreightAsk] = useState(false);
+
   const [itemUnits, setItemUnits] = useState<Record<string, string>>({});
   const [obs, setObs] = useState("");
   const [dataCompra, setDataCompra] = useState(() => format(new Date(), "yyyy-MM-dd"));
@@ -406,7 +408,13 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
         if (data.valor_frete > 0) {
           setTemFrete(true);
           setValorFrete(String(data.valor_frete));
+          setShowFreightAsk(false);
+        } else {
+          setTemFrete(false);
+          setValorFrete("");
+          setShowFreightAsk(true);
         }
+
 
         if (data.itens && Array.isArray(data.itens)) {
           const newItems: ItemQty[] = data.itens.map((it: any) => ({
