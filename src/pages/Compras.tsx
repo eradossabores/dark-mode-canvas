@@ -268,9 +268,46 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
       };
     });
     const { error } = await (supabase as any).from("compras").insert(rows);
+    
+    if (!error) {
+      // Update inventory for each item
+      for (const item of filledItems) {
+        if (item.tipo === "insumo") {
+          // Get current stock
+          const { data: mpData } = await (supabase as any)
+            .from("materias_primas")
+            .select("id, estoque_atual")
+            .eq("factory_id", factoryId)
+            .eq("nome", item.nome)
+            .maybeSingle();
+
+          if (mpData) {
+            await (supabase as any)
+              .from("materias_primas")
+              .update({ estoque_atual: Number(mpData.estoque_atual) + Number(item.quantidade) })
+              .eq("id", mpData.id);
+          }
+        } else if (item.tipo === "embalagem") {
+          const { data: embData } = await (supabase as any)
+            .from("embalagens")
+            .select("id, estoque_atual")
+            .eq("factory_id", factoryId)
+            .eq("nome", item.nome)
+            .maybeSingle();
+
+          if (embData) {
+            await (supabase as any)
+              .from("embalagens")
+              .update({ estoque_atual: Math.round(Number(embData.estoque_atual) + Number(item.quantidade)) })
+              .eq("id", embData.id);
+          }
+        }
+      }
+    }
+
     setSaving(false);
     if (error) { toast.error("Erro ao salvar compra"); return; }
-    toast.success(`${rows.length} ite${rows.length > 1 ? "ns registrados" : "m registrado"}!`);
+    toast.success(`${rows.length} ite${rows.length > 1 ? "ns registrados e estoque atualizado" : "m registrado e estoque atualizado"}!`);
     setOpen(false);
     resetForm();
     onRefresh();
