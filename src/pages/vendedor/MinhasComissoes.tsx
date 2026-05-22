@@ -262,9 +262,9 @@ export default function MinhasComissoes() {
             color: "text-blue-500", 
             bg: "bg-blue-50" 
           },
-          { label: "Comissões", value: `R$ ${totalComissao.toFixed(2)}`, sub: <p className="text-[10px] uppercase font-bold text-muted-foreground/60">{comissoes.length} vendas pagas</p>, icon: Receipt, color: "text-green-500", bg: "bg-green-50" },
-          { label: "Bônus Fidelidade", value: `R$ ${bonusFidelizacao.toFixed(2)}`, sub: <p className="text-[10px] uppercase font-bold text-muted-foreground/60">Recompras</p>, icon: Award, color: "text-amber-500", bg: "bg-amber-50" },
-          { label: "Ajuda de Custo", value: `R$ ${ajudaCusto.toFixed(2)}`, sub: <p className="text-[10px] uppercase font-bold text-muted-foreground/60">{semanasNoMes} {semanasNoMes === 1 ? 'semana' : 'semanas'}</p>, icon: Wallet, color: "text-rose-500", bg: "bg-rose-50" },
+          { label: "Comissões", value: `R$ ${totalComissao.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}`, sub: <p className="text-[10px] uppercase font-bold text-muted-foreground/60">{comissoes.length} vendas pagas</p>, icon: Receipt, color: "text-green-500", bg: "bg-green-50" },
+          { label: "Bônus Fidelidade", value: `R$ ${bonusFidelizacao.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}`, sub: <p className="text-[10px] uppercase font-bold text-muted-foreground/60">Recompras</p>, icon: Award, color: "text-amber-500", bg: "bg-amber-50" },
+          { label: "Ajuda de Custo", value: `R$ ${ajudaCusto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}`, sub: <p className="text-[10px] uppercase font-bold text-muted-foreground/60">{semanasNoMes} {semanasNoMes === 1 ? 'semana' : 'semanas'}</p>, icon: Wallet, color: "text-rose-500", bg: "bg-rose-50" },
         ].map((item, i) => (
           <Card key={i} className="overflow-hidden border-none shadow-md hover:shadow-xl transition-all duration-300 group">
             <CardContent className="p-5">
@@ -324,7 +324,7 @@ export default function MinhasComissoes() {
             <div className="p-3 bg-purple-50 rounded-xl border border-purple-100 flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-bold text-purple-700 uppercase">Bônus de Meta Atual</p>
-                <p className="text-lg font-black text-purple-900">R$ {bonusMeta.toFixed(2)}</p>
+                <p className="text-lg font-black text-purple-900">R$ {bonusMeta.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}</p>
               </div>
               <Target className="h-5 w-5 text-purple-400" />
             </div>
@@ -434,7 +434,7 @@ export default function MinhasComissoes() {
                               </Badge>
                             </TableCell>
                             <TableCell className="text-right font-bold text-black">
-                              R$ {g.comissao.toFixed(2)}
+                              R$ {g.comissao.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}
                             </TableCell>
                           </TableRow>
                         );
@@ -466,7 +466,7 @@ export default function MinhasComissoes() {
                               </Badge>
                             </TableCell>
                             <TableCell className="text-right font-bold text-black">
-                              R$ {Number(c.valor_comissao || 0).toFixed(2)}
+                              R$ {Number(c.valor_comissao || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}
                             </TableCell>
                           </TableRow>
                         );
