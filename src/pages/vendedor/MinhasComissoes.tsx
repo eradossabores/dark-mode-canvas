@@ -98,10 +98,17 @@ export default function MinhasComissoes() {
   }
 
   useEffect(() => { load(); }, [user?.id]);
+  
+  const semanasNoMes = useMemo(() => {
+    const hoje = new Date();
+    const diaAtual = hoje.getDate();
+    // 1 a 7 = 1 semana, 8 a 14 = 2 semanas, etc.
+    return Math.ceil(diaAtual / 7);
+  }, []);
 
   const totalComissao = useMemo(() => comissoes.reduce((s, c) => s + Number(c.valor_comissao || 0), 0), [comissoes]);
   const bonusMeta = calcularBonus(unidadesMes);
-  const ajudaCusto = AJUDA_CUSTO_SEMANAL * 4; 
+  const ajudaCusto = AJUDA_CUSTO_SEMANAL * semanasNoMes; 
   const totalGeral = totalComissao + bonusMeta + bonusFidelizacao + ajudaCusto;
 
   const meta1 = 1000;
