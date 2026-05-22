@@ -627,6 +627,7 @@ export type Database = {
           quantidade: number
           tem_frete: boolean
           tipo: string
+          unidade: string | null
           updated_at: string
           valor_frete: number
           valor_total: number
@@ -648,6 +649,7 @@ export type Database = {
           quantidade?: number
           tem_frete?: boolean
           tipo?: string
+          unidade?: string | null
           updated_at?: string
           valor_frete?: number
           valor_total?: number
@@ -669,6 +671,7 @@ export type Database = {
           quantidade?: number
           tem_frete?: boolean
           tipo?: string
+          unidade?: string | null
           updated_at?: string
           valor_frete?: number
           valor_total?: number
