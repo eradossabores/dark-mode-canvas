@@ -49,7 +49,6 @@ export default function Vendedores() {
   const [vendas, setVendas] = useState<VendaRow[]>([]);
   const [periodo, setPeriodo] = useState<Periodo>("mensal");
 
-  const { factoryId, role } = useAuth();
   const isEra = factoryId === ERA_DOS_SABORES_ID || role === "super_admin";
 
   useEffect(() => {
