@@ -163,7 +163,8 @@ export default function DashboardVendedor() {
         .select("id, total, cliente_id, status, created_at, clientes(id, nome, telefone), venda_itens(quantidade, subtotal, sabores(nome))")
         .in("cliente_id", ids)
         .gte("created_at", inicioRange.toISOString())
-        .lte("created_at", fimMes.toISOString());
+        .lte("created_at", fimMes.toISOString())
+        .eq("status", "paga");
 
       (vendas || []).forEach((v: any) => {
         const dt = new Date(v.created_at);
@@ -215,7 +216,8 @@ export default function DashboardVendedor() {
         .select("total, venda_itens(quantidade)")
         .in("cliente_id", ids)
         .gte("created_at", inicioMesAnt.toISOString())
-        .lte("created_at", fimMesAnt.toISOString());
+        .lte("created_at", fimMesAnt.toISOString())
+        .eq("status", "paga");
       (vendasAnt || []).forEach((v: any) => {
         totalValorAnt += Number(v.total || 0);
         totalUnidAnt += (v.venda_itens || []).reduce((s: number, i: any) => s + Number(i.quantidade || 0), 0);
