@@ -471,7 +471,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* ─── MAIN CONTENT ─── */}
-      <main className="flex-1 overflow-auto flex flex-col min-w-0">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col min-w-0 w-full relative">
         <PaymentBanner />
         {impersonatingFactory && (
           <div className="bg-primary text-primary-foreground px-4 py-2 flex items-center justify-between text-sm font-medium">
@@ -484,7 +484,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         )}
-        <div className="flex-1 p-4 md:p-6 pt-16 md:pt-6">{children}</div>
+        <div className="flex-1 p-4 md:p-6 pt-16 md:pt-6 w-full max-w-full overflow-x-hidden">{children}</div>
       </main>
     </div>
   );
