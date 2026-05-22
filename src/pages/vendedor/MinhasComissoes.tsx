@@ -156,7 +156,7 @@ export default function MinhasComissoes() {
           <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Wallet className="h-4 w-4" /> Ajuda de custo</CardTitle></CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">R$ {ajudaCusto.toFixed(2)}</p>
-            <p className="text-xs text-muted-foreground">R$ {AJUDA_CUSTO_SEMANAL}/semana × 4</p>
+            <p className="text-xs text-muted-foreground">R$ {AJUDA_CUSTO_SEMANAL}/semana × {semanasNoMes} {semanasNoMes === 1 ? 'semana' : 'semanas'}</p>
           </CardContent>
         </Card>
       </div>
