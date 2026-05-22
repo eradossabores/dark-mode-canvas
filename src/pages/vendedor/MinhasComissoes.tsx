@@ -15,7 +15,10 @@ import {
   Receipt,
   CheckCircle2,
   Clock,
-  ChevronRight
+  ChevronRight,
+  Sparkles,
+  Repeat,
+  History
 } from "lucide-react";
 import { startOfMonth, endOfMonth, format, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -314,7 +317,76 @@ export default function MinhasComissoes() {
           </CardContent>
         </Card>
 
-        {/* Removed detailed extract section */}
+        <Card className="shadow-lg border-primary/10 overflow-hidden">
+          <CardHeader className="bg-primary/5 pb-4">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <History className="h-5 w-5 text-primary" />
+              Extrato Detalhado
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Itens</TableHead>
+                    <TableHead className="text-right">Unid.</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead className="text-right">Comissão</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {comissoes.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        Nenhuma venda registrada este mês.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    comissoes.map((c) => {
+                      const itens = (c.vendas as any)?.venda_itens?.map((it: any) => 
+                        `${it.quantidade}x ${it.sabores?.nome || "?"}`
+                      ).join(", ") || "-";
+                      
+                      return (
+                        <TableRow key={c.id}>
+                          <TableCell className="text-xs whitespace-nowrap">
+                            {format(new Date(c.display_date), "dd/MM/yy HH:mm", { locale: ptBR })}
+                          </TableCell>
+                          <TableCell className="font-medium text-sm">
+                            {(c.vendas as any)?.clientes?.nome || "Avulso"}
+                          </TableCell>
+                          <TableCell className="text-xs max-w-[200px] truncate" title={itens}>
+                            {itens}
+                          </TableCell>
+                          <TableCell className="text-right text-xs">
+                            {c.quantidade_unidades || 0}
+                          </TableCell>
+                          <TableCell>
+                            {c.is_primeira_automatic ? (
+                              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] py-0 px-1.5 uppercase font-bold">
+                                <Sparkles className="h-2.5 w-2.5 mr-1" /> 1ª Compra
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] py-0 px-1.5 uppercase font-bold">
+                                <Repeat className="h-2.5 w-2.5 mr-1" /> Reposição
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right font-bold text-green-600">
+                            R$ {Number(c.valor_comissao || 0).toFixed(2)}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
