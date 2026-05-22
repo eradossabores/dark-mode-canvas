@@ -134,7 +134,7 @@ export default function MinhasComissoes() {
 
   const totalComissao = useMemo(() => {
     return comissoes
-      .filter(c => c.status === "paga" || c.status === "pago")
+      .filter(c => ["paga", "pago", "reposicao"].includes(c.status))
       .reduce((s, c) => s + Number(c.valor_comissao || 0), 0);
   }, [comissoes]);
 
@@ -310,7 +310,7 @@ export default function MinhasComissoes() {
                         </TableCell>
                         <TableCell className="text-center">
                           <div className="flex justify-center">
-                            {c.status === "paga" ? (
+                            {["paga", "pago", "reposicao"].includes(c.status) ? (
                               <div className="bg-green-500/10 p-1 rounded-full">
                                 <CheckCircle2 className="h-4 w-4 text-green-600" />
                               </div>
