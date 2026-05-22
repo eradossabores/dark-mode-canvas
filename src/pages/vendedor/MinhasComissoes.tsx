@@ -58,6 +58,12 @@ export default function MinhasComissoes() {
         vendas!venda_id (
           clientes (
             nome
+          ),
+          venda_itens (
+            quantidade,
+            sabores (
+              nome
+            )
           )
         )
       `)
@@ -304,6 +310,7 @@ export default function MinhasComissoes() {
                     <TableRow className="hover:bg-transparent bg-muted/20">
                       <TableHead className="w-[120px] font-bold">Data</TableHead>
                       <TableHead className="font-bold">Cliente</TableHead>
+                      <TableHead className="font-bold">Itens</TableHead>
                       <TableHead className="font-bold">Unidades</TableHead>
                       <TableHead className="font-bold">Tipo</TableHead>
                       <TableHead className="text-right font-bold">Comissão</TableHead>
@@ -311,45 +318,55 @@ export default function MinhasComissoes() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {comissoes.map((c) => (
-                      <TableRow key={c.id} className="group transition-colors">
-                        <TableCell className="font-medium">
-                          {format(new Date(c.created_at), "dd/MM/yyyy")}
-                        </TableCell>
-                        <TableCell className="font-semibold text-sm">
-                          {(c.vendas as any)?.clientes?.nome || "Cliente avulso"}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold">{c.quantidade_unidades}</span>
-                            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-tighter">un</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {c.recorrente ? (
-                            <Badge variant="secondary" className="bg-blue-100 text-blue-700 border-none font-bold text-[10px] py-0">RECOMPRA</Badge>
-                          ) : (
-                            <Badge variant="default" className="bg-green-100 text-green-700 border-none font-bold text-[10px] py-0">NOVA VENDA</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <span className="font-mono font-bold text-primary">
-                            R$ {Number(c.valor_comissao).toFixed(2)}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex justify-center">
-                            {["paga", "pago", "reposicao"].includes(c.status) ? (
-                              <div className="bg-green-500/10 p-1 rounded-full">
-                                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                              </div>
+                    {comissoes.map((c) => {
+                      const itensRaw = (c.vendas as any)?.venda_itens || [];
+                      const itensStr = itensRaw.length > 0 
+                        ? itensRaw.map((it: any) => `${it.quantidade}x ${it.sabores?.nome || "?"}`).join(", ")
+                        : "-";
+                      
+                      return (
+                        <TableRow key={c.id} className="group transition-colors">
+                          <TableCell className="font-medium">
+                            {format(new Date(c.created_at), "dd/MM/yyyy HH:mm")}
+                          </TableCell>
+                          <TableCell className="font-semibold text-sm">
+                            {(c.vendas as any)?.clientes?.nome || "Cliente avulso"}
+                          </TableCell>
+                          <TableCell className="text-xs max-w-[200px] truncate" title={itensStr}>
+                            {itensStr}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold">{c.quantidade_unidades}</span>
+                              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-tighter">un</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {c.recorrente ? (
+                              <Badge variant="secondary" className="bg-blue-100 text-blue-700 border-none font-bold text-[10px] py-0">RECOMPRA</Badge>
                             ) : (
-                              <Clock className="h-4 w-4 text-amber-500" />
+                              <Badge variant="default" className="bg-green-100 text-green-700 border-none font-bold text-[10px] py-0">NOVA VENDA</Badge>
                             )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className="font-mono font-bold text-primary">
+                              R$ {Number(c.valor_comissao).toFixed(2)}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="flex justify-center">
+                              {["paga", "pago", "reposicao"].includes(c.status) ? (
+                                <div className="bg-green-500/10 p-1 rounded-full">
+                                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                </div>
+                              ) : (
+                                <Clock className="h-4 w-4 text-amber-500" />
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
