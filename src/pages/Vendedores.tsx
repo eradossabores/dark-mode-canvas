@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowLeft, DollarSign, Users, CheckCircle2, Clock, Wallet, Target } from "lucide-react";
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
 import MetaVendas from "@/components/dashboard/MetaVendas";
 
 const ERA_DOS_SABORES_ID = "00000000-0000-0000-0000-000000000001";
