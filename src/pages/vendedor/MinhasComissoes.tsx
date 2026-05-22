@@ -217,7 +217,7 @@ export default function MinhasComissoes() {
                   <Award className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-primary uppercase">Dica de Iury</p>
+                  <p className="text-xs font-bold text-primary uppercase">Dica do Iury</p>
                   <p className="text-xs text-muted-foreground">Faltam {Math.max(0, metaAtiva - unidadesMes)} unidades para o próximo bônus!</p>
                 </div>
               </div>

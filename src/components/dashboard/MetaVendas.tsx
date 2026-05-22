@@ -151,7 +151,7 @@ export default function MetaVendas({ factoryId, vendedorId, vendedorNome }: Prop
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm flex items-center gap-2">
             <Target className="h-4 w-4 text-primary" />
-            Meta de Vendas {vendedorNome ? ` - ${vendedorNome}` : ""}
+            Meta de Vendas {vendedorNome ? ` - ${vendedorNome === 'Yuri' ? 'Iury' : vendedorNome}` : ""}
           </CardTitle>
           {!editing ? (
             <Button variant="ghost" size="sm" className="h-6 px-2" onClick={() => { setEditing(true); setInputMeta(String(meta)); }}>
