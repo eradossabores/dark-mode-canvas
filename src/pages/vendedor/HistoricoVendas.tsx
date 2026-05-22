@@ -354,9 +354,13 @@ export default function HistoricoVendas() {
                         <TableCell><Badge variant="outline" className={getStatusBadge(v.status)}>{v.status || "-"}</Badge></TableCell>
                         <TableCell>
                           {tipoVendaMap[v.id] === "primeira" ? (
-                            <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 gap-1"><Sparkles className="h-3 w-3" /> Primeira Compra</Badge>
+                            <Badge variant="default" className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none font-bold text-[10px] py-0 gap-1 uppercase">
+                              <Sparkles className="h-3 w-3" /> Primeira Compra
+                            </Badge>
                           ) : tipoVendaMap[v.id] === "reposicao" ? (
-                            <Badge className="bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30 gap-1"><Repeat className="h-3 w-3" /> Reposição</Badge>
+                            <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-none font-bold text-[10px] py-0 gap-1 uppercase">
+                              <Repeat className="h-3 w-3" /> Reposição
+                            </Badge>
                           ) : null}
                         </TableCell>
                         <TableCell className="text-right">
