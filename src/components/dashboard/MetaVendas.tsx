@@ -62,7 +62,7 @@ export default function MetaVendas({ factoryId, vendedorId, vendedorNome }: Prop
         .gte("created_at", inicioMes)
         .lte("created_at", fimMes)
         .neq("status", "cancelada")
-        .in("status", ["paga", "parcial"]);
+        .eq("status", "paga");
 
       if (vendedorId) {
         const { data: vinc } = await (supabase as any)
@@ -178,7 +178,7 @@ export default function MetaVendas({ factoryId, vendedorId, vendedorNome }: Prop
           <div className="space-y-3">
             <div className="flex items-end justify-between">
               <div>
-                <p className="text-2xl font-bold">{progressoAtual} gelos</p>
+                <p className="text-3xl font-extrabold text-primary animate-in fade-in slide-in-from-left duration-700">{progressoAtual} gelos</p>
                 <p className="text-xs text-muted-foreground">
                   Meta Atual: {metaAtiva} unidades
                   {progressoAtual >= meta1 && progressoAtual < meta2 && " (Nível 2)"}
@@ -193,21 +193,29 @@ export default function MetaVendas({ factoryId, vendedorId, vendedorNome }: Prop
                 )}
               </div>
             </div>
-            <div className="w-full bg-muted rounded-full h-3 overflow-hidden border border-muted-foreground/10">
+            <div className="w-full bg-muted/50 rounded-full h-4 overflow-hidden border border-primary/20 p-0.5">
               <div 
-                className={`h-full rounded-full transition-all duration-700 ${progressColor} shadow-[0_0_10px_rgba(0,0,0,0.1)]`} 
+                className={`h-full rounded-full transition-all duration-1000 ease-out ${progressColor} shadow-[0_0_15px_rgba(20,184,166,0.3)] relative overflow-hidden`} 
                 style={{ width: `${progress}%` }} 
-              />
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" style={{ backgroundSize: '200% 100%' }} />
+              </div>
             </div>
             
-            <div className="grid grid-cols-2 gap-2">
-              <div className={`p-2 rounded-lg border text-center ${progressoAtual >= meta1 ? 'bg-green-50 border-green-200' : 'bg-muted/30 border-dashed'}`}>
-                <p className="text-[10px] font-medium text-muted-foreground">META 1 (1.000)</p>
-                <p className={`text-xs font-bold ${progressoAtual >= meta1 ? 'text-green-600' : ''}`}>R$ 50,00</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className={`p-3 rounded-xl border transition-all duration-300 ${progressoAtual >= meta1 ? 'bg-emerald-500/10 border-emerald-500/30 ring-1 ring-emerald-500/20' : 'bg-muted/30 border-dashed opacity-70'}`}>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">META 1 (1.000)</p>
+                <div className="flex items-center justify-between">
+                  <p className={`text-sm font-bold ${progressoAtual >= meta1 ? 'text-emerald-600' : ''}`}>R$ 50,00</p>
+                  {progressoAtual >= meta1 && <Check className="h-3 w-3 text-emerald-600" />}
+                </div>
               </div>
-              <div className={`p-2 rounded-lg border text-center ${progressoAtual >= meta2 ? 'bg-green-50 border-green-200' : 'bg-muted/30 border-dashed'}`}>
-                <p className="text-[10px] font-medium text-muted-foreground">META 2 (2.000)</p>
-                <p className={`text-xs font-bold ${progressoAtual >= meta2 ? 'text-green-600' : ''}`}>R$ 100,00</p>
+              <div className={`p-3 rounded-xl border transition-all duration-300 ${progressoAtual >= meta2 ? 'bg-emerald-500/10 border-emerald-500/30 ring-1 ring-emerald-500/20' : 'bg-muted/30 border-dashed opacity-70'}`}>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">META 2 (2.000)</p>
+                <div className="flex items-center justify-between">
+                  <p className={`text-sm font-bold ${progressoAtual >= meta2 ? 'text-emerald-600' : ''}`}>R$ 100,00</p>
+                  {progressoAtual >= meta2 && <Check className="h-3 w-3 text-emerald-600" />}
+                </div>
               </div>
             </div>
 

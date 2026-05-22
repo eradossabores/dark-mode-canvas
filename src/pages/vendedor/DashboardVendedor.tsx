@@ -171,7 +171,7 @@ export default function DashboardVendedor() {
         .in("cliente_id", ids)
         .gte("created_at", inicioRange.toISOString())
         .lte("created_at", fimMes.toISOString())
-        .in("status", ["paga", "parcial"]);
+        .eq("status", "paga");
 
       (vendas || []).forEach((v: any) => {
         const dt = new Date(v.created_at);
@@ -212,7 +212,7 @@ export default function DashboardVendedor() {
 
         // Inadimplência
         const st = String(v.status || "").toLowerCase();
-        if (ehMesAtual && (st === "pendente" || st === "parcial")) {
+        if (ehMesAtual && st === "pendente") {
           // só estima saldo (não temos abatimentos aqui)
         }
       });
@@ -224,7 +224,7 @@ export default function DashboardVendedor() {
         .in("cliente_id", ids)
         .gte("created_at", inicioMesAnt.toISOString())
         .lte("created_at", fimMesAnt.toISOString())
-        .in("status", ["paga", "parcial"]);
+        .eq("status", "paga");
       (vendasAnt || []).forEach((v: any) => {
         totalValorAnt += Number(v.total || 0);
         totalUnidAnt += (v.venda_itens || []).reduce((s: number, i: any) => s + Number(i.quantidade || 0), 0);

@@ -48,7 +48,7 @@ export default function MinhasComissoes() {
       const { data: vendas } = await (supabase as any)
         .from("vendas").select("id, created_at, cliente_id")
         .in("cliente_id", ids).gte("created_at", inicio).lte("created_at", fim)
-        .in("status", ["paga", "parcial"]);
+        .eq("status", "paga");
       const vendaIds = (vendas || []).map((v: any) => v.id);
       if (vendaIds.length > 0) {
         const { data: itens } = await (supabase as any)
