@@ -345,13 +345,11 @@ export default function MinhasComissoes() {
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent bg-muted/20">
-                      <TableHead className="w-[120px] font-bold">Data</TableHead>
-                      <TableHead className="font-bold">Cliente</TableHead>
-                      <TableHead className="font-bold">Itens</TableHead>
-                      <TableHead className="font-bold">Unidades</TableHead>
-                      <TableHead className="font-bold">Tipo</TableHead>
-                      <TableHead className="text-right font-bold">Comissão</TableHead>
-                      <TableHead className="w-[100px] text-center font-bold">Status</TableHead>
+                      <TableHead className="w-[120px] font-bold text-xs uppercase tracking-wider">Data</TableHead>
+                      <TableHead className="font-bold text-xs uppercase tracking-wider">Cliente</TableHead>
+                      <TableHead className="font-bold text-xs uppercase tracking-wider">Itens</TableHead>
+                      <TableHead className="font-bold text-xs uppercase tracking-wider">Tipo</TableHead>
+                      <TableHead className="text-right font-bold text-xs uppercase tracking-wider">Comissão</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -362,44 +360,27 @@ export default function MinhasComissoes() {
                         : "-";
                       
                       return (
-                        <TableRow key={c.id} className="group transition-colors">
-                          <TableCell className="font-medium">
+                        <TableRow key={c.id} className="group transition-colors border-b last:border-0">
+                          <TableCell className="text-xs font-medium whitespace-nowrap">
                             {format(new Date(c.display_date), "dd/MM/yyyy HH:mm")}
                           </TableCell>
-                          <TableCell className="font-semibold text-sm">
+                          <TableCell className="font-bold text-sm text-foreground">
                             {(c.vendas as any)?.clientes?.nome || "Cliente avulso"}
                           </TableCell>
-                          <TableCell className="text-xs max-w-[200px] truncate" title={itensStr}>
+                          <TableCell className="text-[11px] max-w-[200px] truncate text-muted-foreground" title={itensStr}>
                             {itensStr}
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold">{c.quantidade_unidades}</span>
-                              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-tighter">un</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
                             {c.is_primeira_automatic ? (
-                              <Badge variant="default" className="bg-amber-100 text-amber-700 border-none font-bold text-[10px] py-0">PRIMEIRA COMPRA</Badge>
+                              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 font-bold text-[10px] py-0 px-2 rounded-full h-5">Primeira Compra</Badge>
                             ) : (
-                              <Badge variant="secondary" className="bg-blue-100 text-blue-700 border-none font-bold text-[10px] py-0">REPOSIÇÃO</Badge>
+                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-bold text-[10px] py-0 px-2 rounded-full h-5">Reposição</Badge>
                             )}
                           </TableCell>
                           <TableCell className="text-right">
-                            <span className="font-mono font-bold text-primary">
-                              R$ {Number(c.valor_comissao).toFixed(2)}
+                            <span className="font-black text-sm text-green-600">
+                              R$ {Number(c.valor_comissao || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </span>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <div className="flex justify-center">
-                              {["paga", "pago", "reposicao"].includes(c.status) ? (
-                                <div className="bg-green-500/10 p-1 rounded-full">
-                                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                </div>
-                              ) : (
-                                <Clock className="h-4 w-4 text-amber-500" />
-                              )}
-                            </div>
                           </TableCell>
                         </TableRow>
                       );
