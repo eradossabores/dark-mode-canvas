@@ -151,6 +151,8 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const [temFrete, setTemFrete] = useState(false);
   const [tipoFrete, setTipoFrete] = useState("sedex");
   const [valorFrete, setValorFrete] = useState("");
+  const [showFreightAsk, setShowFreightAsk] = useState(false);
+
   const [itemUnits, setItemUnits] = useState<Record<string, string>>({});
   const [obs, setObs] = useState("");
   const [dataCompra, setDataCompra] = useState(() => format(new Date(), "yyyy-MM-dd"));
@@ -406,7 +408,13 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
         if (data.valor_frete > 0) {
           setTemFrete(true);
           setValorFrete(String(data.valor_frete));
+          setShowFreightAsk(false);
+        } else {
+          setTemFrete(false);
+          setValorFrete("");
+          setShowFreightAsk(true);
         }
+
 
         if (data.itens && Array.isArray(data.itens)) {
           const newItems: ItemQty[] = data.itens.map((it: any) => ({
@@ -688,8 +696,36 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                     <Label className="text-sm">Possui frete?</Label>
                     <Switch checked={temFrete} onCheckedChange={setTemFrete} />
                   </div>
+
+                  {showFreightAsk && !temFrete && (
+                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md animate-in fade-in slide-in-from-top-1">
+                      <p className="text-xs text-yellow-800 font-medium mb-2">Não identificamos frete nesta nota. Deseja adicionar manualmente?</p>
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="text-xs h-7 border-yellow-300 hover:bg-yellow-100"
+                          onClick={() => {
+                            setTemFrete(true);
+                            setShowFreightAsk(false);
+                          }}
+                        >
+                          Sim, adicionar
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="text-xs h-7 text-yellow-700 hover:bg-yellow-100"
+                          onClick={() => setShowFreightAsk(false)}
+                        >
+                          Não
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
                   {temFrete && (
-                    <div className="space-y-3">
+                    <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
                       <div>
                         <Label>Tipo de Frete</Label>
                         <Select value={tipoFrete} onValueChange={setTipoFrete}>
@@ -707,6 +743,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                       </div>
                     </div>
                   )}
+
                 </CardContent>
               </Card>
               <div>
