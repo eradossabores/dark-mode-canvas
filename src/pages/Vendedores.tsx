@@ -103,7 +103,7 @@ export default function Vendedores() {
     const cliMap: Record<string, string> = {};
     (cliRes.data || []).forEach((c: any) => { cliMap[c.id] = c.nome; });
 
-    // Determinar recorrência por cliente (primeira venda do Yuri vs subsequentes)
+    // Determinar recorrência por cliente (primeira venda do Iury vs subsequentes)
     const firstPerCliente: Record<string, string> = {};
     [...(vd || [])].forEach((s: any) => {
       const cur = firstPerCliente[s.cliente_id];

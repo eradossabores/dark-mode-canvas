@@ -171,14 +171,14 @@ export default function Vendas() {
     return filtered;
   }, [vendas, clienteFilter, searchCliente, filtroStatus, filtroPagamento, filtroData, filtroVendedor, clienteVendedorMap]);
 
-  // Yuri: identificar primeira compra vs reposição por cliente
-  const YURI_USER_ID = "c311e314-e569-4303-96f7-e26bfe17a5f1";
-  const tipoVendaYuriMap = useMemo(() => {
+  // Iury: identificar primeira compra vs reposição por cliente
+  const IURY_USER_ID = "c311e314-e569-4303-96f7-e26bfe17a5f1";
+  const tipoVendaIuryMap = useMemo(() => {
     const map: Record<string, "primeira" | "reposicao"> = {};
     const porCliente: Record<string, any[]> = {};
     vendas.forEach((v) => {
       const vendIds = clienteVendedorMap[v.cliente_id] || [];
-      if (!vendIds.includes(YURI_USER_ID)) return;
+      if (!vendIds.includes(IURY_USER_ID)) return;
       (porCliente[v.cliente_id] = porCliente[v.cliente_id] || []).push(v);
     });
     Object.values(porCliente).forEach((arr) => {
@@ -1638,10 +1638,10 @@ export default function Vendas() {
                     </div>
                   );
                 })()}
-                {tipoVendaYuriMap[detailVenda.id] && (
+                {tipoVendaIuryMap[detailVenda.id] && (
                   <div>
-                    <p className="text-xs text-muted-foreground">Tipo (Yuri)</p>
-                    {tipoVendaYuriMap[detailVenda.id] === "primeira" ? (
+                    <p className="text-xs text-muted-foreground">Tipo (Iury)</p>
+                    {tipoVendaIuryMap[detailVenda.id] === "primeira" ? (
                       <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 gap-1 mt-0.5"><Sparkles className="h-3 w-3" /> Primeira Compra</Badge>
                     ) : (
                       <Badge className="bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30 gap-1 mt-0.5"><Repeat className="h-3 w-3" /> Reposição</Badge>
@@ -1877,10 +1877,10 @@ export default function Vendas() {
                   <div className="flex items-center justify-between">
                     <span className="font-semibold text-sm truncate max-w-[60%]">{v.clientes?.nome}</span>
                     <div className="flex items-center gap-1">
-                      {tipoVendaYuriMap[v.id] === "primeira" && (
+                      {tipoVendaIuryMap[v.id] === "primeira" && (
                         <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 gap-0.5 text-[10px]"><Sparkles className="h-2.5 w-2.5" /> 1ª</Badge>
                       )}
-                      {tipoVendaYuriMap[v.id] === "reposicao" && (
+                      {tipoVendaIuryMap[v.id] === "reposicao" && (
                         <Badge className="bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30 gap-0.5 text-[10px]"><Repeat className="h-2.5 w-2.5" /> Rep.</Badge>
                       )}
                       <Badge variant={v.status === "paga" ? "default" : v.status === "cancelada" ? "destructive" : "secondary"} className="text-[10px]">{v.status}</Badge>
@@ -1967,9 +1967,9 @@ export default function Vendas() {
                       <Badge variant={v.status === "paga" ? "default" : v.status === "cancelada" ? "destructive" : "secondary"}>{v.status}</Badge>
                     </TableCell>
                     <TableCell>
-                      {tipoVendaYuriMap[v.id] === "primeira" ? (
+                      {tipoVendaIuryMap[v.id] === "primeira" ? (
                         <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 gap-1"><Sparkles className="h-3 w-3" /> Primeira</Badge>
-                      ) : tipoVendaYuriMap[v.id] === "reposicao" ? (
+                      ) : tipoVendaIuryMap[v.id] === "reposicao" ? (
                         <Badge className="bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30 gap-1"><Repeat className="h-3 w-3" /> Reposição</Badge>
                       ) : (
                         <span className="text-xs text-muted-foreground">-</span>
