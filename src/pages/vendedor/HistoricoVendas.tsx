@@ -113,13 +113,18 @@ export default function HistoricoVendas() {
   const tipoVendaMap = useMemo(() => {
     const map: Record<string, "primeira" | "reposicao"> = {};
     const porCliente: Record<string, any[]> = {};
+    
+    // Agrupar todas as vendas por cliente
     vendas.forEach((v) => {
-      const key = (v as any).cliente_id || (v.clientes?.nome ? `${v.clientes?.nome}` : v.id);
+      const key = v.cliente_id || (v.clientes?.nome ? `${v.clientes?.nome}` : v.id);
       (porCliente[key] = porCliente[key] || []).push(v);
     });
+
     Object.values(porCliente).forEach((arr) => {
-      arr.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-      arr.forEach((v, idx) => {
+      // Ordenar por data de criação (antiga para nova)
+      const sorted = [...arr].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      sorted.forEach((v, idx) => {
+        // A primeira venda de cada cliente é "primeira", as demais são "reposicao"
         map[v.id] = idx === 0 ? "primeira" : "reposicao";
       });
     });
