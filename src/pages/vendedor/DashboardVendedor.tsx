@@ -163,7 +163,8 @@ export default function DashboardVendedor() {
         .select("id, total, cliente_id, status, created_at, clientes(id, nome, telefone), venda_itens(quantidade, subtotal, sabores(nome))")
         .in("cliente_id", ids)
         .gte("created_at", inicioRange.toISOString())
-        .lte("created_at", fimMes.toISOString());
+        .lte("created_at", fimMes.toISOString())
+        .eq("status", "paga");
 
       (vendas || []).forEach((v: any) => {
         const dt = new Date(v.created_at);
@@ -215,7 +216,8 @@ export default function DashboardVendedor() {
         .select("total, venda_itens(quantidade)")
         .in("cliente_id", ids)
         .gte("created_at", inicioMesAnt.toISOString())
-        .lte("created_at", fimMesAnt.toISOString());
+        .lte("created_at", fimMesAnt.toISOString())
+        .eq("status", "paga");
       (vendasAnt || []).forEach((v: any) => {
         totalValorAnt += Number(v.total || 0);
         totalUnidAnt += (v.venda_itens || []).reduce((s: number, i: any) => s + Number(i.quantidade || 0), 0);
@@ -306,8 +308,36 @@ export default function DashboardVendedor() {
 
   useEffect(() => { load(); }, [user?.id]);
 
+  const [metaDefinida, setMetaDefinida] = useState(0);
+  const [loadingMeta, setLoadingMeta] = useState(false);
+
+  async function loadMetaVendedor() {
+    if (!user) return;
+    setLoadingMeta(true);
+    try {
+      const now = new Date();
+      const mesDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+      const { data: metaData } = await (supabase as any)
+        .from("metas_vendas")
+        .select("valor_meta")
+        .eq("vendedor_user_id", user.id)
+        .eq("mes", mesDate)
+        .maybeSingle();
+
+      if (metaData) {
+        setMetaDefinida(Number(metaData.valor_meta));
+      }
+    } catch (e) {
+      console.error("Erro ao carregar meta:", e);
+    }
+    setLoadingMeta(false);
+  }
+
+  useEffect(() => { loadMetaVendedor(); }, [user?.id]);
+
   const bonus = calcularBonus(unidadesMes);
-  const proximaMeta = unidadesMes >= 2000 ? null : (unidadesMes >= 1000 ? 2000 : 1000);
+  // Se houver meta definida no banco, usamos ela, senão usamos as faixas fixas de 1k/2k
+  const proximaMeta = metaDefinida > 0 ? metaDefinida : (unidadesMes >= 2000 ? null : (unidadesMes >= 1000 ? 2000 : 1000));
   const progresso = proximaMeta ? Math.min(100, (unidadesMes / proximaMeta) * 100) : 100;
   const maxRank = ranking[0]?.totalUnidades || 1;
 
@@ -483,17 +513,21 @@ export default function DashboardVendedor() {
           <GlowingEffect spread={30} glow disabled={false} proximity={40} inactiveZone={0.2} borderWidth={3} />
           <Card className="relative border-0 bg-card h-full">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2"><Target className="h-4 w-4 text-accent" /> Meta & Bônus</CardTitle>
+              <CardTitle className="text-sm flex items-center gap-2"><Target className="h-4 w-4 text-accent" /> Meta Mensal</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div>
-                <p className="text-2xl font-bold text-accent">R$ {bonus.toFixed(2)}</p>
-                <p className="text-xs text-muted-foreground">{proximaMeta ? `Faltam ${proximaMeta - unidadesMes}un para próxima faixa` : "Meta máxima atingida 🏆"}</p>
+                <p className="text-2xl font-bold text-accent">{unidadesMes} / {proximaMeta || 0} un</p>
+                <p className="text-xs text-muted-foreground">
+                  {proximaMeta && proximaMeta > unidadesMes 
+                    ? `Faltam ${proximaMeta - unidadesMes} unidades` 
+                    : "Meta atingida! Parabéns! 🏆"}
+                </p>
               </div>
               <Progress value={progresso} className="h-2" />
               <div className="flex justify-between text-[10px] text-muted-foreground">
-                <span>1k = +R$50</span>
-                <span>2k = +R$100</span>
+                <span>Progresso: {progresso.toFixed(1)}%</span>
+                {metaDefinida === 0 && <span>Bônus: R$ {bonus.toFixed(2)}</span>}
               </div>
             </CardContent>
           </Card>
