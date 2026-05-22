@@ -379,10 +379,10 @@ export default function MinhasComissoes() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            {!c.is_primeira_automatic ? (
-                              <Badge variant="secondary" className="bg-blue-100 text-blue-700 border-none font-bold text-[10px] py-0">REPOSIÇÃO</Badge>
-                            ) : (
+                            {c.is_primeira_automatic ? (
                               <Badge variant="default" className="bg-amber-100 text-amber-700 border-none font-bold text-[10px] py-0">PRIMEIRA COMPRA</Badge>
+                            ) : (
+                              <Badge variant="secondary" className="bg-blue-100 text-blue-700 border-none font-bold text-[10px] py-0">REPOSIÇÃO</Badge>
                             )}
                           </TableCell>
                           <TableCell className="text-right">
