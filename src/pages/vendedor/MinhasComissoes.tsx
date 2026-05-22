@@ -49,6 +49,10 @@ export default function MinhasComissoes() {
       .gte("created_at", inicio)
       .lte("created_at", fim)
       .order("created_at", { ascending: false });
+
+    // Filter by paid sales status if needed, or map it. 
+    // Usually comissoes_vendas are only created/active when sales are paid,
+    // but we'll reflect the actual state.
     setComissoes(com || []);
 
     const { data: vinculos } = await (supabase as any)
@@ -59,7 +63,7 @@ export default function MinhasComissoes() {
       const { data: vendas } = await (supabase as any)
         .from("vendas").select("id, created_at, cliente_id")
         .in("cliente_id", ids).gte("created_at", inicio).lte("created_at", fim)
-        .eq("status", "paga");
+        .eq("status", "paga"); // Correctly counting only paid sales
       const vendaIds = (vendas || []).map((v: any) => v.id);
       
       if (vendaIds.length > 0) {
@@ -111,10 +115,19 @@ export default function MinhasComissoes() {
   const semanasNoMes = useMemo(() => {
     const hoje = new Date();
     const diaAtual = hoje.getDate();
-    return Math.ceil(diaAtual / 7);
+    if (diaAtual <= 7) return 1;
+    if (diaAtual <= 14) return 2;
+    if (diaAtual <= 21) return 3;
+    if (diaAtual <= 28) return 4;
+    return 5;
   }, []);
 
-  const totalComissao = useMemo(() => comissoes.reduce((s, c) => s + Number(c.valor_comissao || 0), 0), [comissoes]);
+  const totalComissao = useMemo(() => {
+    return comissoes
+      .filter(c => c.status === "paga" || c.status === "pago")
+      .reduce((s, c) => s + Number(c.valor_comissao || 0), 0);
+  }, [comissoes]);
+
   const bonusMeta = calcularBonus(unidadesMes);
   const ajudaCusto = AJUDA_CUSTO_SEMANAL * semanasNoMes; 
   const totalGeral = totalComissao + bonusMeta + bonusFidelizacao + ajudaCusto;
