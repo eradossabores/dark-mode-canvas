@@ -273,36 +273,45 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     
     if (!error) {
       // Update inventory for each item
-      for (const item of filledItems) {
-        if (item.tipo === "insumo") {
-          // Get current stock
-          const { data: mpData } = await (supabase as any)
-            .from("materias_primas")
-            .select("id, estoque_atual")
-            .eq("factory_id", factoryId)
-            .eq("nome", item.nome)
-            .maybeSingle();
+      for (const item of rows) {
+        const table = item.tipo === "insumo" ? "materias_primas" : "embalagens";
+        
+        // Get current stock
+        const { data: itemData, error: fetchError } = await (supabase as any)
+          .from(table)
+          .select("id, estoque_atual")
+          .eq("factory_id", factoryId)
+          .eq("nome", item.item_nome)
+          .maybeSingle();
 
-          if (mpData) {
-            await (supabase as any)
-              .from("materias_primas")
-              .update({ estoque_atual: Number(mpData.estoque_atual) + Number(item.quantidade) })
-              .eq("id", mpData.id);
-          }
-        } else if (item.tipo === "embalagem") {
-          const { data: embData } = await (supabase as any)
-            .from("embalagens")
-            .select("id, estoque_atual")
-            .eq("factory_id", factoryId)
-            .eq("nome", item.nome)
-            .maybeSingle();
+        if (fetchError) {
+          console.error(`Erro ao buscar item ${item.item_nome} em ${table}:`, fetchError);
+          continue;
+        }
 
-          if (embData) {
-            await (supabase as any)
-              .from("embalagens")
-              .update({ estoque_atual: Math.round(Number(embData.estoque_atual) + Number(item.quantidade)) })
-              .eq("id", embData.id);
+        if (itemData) {
+          const novoEstoque = Number(itemData.estoque_atual || 0) + Number(item.quantidade);
+          const { error: updateError } = await (supabase as any)
+            .from(table)
+            .update({ estoque_atual: item.tipo === "embalagem" ? Math.round(novoEstoque) : novoEstoque })
+            .eq("id", itemData.id);
+            
+          if (updateError) {
+            console.error(`Erro ao atualizar estoque de ${item.item_nome}:`, updateError);
+          } else {
+            // Registrar movimentação de entrada no estoque
+            await (supabase as any).from("movimentacoes_estoque").insert({
+              factory_id: factoryId,
+              tipo_item: item.tipo,
+              item_id: itemData.id,
+              quantidade: item.quantidade,
+              tipo_movimentacao: 'entrada',
+              descricao: `Compra: ${item.item_nome}`,
+              data_movimentacao: item.created_at
+            });
           }
+        } else {
+          console.warn(`Item ${item.item_nome} não encontrado na tabela ${table} para a fábrica ${factoryId}`);
         }
       }
     }
