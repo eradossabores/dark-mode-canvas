@@ -349,6 +349,7 @@ export default function MinhasComissoes() {
                     <TableHead className="text-xs font-bold text-black uppercase">Cliente</TableHead>
                     <TableHead className="text-xs font-bold text-black uppercase">Itens</TableHead>
                     <TableHead className="text-xs font-bold text-black uppercase text-center">Unid</TableHead>
+                    <TableHead className="text-xs font-bold text-black uppercase">Cálculo</TableHead>
                     <TableHead className="text-xs font-bold text-black uppercase">Tipo</TableHead>
                     <TableHead className="text-xs font-bold text-black uppercase text-right">Comissão</TableHead>
                   </TableRow>
