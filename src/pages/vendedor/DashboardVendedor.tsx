@@ -570,31 +570,6 @@ export default function DashboardVendedor() {
           </Card>
         </div>
 
-        {/* Meta mensal compacta */}
-        <div className="relative rounded-2xl border-[0.75px] border-border p-0.5 animate-fade-in">
-          <GlowingEffect spread={30} glow disabled={false} proximity={40} inactiveZone={0.2} borderWidth={3} />
-          <Card className="relative border-0 bg-card h-full">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2"><Target className="h-4 w-4 text-accent" /> Meta Mensal</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <p className="text-2xl font-bold text-accent">{unidadesMes} / {proximaMeta || 0} un</p>
-                <p className="text-xs text-muted-foreground">
-                  {proximaMeta && proximaMeta > unidadesMes 
-                    ? `Faltam ${proximaMeta - unidadesMes} unidades` 
-                    : "Meta atingida! Parabéns! 🏆"}
-                </p>
-              </div>
-              <Progress value={progresso} className="h-2" />
-              <div className="flex justify-between text-[10px] text-muted-foreground">
-                <span>Progresso: {progresso.toFixed(1)}%</span>
-                {metaDefinida === 0 && <span>Bônus: R$ {bonus.toFixed(2)}</span>}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
 
       {/* Bonificações Extras */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
