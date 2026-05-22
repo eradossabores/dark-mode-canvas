@@ -127,7 +127,16 @@ export default function MinhasComissoes() {
       const isSwellSmoke = clienteNome === "SWELL SMOKE";
       const isEcom = clienteNome === "ECOM";
       
-      const isPrimeira = primeiraVendaPorCliente[key] === c.venda_id || isBlackLounge || isBlackLoungeBar || isSwellSmoke || isEcom;
+      const unid = Number(c.quantidade_unidades || 0);
+      const isYouReposicao = clienteNome === "YOU" && [50, 60, 116].includes(unid);
+      const isYou = clienteNome === "YOU";
+      
+      let isPrimeira;
+      if (isYou) {
+        isPrimeira = !isYouReposicao;
+      } else {
+        isPrimeira = primeiraVendaPorCliente[key] === c.venda_id || isBlackLounge || isBlackLoungeBar || isSwellSmoke || isEcom;
+      }
       
       return {
         ...c,
