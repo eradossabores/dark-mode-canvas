@@ -39,10 +39,24 @@ export default function MinhasComissoes() {
   async function load() {
     if (!user) return;
     setLoading(true);
+
+    // Get vendor's clients to identify all relevant sales
+    const { data: vinculos } = await (supabase as any)
+      .from("cliente_vendedor").select("cliente_id").eq("vendedor_user_id", user.id);
+    const linkedIds = (vinculos || []).map((v: any) => v.cliente_id);
+    
+    const { data: extras } = await (supabase as any)
+      .from("clientes")
+      .select("id")
+      .in("nome", ["AVULSO", "AMOSTRAS"]);
+    
+    const allRelevantClientIds = [...linkedIds, ...(extras || []).map((e: any) => e.id)];
+
+    // 1. Carregar todas as comissões registradas
+    // Filtered by current month for the totals, but we'll show them in the list
     const inicio = startOfMonth(new Date()).toISOString();
     const fim = endOfMonth(new Date()).toISOString();
 
-    // 1. Carregar todas as comissões do mês atual (Fonte de verdade para unidades e ganhos)
     const { data: com } = await (supabase as any)
       .from("comissoes_vendas")
       .select(`
@@ -56,6 +70,8 @@ export default function MinhasComissoes() {
         status, 
         venda_id,
         vendas!venda_id (
+          created_at,
+          status,
           clientes (
             nome
           ),
@@ -68,35 +84,32 @@ export default function MinhasComissoes() {
         )
       `)
       .eq("vendedor_user_id", user.id)
-      .gte("created_at", inicio)
-      .lte("created_at", fim)
       .order("created_at", { ascending: false });
 
-    const comList = com || [];
+    // Use the actual sale date (from history) if available, otherwise commission date
+    const comList = (com || []).map((c: any) => ({
+      ...c,
+      display_date: c.vendas?.created_at || c.created_at
+    }));
+
     setComissoes(comList);
 
-    // 2. Calcular total de unidades baseada nas comissões geradas no mês
-    const totalUnidadesComissao = comList.reduce((acc: number, curr: any) => acc + Number(curr.quantidade_unidades || 0), 0);
+    // 2. Calcular total de unidades baseada nas comissões do mês ATUAL
+    const totalUnidadesComissao = comList
+      .filter((c: any) => {
+        const d = new Date(c.display_date);
+        return d >= new Date(inicio) && d <= new Date(fim);
+      })
+      .reduce((acc: number, curr: any) => acc + Number(curr.quantidade_unidades || 0), 0);
     setUnidadesMes(totalUnidadesComissao);
 
-    // 3. Lógica de Bônus de Fidelidade (permanece baseada no histórico de vendas dos clientes)
-    const { data: vinculos } = await (supabase as any)
-      .from("cliente_vendedor").select("cliente_id").eq("vendedor_user_id", user.id);
-    const ids = (vinculos || []).map((v: any) => v.cliente_id);
-    
-    const { data: extras } = await (supabase as any)
-      .from("clientes")
-      .select("id")
-      .in("nome", ["AVULSO", "AMOSTRAS"]);
-    
-    const allIds = [...ids, ...(extras || []).map((e: any) => e.id)];
-    
-    if (allIds.length > 0) {
+    // 3. Lógica de Bônus de Fidelidade
+    if (allRelevantClientIds.length > 0) {
       const hoje = new Date();
       const { data: vendasAntTudo } = await (supabase as any)
         .from("vendas")
         .select("cliente_id, created_at")
-        .in("cliente_id", allIds)
+        .in("cliente_id", allRelevantClientIds)
         .eq("status", "paga")
         .gte("created_at", subMonths(startOfMonth(hoje), 6).toISOString());
 
@@ -111,7 +124,7 @@ export default function MinhasComissoes() {
       });
 
       let totalBonusFid = 0;
-      allIds.forEach(cid => {
+      allRelevantClientIds.forEach(cid => {
         let consec = 0;
         if (vendasPorMes[1].has(cid) && vendasPorMes[2].has(cid) && vendasPorMes[3].has(cid)) {
           consec = 3;
@@ -327,7 +340,7 @@ export default function MinhasComissoes() {
                       return (
                         <TableRow key={c.id} className="group transition-colors">
                           <TableCell className="font-medium">
-                            {format(new Date(c.created_at), "dd/MM/yyyy HH:mm")}
+                            {format(new Date(c.display_date), "dd/MM/yyyy HH:mm")}
                           </TableCell>
                           <TableCell className="font-semibold text-sm">
                             {(c.vendas as any)?.clientes?.nome || "Cliente avulso"}
