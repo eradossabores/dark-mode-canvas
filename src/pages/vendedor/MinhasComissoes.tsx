@@ -342,6 +342,7 @@ export default function MinhasComissoes() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-xs font-bold text-black uppercase">Data</TableHead>
+                    <TableHead className="text-xs font-bold text-black uppercase">Cliente</TableHead>
                     <TableHead className="text-xs font-bold text-black uppercase">Itens</TableHead>
                     <TableHead className="text-xs font-bold text-black uppercase text-center">Unid</TableHead>
                     <TableHead className="text-xs font-bold text-black uppercase">Tipo</TableHead>
@@ -351,12 +352,13 @@ export default function MinhasComissoes() {
                 <TableBody>
                   {comissoes.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                         Nenhuma venda registrada este mês.
                       </TableCell>
                     </TableRow>
                   ) : (
                     comissoes.map((c) => {
+                      const cliente = (c.vendas as any)?.clientes?.nome || "-";
                       const itens = (c.vendas as any)?.venda_itens?.map((it: any) => 
                         `${it.quantidade}x ${it.sabores?.nome || "?"}`
                       ).join(", ") || "-";
@@ -366,7 +368,10 @@ export default function MinhasComissoes() {
                           <TableCell className="text-xs whitespace-nowrap">
                             {format(new Date(c.display_date), "dd/MM/yyyy")}
                           </TableCell>
-                          <TableCell className="text-xs font-medium max-w-[250px] truncate" title={itens}>
+                          <TableCell className="text-xs font-medium uppercase">
+                            {cliente}
+                          </TableCell>
+                          <TableCell className="text-xs font-medium max-w-[200px] truncate" title={itens}>
                             {itens}
                           </TableCell>
                           <TableCell className="text-center text-xs font-medium">
