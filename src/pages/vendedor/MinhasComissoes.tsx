@@ -122,7 +122,12 @@ export default function MinhasComissoes() {
       const clienteId = (c.vendas as any)?.cliente_id;
       
       const key = clienteId || (clienteNome ? `${clienteNome}` : "avulso");
-      const isPrimeira = primeiraVendaPorCliente[key] === c.venda_id || (clienteNome === "BLACK LOUNGE");
+      const isBlackLounge = clienteNome === "BLACK LOUNGE";
+      const isBlackLoungeBar = clienteNome === "BLACK LOUNGE BAR";
+      const isSwellSmoke = clienteNome === "SWELL SMOKE";
+      const isEcom = clienteNome === "ECOM";
+      
+      const isPrimeira = primeiraVendaPorCliente[key] === c.venda_id || isBlackLounge || isBlackLoungeBar || isSwellSmoke || isEcom;
       
       return {
         ...c,
