@@ -5,10 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, DollarSign, Users, CheckCircle2, Clock, Wallet } from "lucide-react";
+import { ArrowLeft, DollarSign, Users, CheckCircle2, Clock, Wallet, Target } from "lucide-react";
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { toast } from "sonner";
+import MetaVendas from "@/components/dashboard/MetaVendas";
 
 const ERA_DOS_SABORES_ID = "00000000-0000-0000-0000-000000000001";
 
@@ -199,6 +199,8 @@ export default function Vendedores() {
           <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Comissão pendente</p><p className="text-2xl font-bold text-amber-600">R$ {totais.comissaoPendente.toFixed(2)}</p></CardContent></Card>
           <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Comissão paga</p><p className="text-2xl font-bold text-emerald-600">R$ {totais.comissaoPaga.toFixed(2)}</p></CardContent></Card>
         </div>
+        
+        <MetaVendas factoryId={factoryId} vendedorId={selected.user_id} vendedorNome={selected.nome} />
 
         <Card>
           <CardHeader><CardTitle className="text-sm">Vendas — {periodo === "semanal" ? "Esta semana" : format(new Date(), "MMMM 'de' yyyy", { locale: ptBR })}</CardTitle></CardHeader>
