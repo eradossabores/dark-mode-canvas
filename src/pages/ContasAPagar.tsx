@@ -1357,9 +1357,10 @@ export default function ContasAPagar() {
                     <TableCell className="text-right font-mono text-destructive">{R(totalRestante)}</TableCell>
                     <TableCell />
                   </TableRow>
-                </TableBody>
-              </Table>
-            </div>
+                  </TableBody>
+                </Table>
+              </div>
+            </Tabs>
           </CardContent>
         </Card>
 
