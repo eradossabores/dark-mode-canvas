@@ -124,15 +124,14 @@ export default function MinhasComissoes() {
       
       const key = clienteId || (clienteNome ? `${clienteNome}` : "avulso");
       
-      // Explicit rules: 50, 60, and 116 units are reposição. 
-      // Everything else is primeira compra according to the user's latest request.
+      // Regras explícitas: 50, 60, e 116 unidades são reposição. 
+      // Todo o resto é primeira compra.
       const isExceptionReposicao = [50, 60, 116].includes(unidades);
-      
       const isPrimeira = !isExceptionReposicao;
 
-      // Applying commission rules:
-      // Primeira Compra: R$ 0,20 per unit (default base)
-      // Reposição: R$ 0,10 per unit (50% of primeira)
+      // Aplicando cálculos de comissão:
+      // Primeira Compra: R$ 0,20 por unidade
+      // Reposição: R$ 0,10 por unidade (50% da primeira compra)
       const comissaoPorUnidade = isPrimeira ? 0.20 : 0.10;
       const valorFinalComissao = unidades * comissaoPorUnidade;
       
@@ -140,7 +139,8 @@ export default function MinhasComissoes() {
         ...c,
         display_date: c.vendas?.created_at || c.created_at,
         is_primeira_automatic: isPrimeira,
-        valor_comissao: valorFinalComissao
+        valor_comissao: valorFinalComissao,
+        comissao_por_unidade: comissaoPorUnidade
       };
     });
 
@@ -349,6 +349,7 @@ export default function MinhasComissoes() {
                     <TableHead className="text-xs font-bold text-black uppercase">Cliente</TableHead>
                     <TableHead className="text-xs font-bold text-black uppercase">Itens</TableHead>
                     <TableHead className="text-xs font-bold text-black uppercase text-center">Unid</TableHead>
+                    <TableHead className="text-xs font-bold text-black uppercase">Cálculo</TableHead>
                     <TableHead className="text-xs font-bold text-black uppercase">Tipo</TableHead>
                     <TableHead className="text-xs font-bold text-black uppercase text-right">Comissão</TableHead>
                   </TableRow>
@@ -369,6 +370,7 @@ export default function MinhasComissoes() {
                         quantidade: number;
                         comissao: number;
                         ids: string[];
+                        calculo: string;
                       }> = {};
                       
                       const regularItems: any[] = [];
@@ -385,7 +387,8 @@ export default function MinhasComissoes() {
                               itens: [],
                               quantidade: 0,
                               comissao: 0,
-                              ids: []
+                              ids: [],
+                              calculo: "0.10"
                             };
                           }
                           
@@ -418,6 +421,9 @@ export default function MinhasComissoes() {
                             <TableCell className="text-center text-xs font-medium">
                               {g.quantidade}
                             </TableCell>
+                            <TableCell className="text-xs font-mono text-muted-foreground">
+                              {g.quantidade} x R$ 0,10
+                            </TableCell>
                             <TableCell>
                               <Badge variant="outline" className="bg-[#E7F7EF] text-[#0D9488] border-none text-[10px] py-0.5 px-2 uppercase font-bold rounded-md">
                                 Reposição
@@ -449,6 +455,9 @@ export default function MinhasComissoes() {
                             </TableCell>
                             <TableCell className="text-center text-xs font-medium">
                               {c.quantidade_unidades || 0}
+                            </TableCell>
+                            <TableCell className="text-xs font-mono text-muted-foreground">
+                              {c.quantidade_unidades || 0} x R$ 0,20
                             </TableCell>
                             <TableCell>
                               <Badge variant="outline" className="bg-[#E8F1FF] text-[#0066FF] border-none text-[10px] py-0.5 px-2 uppercase font-bold rounded-md">
