@@ -127,14 +127,24 @@ export default function MinhasComissoes() {
       // Explicit rules: 50, 60, and 116 units are reposição. 
       // Everything else is primeira compra according to the user's latest request.
       const isExceptionReposicao = [50, 60, 116].includes(unidades);
-      
       const isPrimeira = !isExceptionReposicao;
 
-      // Applying commission rules:
-      // Primeira Compra: R$ 0,20 per unit (default base)
-      // Reposição: R$ 0,10 per unit (50% of primeira)
-      const comissaoPorUnidade = isPrimeira ? 0.20 : 0.10;
-      const valorFinalComissao = unidades * comissaoPorUnidade;
+      // New commission rules for Primeira Compra:
+      // 100 units = R$ 20.00 (0.20/un)
+      // 200 units = R$ 22.50 (0.1125/un)
+      // 300 units = R$ 24.00 (0.08/un)
+      // 400 units = R$ 26.00 (0.065/un)
+      // 500 units = R$ 27.00 (0.054/un)
+      // Reposição: 50% of the corresponding Primeira Compra commission.
+      
+      let valorPrimeira = 0;
+      if (unidades <= 100) valorPrimeira = 20;
+      else if (unidades <= 200) valorPrimeira = 22.5;
+      else if (unidades <= 300) valorPrimeira = 24;
+      else if (unidades <= 400) valorPrimeira = 26;
+      else valorPrimeira = 27;
+
+      const valorFinalComissao = isPrimeira ? valorPrimeira : (valorPrimeira * 0.5);
       
       return {
         ...c,
