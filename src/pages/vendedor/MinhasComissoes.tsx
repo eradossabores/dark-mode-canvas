@@ -88,6 +88,8 @@ export default function MinhasComissoes() {
 
     // Identificar tipo de venda (Primeira Compra vs Reposição)
     // Para ser IDÊNTICO ao histórico de vendas, precisamos carregar TODAS as vendas do vendedor
+    // Para ser IDÊNTICO ao histórico de vendas, precisamos carregar TODAS as vendas do vendedor
+    // ordenadas para identificar a primeira de cada cliente
     const { data: todasVendasVendedor } = await (supabase as any)
       .from("vendas")
       .select("id, cliente_id, created_at, clientes(nome)")
@@ -96,7 +98,8 @@ export default function MinhasComissoes() {
 
     const primeiraVendaPorCliente: Record<string, string> = {};
     (todasVendasVendedor || []).forEach((v: any) => {
-      const key = v.cliente_id || v.clientes?.nome || "avulso";
+      // Usar cliente_id se disponível, caso contrário usar nome do cliente (para AVULSO/AMOSTRAS)
+      const key = v.cliente_id || (v.clientes?.nome ? `${v.clientes?.nome}` : "avulso");
       if (!primeiraVendaPorCliente[key]) {
         primeiraVendaPorCliente[key] = v.id;
       }
