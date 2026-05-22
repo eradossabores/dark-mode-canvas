@@ -253,17 +253,21 @@ export default function ContasAPagar() {
         const thisMonth = startOfMonth(monthDate);
         if (createdMonth > thisMonth) return false;
 
-        // Verificação de finalização antecipada
-        if (c.valor_restante <= 0) {
+        // Verificação de finalização antecipada ou natural
+        if (c.valor_restante <= 0 || c.parcela_atual >= c.total_parcelas) {
           const lastPayment = ultimosPagamentos[c.id];
           if (lastPayment) {
-            const finalizedMonth = startOfMonth(new Date(lastPayment + "T12:00:00"));
+            const finalizedMonth = startOfMonth(new Date(lastPayment.split(' ')[0] + "T12:00:00"));
             if (thisMonth > finalizedMonth) return false;
+          } else {
+            // Se não tem pagamento registrado mas está quitado, usa data de criação + total parcelas como estimativa
+            const estimatedEnd = addMonths(createdMonth, (c.total_parcelas || 1) - 1);
+            if (thisMonth > estimatedEnd) return false;
           }
         }
 
         const monthsElapsed = (thisMonth.getFullYear() - createdMonth.getFullYear()) * 12 + (thisMonth.getMonth() - createdMonth.getMonth());
-        return monthsElapsed < (c.total_parcelas || 1);
+        return monthsElapsed >= 0 && monthsElapsed < (c.total_parcelas || 1);
       }).reduce((s, c) => s + c.valor_parcela, 0);
       
       months.push({
