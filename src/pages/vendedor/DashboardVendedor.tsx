@@ -69,6 +69,7 @@ function calcularBonus(unidades: number) {
   return 0;
 }
 
+
 function whatsappLink(tel?: string, msg = "") {
   if (!tel) return "#";
   const num = tel.replace(/\D/g, "");
