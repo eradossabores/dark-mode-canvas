@@ -78,7 +78,7 @@ function whatsappLink(tel?: string, msg = "") {
 }
 
 export default function DashboardVendedor() {
-  const { user } = useAuth();
+  const { user, factoryId } = useAuth();
   const [loading, setLoading] = useState(true);
   const [nome, setNome] = useState("");
 
