@@ -93,14 +93,15 @@ export default function ContasAPagar() {
   const [pagarFixoValor, setPagarFixoValor] = useState("");
   const [pagarFixoForma, setPagarFixoForma] = useState<string>("pix");
   const [historicoContaId, setHistoricoContaId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"abertas" | "pagas">("abertas");
 
   // Filters
   const [busca, setBusca] = useState("");
   const [filtroTipo, setFiltroTipo] = useState("todos");
-   const [filtroCategoria, setFiltroCategoria] = useState("todos");
-   const [filtroStatus, setFiltroStatus] = useState("todos");
-   const [filtroMes, setFiltroMes] = useState(new Date().getMonth().toString());
-   const [filtroAno, setFiltroAno] = useState(new Date().getFullYear().toString());
+  const [filtroCategoria, setFiltroCategoria] = useState("todos");
+  const [filtroStatus, setFiltroStatus] = useState("todos");
+  const [filtroMes, setFiltroMes] = useState(new Date().getMonth().toString());
+  const [filtroAno, setFiltroAno] = useState(new Date().getFullYear().toString());
 
   // Form state
   const [descricao, setDescricao] = useState("");
