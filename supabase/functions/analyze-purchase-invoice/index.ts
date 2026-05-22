@@ -20,29 +20,46 @@ serve(async (req) => {
       throw new Error("Missing fileUrl");
     }
 
-    // Convert file to base64 if it's an image or PDF
+    // Determine if it's a PDF or image by extension
+    const isPdf = fileUrl.toLowerCase().split('?')[0].endsWith('.pdf');
+    
     let contentObj;
-    if (fileUrl.toLowerCase().endsWith('.pdf')) {
-      // Use document intelligence for PDF
-      contentObj = { type: "text", text: `Analise este arquivo (URL): ${fileUrl}` };
+    if (isPdf) {
+      // PDF handling - Gemini 1.5 Pro via Gateway supports PDFs if sent correctly
+      // But to be safe and simple for now, we'll try to let the gateway handle the URL
+      contentObj = { type: "text", text: `Analise este arquivo (PDF): ${fileUrl}` };
     } else {
-      // For images, we'll try to fetch and send as base64 to be safer with Gemini
+      // For images, use data URL as suggested by the error message
       try {
+        console.log("Fetching image from:", fileUrl);
         const imageRes = await fetch(fileUrl);
+        if (!imageRes.ok) throw new Error(`Failed to fetch image: ${imageRes.statusText}`);
+        
         const imageBlob = await imageRes.blob();
         const arrayBuffer = await imageBlob.arrayBuffer();
-        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+        
+        // Use standard btoa for base64 encoding in Deno
+        const uint8 = new Uint8Array(arrayBuffer);
+        let binary = "";
+        for (let i = 0; i < uint8.length; i++) {
+          binary += String.fromCharCode(uint8[i]);
+        }
+        const base64 = btoa(binary);
+        
         const mimeType = imageBlob.type || "image/png";
+        console.log("Image converted to base64, mimeType:", mimeType);
         
         contentObj = { 
           type: "image_url", 
           image_url: { url: `data:${mimeType};base64,${base64}` } 
         };
       } catch (e) {
-        console.warn("Failed to convert image to base64, falling back to URL:", e.message);
+        console.error("Error converting image to base64:", e.message);
+        // Fallback to URL and hope for the best
         contentObj = { type: "image_url", image_url: { url: fileUrl } };
       }
     }
+
 
 
     if (!LOVABLE_API_KEY) {
@@ -77,7 +94,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
+        model: "anthropic/claude-3.5-sonnet",
         messages: [
           {
             role: "user",
