@@ -115,7 +115,7 @@ export default function MinhasComissoes() {
         <p className="text-sm text-muted-foreground">Resumo do mês de {format(new Date(), "MMMM 'de' yyyy", { locale: ptBR })}.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="h-4 w-4" /> Volume vendido</CardTitle></CardHeader>
           <CardContent>
@@ -133,8 +133,15 @@ export default function MinhasComissoes() {
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Target className="h-4 w-4" /> Bônus de meta</CardTitle></CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">R$ {bonus.toFixed(2)}</p>
-            <p className="text-xs text-muted-foreground">{bonus > 0 ? `Meta atingida` : `Próxima: ${proximaMeta} un.`}</p>
+            <p className="text-2xl font-bold">R$ {bonusMeta.toFixed(2)}</p>
+            <p className="text-xs text-muted-foreground">{bonusMeta > 0 ? `Meta atingida` : `Próxima: ${metaAtiva} un.`}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Award className="h-4 w-4" /> Bônus Fidelidade</CardTitle></CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">R$ {bonusFidelizacao.toFixed(2)}</p>
+            <p className="text-xs text-muted-foreground">Recompras consecutivas</p>
           </CardContent>
         </Card>
         <Card>
