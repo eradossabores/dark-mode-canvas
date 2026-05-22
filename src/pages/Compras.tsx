@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Plus, Truck, Package, ShoppingCart, BarChart3, Trash2, Edit, ChevronDown, ChevronRight, FileUp, Loader2 } from "lucide-react";
+import { Plus, Truck, Package, ShoppingCart, BarChart3, Trash2, Edit, ChevronDown, ChevronRight } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -151,7 +151,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const [temFrete, setTemFrete] = useState(false);
   const [tipoFrete, setTipoFrete] = useState("sedex");
   const [valorFrete, setValorFrete] = useState("");
-  const [showFreightAsk, setShowFreightAsk] = useState(false);
+  
 
   const [itemUnits, setItemUnits] = useState<Record<string, string>>({});
   const [obs, setObs] = useState("");
@@ -160,7 +160,6 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const [dataFabricacao, setDataFabricacao] = useState("");
   const [dataVencimento, setDataVencimento] = useState("");
   const [saving, setSaving] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
   const [filterTipo, setFilterTipo] = useState("todos");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editItemNome, setEditItemNome] = useState("");
@@ -374,7 +373,6 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     setNumeroLote(""); setDataFabricacao(""); setDataVencimento("");
     setItemQuantities({}); setCustomItems([]); setNewCustomItem("");
     setEditingId(null); setEditItemNome(""); setEditQuantidade("");
-    setAnalyzing(false);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -491,29 +489,6 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>{editingId ? "Editar Compra" : "Registrar Compra"}</DialogTitle></DialogHeader>
             <div className="space-y-4">
-              {!editingId && (
-                <div className="p-3 border-2 border-dashed border-primary/30 rounded-lg bg-primary/5 flex flex-col items-center gap-2">
-                  <Label htmlFor="invoice-upload" className="cursor-pointer flex flex-col items-center gap-1">
-                    {analyzing ? (
-                      <Loader2 className="h-8 w-8 text-primary animate-spin" />
-                    ) : (
-                      <FileUp className="h-8 w-8 text-primary" />
-                    )}
-                    <span className="text-xs font-bold text-primary uppercase">
-                      {analyzing ? "Analisando Arquivo..." : "Anexar Nota / Comprovante"}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground">Extração automática por IA</span>
-                  </Label>
-                  <Input 
-                    id="invoice-upload" 
-                    type="file" 
-                    className="hidden" 
-                    accept="image/*,application/pdf"
-                    onChange={handleFileUpload}
-                    disabled={analyzing}
-                  />
-                </div>
-              )}
 
               <div className="grid gap-3 grid-cols-2">
                 <div>
@@ -706,32 +681,6 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                     <Switch checked={temFrete} onCheckedChange={setTemFrete} />
                   </div>
 
-                  {showFreightAsk && !temFrete && (
-                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md animate-in fade-in slide-in-from-top-1">
-                      <p className="text-xs text-yellow-800 font-medium mb-2">Não identificamos frete nesta nota. Deseja adicionar manualmente?</p>
-                      <div className="flex gap-2">
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="text-xs h-7 border-yellow-300 hover:bg-yellow-100"
-                          onClick={() => {
-                            setTemFrete(true);
-                            setShowFreightAsk(false);
-                          }}
-                        >
-                          Sim, adicionar
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="ghost" 
-                          className="text-xs h-7 text-yellow-700 hover:bg-yellow-100"
-                          onClick={() => setShowFreightAsk(false)}
-                        >
-                          Não
-                        </Button>
-                      </div>
-                    </div>
-                  )}
 
                   {temFrete && (
                     <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
