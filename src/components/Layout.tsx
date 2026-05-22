@@ -158,7 +158,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     .map((g) => ({
       ...g,
       items: g.items.filter((item) => {
-        if (item.path === "/painel/vendedores" && factoryId !== ERA_DOS_SABORES_ID && role !== "super_admin") return false;
+        if (item.path === "/painel/vendedores" && role !== "super_admin" && factoryId !== ERA_DOS_SABORES_ID) return false;
         return isRouteAllowed(item.path, role);
       }),
     }))
