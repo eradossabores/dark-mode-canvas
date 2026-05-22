@@ -9,9 +9,11 @@ import { Target, Edit2, Check } from "lucide-react";
 
 interface Props {
   factoryId: string | null;
+  vendedorId?: string;
+  vendedorNome?: string;
 }
 
-export default function MetaVendas({ factoryId }: Props) {
+export default function MetaVendas({ factoryId, vendedorId, vendedorNome }: Props) {
   const [meta, setMeta] = useState(0);
   const [faturamento, setFaturamento] = useState(0);
   const [editing, setEditing] = useState(false);
@@ -21,7 +23,7 @@ export default function MetaVendas({ factoryId }: Props) {
   useEffect(() => {
     if (!factoryId) return;
     loadData();
-  }, [factoryId]);
+  }, [factoryId, vendedorId]);
 
   async function loadData() {
     setLoading(true);
@@ -30,12 +32,19 @@ export default function MetaVendas({ factoryId }: Props) {
       const mesDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
 
       // Load meta
-      const { data: metaData } = await (supabase as any)
+      let query = (supabase as any)
         .from("metas_vendas")
         .select("valor_meta")
         .eq("factory_id", factoryId)
-        .eq("mes", mesDate)
-        .maybeSingle();
+        .eq("mes", mesDate);
+      
+      if (vendedorId) {
+        query = query.eq("vendedor_user_id", vendedorId);
+      } else {
+        query = query.is("vendedor_user_id", null);
+      }
+
+      const { data: metaData } = await query.maybeSingle();
 
       if (metaData) {
         setMeta(Number(metaData.valor_meta));
@@ -46,13 +55,33 @@ export default function MetaVendas({ factoryId }: Props) {
       const inicioMes = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
       const fimMes = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
 
-      const { data: vendas } = await (supabase as any)
+      let salesQuery = (supabase as any)
         .from("vendas")
-        .select("total")
+        .select("total, cliente_id")
         .eq("factory_id", factoryId)
         .gte("created_at", inicioMes)
         .lte("created_at", fimMes)
         .neq("status", "cancelada");
+
+      if (vendedorId) {
+        // Se temos vendedorId, precisamos filtrar as vendas que pertencem a esse vendedor
+        const { data: vinc } = await (supabase as any)
+          .from("cliente_vendedor")
+          .select("cliente_id")
+          .eq("vendedor_user_id", vendedorId);
+        
+        const cliIds = (vinc || []).map((x: any) => x.cliente_id);
+        if (cliIds.length > 0) {
+          salesQuery = salesQuery.in("cliente_id", cliIds);
+        } else {
+          // Se o vendedor não tem clientes, faturamento é 0
+          setFaturamento(0);
+          setLoading(false);
+          return;
+        }
+      }
+
+      const { data: vendas } = await salesQuery;
 
       const total = (vendas || []).reduce((s: number, v: any) => s + Number(v.total), 0);
       setFaturamento(total);
@@ -69,11 +98,19 @@ export default function MetaVendas({ factoryId }: Props) {
     const valor = parseFloat(inputMeta) || 0;
 
     try {
-      await (supabase as any).from("metas_vendas").upsert({
+      const upsertData: any = {
         factory_id: factoryId,
         mes: mesDate,
         valor_meta: valor,
-      }, { onConflict: "factory_id,mes" });
+      };
+
+      if (vendedorId) {
+        upsertData.vendedor_user_id = vendedorId;
+      }
+
+      await (supabase as any).from("metas_vendas").upsert(upsertData, { 
+        onConflict: vendedorId ? "factory_id,mes,vendedor_user_id" : "factory_id,mes" 
+      });
 
       setMeta(valor);
       setEditing(false);
@@ -94,7 +131,7 @@ export default function MetaVendas({ factoryId }: Props) {
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm flex items-center gap-2">
             <Target className="h-4 w-4 text-primary" />
-            Meta de Vendas
+            Meta de Vendas {vendedorNome ? ` - ${vendedorNome}` : ""}
           </CardTitle>
           {!editing ? (
             <Button variant="ghost" size="sm" className="h-6 px-2" onClick={() => { setEditing(true); setInputMeta(String(meta)); }}>
