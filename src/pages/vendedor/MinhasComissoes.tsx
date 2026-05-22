@@ -97,16 +97,26 @@ export default function MinhasComissoes() {
       .order("created_at", { ascending: true });
 
     const primeiraVendaPorCliente: Record<string, string> = {};
-    (todasVendasVendedor || []).forEach((v: any) => {
-      // Usar cliente_id se disponível, caso contrário usar nome do cliente (para AVULSO/AMOSTRAS)
+    const primeiraVendaPorCliente: Record<string, string> = {};
+    const todasVendasArray = todasVendasVendedor || [];
+    
+    // Agrupar por cliente para encontrar a primeira venda de cada um
+    const porCliente: Record<string, any[]> = {};
+    todasVendasArray.forEach((v: any) => {
       const key = v.cliente_id || (v.clientes?.nome ? `${v.clientes?.nome}` : "avulso");
-      if (!primeiraVendaPorCliente[key]) {
-        primeiraVendaPorCliente[key] = v.id;
+      (porCliente[key] = porCliente[key] || []).push(v);
+    });
+
+    Object.values(porCliente).forEach((arr) => {
+      // Ordenar por data (antiga para nova)
+      const sorted = [...arr].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      if (sorted.length > 0) {
+        primeiraVendaPorCliente[sorted[0].cliente_id || (sorted[0].clientes?.nome ? `${sorted[0].clientes?.nome}` : "avulso")] = sorted[0].id;
       }
     });
 
     const comList = (com || []).map((c: any) => {
-      const key = c.vendas?.cliente_id || (c.vendas as any)?.clientes?.nome || "avulso";
+      const key = (c.vendas as any)?.cliente_id || (c.vendas as any)?.clientes?.nome || "avulso";
       const isPrimeira = primeiraVendaPorCliente[key] === c.venda_id;
       
       return {
