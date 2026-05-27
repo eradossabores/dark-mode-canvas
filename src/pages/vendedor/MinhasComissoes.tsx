@@ -237,17 +237,34 @@ export default function MinhasComissoes() {
   return (
     <div className="space-y-6 pb-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-primary/10 via-background to-background p-6 rounded-2xl border border-primary/20">
-        <div>
+        <div className="space-y-3">
           <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-3">
             <div className="bg-primary p-2 rounded-lg text-primary-foreground shadow-lg">
               <DollarSign className="h-7 w-7" />
             </div>
             Minhas Comissões
           </h1>
-          <p className="text-muted-foreground mt-1 flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            Período: {format(new Date(), "MMMM 'de' yyyy", { locale: ptBR })}
-          </p>
+          
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 bg-background/80 px-3 py-1.5 rounded-lg border shadow-sm">
+              <Calendar className="h-4 w-4 text-primary" />
+              <Select value={String(mesFiltro)} onValueChange={(v) => setMesFiltro(Number(v))}>
+                <SelectTrigger className="w-[140px] border-none bg-transparent h-7 focus:ring-0 p-0 font-medium">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <SelectItem key={i} value={String(i)}>
+                      {format(new Date(2026, i, 1), "MMMM", { locale: ptBR })}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-muted-foreground text-sm font-medium">
+              Ano: 2026
+            </p>
+          </div>
         </div>
         
         <div className="flex flex-col items-end">
