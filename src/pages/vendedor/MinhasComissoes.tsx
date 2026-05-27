@@ -424,14 +424,18 @@ export default function MinhasComissoes() {
                         const cDate = new Date(c.display_date);
                         const isSelectedMonth = cDate.getMonth() === mesFiltro;
                         
-                        // Specific rules for June
+                        // Specific rules for June (month 5)
                         if (mesFiltro === 5) {
                           const n = cliente.toUpperCase();
-                          const allowed = ["FREEZER LOURDETE", "FREEZER 04", "CAIQUE"];
-                          const excluded = ["SELADORA 1", "ESSENCIA ANDRE", "SELADORA ANDRE", "FREEZER ANDRE", "FREEZER ESTÁ NO PORÃO"];
+                          const itensStr = (c.vendas as any)?.venda_itens?.map((it: any) => it.sabores?.nome?.toUpperCase() || "").join(" ") || "";
                           
-                          if (excluded.some(ex => n.includes(ex))) return;
-                          if (!allowed.some(al => n.includes(al))) return;
+                          const isFreezerLourdete = n.includes("LOURDETE") && itensStr.includes("FREEZER");
+                          const isFreezer04 = n.includes("FREEZER 04") || itensStr.includes("FREEZER 04");
+                          const isCaique = n.includes("CAIQUE");
+
+                          if (!isFreezerLourdete && !isFreezer04 && !isCaique) {
+                            return;
+                          }
                         } else if (!isSelectedMonth) {
                           // Default behavior for other months: only show that month
                           return;
