@@ -1450,7 +1450,7 @@ export default function ContasAPagar() {
                             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setHistoricoContaId(c.id)} title="Histórico">
                               <History className="h-3.5 w-3.5" />
                             </Button>
-                            {!quitado && (
+                            {(c.valor_restante > 0 || !quitado) && (
                               <div className="flex gap-1">
                                 <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => { setPagarConta(c); setPagarData(undefined); setPagarValor(String(c.valor_parcela)); }} title="Pagar próxima parcela">
                                   💰 Pagar
