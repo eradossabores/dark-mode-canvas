@@ -445,16 +445,16 @@ export default function MinhasComissoes() {
                         }
 
                         if (isReposicao && cliente !== "-") {
-                          if (!groupedReposicao[cliente]) {
                             groupedReposicao[cliente] = {
                               display_date: c.display_date,
                               cliente: cliente,
                               itens: [],
                               quantidade: 0,
                               comissao: 0,
+                              total: 0,
+                              status: c.status || "pendente",
                               ids: []
                             };
-                          }
                           
                           const itemStr = (c.vendas as any)?.venda_itens?.map((it: any) => 
                             `${it.quantidade}x ${it.sabores?.nome || "?"}`
