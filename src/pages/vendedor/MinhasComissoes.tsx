@@ -409,6 +409,8 @@ export default function MinhasComissoes() {
                         itens: string[];
                         quantidade: number;
                         comissao: number;
+                        total: number;
+                        status: string;
                         ids: string[];
                       }> = {};
                       
