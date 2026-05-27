@@ -421,9 +421,19 @@ export default function MinhasComissoes() {
                         // if other progress is finished.
                         // Assuming "progresso" relates to historical months or something similar.
                         // But the direct request is to filter June list to these specific clients.
-                        const isJune = new Date(c.display_date).getMonth() === 5;
-                        const allowedJuneClients = ["FREEZER", "FREEZER 04", "CAIQUE"];
-                        if (isJune && !allowedJuneClients.some(name => cliente.toUpperCase().includes(name))) {
+                        const cDate = new Date(c.display_date);
+                        const isSelectedMonth = cDate.getMonth() === mesFiltro;
+                        
+                        // Specific rules for June
+                        if (mesFiltro === 5) {
+                          const n = cliente.toUpperCase();
+                          const allowed = ["FREEZER LOURDETE", "FREEZER 04", "CAIQUE"];
+                          const excluded = ["SELADORA 1", "ESSENCIA ANDRE", "SELADORA ANDRE", "FREEZER ANDRE", "FREEZER ESTÁ NO PORÃO"];
+                          
+                          if (excluded.some(ex => n.includes(ex))) return;
+                          if (!allowed.some(al => n.includes(al))) return;
+                        } else if (!isSelectedMonth) {
+                          // Default behavior for other months: only show that month
                           return;
                         }
 
