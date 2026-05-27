@@ -42,6 +42,17 @@ export default function MinhasComissoes() {
   const [loading, setLoading] = useState(true);
   const [mesFiltro, setMesFiltro] = useState(new Date().getMonth());
 
+  const safeFormatDate = (dateStr: any, formatStr: string) => {
+    try {
+      if (!dateStr) return "-";
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return "-";
+      return format(d, formatStr);
+    } catch (e) {
+      return "-";
+    }
+  };
+
   async function load() {
     if (!user) return;
     setLoading(true);
@@ -262,14 +273,14 @@ export default function MinhasComissoes() {
                 <SelectContent>
                   {Array.from({ length: 12 }).map((_, i) => (
                     <SelectItem key={i} value={String(i)}>
-                      {format(new Date(2026, i, 1), "MMMM", { locale: ptBR })}
+                      {format(new Date(new Date().getFullYear(), i, 1), "MMMM", { locale: ptBR })}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <p className="text-muted-foreground text-sm font-medium">
-              Ano: 2026
+              Ano: {new Date().getFullYear()}
             </p>
           </div>
         </div>
@@ -420,8 +431,6 @@ export default function MinhasComissoes() {
                         const isReposicao = !c.is_primeira_automatic;
                         const cliente = (c.vendas as any)?.clientes?.nome || "-";
                         
-                        // User request: from June onwards, do not show finalized accounts
-                        // Finalized: Seladora 1, Essência André, Seladora André, Freezer André, Freezer (Porão)
                         const cDate = new Date(c.display_date);
                         const isSelectedMonth = cDate.getMonth() === mesFiltro;
                         
@@ -435,27 +444,27 @@ export default function MinhasComissoes() {
                         const isFreezerAndre = n.includes("ANDRÉ") && itensStr.includes("FREEZER") && !itensStr.includes("PORÃO");
                         const isFreezerPorao = itensStr.includes("PORÃO") || n.includes("PORÃO");
 
+                        const isBlacklisted = isSeladora1 || isEssenciaAndre || isSeladoraAndre || isFreezerAndre || isFreezerPorao;
+
                         const isFreezerLourdete = n.includes("LOURDETE") && itensStr.includes("FREEZER");
                         const isFreezer04 = n.includes("FREEZER 04") || itensStr.includes("FREEZER 04");
                         const isCaique = n.includes("CAIQUE");
+                        const isOngoingAccount = isFreezerLourdete || isFreezer04 || isCaique;
 
                         if (mesFiltro >= 5) {
-                          // Hide blacklisted accounts from June onwards
-                          if (isSeladora1 || isEssenciaAndre || isSeladoraAndre || isFreezerAndre || isFreezerPorao) {
+                          // From June onwards:
+                          // 1. Hide blacklisted items
+                          if (isBlacklisted) return;
+                          
+                          // 2. In June, show specifically requested accounts even if from other months
+                          if (mesFiltro === 5 && isOngoingAccount) {
+                            // Keep it
+                          } else if (!isSelectedMonth) {
+                            // Otherwise, if not the selected month, hide it
                             return;
                           }
-                          
-                          if (mesFiltro === 5) {
-                            // In June, show ONLY the specifically requested accounts
-                            if (!isFreezerLourdete && !isFreezer04 && !isCaique) {
-                              return;
-                            }
-                          } else {
-                            // From July onwards, show only the month's own sales (minus blacklist)
-                            if (!isSelectedMonth) return;
-                          }
                         } else if (!isSelectedMonth) {
-                          // Default behavior for months before June: only show that month
+                          // Default behavior for months before June: only show items from that month
                           return;
                         }
 
@@ -492,7 +501,7 @@ export default function MinhasComissoes() {
                         return (
                           <TableRow key={`group-${g.cliente}`}>
                             <TableCell className="text-xs whitespace-nowrap">
-                              {format(new Date(g.display_date), "dd/MM/yyyy")}
+                              {safeFormatDate(g.display_date, "dd/MM/yyyy")}
                             </TableCell>
                             <TableCell className="text-xs font-medium uppercase">
                               <div className="flex items-center gap-2">
@@ -544,7 +553,7 @@ export default function MinhasComissoes() {
                         return (
                           <TableRow key={c.id}>
                             <TableCell className="text-xs whitespace-nowrap">
-                              {format(new Date(c.display_date), "dd/MM/yyyy")}
+                              {safeFormatDate(c.display_date, "dd/MM/yyyy")}
                             </TableCell>
                             <TableCell className="text-xs font-medium uppercase">
                               <div className="flex items-center gap-2">
