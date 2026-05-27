@@ -434,19 +434,19 @@ export default function MinhasComissoes() {
                         const cDate = new Date(c.display_date);
                         const isSelectedMonth = cDate.getMonth() === mesFiltro;
                         
-                        const n = cliente.toUpperCase();
-                        const itensStr = (c.vendas as any)?.venda_itens?.map((it: any) => it.sabores?.nome?.toUpperCase() || "").join(" ") || "";
+                        const n = (cliente || "").toUpperCase();
+                        const itensStr = (c.vendas as any)?.venda_itens?.map((it: any) => (it.sabores?.nome || "").toUpperCase()).join(" ") || "";
                         
                         // Accounts that should NOT appear from June onwards
-                        const isSeladora1 = n.includes("SELADORA 1");
-                        const isEssenciaAndre = n.includes("ANDRÉ") && (itensStr.includes("ESSENCIA") || itensStr.includes("ESSÊNCIA"));
-                        const isSeladoraAndre = n.includes("ANDRÉ") && itensStr.includes("SELADORA");
-                        const isFreezerAndre = n.includes("ANDRÉ") && itensStr.includes("FREEZER") && !itensStr.includes("PORÃO");
+                        const isSeladora1 = n.includes("SELADORA 1") || itensStr.includes("SELADORA 1");
+                        const isEssenciaAndre = n.includes("ANDRÉ") && (itensStr.includes("ESSENCIA") || itensStr.includes("ESSÊNCIA") || n.includes("ESSENCIA") || n.includes("ESSÊNCIA"));
+                        const isSeladoraAndre = n.includes("ANDRÉ") && (itensStr.includes("SELADORA") || n.includes("SELADORA"));
+                        const isFreezerAndre = n.includes("ANDRÉ") && (itensStr.includes("FREEZER") || n.includes("FREEZER")) && !itensStr.includes("PORÃO") && !n.includes("PORÃO");
                         const isFreezerPorao = itensStr.includes("PORÃO") || n.includes("PORÃO");
 
                         const isBlacklisted = isSeladora1 || isEssenciaAndre || isSeladoraAndre || isFreezerAndre || isFreezerPorao;
 
-                        const isFreezerLourdete = n.includes("LOURDETE") && itensStr.includes("FREEZER");
+                        const isFreezerLourdete = n.includes("LOURDETE") && (itensStr.includes("FREEZER") || n.includes("FREEZER"));
                         const isFreezer04 = n.includes("FREEZER 04") || itensStr.includes("FREEZER 04");
                         const isCaique = n.includes("CAIQUE");
                         const isOngoingAccount = isFreezerLourdete || isFreezer04 || isCaique;
