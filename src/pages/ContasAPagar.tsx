@@ -1300,13 +1300,13 @@ export default function ContasAPagar() {
                   <TabsTrigger value="abertas" className="flex items-center gap-2">
                     Em Aberto 
                     <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
-                      {parceladas.filter(c => !c.pago_mes).length}
+                      {parceladas.filter(c => !c.isPaidInFilteredMonth).length}
                     </Badge>
                   </TabsTrigger>
                   <TabsTrigger value="pagas" className="flex items-center gap-2">
                     Pagas (Mês)
                     <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
-                      {parceladas.filter(c => c.pago_mes).length}
+                      {parceladas.filter(c => c.isPaidInFilteredMonth).length}
                     </Badge>
                   </TabsTrigger>
                 </TabsList>
