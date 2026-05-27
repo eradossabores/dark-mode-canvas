@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   DollarSign, 
   Target, 
@@ -18,9 +19,10 @@ import {
   ChevronRight,
   Sparkles,
   Repeat,
-  History
+  History,
+  Filter
 } from "lucide-react";
-import { startOfMonth, endOfMonth, format, subMonths } from "date-fns";
+import { startOfMonth, endOfMonth, format, subMonths, setMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +40,7 @@ export default function MinhasComissoes() {
   const [unidadesMes, setUnidadesMes] = useState(0);
   const [bonusFidelizacao, setBonusFidelizacao] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [mesFiltro, setMesFiltro] = useState(new Date().getMonth());
 
   async function load() {
     if (!user) return;
@@ -159,15 +162,6 @@ export default function MinhasComissoes() {
 
     setComissoes(comList);
 
-    // 2. Calcular total de unidades baseada nas comissões do mês ATUAL
-    const totalUnidadesComissao = comList
-      .filter((c: any) => {
-        const d = new Date(c.display_date);
-        return d >= new Date(inicio) && d <= new Date(fim);
-      })
-      .reduce((acc: number, curr: any) => acc + Number(curr.quantidade_unidades || 0), 0);
-    setUnidadesMes(totalUnidadesComissao);
-
     // 3. Lógica de Bônus de Fidelidade
     if (allRelevantClientIds.length > 0) {
       const hoje = new Date();
@@ -204,6 +198,22 @@ export default function MinhasComissoes() {
     setLoading(false);
   }
 
+  const unidadesMesFiltrado = useMemo(() => {
+    return comissoes
+      .filter((c: any) => {
+        const d = new Date(c.display_date);
+        // We use the selected mesFiltro. Assuming year 2026 as per system prompt or current year.
+        const filterYear = new Date().getFullYear();
+        return d.getMonth() === mesFiltro && d.getFullYear() === filterYear;
+      })
+      .reduce((acc: number, curr: any) => acc + Number(curr.quantidade_unidades || 0), 0);
+  }, [comissoes, mesFiltro]);
+
+  // Update unidadesMes whenever the filtered value changes
+  useEffect(() => {
+    setUnidadesMes(unidadesMesFiltrado);
+  }, [unidadesMesFiltrado]);
+
   useEffect(() => { load(); }, [user?.id]);
   
   const semanasNoMes = useMemo(() => {
@@ -234,17 +244,34 @@ export default function MinhasComissoes() {
   return (
     <div className="space-y-6 pb-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-primary/10 via-background to-background p-6 rounded-2xl border border-primary/20">
-        <div>
+        <div className="space-y-3">
           <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-3">
             <div className="bg-primary p-2 rounded-lg text-primary-foreground shadow-lg">
               <DollarSign className="h-7 w-7" />
             </div>
             Minhas Comissões
           </h1>
-          <p className="text-muted-foreground mt-1 flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            Período: {format(new Date(), "MMMM 'de' yyyy", { locale: ptBR })}
-          </p>
+          
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 bg-background/80 px-3 py-1.5 rounded-lg border shadow-sm">
+              <Calendar className="h-4 w-4 text-primary" />
+              <Select value={String(mesFiltro)} onValueChange={(v) => setMesFiltro(Number(v))}>
+                <SelectTrigger className="w-[140px] border-none bg-transparent h-7 focus:ring-0 p-0 font-medium">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <SelectItem key={i} value={String(i)}>
+                      {format(new Date(2026, i, 1), "MMMM", { locale: ptBR })}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-muted-foreground text-sm font-medium">
+              Ano: 2026
+            </p>
+          </div>
         </div>
         
         <div className="flex flex-col items-end">
@@ -394,9 +421,19 @@ export default function MinhasComissoes() {
                         // if other progress is finished.
                         // Assuming "progresso" relates to historical months or something similar.
                         // But the direct request is to filter June list to these specific clients.
-                        const isJune = new Date(c.display_date).getMonth() === 5;
-                        const allowedJuneClients = ["FREEZER", "FREEZER 04", "CAIQUE"];
-                        if (isJune && !allowedJuneClients.some(name => cliente.toUpperCase().includes(name))) {
+                        const cDate = new Date(c.display_date);
+                        const isSelectedMonth = cDate.getMonth() === mesFiltro;
+                        
+                        // Specific rules for June
+                        if (mesFiltro === 5) {
+                          const n = cliente.toUpperCase();
+                          const allowed = ["FREEZER LOURDETE", "FREEZER 04", "CAIQUE"];
+                          const excluded = ["SELADORA 1", "ESSENCIA ANDRE", "SELADORA ANDRE", "FREEZER ANDRE", "FREEZER ESTÁ NO PORÃO"];
+                          
+                          if (excluded.some(ex => n.includes(ex))) return;
+                          if (!allowed.some(al => n.includes(al))) return;
+                        } else if (!isSelectedMonth) {
+                          // Default behavior for other months: only show that month
                           return;
                         }
 
@@ -433,7 +470,19 @@ export default function MinhasComissoes() {
                               {format(new Date(g.display_date), "dd/MM/yyyy")}
                             </TableCell>
                             <TableCell className="text-xs font-medium uppercase">
-                              {g.cliente}
+                              <div className="flex items-center gap-2">
+                                {g.cliente}
+                                {mesFiltro === 5 && g.cliente.toUpperCase().includes("LOURDETE") && (
+                                  <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 text-[9px] h-4 py-0 px-1.5 uppercase font-bold">
+                                    10/10
+                                  </Badge>
+                                )}
+                                {mesFiltro === 5 && g.cliente.toUpperCase().includes("CAIQUE") && (
+                                  <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 text-[9px] h-4 py-0 px-1.5 uppercase font-bold">
+                                    3/3
+                                  </Badge>
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell className="text-xs font-medium max-w-[200px] truncate" title={combinedItens}>
                               {combinedItens}
@@ -465,7 +514,19 @@ export default function MinhasComissoes() {
                               {format(new Date(c.display_date), "dd/MM/yyyy")}
                             </TableCell>
                             <TableCell className="text-xs font-medium uppercase">
-                              {cliente}
+                              <div className="flex items-center gap-2">
+                                {cliente}
+                                {mesFiltro === 5 && cliente.toUpperCase().includes("LOURDETE") && (
+                                  <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 text-[9px] h-4 py-0 px-1.5 uppercase font-bold">
+                                    10/10
+                                  </Badge>
+                                )}
+                                {mesFiltro === 5 && cliente.toUpperCase().includes("CAIQUE") && (
+                                  <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 text-[9px] h-4 py-0 px-1.5 uppercase font-bold">
+                                    3/3
+                                  </Badge>
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell className="text-xs font-medium max-w-[200px] truncate" title={itens}>
                               {itens}
