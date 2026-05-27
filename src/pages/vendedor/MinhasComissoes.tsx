@@ -470,7 +470,19 @@ export default function MinhasComissoes() {
                               {format(new Date(g.display_date), "dd/MM/yyyy")}
                             </TableCell>
                             <TableCell className="text-xs font-medium uppercase">
-                              {g.cliente}
+                              <div className="flex items-center gap-2">
+                                {g.cliente}
+                                {mesFiltro === 5 && g.cliente.toUpperCase().includes("LOURDETE") && (
+                                  <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 text-[9px] h-4 py-0 px-1.5 uppercase font-bold">
+                                    10/10
+                                  </Badge>
+                                )}
+                                {mesFiltro === 5 && g.cliente.toUpperCase().includes("CAIQUE") && (
+                                  <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 text-[9px] h-4 py-0 px-1.5 uppercase font-bold">
+                                    3/3
+                                  </Badge>
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell className="text-xs font-medium max-w-[200px] truncate" title={combinedItens}>
                               {combinedItens}
