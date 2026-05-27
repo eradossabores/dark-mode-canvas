@@ -42,6 +42,17 @@ export default function MinhasComissoes() {
   const [loading, setLoading] = useState(true);
   const [mesFiltro, setMesFiltro] = useState(new Date().getMonth());
 
+  const safeFormatDate = (dateStr: any, formatStr: string) => {
+    try {
+      if (!dateStr) return "-";
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return "-";
+      return format(d, formatStr);
+    } catch (e) {
+      return "-";
+    }
+  };
+
   async function load() {
     if (!user) return;
     setLoading(true);
@@ -262,14 +273,14 @@ export default function MinhasComissoes() {
                 <SelectContent>
                   {Array.from({ length: 12 }).map((_, i) => (
                     <SelectItem key={i} value={String(i)}>
-                      {format(new Date(2026, i, 1), "MMMM", { locale: ptBR })}
+                      {format(new Date(new Date().getFullYear(), i, 1), "MMMM", { locale: ptBR })}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <p className="text-muted-foreground text-sm font-medium">
-              Ano: 2026
+              Ano: {new Date().getFullYear()}
             </p>
           </div>
         </div>
@@ -492,7 +503,7 @@ export default function MinhasComissoes() {
                         return (
                           <TableRow key={`group-${g.cliente}`}>
                             <TableCell className="text-xs whitespace-nowrap">
-                              {format(new Date(g.display_date), "dd/MM/yyyy")}
+                              {safeFormatDate(g.display_date, "dd/MM/yyyy")}
                             </TableCell>
                             <TableCell className="text-xs font-medium uppercase">
                               <div className="flex items-center gap-2">
@@ -544,7 +555,7 @@ export default function MinhasComissoes() {
                         return (
                           <TableRow key={c.id}>
                             <TableCell className="text-xs whitespace-nowrap">
-                              {format(new Date(c.display_date), "dd/MM/yyyy")}
+                              {safeFormatDate(c.display_date, "dd/MM/yyyy")}
                             </TableCell>
                             <TableCell className="text-xs font-medium uppercase">
                               <div className="flex items-center gap-2">
