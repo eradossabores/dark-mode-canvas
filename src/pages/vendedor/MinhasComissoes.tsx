@@ -163,15 +163,23 @@ export default function MinhasComissoes() {
     setComissoes(comList);
 
     // 2. Calcular total de unidades baseada nas comissões do mês ATUAL
-    const totalUnidadesComissao = comList
+    // (This will now be handled by useMemo for better reactivity)
+    setLoading(false);
+  }
+
+  const unidadesMesFiltrado = useMemo(() => {
+    return comissoes
       .filter((c: any) => {
         const d = new Date(c.display_date);
-        return d >= new Date(inicio) && d <= new Date(fim);
+        return d.getMonth() === mesFiltro && d.getFullYear() === 2026;
       })
       .reduce((acc: number, curr: any) => acc + Number(curr.quantidade_unidades || 0), 0);
-    setUnidadesMes(totalUnidadesComissao);
+  }, [comissoes, mesFiltro]);
 
-    // 3. Lógica de Bônus de Fidelidade
+  // Update unidadesMes whenever the filtered value changes
+  useEffect(() => {
+    setUnidadesMes(unidadesMesFiltrado);
+  }, [unidadesMesFiltrado]);
     if (allRelevantClientIds.length > 0) {
       const hoje = new Date();
       const { data: vendasAntTudo } = await (supabase as any)
