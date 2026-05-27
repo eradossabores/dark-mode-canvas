@@ -420,24 +420,36 @@ export default function MinhasComissoes() {
                         const isReposicao = !c.is_primeira_automatic;
                         const cliente = (c.vendas as any)?.clientes?.nome || "-";
                         
-                        // User request: June (month 5 in JS Date) should only show Freezer, Freezer 04, Caique
-                        // if other progress is finished.
-                        // Assuming "progresso" relates to historical months or something similar.
-                        // But the direct request is to filter June list to these specific clients.
+                        // User request: from June onwards, do not show finalized accounts
+                        // Finalized: Seladora 1, Essência André, Seladora André, Freezer André, Freezer (Porão)
                         const cDate = new Date(c.display_date);
                         const isSelectedMonth = cDate.getMonth() === mesFiltro;
                         
-                        // Specific rules for June (month 5)
-                        if (mesFiltro === 5) {
+                        // From June (month 5) onwards
+                        if (mesFiltro >= 5) {
                           const n = cliente.toUpperCase();
                           const itensStr = (c.vendas as any)?.venda_itens?.map((it: any) => it.sabores?.nome?.toUpperCase() || "").join(" ") || "";
                           
-                          const isFreezerLourdete = n.includes("LOURDETE") && itensStr.includes("FREEZER");
-                          const isFreezer04 = n.includes("FREEZER 04") || itensStr.includes("FREEZER 04");
-                          const isCaique = n.includes("CAIQUE");
+                          // Accounts that should NOT appear from June onwards
+                          const isSeladora1 = n.includes("SELADORA 1");
+                          const isEssenciaAndre = n.includes("ANDRÉ") && (itensStr.includes("ESSENCIA") || itensStr.includes("ESSÊNCIA"));
+                          const isSeladoraAndre = n.includes("ANDRÉ") && itensStr.includes("SELADORA");
+                          const isFreezerAndre = n.includes("ANDRÉ") && itensStr.includes("FREEZER") && !itensStr.includes("PORÃO");
+                          const isFreezerPorao = itensStr.includes("PORÃO") || n.includes("PORÃO");
 
-                          if (!isFreezerLourdete && !isFreezer04 && !isCaique) {
+                          if (isSeladora1 || isEssenciaAndre || isSeladoraAndre || isFreezerAndre || isFreezerPorao) {
                             return;
+                          }
+                          
+                          // If filtering exactly for June, also apply the positive filter
+                          if (mesFiltro === 5) {
+                            const isFreezerLourdete = n.includes("LOURDETE") && itensStr.includes("FREEZER");
+                            const isFreezer04 = n.includes("FREEZER 04") || itensStr.includes("FREEZER 04");
+                            const isCaique = n.includes("CAIQUE");
+
+                            if (!isFreezerLourdete && !isFreezer04 && !isCaique) {
+                              return;
+                            }
                           }
                         } else if (!isSelectedMonth) {
                           // Default behavior for other months: only show that month
