@@ -486,6 +486,11 @@ export default function MinhasComissoes() {
                                     3/3
                                   </Badge>
                                 )}
+                                {mesFiltro === 5 && g.cliente.toUpperCase().includes("FREEZER 04") && (
+                                  <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 text-[9px] h-4 py-0 px-1.5 uppercase font-bold">
+                                    3/10
+                                  </Badge>
+                                )}
                               </div>
                             </TableCell>
                             <TableCell className="text-xs font-medium max-w-[200px] truncate" title={combinedItens}>
