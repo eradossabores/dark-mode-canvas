@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   DollarSign, 
   Target, 
@@ -18,9 +19,10 @@ import {
   ChevronRight,
   Sparkles,
   Repeat,
-  History
+  History,
+  Filter
 } from "lucide-react";
-import { startOfMonth, endOfMonth, format, subMonths } from "date-fns";
+import { startOfMonth, endOfMonth, format, subMonths, setMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
