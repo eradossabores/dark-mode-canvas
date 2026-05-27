@@ -40,6 +40,7 @@ export default function MinhasComissoes() {
   const [unidadesMes, setUnidadesMes] = useState(0);
   const [bonusFidelizacao, setBonusFidelizacao] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [mesFiltro, setMesFiltro] = useState(new Date().getMonth());
 
   async function load() {
     if (!user) return;
