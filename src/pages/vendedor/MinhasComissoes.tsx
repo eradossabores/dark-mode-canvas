@@ -431,8 +431,6 @@ export default function MinhasComissoes() {
                         const isReposicao = !c.is_primeira_automatic;
                         const cliente = (c.vendas as any)?.clientes?.nome || "-";
                         
-                        // User request: from June onwards, do not show finalized accounts
-                        // Finalized: Seladora 1, Essência André, Seladora André, Freezer André, Freezer (Porão)
                         const cDate = new Date(c.display_date);
                         const isSelectedMonth = cDate.getMonth() === mesFiltro;
                         
@@ -446,28 +444,29 @@ export default function MinhasComissoes() {
                         const isFreezerAndre = n.includes("ANDRÉ") && itensStr.includes("FREEZER") && !itensStr.includes("PORÃO");
                         const isFreezerPorao = itensStr.includes("PORÃO") || n.includes("PORÃO");
 
+                        const isBlacklisted = isSeladora1 || isEssenciaAndre || isSeladoraAndre || isFreezerAndre || isFreezerPorao;
+
                         const isFreezerLourdete = n.includes("LOURDETE") && itensStr.includes("FREEZER");
                         const isFreezer04 = n.includes("FREEZER 04") || itensStr.includes("FREEZER 04");
                         const isCaique = n.includes("CAIQUE");
+                        const isOngoingAccount = isFreezerLourdete || isFreezer04 || isCaique;
 
                         if (mesFiltro >= 5) {
-                          // Hide blacklisted accounts from June onwards
-                          if (isSeladora1 || isEssenciaAndre || isSeladoraAndre || isFreezerAndre || isFreezerPorao) {
+                          // From June onwards:
+                          // 1. Hide blacklisted items
+                          if (isBlacklisted) return;
+                          
+                          // 2. In June, show specifically requested accounts even if from other months
+                          if (mesFiltro === 5 && isOngoingAccount) {
+                            // Keep it
+                          } else if (!isSelectedMonth) {
+                            // Otherwise, if not the selected month, hide it
                             return;
                           }
-                          
-                          if (mesFiltro === 5) {
-                            // In June, show ONLY the specifically requested accounts
-                            if (!isFreezerLourdete && !isFreezer04 && !isCaique) {
-                              return;
-                            }
-                          } else {
-                            // From July onwards, show only the month's own sales (minus blacklist)
-                            if (!isSelectedMonth) return;
-                          }
                         } else if (!isSelectedMonth) {
-                          // Default behavior for months before June: only show that month
+                          // Default behavior for months before June: only show items from that month
                           return;
+                        }
                         }
 
                         if (isReposicao && cliente !== "-") {
