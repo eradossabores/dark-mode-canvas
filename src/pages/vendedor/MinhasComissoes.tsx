@@ -467,7 +467,6 @@ export default function MinhasComissoes() {
                           // Default behavior for months before June: only show items from that month
                           return;
                         }
-                        }
 
                         if (isReposicao && cliente !== "-") {
                           if (!groupedReposicao[cliente]) {
