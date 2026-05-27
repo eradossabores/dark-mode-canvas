@@ -1300,14 +1300,23 @@ export default function ContasAPagar() {
                     {parceladas
                       .filter(c => activeTab === "abertas" ? !c.pago_mes : c.pago_mes)
                       .map(c => {
-                    const pct = c.total_parcelas > 0 ? Math.round((c.parcela_atual / c.total_parcelas) * 100) : 0;
-                    const quaseQuitando = c.parcela_atual >= c.total_parcelas - 2 && c.parcela_atual < c.total_parcelas;
-                    const quitado = c.parcela_atual >= c.total_parcelas;
                     const descParts = c.descricao.split(" — ");
-                    
                     const targetMonth = filtroMes === "todos" ? null : parseInt(filtroMes);
                     const targetYear = filtroAno === "todos" ? null : parseInt(filtroAno);
                     const isViewingCurrentMonth = (targetMonth === null || targetMonth === new Date().getMonth()) && (targetYear === null || targetYear === new Date().getFullYear());
+                    
+                    // Historical installment logic
+                    let currentParcelaDisplay = c.parcela_atual;
+                    if (!isViewingCurrentMonth && targetMonth !== null && targetYear !== null && c.tipo === "parcelado") {
+                      const createdDate = new Date(c.created_at || "");
+                      const targetDate = new Date(targetYear, targetMonth, 1);
+                      const monthsElapsed = (targetDate.getFullYear() - createdDate.getFullYear()) * 12 + (targetDate.getMonth() - createdDate.getMonth());
+                      currentParcelaDisplay = Math.min(c.total_parcelas, monthsElapsed + 1);
+                    }
+
+                    const pct = c.total_parcelas > 0 ? Math.round((currentParcelaDisplay / c.total_parcelas) * 100) : 0;
+                    const quaseQuitando = currentParcelaDisplay >= c.total_parcelas - 2 && currentParcelaDisplay < c.total_parcelas;
+                    const quitado = currentParcelaDisplay >= c.total_parcelas;
                     
                     // Check if paid in the selected month
                     const isPaidInSelectedMonth = isViewingCurrentMonth 
@@ -1359,7 +1368,7 @@ export default function ContasAPagar() {
                           <div className="flex items-center gap-2 min-w-[120px]">
                             <Progress value={pct} className="h-2 flex-1" />
                             <Badge variant={quitado ? "default" : quaseQuitando ? "secondary" : "outline"} className="text-xs font-mono whitespace-nowrap">
-                              {c.parcela_atual}/{c.total_parcelas}
+                              {currentParcelaDisplay}/{c.total_parcelas}
                             </Badge>
                           </div>
                         </TableCell>
