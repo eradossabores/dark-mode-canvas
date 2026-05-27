@@ -562,7 +562,10 @@ export default function MinhasComissoes() {
                                 1ª Compra
                               </Badge>
                             </TableCell>
-                            <TableCell className="text-right font-bold text-black">
+                            <TableCell className="text-right font-medium text-muted-foreground whitespace-nowrap">
+                              R$ {Number((c.vendas as any)?.total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </TableCell>
+                            <TableCell className={cn("text-right font-bold whitespace-nowrap", c.status !== "paga" && mesFiltro === 5 ? "text-red-500" : "text-black")}>
                               R$ {Number(c.valor_comissao || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}
                             </TableCell>
                           </TableRow>
