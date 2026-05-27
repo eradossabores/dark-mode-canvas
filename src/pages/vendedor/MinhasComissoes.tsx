@@ -162,8 +162,39 @@ export default function MinhasComissoes() {
 
     setComissoes(comList);
 
-    // 2. Calcular total de unidades baseada nas comissões do mês ATUAL
-    // (This will now be handled by useMemo for better reactivity)
+    // 3. Lógica de Bônus de Fidelidade
+    if (allRelevantClientIds.length > 0) {
+      const hoje = new Date();
+      const { data: vendasAntTudo } = await (supabase as any)
+        .from("vendas")
+        .select("cliente_id, created_at")
+        .in("cliente_id", allRelevantClientIds)
+        .eq("status", "paga")
+        .gte("created_at", subMonths(startOfMonth(hoje), 6).toISOString());
+
+      const vendasPorMes: Record<number, Set<string>> = { 1: new Set(), 2: new Set(), 3: new Set(), 4: new Set(), 5: new Set(), 6: new Set() };
+      (vendasAntTudo || []).forEach((v: any) => {
+        const dt = new Date(v.created_at);
+        for (let i = 1; i <= 6; i++) {
+          const ini = startOfMonth(subMonths(hoje, i));
+          const fim = endOfMonth(subMonths(hoje, i));
+          if (dt >= ini && dt <= fim) vendasPorMes[i].add(v.cliente_id);
+        }
+      });
+
+      let totalBonusFid = 0;
+      allRelevantClientIds.forEach(cid => {
+        let consec = 0;
+        if (vendasPorMes[1].has(cid) && vendasPorMes[2].has(cid) && vendasPorMes[3].has(cid)) {
+          consec = 3;
+          if (vendasPorMes[4].has(cid) && vendasPorMes[5].has(cid) && vendasPorMes[6].has(cid)) consec = 6;
+        }
+        if (consec === 6) totalBonusFid += 100;
+        else if (consec === 3) totalBonusFid += 50;
+      });
+      setBonusFidelizacao(totalBonusFid);
+    }
+    
     setLoading(false);
   }
 
@@ -171,7 +202,9 @@ export default function MinhasComissoes() {
     return comissoes
       .filter((c: any) => {
         const d = new Date(c.display_date);
-        return d.getMonth() === mesFiltro && d.getFullYear() === 2026;
+        // We use the selected mesFiltro. Assuming year 2026 as per system prompt or current year.
+        const filterYear = new Date().getFullYear();
+        return d.getMonth() === mesFiltro && d.getFullYear() === filterYear;
       })
       .reduce((acc: number, curr: any) => acc + Number(curr.quantidade_unidades || 0), 0);
   }, [comissoes, mesFiltro]);
