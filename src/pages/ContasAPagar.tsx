@@ -1330,34 +1330,17 @@ export default function ContasAPagar() {
                   </TableHeader>
                   <TableBody>
                     {parceladas
-                      .filter(c => activeTab === "abertas" ? !c.pago_mes : c.pago_mes)
+                      .filter(c => activeTab === "abertas" ? !c.isPaidInFilteredMonth : c.isPaidInFilteredMonth)
                       .map(c => {
                     const descParts = c.descricao.split(" — ");
-                    const targetMonth = filtroMes === "todos" ? null : parseInt(filtroMes);
-                    const targetYear = filtroAno === "todos" ? null : parseInt(filtroAno);
-                    const isViewingCurrentMonth = (targetMonth === null || targetMonth === new Date().getMonth()) && (targetYear === null || targetYear === new Date().getFullYear());
                     
-                    // Historical installment logic
-                    let currentParcelaDisplay = c.parcela_atual;
-                    if (!isViewingCurrentMonth && targetMonth !== null && targetYear !== null && c.tipo === "parcelado") {
-                      const createdDate = new Date(c.created_at || "");
-                      const targetDate = new Date(targetYear, targetMonth, 1);
-                      const monthsElapsed = (targetDate.getFullYear() - createdDate.getFullYear()) * 12 + (targetDate.getMonth() - createdDate.getMonth());
-                      currentParcelaDisplay = Math.min(c.total_parcelas, monthsElapsed + 1);
-                    }
+                    const currentParcelaDisplay = c.parcelaDisplayInFilteredMonth;
+                    const isPaidInSelectedMonth = c.isPaidInFilteredMonth;
 
                     const pct = c.total_parcelas > 0 ? Math.round((currentParcelaDisplay / c.total_parcelas) * 100) : 0;
                     const quaseQuitando = currentParcelaDisplay >= c.total_parcelas - 2 && currentParcelaDisplay < c.total_parcelas;
                     const quitado = currentParcelaDisplay >= c.total_parcelas;
                     
-                    // Check if paid in the selected month
-                    const isPaidInSelectedMonth = isViewingCurrentMonth 
-                      ? c.pago_mes 
-                      : pagamentos.some(p => {
-                          const pDate = new Date(p.data_pagamento);
-                          return p.conta_id === c.id && pDate.getMonth() === targetMonth && pDate.getFullYear() === targetYear;
-                        });
-
                     return (
                       <TableRow key={c.id} className={quitado ? "opacity-60" : ""}>
                         <TableCell className="font-medium">
