@@ -390,6 +390,7 @@ export default function MinhasComissoes() {
                     <TableHead className="text-xs font-bold text-black uppercase">Itens</TableHead>
                     <TableHead className="text-xs font-bold text-black uppercase text-center">Unid</TableHead>
                     <TableHead className="text-xs font-bold text-black uppercase">Tipo</TableHead>
+                    <TableHead className="text-xs font-bold text-black uppercase text-right">Total</TableHead>
                     <TableHead className="text-xs font-bold text-black uppercase text-right">Comissão</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -408,6 +409,8 @@ export default function MinhasComissoes() {
                         itens: string[];
                         quantidade: number;
                         comissao: number;
+                        total: number;
+                        status: string;
                         ids: string[];
                       }> = {};
                       
@@ -424,14 +427,18 @@ export default function MinhasComissoes() {
                         const cDate = new Date(c.display_date);
                         const isSelectedMonth = cDate.getMonth() === mesFiltro;
                         
-                        // Specific rules for June
+                        // Specific rules for June (month 5)
                         if (mesFiltro === 5) {
                           const n = cliente.toUpperCase();
-                          const allowed = ["FREEZER LOURDETE", "FREEZER 04", "CAIQUE"];
-                          const excluded = ["SELADORA 1", "ESSENCIA ANDRE", "SELADORA ANDRE", "FREEZER ANDRE", "FREEZER ESTÁ NO PORÃO"];
+                          const itensStr = (c.vendas as any)?.venda_itens?.map((it: any) => it.sabores?.nome?.toUpperCase() || "").join(" ") || "";
                           
-                          if (excluded.some(ex => n.includes(ex))) return;
-                          if (!allowed.some(al => n.includes(al))) return;
+                          const isFreezerLourdete = n.includes("LOURDETE") && itensStr.includes("FREEZER");
+                          const isFreezer04 = n.includes("FREEZER 04") || itensStr.includes("FREEZER 04");
+                          const isCaique = n.includes("CAIQUE");
+
+                          if (!isFreezerLourdete && !isFreezer04 && !isCaique) {
+                            return;
+                          }
                         } else if (!isSelectedMonth) {
                           // Default behavior for other months: only show that month
                           return;
@@ -445,6 +452,8 @@ export default function MinhasComissoes() {
                               itens: [],
                               quantidade: 0,
                               comissao: 0,
+                              total: 0,
+                              status: c.status || "pendente",
                               ids: []
                             };
                           }
@@ -456,6 +465,7 @@ export default function MinhasComissoes() {
                           if (itemStr !== "-") groupedReposicao[cliente].itens.push(itemStr);
                           groupedReposicao[cliente].quantidade += Number(c.quantidade_unidades || 0);
                           groupedReposicao[cliente].comissao += Number(c.valor_comissao || 0);
+                          groupedReposicao[cliente].total += Number((c.vendas as any)?.total || 0);
                           groupedReposicao[cliente].ids.push(c.id);
                         } else {
                           regularItems.push(c);
@@ -482,6 +492,11 @@ export default function MinhasComissoes() {
                                     3/3
                                   </Badge>
                                 )}
+                                {mesFiltro === 5 && g.cliente.toUpperCase().includes("FREEZER 04") && (
+                                  <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 text-[9px] h-4 py-0 px-1.5 uppercase font-bold">
+                                    3/10
+                                  </Badge>
+                                )}
                               </div>
                             </TableCell>
                             <TableCell className="text-xs font-medium max-w-[200px] truncate" title={combinedItens}>
@@ -495,7 +510,10 @@ export default function MinhasComissoes() {
                                 Reposição
                               </Badge>
                             </TableCell>
-                            <TableCell className="text-right font-bold text-black">
+                            <TableCell className="text-right font-medium text-muted-foreground whitespace-nowrap">
+                              R$ {g.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </TableCell>
+                            <TableCell className={cn("text-right font-bold whitespace-nowrap", g.status !== "paga" && mesFiltro === 5 ? "text-red-500" : "text-black")}>
                               R$ {g.comissao.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}
                             </TableCell>
                           </TableRow>
@@ -526,6 +544,11 @@ export default function MinhasComissoes() {
                                     3/3
                                   </Badge>
                                 )}
+                                {mesFiltro === 5 && cliente.toUpperCase().includes("FREEZER 04") && (
+                                  <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 text-[9px] h-4 py-0 px-1.5 uppercase font-bold">
+                                    3/10
+                                  </Badge>
+                                )}
                               </div>
                             </TableCell>
                             <TableCell className="text-xs font-medium max-w-[200px] truncate" title={itens}>
@@ -539,7 +562,10 @@ export default function MinhasComissoes() {
                                 1ª Compra
                               </Badge>
                             </TableCell>
-                            <TableCell className="text-right font-bold text-black">
+                            <TableCell className="text-right font-medium text-muted-foreground whitespace-nowrap">
+                              R$ {Number((c.vendas as any)?.total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </TableCell>
+                            <TableCell className={cn("text-right font-bold whitespace-nowrap", c.status !== "paga" && mesFiltro === 5 ? "text-red-500" : "text-black")}>
                               R$ {Number(c.valor_comissao || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}
                             </TableCell>
                           </TableRow>
