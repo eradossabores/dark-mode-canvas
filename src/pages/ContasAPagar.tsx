@@ -167,28 +167,31 @@ export default function ContasAPagar() {
       const targetMonth = filtroMes === "todos" ? null : parseInt(filtroMes);
       const targetYear = filtroAno === "todos" ? null : parseInt(filtroAno);
 
-      // Blacklist logic for June 2026 onwards
-      const isJune2026OrLater = (targetYear && targetYear > 2026) || (targetYear === 2026 && targetMonth !== null && targetMonth >= 5);
+      // Blacklist logic for months AFTER June 2026
+      const isAfterJune2026 = (targetYear && targetYear > 2026) || (targetYear === 2026 && targetMonth !== null && targetMonth > 5);
+      const isJune2026 = (targetYear === 2026 && targetMonth === 5);
       
-      if (isJune2026OrLater) {
-        const desc = (c.descricao || "").toUpperCase();
-        const resp = (c.responsavel || "").toUpperCase();
-        
-        const isSeladora1 = desc.includes("SELADORA 1") || resp.includes("SELADORA 1");
-        const isAndre = resp.includes("ANDRÉ") || desc.includes("ANDRÉ") || resp.includes("ANDRE") || desc.includes("ANDRE");
-        const isPorao = desc.includes("PORÃO") || resp.includes("PORÃO") || desc.includes("PORAO") || resp.includes("PORAO");
-        
-        // Specifically blacklist these as requested for June onwards
+      const desc = (c.descricao || "").toUpperCase();
+      const resp = (c.responsavel || "").toUpperCase();
+      
+      const isSeladora1 = desc.includes("SELADORA 1") || resp.includes("SELADORA 1");
+      const isAndre = resp.includes("ANDRÉ") || desc.includes("ANDRÉ") || resp.includes("ANDRE") || desc.includes("ANDRE");
+      const isPorao = desc.includes("PORÃO") || resp.includes("PORÃO") || desc.includes("PORAO") || resp.includes("PORAO");
+      const isFreezerLourdete = resp.includes("LOURDETE") && desc.includes("FREEZER");
+      const isFreezer04 = desc.includes("FREEZER 04");
+      const isCaique = resp.includes("CAIQUE") || desc.includes("CAIQUE");
+
+      // June onwards: Hide Seladora 1, Andre, and Porao
+      if (isJune2026 || isAfterJune2026) {
         if (isSeladora1 || isAndre || isPorao) {
-          // Exceptions to keep for June: Freezer Lourdete, Freezer 04, Caique
-          const isFreezerLourdete = resp.includes("LOURDETE") && desc.includes("FREEZER");
-          const isFreezer04 = desc.includes("FREEZER 04");
-          const isCaique = resp.includes("CAIQUE") || desc.includes("CAIQUE");
-          
-          if (!isFreezerLourdete && !isFreezer04 && !isCaique) {
-            return false;
-          }
+          // Keep Freezer 04 and Caique as they are ongoing
+          if (!isFreezer04 && !isCaique) return false;
         }
+      }
+
+      // After June 2026: Also hide Freezer Lourdete
+      if (isAfterJune2026) {
+        if (isFreezerLourdete) return false;
       }
 
       if (busca.trim() && !c.descricao.toLowerCase().includes(busca.toLowerCase()) && !(c.responsavel || "").toLowerCase().includes(busca.toLowerCase())) return false;
