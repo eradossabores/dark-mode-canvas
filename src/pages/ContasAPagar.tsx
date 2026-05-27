@@ -1399,9 +1399,10 @@ export default function ContasAPagar() {
                     const pct = c.total_parcelas > 0 ? Math.round((currentParcelaDisplay / c.total_parcelas) * 100) : 0;
                     const quaseQuitando = currentParcelaDisplay >= c.total_parcelas - 2 && currentParcelaDisplay < c.total_parcelas;
                     const quitado = currentParcelaDisplay >= c.total_parcelas;
+                    const realmenteFinalizado = quitado && c.valor_restante <= 0;
                     
                     return (
-                      <TableRow key={c.id} className={quitado ? "opacity-60" : ""}>
+                      <TableRow key={c.id} className={realmenteFinalizado ? "opacity-60" : ""}>
                         <TableCell className="font-medium">
                           <div>{descParts[0]}</div>
                           {descParts[1] && <p className="text-[10px] text-muted-foreground mt-0.5 max-w-[200px] truncate">{descParts[1]}</p>}
