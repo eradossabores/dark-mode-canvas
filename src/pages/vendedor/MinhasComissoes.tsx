@@ -445,6 +445,7 @@ export default function MinhasComissoes() {
                         }
 
                         if (isReposicao && cliente !== "-") {
+                          if (!groupedReposicao[cliente]) {
                             groupedReposicao[cliente] = {
                               display_date: c.display_date,
                               cliente: cliente,
@@ -455,6 +456,7 @@ export default function MinhasComissoes() {
                               status: c.status || "pendente",
                               ids: []
                             };
+                          }
                           
                           const itemStr = (c.vendas as any)?.venda_itens?.map((it: any) => 
                             `${it.quantidade}x ${it.sabores?.nome || "?"}`
@@ -463,6 +465,7 @@ export default function MinhasComissoes() {
                           if (itemStr !== "-") groupedReposicao[cliente].itens.push(itemStr);
                           groupedReposicao[cliente].quantidade += Number(c.quantidade_unidades || 0);
                           groupedReposicao[cliente].comissao += Number(c.valor_comissao || 0);
+                          groupedReposicao[cliente].total += Number((c.vendas as any)?.total || 0);
                           groupedReposicao[cliente].ids.push(c.id);
                         } else {
                           regularItems.push(c);
