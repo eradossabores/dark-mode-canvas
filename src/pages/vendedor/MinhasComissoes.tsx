@@ -390,6 +390,16 @@ export default function MinhasComissoes() {
                         const isReposicao = !c.is_primeira_automatic;
                         const cliente = (c.vendas as any)?.clientes?.nome || "-";
                         
+                        // User request: June (month 5 in JS Date) should only show Freezer, Freezer 04, Caique
+                        // if other progress is finished.
+                        // Assuming "progresso" relates to historical months or something similar.
+                        // But the direct request is to filter June list to these specific clients.
+                        const isJune = new Date(c.display_date).getMonth() === 5;
+                        const allowedJuneClients = ["FREEZER", "FREEZER 04", "CAIQUE"];
+                        if (isJune && !allowedJuneClients.some(name => cliente.toUpperCase().includes(name))) {
+                          return;
+                        }
+
                         if (isReposicao && cliente !== "-") {
                           if (!groupedReposicao[cliente]) {
                             groupedReposicao[cliente] = {
