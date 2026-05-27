@@ -673,14 +673,46 @@ export default function ContasAPagar() {
 
   const R = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-  const fixas = contasFiltradas.filter(c => c.tipo === "fixo");
-  const parceladas = contasFiltradas.filter(c => c.tipo === "parcelado");
-  const totalMensal = contasFiltradas.reduce((s, c) => s + c.valor_parcela, 0);
+  const targetMonth = filtroMes === "todos" ? null : parseInt(filtroMes);
+  const targetYear = filtroAno === "todos" ? null : parseInt(filtroAno);
+  const isViewingCurrentMonth = (targetMonth === null || targetMonth === new Date().getMonth()) && (targetYear === null || targetYear === new Date().getFullYear());
+
+  const contasProcessed = useMemo(() => {
+    return contasFiltradas.map(c => {
+      // Calculate payment status for the selected month
+      let isPaid = c.pago_mes;
+      if (!isViewingCurrentMonth && targetMonth !== null && targetYear !== null) {
+        isPaid = pagamentos.some(p => {
+          const pDate = new Date(p.data_pagamento);
+          return p.conta_id === c.id && pDate.getMonth() === targetMonth && pDate.getFullYear() === targetYear;
+        });
+      }
+
+      // Calculate installment number for the selected month
+      let parcelaDisplay = c.parcela_atual;
+      if (!isViewingCurrentMonth && targetMonth !== null && targetYear !== null && c.tipo === "parcelado") {
+        const now = new Date();
+        const targetDate = new Date(targetYear, targetMonth, 1);
+        const monthsDiff = (targetDate.getFullYear() - now.getFullYear()) * 12 + (targetDate.getMonth() - now.getMonth());
+        parcelaDisplay = Math.max(1, Math.min(c.total_parcelas, c.parcela_atual + monthsDiff));
+      }
+
+      return {
+        ...c,
+        isPaidInFilteredMonth: isPaid,
+        parcelaDisplayInFilteredMonth: parcelaDisplay
+      };
+    });
+  }, [contasFiltradas, isViewingCurrentMonth, targetMonth, targetYear, pagamentos]);
+
+  const fixas = contasProcessed.filter(c => c.tipo === "fixo");
+  const parceladas = contasProcessed.filter(c => c.tipo === "parcelado");
+  const totalMensal = contasProcessed.reduce((s, c) => s + c.valor_parcela, 0);
   const totalRestante = parceladas.reduce((s, c) => s + c.valor_restante, 0);
   const totalFixo = fixas.reduce((s, c) => s + c.valor_parcela, 0);
   const totalParcelado = parceladas.reduce((s, c) => s + c.valor_parcela, 0);
-  const contasPagas = contasFiltradas.filter(c => c.pago_mes).length;
-  const contasPendentes = contasFiltradas.filter(c => !c.pago_mes).length;
+  const contasPagas = contasProcessed.filter(c => c.isPaidInFilteredMonth).length;
+  const contasPendentes = contasProcessed.filter(c => !c.isPaidInFilteredMonth).length;
 
   // Historico for selected conta
   const historicoConta = useMemo(() => {
@@ -1268,13 +1300,13 @@ export default function ContasAPagar() {
                   <TabsTrigger value="abertas" className="flex items-center gap-2">
                     Em Aberto 
                     <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
-                      {parceladas.filter(c => !c.pago_mes).length}
+                      {parceladas.filter(c => !c.isPaidInFilteredMonth).length}
                     </Badge>
                   </TabsTrigger>
                   <TabsTrigger value="pagas" className="flex items-center gap-2">
                     Pagas (Mês)
                     <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
-                      {parceladas.filter(c => c.pago_mes).length}
+                      {parceladas.filter(c => c.isPaidInFilteredMonth).length}
                     </Badge>
                   </TabsTrigger>
                 </TabsList>
@@ -1298,34 +1330,17 @@ export default function ContasAPagar() {
                   </TableHeader>
                   <TableBody>
                     {parceladas
-                      .filter(c => activeTab === "abertas" ? !c.pago_mes : c.pago_mes)
+                      .filter(c => activeTab === "abertas" ? !c.isPaidInFilteredMonth : c.isPaidInFilteredMonth)
                       .map(c => {
                     const descParts = c.descricao.split(" — ");
-                    const targetMonth = filtroMes === "todos" ? null : parseInt(filtroMes);
-                    const targetYear = filtroAno === "todos" ? null : parseInt(filtroAno);
-                    const isViewingCurrentMonth = (targetMonth === null || targetMonth === new Date().getMonth()) && (targetYear === null || targetYear === new Date().getFullYear());
                     
-                    // Historical installment logic
-                    let currentParcelaDisplay = c.parcela_atual;
-                    if (!isViewingCurrentMonth && targetMonth !== null && targetYear !== null && c.tipo === "parcelado") {
-                      const createdDate = new Date(c.created_at || "");
-                      const targetDate = new Date(targetYear, targetMonth, 1);
-                      const monthsElapsed = (targetDate.getFullYear() - createdDate.getFullYear()) * 12 + (targetDate.getMonth() - createdDate.getMonth());
-                      currentParcelaDisplay = Math.min(c.total_parcelas, monthsElapsed + 1);
-                    }
+                    const currentParcelaDisplay = c.parcelaDisplayInFilteredMonth;
+                    const isPaidInSelectedMonth = c.isPaidInFilteredMonth;
 
                     const pct = c.total_parcelas > 0 ? Math.round((currentParcelaDisplay / c.total_parcelas) * 100) : 0;
                     const quaseQuitando = currentParcelaDisplay >= c.total_parcelas - 2 && currentParcelaDisplay < c.total_parcelas;
                     const quitado = currentParcelaDisplay >= c.total_parcelas;
                     
-                    // Check if paid in the selected month
-                    const isPaidInSelectedMonth = isViewingCurrentMonth 
-                      ? c.pago_mes 
-                      : pagamentos.some(p => {
-                          const pDate = new Date(p.data_pagamento);
-                          return p.conta_id === c.id && pDate.getMonth() === targetMonth && pDate.getFullYear() === targetYear;
-                        });
-
                     return (
                       <TableRow key={c.id} className={quitado ? "opacity-60" : ""}>
                         <TableCell className="font-medium">
