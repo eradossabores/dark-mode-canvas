@@ -164,12 +164,37 @@ export default function ContasAPagar() {
 
   const contasFiltradas = useMemo(() => {
     return contas.filter(c => {
+      const targetMonth = filtroMes === "todos" ? null : parseInt(filtroMes);
+      const targetYear = filtroAno === "todos" ? null : parseInt(filtroAno);
+
+      // Blacklist logic for June 2026 onwards
+      const isJune2026OrLater = (targetYear && targetYear > 2026) || (targetYear === 2026 && targetMonth !== null && targetMonth >= 5);
+      
+      if (isJune2026OrLater) {
+        const desc = (c.descricao || "").toUpperCase();
+        const resp = (c.responsavel || "").toUpperCase();
+        
+        const isSeladora1 = desc.includes("SELADORA 1") || resp.includes("SELADORA 1");
+        const isAndre = resp.includes("ANDRÉ") || desc.includes("ANDRÉ") || resp.includes("ANDRE") || desc.includes("ANDRE");
+        const isPorao = desc.includes("PORÃO") || resp.includes("PORÃO") || desc.includes("PORAO") || resp.includes("PORAO");
+        
+        // Specifically blacklist these as requested for June onwards
+        if (isSeladora1 || isAndre || isPorao) {
+          // Exceptions to keep for June: Freezer Lourdete, Freezer 04, Caique
+          const isFreezerLourdete = resp.includes("LOURDETE") && desc.includes("FREEZER");
+          const isFreezer04 = desc.includes("FREEZER 04");
+          const isCaique = resp.includes("CAIQUE") || desc.includes("CAIQUE");
+          
+          if (!isFreezerLourdete && !isFreezer04 && !isCaique) {
+            return false;
+          }
+        }
+      }
+
       if (busca.trim() && !c.descricao.toLowerCase().includes(busca.toLowerCase()) && !(c.responsavel || "").toLowerCase().includes(busca.toLowerCase())) return false;
       if (filtroTipo !== "todos" && c.tipo !== filtroTipo) return false;
       if (filtroCategoria !== "todos" && c.categoria !== filtroCategoria) return false;
       
-      const targetMonth = filtroMes === "todos" ? null : parseInt(filtroMes);
-      const targetYear = filtroAno === "todos" ? null : parseInt(filtroAno);
       const isViewingCurrentMonth = (targetMonth === null || targetMonth === new Date().getMonth()) && (targetYear === null || targetYear === new Date().getFullYear());
 
       // Status filter logic
@@ -268,11 +293,42 @@ export default function ContasAPagar() {
       const monthDate = new Date(currentYear, m, 1);
       const isCurrent = m === currentMonth;
       const isFuture = m > currentMonth;
+      const isJune2026OrLater = (currentYear > 2026) || (currentYear === 2026 && m >= 5);
       
-      const fixoTotal = contas.filter(c => c.tipo === "fixo").reduce((s, c) => s + c.valor_parcela, 0);
+      const fixoTotal = contas.filter(c => {
+        if (isJune2026OrLater) {
+          const desc = (c.descricao || "").toUpperCase();
+          const resp = (c.responsavel || "").toUpperCase();
+          const isSeladora1 = desc.includes("SELADORA 1") || resp.includes("SELADORA 1");
+          const isAndre = resp.includes("ANDRÉ") || desc.includes("ANDRÉ") || resp.includes("ANDRE") || desc.includes("ANDRE");
+          const isPorao = desc.includes("PORÃO") || resp.includes("PORÃO") || desc.includes("PORAO") || resp.includes("PORAO");
+          if (isSeladora1 || isAndre || isPorao) {
+            const isFreezerLourdete = resp.includes("LOURDETE") && desc.includes("FREEZER");
+            const isFreezer04 = desc.includes("FREEZER 04");
+            const isCaique = resp.includes("CAIQUE") || desc.includes("CAIQUE");
+            if (!isFreezerLourdete && !isFreezer04 && !isCaique) return false;
+          }
+        }
+        return c.tipo === "fixo";
+      }).reduce((s, c) => s + c.valor_parcela, 0);
       
       const parceladoTotal = contas.filter(c => {
         if (c.tipo !== "parcelado") return false;
+        
+        if (isJune2026OrLater) {
+          const desc = (c.descricao || "").toUpperCase();
+          const resp = (c.responsavel || "").toUpperCase();
+          const isSeladora1 = desc.includes("SELADORA 1") || resp.includes("SELADORA 1");
+          const isAndre = resp.includes("ANDRÉ") || desc.includes("ANDRÉ") || resp.includes("ANDRE") || desc.includes("ANDRE");
+          const isPorao = desc.includes("PORÃO") || resp.includes("PORÃO") || desc.includes("PORAO") || resp.includes("PORAO");
+          if (isSeladora1 || isAndre || isPorao) {
+            const isFreezerLourdete = resp.includes("LOURDETE") && desc.includes("FREEZER");
+            const isFreezer04 = desc.includes("FREEZER 04");
+            const isCaique = resp.includes("CAIQUE") || desc.includes("CAIQUE");
+            if (!isFreezerLourdete && !isFreezer04 && !isCaique) return false;
+          }
+        }
+
         const created = new Date(c.created_at || "");
         const createdMonth = startOfMonth(created);
         const thisMonth = startOfMonth(monthDate);
