@@ -425,34 +425,37 @@ export default function MinhasComissoes() {
                         const cDate = new Date(c.display_date);
                         const isSelectedMonth = cDate.getMonth() === mesFiltro;
                         
-                        // From June (month 5) onwards
-                        if (mesFiltro >= 5) {
-                          const n = cliente.toUpperCase();
-                          const itensStr = (c.vendas as any)?.venda_itens?.map((it: any) => it.sabores?.nome?.toUpperCase() || "").join(" ") || "";
-                          
-                          // Accounts that should NOT appear from June onwards
-                          const isSeladora1 = n.includes("SELADORA 1");
-                          const isEssenciaAndre = n.includes("ANDRÉ") && (itensStr.includes("ESSENCIA") || itensStr.includes("ESSÊNCIA"));
-                          const isSeladoraAndre = n.includes("ANDRÉ") && itensStr.includes("SELADORA");
-                          const isFreezerAndre = n.includes("ANDRÉ") && itensStr.includes("FREEZER") && !itensStr.includes("PORÃO");
-                          const isFreezerPorao = itensStr.includes("PORÃO") || n.includes("PORÃO");
+                        const n = cliente.toUpperCase();
+                        const itensStr = (c.vendas as any)?.venda_itens?.map((it: any) => it.sabores?.nome?.toUpperCase() || "").join(" ") || "";
+                        
+                        // Accounts that should NOT appear from June onwards
+                        const isSeladora1 = n.includes("SELADORA 1");
+                        const isEssenciaAndre = n.includes("ANDRÉ") && (itensStr.includes("ESSENCIA") || itensStr.includes("ESSÊNCIA"));
+                        const isSeladoraAndre = n.includes("ANDRÉ") && itensStr.includes("SELADORA");
+                        const isFreezerAndre = n.includes("ANDRÉ") && itensStr.includes("FREEZER") && !itensStr.includes("PORÃO");
+                        const isFreezerPorao = itensStr.includes("PORÃO") || n.includes("PORÃO");
 
+                        const isFreezerLourdete = n.includes("LOURDETE") && itensStr.includes("FREEZER");
+                        const isFreezer04 = n.includes("FREEZER 04") || itensStr.includes("FREEZER 04");
+                        const isCaique = n.includes("CAIQUE");
+
+                        if (mesFiltro >= 5) {
+                          // Hide blacklisted accounts from June onwards
                           if (isSeladora1 || isEssenciaAndre || isSeladoraAndre || isFreezerAndre || isFreezerPorao) {
                             return;
                           }
                           
-                          // If filtering exactly for June, also apply the positive filter
                           if (mesFiltro === 5) {
-                            const isFreezerLourdete = n.includes("LOURDETE") && itensStr.includes("FREEZER");
-                            const isFreezer04 = n.includes("FREEZER 04") || itensStr.includes("FREEZER 04");
-                            const isCaique = n.includes("CAIQUE");
-
+                            // In June, show ONLY the specifically requested accounts
                             if (!isFreezerLourdete && !isFreezer04 && !isCaique) {
                               return;
                             }
+                          } else {
+                            // From July onwards, show only the month's own sales (minus blacklist)
+                            if (!isSelectedMonth) return;
                           }
                         } else if (!isSelectedMonth) {
-                          // Default behavior for other months: only show that month
+                          // Default behavior for months before June: only show that month
                           return;
                         }
 
