@@ -268,7 +268,7 @@ export default function Vendas() {
       }
     }
 
-    let cQ = (supabase as any).from("clientes").select("id, nome").eq("status", "ativo").order("nome");
+    let cQ = (supabase as any).from("clientes").select("id, nome, preco_unidade_avista, preco_unidade_aprazo, limite_credito, saldo_devedor_atual, conversao_automatica_prazo").eq("status", "ativo").order("nome");
     let sQ = (supabase as any).from("sabores").select("*").eq("ativo", true).order("nome");
     let vQ = (supabase as any).from("vendas").select("*, clientes(nome)").order("created_at", { ascending: false }).limit(500);
     let viQ = (supabase as any).from("venda_itens").select("venda_id, quantidade");
