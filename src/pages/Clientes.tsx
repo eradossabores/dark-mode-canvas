@@ -323,6 +323,38 @@ export default function Clientes() {
             )}
             <div><Label>Preço Padrão Personalizado (R$)</Label><Input type="number" step="0.01" value={form.preco_padrao_personalizado} onChange={(e) => setForm({ ...form, preco_padrao_personalizado: e.target.value })} /></div>
 
+            {/* Configuração Financeira */}
+            <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
+              <h4 className="text-sm font-semibold">💰 Configuração Financeira</h4>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label>Preço por Unidade (À Vista) (R$)</Label>
+                  <Input type="number" step="0.01" placeholder="0,00" value={form.preco_unidade_avista} onChange={(e) => setForm({ ...form, preco_unidade_avista: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Preço por Unidade (A Prazo) (R$)</Label>
+                  <Input type="number" step="0.01" placeholder="2,05" value={form.preco_unidade_aprazo} onChange={(e) => setForm({ ...form, preco_unidade_aprazo: e.target.value })} />
+                </div>
+              </div>
+              <div>
+                <Label>Limite de Crédito (R$)</Label>
+                <Input type="number" step="0.01" placeholder="0,00" value={form.limite_credito} onChange={(e) => setForm({ ...form, limite_credito: e.target.value })} />
+              </div>
+              {editingId && (
+                <div className="flex items-center justify-between rounded-md border bg-background p-2 text-xs">
+                  <span className="text-muted-foreground">Saldo Devedor Atual:</span>
+                  <span className="font-semibold">R$ {Number((clientes.find((x) => x.id === editingId) as any)?.saldo_devedor_atual || 0).toFixed(2)}</span>
+                </div>
+              )}
+              <div className="flex items-start gap-3 pt-1">
+                <Switch checked={form.conversao_automatica_prazo} onCheckedChange={(v) => setForm({ ...form, conversao_automatica_prazo: v })} />
+                <div>
+                  <Label className="text-sm">Aplicar conversão automática para A Prazo após vencimento</Label>
+                  <p className="text-xs text-muted-foreground">Vendas À Vista não quitadas em 3 dias serão recalculadas pelo preço A Prazo.</p>
+                </div>
+              </div>
+            </div>
+
             {/* Gelo em Cubos - Preço por cliente */}
             {vendeGeloCubo && (
               <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
