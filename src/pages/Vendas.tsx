@@ -268,7 +268,7 @@ export default function Vendas() {
       }
     }
 
-    let cQ = (supabase as any).from("clientes").select("id, nome").eq("status", "ativo").order("nome");
+    let cQ = (supabase as any).from("clientes").select("id, nome, preco_unidade_avista, preco_unidade_aprazo, limite_credito, saldo_devedor_atual, conversao_automatica_prazo").eq("status", "ativo").order("nome");
     let sQ = (supabase as any).from("sabores").select("*").eq("ativo", true).order("nome");
     let vQ = (supabase as any).from("vendas").select("*, clientes(nome)").order("created_at", { ascending: false }).limit(500);
     let viQ = (supabase as any).from("venda_itens").select("venda_id, quantidade");
@@ -340,10 +340,23 @@ export default function Vendas() {
       return s + qty;
     }, 0);
     const updated = [...currentItens];
+    // 🆕 Preço por cliente conforme forma de pagamento (À Vista / A Prazo)
+    const cli = clientes.find((c) => c.id === cId);
+    const isAPrazo = formaPagamento === "fiado";
+    const precoCliente = cli
+      ? (isAPrazo
+          ? (cli.preco_unidade_aprazo != null ? Number(cli.preco_unidade_aprazo) : null)
+          : (cli.preco_unidade_avista != null ? Number(cli.preco_unidade_avista) : null))
+      : null;
     for (let i = 0; i < updated.length; i++) {
       if (updated[i].sabor_id && updated[i].quantidade > 0) {
-        const preco = await fetchPreco(cId, updated[i].sabor_id, totalQtd);
-        if (preco !== null) { updated[i].preco_unitario = preco.toFixed(2); updated[i].preco_auto = true; }
+        if (precoCliente != null && precoCliente > 0) {
+          updated[i].preco_unitario = precoCliente.toFixed(2);
+          updated[i].preco_auto = true;
+        } else {
+          const preco = await fetchPreco(cId, updated[i].sabor_id, totalQtd);
+          if (preco !== null) { updated[i].preco_unitario = preco.toFixed(2); updated[i].preco_auto = true; }
+        }
       }
     }
     setItens(updated);
@@ -384,6 +397,14 @@ export default function Vendas() {
       } catch { /* ignore */ }
     }
   }
+
+  // 🆕 Recalcular ao alternar forma de pagamento (À Vista ↔ A Prazo)
+  useEffect(() => {
+    if (clienteId && itens.length > 0) {
+      recalcPrecosTotalComanda(itens, clienteId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formaPagamento]);
 
   async function handleSubmit() {
     let itensValidos = itens.filter(i => i.sabor_id && i.quantidade > 0).map(i => ({
@@ -483,6 +504,14 @@ export default function Vendas() {
         const vEsp = detalhePgto === "especie" ? totalVendaCalc : detalhePgto === "misto" ? (parseFloat(detalheEspecie.replace(",", ".")) || 0) : 0;
         const updateData: any = { forma_pagamento: formaPagamento, status: statusVenda, valor_pix: vPix, valor_especie: vEsp, total: totalVendaCalc, valor_frete: freteTotal, frete_pago_por: fretePagoPor };
         if (numeroNf.trim()) updateData.numero_nf = numeroNf.trim();
+        // 🆕 Tipo de pagamento, vencimento e preço unitário usado
+        updateData.forma_pagamento_tipo = formaPagamento === "fiado" ? "aprazo" : "avista";
+        updateData.valor_original = totalVendaCalc;
+        const precoUnitUsado = itensValidos.find((i) => Number(i.preco_unitario) > 0);
+        if (precoUnitUsado) updateData.preco_unitario_usado = Number(precoUnitUsado.preco_unitario);
+        if (formaPagamento === "fiado" || formaPagamento === "boleto" || formaPagamento === "parcelado") {
+          updateData.data_vencimento = vencimentoStr;
+        }
         await (supabase as any).from("vendas").update(updateData).eq("id", vendaId);
 
         // Save gelo cubo items and deduct stock

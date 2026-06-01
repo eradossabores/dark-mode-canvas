@@ -22,6 +22,10 @@ const emptyForm = {
   estado: "RR", cep: "", cpf_cnpj: "", possui_freezer: false,
   freezer_identificacao: "", preco_padrao_personalizado: "", observacoes: "",
   latitude: "", longitude: "",
+  preco_unidade_avista: "",
+  preco_unidade_aprazo: "2.05",
+  limite_credito: "",
+  conversao_automatica_prazo: false,
 };
 
 const TAMANHOS_CUBO = ["2kg", "3kg", "4kg", "5kg"] as const;
@@ -112,6 +116,10 @@ export default function Clientes() {
       observacoes: c.observacoes || "",
       latitude: c.latitude != null ? String(c.latitude) : "",
       longitude: c.longitude != null ? String(c.longitude) : "",
+      preco_unidade_avista: c.preco_unidade_avista != null ? String(c.preco_unidade_avista) : "",
+      preco_unidade_aprazo: c.preco_unidade_aprazo != null ? String(c.preco_unidade_aprazo) : "2.05",
+      limite_credito: c.limite_credito != null ? String(c.limite_credito) : "",
+      conversao_automatica_prazo: !!c.conversao_automatica_prazo,
     });
 
     // Load client cube prices
@@ -141,6 +149,9 @@ export default function Clientes() {
       if (!payload.cpf_cnpj) payload.cpf_cnpj = null;
       payload.latitude = payload.latitude ? Number(payload.latitude) : null;
       payload.longitude = payload.longitude ? Number(payload.longitude) : null;
+      payload.preco_unidade_avista = payload.preco_unidade_avista ? Number(String(payload.preco_unidade_avista).replace(",", ".")) : null;
+      payload.preco_unidade_aprazo = payload.preco_unidade_aprazo ? Number(String(payload.preco_unidade_aprazo).replace(",", ".")) : 2.05;
+      payload.limite_credito = payload.limite_credito ? Number(String(payload.limite_credito).replace(",", ".")) : 0;
 
       if (hasAddressForGeocoding(payload)) {
         const coords = await geocodeClienteAddress(payload);
@@ -311,6 +322,38 @@ export default function Clientes() {
               <div><Label>ID do Freezer</Label><Input value={form.freezer_identificacao} onChange={(e) => setForm({ ...form, freezer_identificacao: e.target.value })} /></div>
             )}
             <div><Label>Preço Padrão Personalizado (R$)</Label><Input type="number" step="0.01" value={form.preco_padrao_personalizado} onChange={(e) => setForm({ ...form, preco_padrao_personalizado: e.target.value })} /></div>
+
+            {/* Configuração Financeira */}
+            <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
+              <h4 className="text-sm font-semibold">💰 Configuração Financeira</h4>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label>Preço por Unidade (À Vista) (R$)</Label>
+                  <Input type="number" step="0.01" placeholder="0,00" value={form.preco_unidade_avista} onChange={(e) => setForm({ ...form, preco_unidade_avista: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Preço por Unidade (A Prazo) (R$)</Label>
+                  <Input type="number" step="0.01" placeholder="2,05" value={form.preco_unidade_aprazo} onChange={(e) => setForm({ ...form, preco_unidade_aprazo: e.target.value })} />
+                </div>
+              </div>
+              <div>
+                <Label>Limite de Crédito (R$)</Label>
+                <Input type="number" step="0.01" placeholder="0,00" value={form.limite_credito} onChange={(e) => setForm({ ...form, limite_credito: e.target.value })} />
+              </div>
+              {editingId && (
+                <div className="flex items-center justify-between rounded-md border bg-background p-2 text-xs">
+                  <span className="text-muted-foreground">Saldo Devedor Atual:</span>
+                  <span className="font-semibold">R$ {Number((clientes.find((x) => x.id === editingId) as any)?.saldo_devedor_atual || 0).toFixed(2)}</span>
+                </div>
+              )}
+              <div className="flex items-start gap-3 pt-1">
+                <Switch checked={form.conversao_automatica_prazo} onCheckedChange={(v) => setForm({ ...form, conversao_automatica_prazo: v })} />
+                <div>
+                  <Label className="text-sm">Aplicar conversão automática para A Prazo após vencimento</Label>
+                  <p className="text-xs text-muted-foreground">Vendas À Vista não quitadas em 3 dias serão recalculadas pelo preço A Prazo.</p>
+                </div>
+              </div>
+            </div>
 
             {/* Gelo em Cubos - Preço por cliente */}
             {vendeGeloCubo && (

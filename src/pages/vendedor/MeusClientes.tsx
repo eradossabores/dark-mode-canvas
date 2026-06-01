@@ -30,6 +30,8 @@ const emptyForm = {
   nome: "", telefone: "", email: "", endereco: "", bairro: "", cidade: "",
   estado: "RR", cep: "", cpf_cnpj: "", possui_freezer: false,
   freezer_identificacao: "", preco_padrao_personalizado: "", observacoes: "",
+  preco_unidade_avista: "", preco_unidade_aprazo: "2.05",
+  limite_credito: "", conversao_automatica_prazo: false,
 };
 
  export default function MeusClientes() {
@@ -105,6 +107,10 @@ const emptyForm = {
       freezer_identificacao: src.freezer_identificacao || "",
       preco_padrao_personalizado: src.preco_padrao_personalizado ? String(src.preco_padrao_personalizado) : "",
       observacoes: src.observacoes || "",
+      preco_unidade_avista: src.preco_unidade_avista != null ? String(src.preco_unidade_avista) : "",
+      preco_unidade_aprazo: src.preco_unidade_aprazo != null ? String(src.preco_unidade_aprazo) : "2.05",
+      limite_credito: src.limite_credito != null ? String(src.limite_credito) : "",
+      conversao_automatica_prazo: !!src.conversao_automatica_prazo,
     });
     if (vendeGeloCubo) {
       const { data: cuboPrecos } = await (supabase as any)
@@ -128,6 +134,9 @@ const emptyForm = {
       if (!payload.preco_padrao_personalizado) payload.preco_padrao_personalizado = null;
       else payload.preco_padrao_personalizado = Number(payload.preco_padrao_personalizado);
       if (!payload.cpf_cnpj) payload.cpf_cnpj = null;
+      payload.preco_unidade_avista = payload.preco_unidade_avista ? Number(String(payload.preco_unidade_avista).replace(",", ".")) : null;
+      payload.preco_unidade_aprazo = payload.preco_unidade_aprazo ? Number(String(payload.preco_unidade_aprazo).replace(",", ".")) : 2.05;
+      payload.limite_credito = payload.limite_credito ? Number(String(payload.limite_credito).replace(",", ".")) : 0;
 
       // Geocodificação automática
       if (hasAddressForGeocoding(payload)) {
@@ -243,6 +252,22 @@ const emptyForm = {
                 <div><Label>ID do Freezer</Label><Input value={form.freezer_identificacao} onChange={(e) => setForm({ ...form, freezer_identificacao: e.target.value })} /></div>
               )}
               <div><Label>Preço Padrão Personalizado (R$)</Label><Input type="number" step="0.01" value={form.preco_padrao_personalizado} onChange={(e) => setForm({ ...form, preco_padrao_personalizado: e.target.value })} /></div>
+
+              <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
+                <h4 className="text-sm font-semibold">💰 Configuração Financeira</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <div><Label>Preço À Vista (R$)</Label><Input type="number" step="0.01" placeholder="0,00" value={form.preco_unidade_avista} onChange={(e) => setForm({ ...form, preco_unidade_avista: e.target.value })} /></div>
+                  <div><Label>Preço A Prazo (R$)</Label><Input type="number" step="0.01" placeholder="2,05" value={form.preco_unidade_aprazo} onChange={(e) => setForm({ ...form, preco_unidade_aprazo: e.target.value })} /></div>
+                </div>
+                <div><Label>Limite de Crédito (R$)</Label><Input type="number" step="0.01" placeholder="0,00" value={form.limite_credito} onChange={(e) => setForm({ ...form, limite_credito: e.target.value })} /></div>
+                <div className="flex items-start gap-3">
+                  <Switch checked={form.conversao_automatica_prazo} onCheckedChange={(v) => setForm({ ...form, conversao_automatica_prazo: v })} />
+                  <div>
+                    <Label className="text-sm">Conversão automática A Prazo após vencimento</Label>
+                    <p className="text-xs text-muted-foreground">Vendas À Vista não quitadas em 3 dias passam para A Prazo.</p>
+                  </div>
+                </div>
+              </div>
 
               {vendeGeloCubo && (
                 <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
