@@ -340,10 +340,23 @@ export default function Vendas() {
       return s + qty;
     }, 0);
     const updated = [...currentItens];
+    // 🆕 Preço por cliente conforme forma de pagamento (À Vista / A Prazo)
+    const cli = clientes.find((c) => c.id === cId);
+    const isAPrazo = formaPagamento === "fiado";
+    const precoCliente = cli
+      ? (isAPrazo
+          ? (cli.preco_unidade_aprazo != null ? Number(cli.preco_unidade_aprazo) : null)
+          : (cli.preco_unidade_avista != null ? Number(cli.preco_unidade_avista) : null))
+      : null;
     for (let i = 0; i < updated.length; i++) {
       if (updated[i].sabor_id && updated[i].quantidade > 0) {
-        const preco = await fetchPreco(cId, updated[i].sabor_id, totalQtd);
-        if (preco !== null) { updated[i].preco_unitario = preco.toFixed(2); updated[i].preco_auto = true; }
+        if (precoCliente != null && precoCliente > 0) {
+          updated[i].preco_unitario = precoCliente.toFixed(2);
+          updated[i].preco_auto = true;
+        } else {
+          const preco = await fetchPreco(cId, updated[i].sabor_id, totalQtd);
+          if (preco !== null) { updated[i].preco_unitario = preco.toFixed(2); updated[i].preco_auto = true; }
+        }
       }
     }
     setItens(updated);
