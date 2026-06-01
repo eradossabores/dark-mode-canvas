@@ -2846,6 +2846,8 @@ export type Database = {
           created_at: string
           data_conversao: string | null
           data_vencimento: string | null
+          entregue_em: string | null
+          entregue_por: string | null
           enviado_producao: boolean
           factory_id: string | null
           forma_pagamento: string
@@ -2856,8 +2858,11 @@ export type Database = {
           numero_pedido: number | null
           observacoes: string | null
           operador: string
+          pagamento_confirmado_em: string | null
+          pagamento_confirmado_por: string | null
           preco_unitario_usado: number | null
           status: Database["public"]["Enums"]["status_venda"]
+          status_entrega: string
           total: number
           updated_at: string
           valor_especie: number
@@ -2872,6 +2877,8 @@ export type Database = {
           created_at?: string
           data_conversao?: string | null
           data_vencimento?: string | null
+          entregue_em?: string | null
+          entregue_por?: string | null
           enviado_producao?: boolean
           factory_id?: string | null
           forma_pagamento?: string
@@ -2882,8 +2889,11 @@ export type Database = {
           numero_pedido?: number | null
           observacoes?: string | null
           operador?: string
+          pagamento_confirmado_em?: string | null
+          pagamento_confirmado_por?: string | null
           preco_unitario_usado?: number | null
           status?: Database["public"]["Enums"]["status_venda"]
+          status_entrega?: string
           total?: number
           updated_at?: string
           valor_especie?: number
@@ -2898,6 +2908,8 @@ export type Database = {
           created_at?: string
           data_conversao?: string | null
           data_vencimento?: string | null
+          entregue_em?: string | null
+          entregue_por?: string | null
           enviado_producao?: boolean
           factory_id?: string | null
           forma_pagamento?: string
@@ -2908,8 +2920,11 @@ export type Database = {
           numero_pedido?: number | null
           observacoes?: string | null
           operador?: string
+          pagamento_confirmado_em?: string | null
+          pagamento_confirmado_por?: string | null
           preco_unitario_usado?: number | null
           status?: Database["public"]["Enums"]["status_venda"]
+          status_entrega?: string
           total?: number
           updated_at?: string
           valor_especie?: number
@@ -3068,6 +3083,15 @@ export type Database = {
       cliente_pertence_ao_vendedor: {
         Args: { _cliente_id: string; _user_id: string }
         Returns: boolean
+      }
+      confirmar_entrega_venda: {
+        Args: {
+          p_forma_pagamento?: string
+          p_operador: string
+          p_pago: boolean
+          p_venda_id: string
+        }
+        Returns: Json
       }
       get_user_factory_id: { Args: { _user_id: string }; Returns: string }
       get_user_role: {

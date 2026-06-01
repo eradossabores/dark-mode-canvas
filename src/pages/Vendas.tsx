@@ -24,6 +24,7 @@ import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Plus, Trash2, ShoppingCart, Pencil, Eye, CalendarIcon, X, Truck, Package, History, CalendarClock, Receipt, CopyPlus, Sparkles, Repeat } from "lucide-react";
 import ReciboVenda from "@/components/vendas/ReciboVenda";
+import ConfirmarEntregaDialog from "@/components/vendas/ConfirmarEntregaDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ToastAction } from "@/components/ui/toast";
 
@@ -58,6 +59,7 @@ export default function Vendas() {
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [prodDialog, setProdDialog] = useState<{ venda: any; tipo: "entrega" | "retirada" } | null>(null);
+  const [entregaVenda, setEntregaVenda] = useState<any | null>(null);
   const [prodHora, setProdHora] = useState("");
   const [prodEmbalagem, setProdEmbalagem] = useState("1 saco");
 
@@ -270,7 +272,7 @@ export default function Vendas() {
 
     let cQ = (supabase as any).from("clientes").select("id, nome, preco_unidade_avista, preco_unidade_aprazo, limite_credito, saldo_devedor_atual, conversao_automatica_prazo").eq("status", "ativo").order("nome");
     let sQ = (supabase as any).from("sabores").select("*").eq("ativo", true).order("nome");
-    let vQ = (supabase as any).from("vendas").select("*, clientes(nome)").order("created_at", { ascending: false }).limit(500);
+    let vQ = (supabase as any).from("vendas").select("*, clientes(nome, preco_unidade_aprazo)").order("created_at", { ascending: false }).limit(500);
     let viQ = (supabase as any).from("venda_itens").select("venda_id, quantidade");
     let ppQ = (supabase as any).from("pedidos_producao").select("venda_id, status, tipo_pedido").not("venda_id", "is", null);
     if (factoryId) { cQ = cQ.eq("factory_id", factoryId); sQ = sQ.eq("factory_id", factoryId); vQ = vQ.eq("factory_id", factoryId); viQ = viQ.eq("factory_id", factoryId); ppQ = ppQ.eq("factory_id", factoryId); }
@@ -1946,6 +1948,11 @@ export default function Vendas() {
                     )}
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { setHistoricoVenda(v); loadHistorico(v.id); }}><History className="h-4 w-4" /></Button>
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openDetailDialog(v)}><Eye className="h-4 w-4" /></Button>
+                    {v.status !== "cancelada" && (!v.status_entrega || v.status_entrega === "aguardando_entrega") && (
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-emerald-600" onClick={() => setEntregaVenda(v)}>
+                        <Truck className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openRecibo(v)}><Receipt className="h-4 w-4 text-emerald-600" /></Button>
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => duplicarVenda(v)}><CopyPlus className="h-4 w-4 text-blue-600" /></Button>
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEditDialog(v)}><Pencil className="h-4 w-4" /></Button>
@@ -2039,6 +2046,23 @@ export default function Vendas() {
                             }`}>
                               {v.pedido_status === "enviado" ? "Entregue" : v.pedido_status === "retirado" ? "Retirado" : "No Monitor"}
                             </Badge>
+                          )}
+                          {v.status_entrega === "entregue_pago" && (
+                            <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-300 text-[10px] mr-1">✅ Paga na Entrega</Badge>
+                          )}
+                          {v.status_entrega === "convertida_prazo" && (
+                            <Badge className="bg-amber-500/15 text-amber-700 border-amber-300 text-[10px] mr-1">🔁 Convertida A Prazo</Badge>
+                          )}
+                          {v.status !== "cancelada" && (!v.status_entrega || v.status_entrega === "aguardando_entrega") && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="icon" variant="ghost" className="h-8 w-8 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950"
+                                  onClick={() => setEntregaVenda({ ...v, totalUnidades: v.totalUnidades })}>
+                                  <Truck className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Confirmar Entrega / Pagamento</TooltipContent>
+                            </Tooltip>
                           )}
                         </TooltipProvider>
                         <Button size="icon" variant="ghost" onClick={() => { setHistoricoVenda(v); loadHistorico(v.id); }}><History className="h-4 w-4" /></Button>
@@ -2181,6 +2205,11 @@ export default function Vendas() {
         </DialogContent>
       </Dialog>
       <ReciboVenda open={reciboOpen} onOpenChange={setReciboOpen} data={reciboData} />
+      <ConfirmarEntregaDialog
+        venda={entregaVenda}
+        onClose={() => setEntregaVenda(null)}
+        onConfirmed={() => loadData()}
+      />
     </div>
   );
 }
