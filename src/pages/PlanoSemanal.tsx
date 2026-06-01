@@ -573,7 +573,7 @@ export default function PlanoSemanal() {
     const PAGE_H = 297;
     const MARGIN = 14;
     const CONTENT_W = PAGE_W - MARGIN * 2;
-    const displayName = factoryName || "ICETECH";
+    const displayName = factoryName || "MACUXI ICE";
     const useLogo = branding?.logoUrl || null;
 
     // ── Load logo ──
@@ -726,7 +726,7 @@ export default function PlanoSemanal() {
           }).join("\n");
           return `*${dia.label} ${diaDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}*\n${items}`;
         }).join("\n\n") +
-        `\n\n_${factoryName || "ICETECH"} - Sistema de Gestão_`
+        `\n\n_${factoryName || "MACUXI ICE"} - Sistema de Gestão_`
       );
       window.open(`https://wa.me/?text=${texto}`, "_blank");
     }
