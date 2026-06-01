@@ -305,7 +305,7 @@ export default function MonitorUsuarios() {
     const date = format(new Date(), "dd/MM/yyyy HH:mm");
 
     doc.setFontSize(16);
-    doc.text("ICETECH — Relatório de Uso", 14, 18);
+    doc.text("MACUXI ICE — Relatório de Uso", 14, 18);
     doc.setFontSize(10);
     doc.text(`Período: últimos ${period} dias | Gerado em: ${date}`, 14, 26);
 
