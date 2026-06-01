@@ -1,92 +1,53 @@
-## Funcionalidade: Preço à Vista, Preço a Prazo e Conversão Automática
+# Plano: Pagamento no Ato da Entrega
 
-Vou implementar uma gestão financeira completa de preços por cliente, com suporte a venda à vista/a prazo, conversão automática após vencimento, contas a receber, alertas e relatórios.
+Reaproveita a infraestrutura já criada (`preco_unidade_avista`, `preco_unidade_aprazo`, `forma_pagamento_tipo`, `convertida_automaticamente`, `alertas_financeiros`, recálculo de saldo) e adiciona o fluxo de **confirmação de entrega com pagamento**.
 
----
+## 1. Banco de dados (migração)
 
-### 1. Banco de Dados (migração)
+Tabela `vendas`:
+- `status_entrega` text default `'aguardando_entrega'` — valores: `aguardando_entrega`, `entregue_pago`, `entregue_nao_pago`, `convertida_prazo`
+- `entregue_em` timestamptz
+- `entregue_por` text
+- `pagamento_confirmado_em` timestamptz
+- `pagamento_confirmado_por` text
 
-**Tabela `clientes` — novos campos:**
-- `preco_unidade_avista` (numeric) — preenchido pelo usuário
-- `preco_unidade_aprazo` (numeric, default 2.05) — padrão R$ 2,05 alterável
-- `limite_credito` (numeric, default 0)
-- `saldo_devedor_atual` (numeric, default 0) — recalculado por trigger
-- `status_financeiro` (text: 'adimplente' | 'inadimplente', default 'adimplente')
-- `conversao_automatica_prazo` (boolean, default false)
+Função `confirmar_entrega_venda(p_venda_id uuid, p_pago boolean, p_operador text, p_forma_pagamento text)`:
+- Se `p_pago = true`: marca `status_entrega = entregue_pago`, cria abatimento total em `abatimentos_historico` com a `forma_pagamento`, registra auditoria. Não cria conta a receber (já está quitada via abatimento).
+- Se `p_pago = false`: recalcula `total` e `venda_itens` usando `preco_unidade_aprazo` do cliente (fallback 2,05), seta `forma_pagamento_tipo = aprazo`, `convertida_automaticamente = true`, `data_conversao = now()`, `valor_original = total antigo`, `status_entrega = convertida_prazo`, `data_vencimento = CURRENT_DATE + 7`. Insere alerta `convertida_entrega` e auditoria. O trigger existente recalcula o saldo devedor.
 
-**Tabela `vendas` — novos campos:**
-- `forma_pagamento_tipo` (text: 'avista' | 'aprazo', default 'avista')
-- `data_vencimento` (date)
-- `convertida_automaticamente` (boolean, default false)
-- `data_conversao` (timestamptz)
-- `valor_original` (numeric) — preserva valor antes da conversão
-- `preco_unitario_usado` (numeric) — preço congelado no momento da venda
+Função `realizar_venda` (alteração): nova venda nasce com `forma_pagamento_tipo = 'avista'`, `status_entrega = 'aguardando_entrega'` e usa `preco_unidade_avista` do cliente quando disponível (mantém o `calcular_preco` como fallback).
 
-**Tabela `clientes_alertas_financeiros` (nova):**
-- `cliente_id`, `venda_id`, `tipo` ('vence_hoje'|'vencida_1d'|'vencida_2d'|'convertida'|'acima_limite'), `mensagem`, `lida`, `created_at`
+## 2. Frontend
 
-**Funções/triggers:**
-- `recalcular_saldo_devedor(cliente_id)` — recomputa saldo e status
-- Trigger em `vendas` e `abatimentos_historico` para atualizar saldo
-- Função `converter_vendas_avista_atrasadas()` — roda diariamente via pg_cron
-- Auditoria em triggers para alterações de preço e conversões
+**Cadastro de Cliente** (`Clientes.tsx`): a seção "Configuração Financeira" já existe; renomear os labels para "Preço por Unidade (Pagamento na Entrega)" e "Preço por Unidade (A Prazo)". Remover o toggle "Conversão automática após 3 dias" (substituído pelo fluxo de entrega). Mostrar Saldo Devedor, Limite e Status Financeiro (já presentes).
 
----
+**Nova Venda / Finalização** (`Vendas.tsx`, `NovoPedido.tsx`): default = "Pagamento na Entrega"; preço unitário usa `preco_unidade_avista`. Remover o toggle À Vista/A Prazo manual (a conversão acontece via confirmação de entrega).
 
-### 2. Backend — Cron diário
+**Histórico de Pedidos / Monitor** (`HistoricoPedidos.tsx`): nova coluna **Status de Entrega** com badge colorido. Botão **"Confirmar Entrega"** abre `AlertDialog` com duas opções: *Pagamento Recebido* (com select PIX/Espécie/Misto) ou *Pagamento Não Recebido (Converter para A Prazo)*. Chama a função `confirmar_entrega_venda` via RPC.
 
-Edge function `converter-vendas-atrasadas` agendada via `pg_cron`:
-- Busca vendas à vista com >3 dias e cliente com `conversao_automatica_prazo = true`
-- Converte para "aprazo", recalcula com `preco_unidade_aprazo`, gera alerta e registra auditoria
-- Gera alertas diários (vence hoje, vencida 1d/2d)
+**A Receber** (`AReceber.tsx`): já existente; passa a listar automaticamente as vendas convertidas. Badge "Convertida na entrega" quando `convertida_automaticamente = true`.
 
----
+**Dashboard** (`Dashboard.tsx`): novos KPIs — *Entregues hoje*, *Pagas na entrega (hoje)*, *Convertidas para prazo (hoje)*, *Total a Receber*, *Inadimplentes*, *Valor em aberto*.
 
-### 3. Frontend
+**Relatórios** (`Relatorios.tsx`): novas abas — Pagas na Entrega, Convertidas para Prazo, Inadimplentes, Histórico Financeiro por Cliente (filtro de período).
 
-**Cadastro de Cliente (`MeusClientes.tsx`, `Clientes.tsx`):**
-- Nova seção "Configuração Financeira" com os 6 novos campos
-- Preço a prazo pré-preenchido com 2.05
-- Checkbox conversão automática (desmarcado por padrão)
+## 3. Auditoria
 
-**Nova Venda (`Vendas.tsx`, `NovoPedido.tsx`):**
-- Toggle "À Vista / A Prazo"
-- Recalcula total ao alternar
-- Mostra preço aplicado visivelmente
-- Se "A Prazo": cria parcela automática em contas a receber
+`confirmar_entrega_venda` grava em `auditoria` com `modulo='vendas'`, `acao='confirmar_entrega'` ou `'converter_entrega_prazo'`, contendo operador, valores e ID do cliente.
 
-**Contas a Receber (`AReceber.tsx`):**
-- Coluna valor original vs atualizado
-- Dias em atraso, badge convertida automaticamente
-- Filtros por status, forma de pagamento
+## 4. Cron antigo
 
-**Dashboard:**
-- Novos cards: vendido hoje à vista, a prazo, total a receber, vencido, qtd inadimplentes, qtd convertidas, previsão recebimento
-- Widget de alertas financeiros
+A função `processar_conversoes_e_alertas_diarios` é mantida apenas para emitir alertas de vencimento. A regra de conversão automática "3 dias" é desligada (passamos a converter no momento da entrega).
 
-**Relatórios (`Relatorios.tsx`):**
-- Novos relatórios: vendas à vista, a prazo, inadimplentes, conversões, maior saldo devedor
-- Filtros: cliente, período, forma pagamento, status financeiro
+## Arquivos a editar
+- `src/pages/Clientes.tsx`
+- `src/pages/Vendas.tsx`, `src/pages/NovoPedido.tsx`
+- `src/pages/HistoricoPedidos.tsx` (botão Confirmar Entrega)
+- `src/pages/AReceber.tsx`
+- `src/pages/Dashboard.tsx`
+- `src/pages/Relatorios.tsx`
 
-**Auditoria:**
-- Logar alterações de preço, ativação/desativação conversão, conversões automáticas, pagamentos (módulo `auditoria` já existe)
+## Arquivos novos
+- `src/components/vendas/ConfirmarEntregaDialog.tsx`
 
----
-
-### Detalhes técnicos
-
-- Cron: `pg_cron` + `pg_net` chamando edge function diária às 03:00 BRT (06:00 UTC)
-- Preço congelado: `venda_itens.preco_unitario` já existe; adiciono `vendas.preco_unitario_usado` para referência rápida
-- RLS: todas tabelas novas com policy `factory_id = get_user_factory_id(auth.uid())`
-- Migração de dados: para vendas existentes `forma_pagamento_tipo = 'avista'`, `valor_original = total`
-
----
-
-### Escopo de arquivos
-
-- 1 migração SQL (schema + triggers + cron)
-- 1 edge function nova (`converter-vendas-atrasadas`)
-- Edit: `Clientes.tsx`, `vendedor/MeusClientes.tsx`, `Vendas.tsx`, `vendedor/NovoPedido.tsx`, `AReceber.tsx`, `Dashboard.tsx`, `Relatorios.tsx`
-- Novo: `components/dashboard/AlertasFinanceiros.tsx`, `components/relatorios/RelatorioAVistaAPrazo.tsx`
-
-Posso prosseguir com a migração e implementação?
+Confirma para eu rodar a migração e implementar o frontend?
