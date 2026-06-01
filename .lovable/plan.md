@@ -1,129 +1,92 @@
-## Sistema de Compras, Estoque e Produção com Rastreabilidade de Lotes
+## Funcionalidade: Preço à Vista, Preço a Prazo e Conversão Automática
 
-Vou estender os módulos existentes (Compras, Estoque e Produção) para suportar **rastreabilidade completa por lote**, com datas de fabricação/vencimento, alertas automáticos e relatórios detalhados.
-
-### Visão geral
-
-O projeto já possui:
-- `compras` (registra compras de matérias-primas e embalagens)
-- `materias_primas` / `embalagens` (estoque atual)
-- `producoes` + `sabor_receita` (consome matérias-primas e produz gelo)
-- `movimentacoes_estoque` (histórico)
-
-O que **falta** e será criado: **camada de lotes** (batches) ligando compras → estoque → produção, com validade.
+Vou implementar uma gestão financeira completa de preços por cliente, com suporte a venda à vista/a prazo, conversão automática após vencimento, contas a receber, alertas e relatórios.
 
 ---
 
-### 1. Banco de Dados (novas tabelas)
+### 1. Banco de Dados (migração)
 
-**`lotes_estoque`** — um lote por compra/item
-- `item_tipo` ('materia_prima' | 'embalagem')
-- `item_id`
-- `numero_lote` (alfanumérico, único por fábrica/item)
-- `compra_id` (origem)
-- `fornecedor_id`
-- `quantidade_inicial`, `quantidade_atual`
-- `data_fabricacao`, `data_vencimento`
-- `custo_unitario`
-- `factory_id`, `created_at`
+**Tabela `clientes` — novos campos:**
+- `preco_unidade_avista` (numeric) — preenchido pelo usuário
+- `preco_unidade_aprazo` (numeric, default 2.05) — padrão R$ 2,05 alterável
+- `limite_credito` (numeric, default 0)
+- `saldo_devedor_atual` (numeric, default 0) — recalculado por trigger
+- `status_financeiro` (text: 'adimplente' | 'inadimplente', default 'adimplente')
+- `conversao_automatica_prazo` (boolean, default false)
 
-**`producao_lotes_consumidos`** — rastreabilidade reversa
-- `producao_id`
-- `lote_id` (FK lotes_estoque)
-- `quantidade_usada`
+**Tabela `vendas` — novos campos:**
+- `forma_pagamento_tipo` (text: 'avista' | 'aprazo', default 'avista')
+- `data_vencimento` (date)
+- `convertida_automaticamente` (boolean, default false)
+- `data_conversao` (timestamptz)
+- `valor_original` (numeric) — preserva valor antes da conversão
+- `preco_unitario_usado` (numeric) — preço congelado no momento da venda
 
-**`producoes`** — adicionar colunas:
-- `numero_lote_producao` (auto-gerado: `PROD-YYYYMMDD-NNN`)
-- `data_vencimento` (opcional, configurável por sabor)
+**Tabela `clientes_alertas_financeiros` (nova):**
+- `cliente_id`, `venda_id`, `tipo` ('vence_hoje'|'vencida_1d'|'vencida_2d'|'convertida'|'acima_limite'), `mensagem`, `lida`, `created_at`
 
-**Triggers/funções**:
-- Ao inserir em `compras`: criar `lotes_estoque` automaticamente e somar ao estoque do item.
-- Ao realizar produção: consumir dos lotes mais antigos (FIFO) e registrar em `producao_lotes_consumidos`.
-- Auto-numeração de lote produção.
-
----
-
-### 2. Tela de Compras (atualizada)
-
-Adicionar à tela `Compras.tsx` os campos por item:
-- **Data de Fabricação** (date picker)
-- **Data de Vencimento** (date picker)
-- **Número do Lote** (texto; sugestão automática `LOTE-YYYYMMDD-XXX`)
-
-Mantém: fornecedor, produtos múltiplos, frete, total automático.
+**Funções/triggers:**
+- `recalcular_saldo_devedor(cliente_id)` — recomputa saldo e status
+- Trigger em `vendas` e `abatimentos_historico` para atualizar saldo
+- Função `converter_vendas_avista_atrasadas()` — roda diariamente via pg_cron
+- Auditoria em triggers para alterações de preço e conversões
 
 ---
 
-### 3. Tela de Estoque (atualizada)
+### 2. Backend — Cron diário
 
-Em cada linha de matéria-prima/embalagem, adicionar **botão "Ver Lotes"** que abre dialog com:
-- Nº Lote, Quantidade restante, Data Fabricação, Data Vencimento, Compra/Fornecedor de origem
-- Destaque visual: **vermelho** se vencido, **amarelo** se vence em ≤7 dias
-
----
-
-### 4. Tela de Produção (atualizada)
-
-- Exibir **lotes disponíveis** (FIFO) ao escolher sabor
-- Após produzir, mostrar **Lote de Produção gerado** + lotes de origem consumidos
-- Nova aba "Rastreabilidade" para buscar um lote de produção e ver a árvore: lote produção → lotes matérias-primas → compras → fornecedores
+Edge function `converter-vendas-atrasadas` agendada via `pg_cron`:
+- Busca vendas à vista com >3 dias e cliente com `conversao_automatica_prazo = true`
+- Converte para "aprazo", recalcula com `preco_unidade_aprazo`, gera alerta e registra auditoria
+- Gera alertas diários (vence hoje, vencida 1d/2d)
 
 ---
 
-### 5. Alertas
+### 3. Frontend
 
-Adicionar ao Dashboard (componente `AlertasInteligentes` existente) cards:
-- **Lotes vencendo em 7 dias** (lista com sabor/MP, lote, dias restantes)
-- **Lotes vencidos** (em vermelho)
-- Estoque baixo já existe, mantido.
+**Cadastro de Cliente (`MeusClientes.tsx`, `Clientes.tsx`):**
+- Nova seção "Configuração Financeira" com os 6 novos campos
+- Preço a prazo pré-preenchido com 2.05
+- Checkbox conversão automática (desmarcado por padrão)
 
----
+**Nova Venda (`Vendas.tsx`, `NovoPedido.tsx`):**
+- Toggle "À Vista / A Prazo"
+- Recalcula total ao alternar
+- Mostra preço aplicado visivelmente
+- Se "A Prazo": cria parcela automática em contas a receber
 
-### 6. Relatórios
+**Contas a Receber (`AReceber.tsx`):**
+- Coluna valor original vs atualizado
+- Dias em atraso, badge convertida automaticamente
+- Filtros por status, forma de pagamento
 
-Estender `RelatorioEstoque.tsx` e criar nova seção em `Relatorios.tsx`:
-- **Relatório de Compras por período** (já existe parcial — adicionar coluna Lote, Validade)
-- **Relatório de Lotes** (todos os lotes com saldo, fornecedor, validade)
-- **Relatório de Rastreabilidade** (dado um lote produção, mostrar árvore completa)
+**Dashboard:**
+- Novos cards: vendido hoje à vista, a prazo, total a receber, vencido, qtd inadimplentes, qtd convertidas, previsão recebimento
+- Widget de alertas financeiros
 
-Exportação PDF/Excel via `export-utils` já existente.
+**Relatórios (`Relatorios.tsx`):**
+- Novos relatórios: vendas à vista, a prazo, inadimplentes, conversões, maior saldo devedor
+- Filtros: cliente, período, forma pagamento, status financeiro
 
----
-
-### 7. Integração financeira
-
-Já existe: compras alimentam custos. Adicionar custo médio ponderado por lote ao calcular margem em `RelatorioMargem.tsx`.
+**Auditoria:**
+- Logar alterações de preço, ativação/desativação conversão, conversões automáticas, pagamentos (módulo `auditoria` já existe)
 
 ---
 
 ### Detalhes técnicos
 
-**Migrations necessárias (1 migration consolidada):**
-1. `CREATE TABLE lotes_estoque` + RLS por `factory_id`
-2. `CREATE TABLE producao_lotes_consumidos` + RLS
-3. `ALTER TABLE producoes ADD COLUMN numero_lote_producao TEXT, data_vencimento DATE`
-4. Função `gerar_lote_producao(factory_id) RETURNS TEXT`
-5. Trigger `apos_compra_criar_lote` em `compras`
-6. Atualizar `realizar_producao` para consumir FIFO e gravar `producao_lotes_consumidos`
-7. View `lotes_vencendo` para alertas
-
-**Arquivos frontend a editar/criar:**
-- `src/pages/Compras.tsx` — campos lote/datas
-- `src/pages/Estoque.tsx` — botão Ver Lotes
-- `src/components/estoque/LotesDialog.tsx` (novo)
-- `src/pages/Producao.tsx` — exibir lotes consumidos
-- `src/components/producao/RastreabilidadeDialog.tsx` (novo)
-- `src/components/dashboard/AlertasVencimento.tsx` (novo) + integrar no Dashboard
-- `src/components/relatorios/RelatorioLotes.tsx` (novo) + adicionar tab em `Relatorios.tsx`
+- Cron: `pg_cron` + `pg_net` chamando edge function diária às 03:00 BRT (06:00 UTC)
+- Preço congelado: `venda_itens.preco_unitario` já existe; adiciono `vendas.preco_unitario_usado` para referência rápida
+- RLS: todas tabelas novas com policy `factory_id = get_user_factory_id(auth.uid())`
+- Migração de dados: para vendas existentes `forma_pagamento_tipo = 'avista'`, `valor_original = total`
 
 ---
 
-### Escopo / pergunta antes de iniciar
+### Escopo de arquivos
 
-Esse é um trabalho **grande** (1 migration complexa + ~10 arquivos frontend). Antes de implementar tudo de uma vez, quero confirmar:
+- 1 migração SQL (schema + triggers + cron)
+- 1 edge function nova (`converter-vendas-atrasadas`)
+- Edit: `Clientes.tsx`, `vendedor/MeusClientes.tsx`, `Vendas.tsx`, `vendedor/NovoPedido.tsx`, `AReceber.tsx`, `Dashboard.tsx`, `Relatorios.tsx`
+- Novo: `components/dashboard/AlertasFinanceiros.tsx`, `components/relatorios/RelatorioAVistaAPrazo.tsx`
 
-1. **Confirma criar a camada de lotes do zero** (hoje compras só somam ao estoque sem rastrear lote individual)?
-2. **FIFO** automático na produção é OK, ou prefere escolher manualmente o lote a consumir?
-3. **Data de vencimento do produto fabricado**: calcular automaticamente (ex: 6 meses após produção, configurável por sabor) ou pedir ao operador a cada produção?
-
-Se confirmar, executo tudo numa única passada.
+Posso prosseguir com a migração e implementação?

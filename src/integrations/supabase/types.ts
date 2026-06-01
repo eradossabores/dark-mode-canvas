@@ -133,6 +133,39 @@ export type Database = {
           },
         ]
       }
+      alertas_financeiros: {
+        Row: {
+          cliente_id: string | null
+          created_at: string
+          factory_id: string
+          id: string
+          lida: boolean
+          mensagem: string
+          tipo: string
+          venda_id: string | null
+        }
+        Insert: {
+          cliente_id?: string | null
+          created_at?: string
+          factory_id: string
+          id?: string
+          lida?: boolean
+          mensagem: string
+          tipo: string
+          venda_id?: string | null
+        }
+        Update: {
+          cliente_id?: string | null
+          created_at?: string
+          factory_id?: string
+          id?: string
+          lida?: boolean
+          mensagem?: string
+          tipo?: string
+          venda_id?: string | null
+        }
+        Relationships: []
+      }
       auditoria: {
         Row: {
           acao: string
@@ -437,6 +470,7 @@ export type Database = {
           bairro: string | null
           cep: string | null
           cidade: string | null
+          conversao_automatica_prazo: boolean
           cpf_cnpj: string | null
           created_at: string
           created_by: string | null
@@ -447,12 +481,17 @@ export type Database = {
           freezer_identificacao: string | null
           id: string
           latitude: number | null
+          limite_credito: number | null
           longitude: number | null
           nome: string
           observacoes: string | null
           possui_freezer: boolean
           preco_padrao_personalizado: number | null
+          preco_unidade_aprazo: number | null
+          preco_unidade_avista: number | null
+          saldo_devedor_atual: number | null
           status: Database["public"]["Enums"]["status_cliente"]
+          status_financeiro: string
           telefone: string | null
           ultima_compra: string | null
           updated_at: string
@@ -461,6 +500,7 @@ export type Database = {
           bairro?: string | null
           cep?: string | null
           cidade?: string | null
+          conversao_automatica_prazo?: boolean
           cpf_cnpj?: string | null
           created_at?: string
           created_by?: string | null
@@ -471,12 +511,17 @@ export type Database = {
           freezer_identificacao?: string | null
           id?: string
           latitude?: number | null
+          limite_credito?: number | null
           longitude?: number | null
           nome: string
           observacoes?: string | null
           possui_freezer?: boolean
           preco_padrao_personalizado?: number | null
+          preco_unidade_aprazo?: number | null
+          preco_unidade_avista?: number | null
+          saldo_devedor_atual?: number | null
           status?: Database["public"]["Enums"]["status_cliente"]
+          status_financeiro?: string
           telefone?: string | null
           ultima_compra?: string | null
           updated_at?: string
@@ -485,6 +530,7 @@ export type Database = {
           bairro?: string | null
           cep?: string | null
           cidade?: string | null
+          conversao_automatica_prazo?: boolean
           cpf_cnpj?: string | null
           created_at?: string
           created_by?: string | null
@@ -495,12 +541,17 @@ export type Database = {
           freezer_identificacao?: string | null
           id?: string
           latitude?: number | null
+          limite_credito?: number | null
           longitude?: number | null
           nome?: string
           observacoes?: string | null
           possui_freezer?: boolean
           preco_padrao_personalizado?: number | null
+          preco_unidade_aprazo?: number | null
+          preco_unidade_avista?: number | null
+          saldo_devedor_atual?: number | null
           status?: Database["public"]["Enums"]["status_cliente"]
+          status_financeiro?: string
           telefone?: string | null
           ultima_compra?: string | null
           updated_at?: string
@@ -2791,61 +2842,79 @@ export type Database = {
       vendas: {
         Row: {
           cliente_id: string
+          convertida_automaticamente: boolean
           created_at: string
+          data_conversao: string | null
+          data_vencimento: string | null
           enviado_producao: boolean
           factory_id: string | null
           forma_pagamento: string
+          forma_pagamento_tipo: string
           frete_pago_por: string
           id: string
           numero_nf: string | null
           numero_pedido: number | null
           observacoes: string | null
           operador: string
+          preco_unitario_usado: number | null
           status: Database["public"]["Enums"]["status_venda"]
           total: number
           updated_at: string
           valor_especie: number
           valor_frete: number
+          valor_original: number | null
           valor_pago: number
           valor_pix: number
         }
         Insert: {
           cliente_id: string
+          convertida_automaticamente?: boolean
           created_at?: string
+          data_conversao?: string | null
+          data_vencimento?: string | null
           enviado_producao?: boolean
           factory_id?: string | null
           forma_pagamento?: string
+          forma_pagamento_tipo?: string
           frete_pago_por?: string
           id?: string
           numero_nf?: string | null
           numero_pedido?: number | null
           observacoes?: string | null
           operador?: string
+          preco_unitario_usado?: number | null
           status?: Database["public"]["Enums"]["status_venda"]
           total?: number
           updated_at?: string
           valor_especie?: number
           valor_frete?: number
+          valor_original?: number | null
           valor_pago?: number
           valor_pix?: number
         }
         Update: {
           cliente_id?: string
+          convertida_automaticamente?: boolean
           created_at?: string
+          data_conversao?: string | null
+          data_vencimento?: string | null
           enviado_producao?: boolean
           factory_id?: string | null
           forma_pagamento?: string
+          forma_pagamento_tipo?: string
           frete_pago_por?: string
           id?: string
           numero_nf?: string | null
           numero_pedido?: number | null
           observacoes?: string | null
           operador?: string
+          preco_unitario_usado?: number | null
           status?: Database["public"]["Enums"]["status_venda"]
           total?: number
           updated_at?: string
           valor_especie?: number
           valor_frete?: number
+          valor_original?: number | null
           valor_pago?: number
           valor_pix?: number
         }
@@ -3022,6 +3091,7 @@ export type Database = {
           }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       is_vendedor: { Args: { _user_id: string }; Returns: boolean }
+      processar_conversoes_e_alertas_diarios: { Args: never; Returns: Json }
       realizar_producao: {
         Args: {
           p_funcionarios: Json
@@ -3045,6 +3115,10 @@ export type Database = {
           p_parcelas?: Json
         }
         Returns: string
+      }
+      recalcular_saldo_devedor: {
+        Args: { _cliente_id: string }
+        Returns: undefined
       }
     }
     Enums: {
