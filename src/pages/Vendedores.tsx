@@ -170,7 +170,7 @@ export default function Vendedores() {
   if (!isEra) {
     return (
       <Card><CardContent className="py-12 text-center text-muted-foreground">
-        Esta seção é exclusiva da fábrica A Era dos Sabores.
+        Esta seção é exclusiva da fábrica MACUXI ICE.
       </CardContent></Card>
     );
   }
