@@ -2042,6 +2042,23 @@ export default function Vendas() {
                               {v.pedido_status === "enviado" ? "Entregue" : v.pedido_status === "retirado" ? "Retirado" : "No Monitor"}
                             </Badge>
                           )}
+                          {v.status_entrega === "entregue_pago" && (
+                            <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-300 text-[10px] mr-1">✅ Paga na Entrega</Badge>
+                          )}
+                          {v.status_entrega === "convertida_prazo" && (
+                            <Badge className="bg-amber-500/15 text-amber-700 border-amber-300 text-[10px] mr-1">🔁 Convertida A Prazo</Badge>
+                          )}
+                          {v.status !== "cancelada" && (!v.status_entrega || v.status_entrega === "aguardando_entrega") && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="icon" variant="ghost" className="h-8 w-8 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950"
+                                  onClick={() => setEntregaVenda({ ...v, totalUnidades: v.totalUnidades })}>
+                                  <Truck className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Confirmar Entrega / Pagamento</TooltipContent>
+                            </Tooltip>
+                          )}
                         </TooltipProvider>
                         <Button size="icon" variant="ghost" onClick={() => { setHistoricoVenda(v); loadHistorico(v.id); }}><History className="h-4 w-4" /></Button>
                         <Button size="icon" variant="ghost" onClick={() => openDetailDialog(v)}><Eye className="h-4 w-4" /></Button>
