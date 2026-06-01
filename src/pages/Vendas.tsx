@@ -59,6 +59,7 @@ export default function Vendas() {
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [prodDialog, setProdDialog] = useState<{ venda: any; tipo: "entrega" | "retirada" } | null>(null);
+  const [entregaVenda, setEntregaVenda] = useState<any | null>(null);
   const [prodHora, setProdHora] = useState("");
   const [prodEmbalagem, setProdEmbalagem] = useState("1 saco");
 
