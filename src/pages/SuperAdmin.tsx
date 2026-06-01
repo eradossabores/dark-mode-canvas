@@ -61,7 +61,7 @@ const buildAutoCredentials = (rawName: string) => {
   const capitalized = slug ? slug.charAt(0).toUpperCase() + slug.slice(1) : "";
 
   return {
-    email: slug ? `${slug}@icetech.com` : "",
+    email: slug ? `${slug}@macuxiice.com` : "",
     password: capitalized ? `${capitalized}@2026` : "",
   };
 };
@@ -593,7 +593,7 @@ export default function SuperAdmin() {
       headStyles: { fillColor: [30, 58, 95] },
     });
 
-    doc.save(`fabricas-icetech-${format(new Date(), "yyyyMMdd")}.pdf`);
+    doc.save(`fabricas-macuxi-ice-${format(new Date(), "yyyyMMdd")}.pdf`);
   }
 
   function getStatusBadge(sub: FactoryRow["subscription"]) {

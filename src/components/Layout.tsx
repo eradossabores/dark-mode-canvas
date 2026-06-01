@@ -383,7 +383,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <Factory className="h-4 w-4 text-primary-foreground" />
             </div>
           )}
-          <span className="font-semibold text-sm truncate">{factoryName || "ICETECH"}</span>
+          <span className="font-semibold text-sm truncate">{factoryName || "MACUXI ICE"}</span>
         </div>
       </div>
 
@@ -401,7 +401,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </div>
               )}
               <div className="flex flex-col min-w-0">
-                <span className="font-bold text-sm truncate">{factoryName || "ICETECH"}</span>
+                <span className="font-bold text-sm truncate">{factoryName || "MACUXI ICE"}</span>
                 <span className="text-[10px] text-sidebar-foreground/50">Sistema de Gestão</span>
               </div>
             </div>
@@ -447,7 +447,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           )}
           {!collapsed && (
             <div className="flex flex-col min-w-0">
-              <span className="font-bold text-sm truncate">{factoryName || "ICETECH"}</span>
+              <span className="font-bold text-sm truncate">{factoryName || "MACUXI ICE"}</span>
               <span className="text-[10px] text-muted-foreground">Sistema de Gestão</span>
             </div>
           )}
