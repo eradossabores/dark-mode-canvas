@@ -175,8 +175,30 @@ export default function Clientes() {
         toast({ title: "Cliente atualizado!" });
       } else {
         if (factoryId) payload.factory_id = factoryId;
+        // Bloqueio anti-duplicidade: mesmo nome (normalizado) na mesma fábrica
+        const nomeNorm = String(payload.nome || "").trim().toLowerCase();
+        const { data: existente } = await (supabase as any)
+          .from("clientes")
+          .select("id, nome")
+          .eq("factory_id", factoryId)
+          .ilike("nome", nomeNorm)
+          .maybeSingle();
+        if (existente) {
+          toast({
+            title: "Cliente já cadastrado",
+            description: `Já existe um cliente com o nome "${existente.nome}" nesta fábrica.`,
+            variant: "destructive",
+          });
+          return;
+        }
         const { data: newCliente, error } = await (supabase as any).from("clientes").insert(payload).select("id").single();
-        if (error) throw error;
+        if (error) {
+          if ((error as any).code === "23505") {
+            toast({ title: "Cliente já cadastrado", description: "Já existe um cliente com este nome nesta fábrica.", variant: "destructive" });
+            return;
+          }
+          throw error;
+        }
         clienteId = newCliente?.id;
         
         // Se for vendedor, vincula automaticamente
