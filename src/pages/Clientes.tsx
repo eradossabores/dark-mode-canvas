@@ -22,6 +22,10 @@ const emptyForm = {
   estado: "RR", cep: "", cpf_cnpj: "", possui_freezer: false,
   freezer_identificacao: "", preco_padrao_personalizado: "", observacoes: "",
   latitude: "", longitude: "",
+  preco_unidade_avista: "",
+  preco_unidade_aprazo: "2.05",
+  limite_credito: "",
+  conversao_automatica_prazo: false,
 };
 
 const TAMANHOS_CUBO = ["2kg", "3kg", "4kg", "5kg"] as const;
@@ -112,6 +116,10 @@ export default function Clientes() {
       observacoes: c.observacoes || "",
       latitude: c.latitude != null ? String(c.latitude) : "",
       longitude: c.longitude != null ? String(c.longitude) : "",
+      preco_unidade_avista: c.preco_unidade_avista != null ? String(c.preco_unidade_avista) : "",
+      preco_unidade_aprazo: c.preco_unidade_aprazo != null ? String(c.preco_unidade_aprazo) : "2.05",
+      limite_credito: c.limite_credito != null ? String(c.limite_credito) : "",
+      conversao_automatica_prazo: !!c.conversao_automatica_prazo,
     });
 
     // Load client cube prices
@@ -141,6 +149,9 @@ export default function Clientes() {
       if (!payload.cpf_cnpj) payload.cpf_cnpj = null;
       payload.latitude = payload.latitude ? Number(payload.latitude) : null;
       payload.longitude = payload.longitude ? Number(payload.longitude) : null;
+      payload.preco_unidade_avista = payload.preco_unidade_avista ? Number(String(payload.preco_unidade_avista).replace(",", ".")) : null;
+      payload.preco_unidade_aprazo = payload.preco_unidade_aprazo ? Number(String(payload.preco_unidade_aprazo).replace(",", ".")) : 2.05;
+      payload.limite_credito = payload.limite_credito ? Number(String(payload.limite_credito).replace(",", ".")) : 0;
 
       if (hasAddressForGeocoding(payload)) {
         const coords = await geocodeClienteAddress(payload);
