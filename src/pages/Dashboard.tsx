@@ -156,7 +156,8 @@ function getDailyMessage(userId: string) {
 export default function Dashboard() {
   const navigate = useNavigate();
   const { user, factoryId, role } = useAuth();
-  const isIceAgeFactory = factoryId === ERA_DOS_SABORES_ID;
+  // Personagens da Era do Gelo removidos da fábrica Macuxi Ice
+  const isIceAgeFactory = false;
   const [userName, setUserName] = useState("");
   const [stats, setStats] = useState({
     totalGelos: 0, totalClientes: 0, totalVendas: 0,
