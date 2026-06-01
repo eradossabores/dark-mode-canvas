@@ -504,6 +504,14 @@ export default function Vendas() {
         const vEsp = detalhePgto === "especie" ? totalVendaCalc : detalhePgto === "misto" ? (parseFloat(detalheEspecie.replace(",", ".")) || 0) : 0;
         const updateData: any = { forma_pagamento: formaPagamento, status: statusVenda, valor_pix: vPix, valor_especie: vEsp, total: totalVendaCalc, valor_frete: freteTotal, frete_pago_por: fretePagoPor };
         if (numeroNf.trim()) updateData.numero_nf = numeroNf.trim();
+        // 🆕 Tipo de pagamento, vencimento e preço unitário usado
+        updateData.forma_pagamento_tipo = formaPagamento === "fiado" ? "aprazo" : "avista";
+        updateData.valor_original = totalVendaCalc;
+        const precoUnitUsado = itensValidos.find((i) => Number(i.preco_unitario) > 0);
+        if (precoUnitUsado) updateData.preco_unitario_usado = Number(precoUnitUsado.preco_unitario);
+        if (formaPagamento === "fiado" || formaPagamento === "boleto" || formaPagamento === "parcelado") {
+          updateData.data_vencimento = vencimentoStr;
+        }
         await (supabase as any).from("vendas").update(updateData).eq("id", vendaId);
 
         // Save gelo cubo items and deduct stock
