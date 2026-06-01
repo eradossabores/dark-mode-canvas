@@ -32,7 +32,7 @@ export default function ConfirmarEntregaDialog({ venda, onClose, onConfirmed }: 
   async function handleConfirm() {
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc("confirmar_entrega_venda", {
+      const { data, error } = await (supabase as any).rpc("confirmar_entrega_venda", {
         p_venda_id: venda.id,
         p_pago: pago === "sim",
         p_operador: user?.email ?? "operador",
