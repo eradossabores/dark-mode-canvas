@@ -398,6 +398,14 @@ export default function Vendas() {
     }
   }
 
+  // 🆕 Recalcular ao alternar forma de pagamento (À Vista ↔ A Prazo)
+  useEffect(() => {
+    if (clienteId && itens.length > 0) {
+      recalcPrecosTotalComanda(itens, clienteId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formaPagamento]);
+
   async function handleSubmit() {
     let itensValidos = itens.filter(i => i.sabor_id && i.quantidade > 0).map(i => ({
       ...i,
