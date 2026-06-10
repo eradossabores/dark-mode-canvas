@@ -1591,7 +1591,6 @@ export default function ContasAPagar() {
                 </Table>
               </div>
             </Tabs>
-            </Table>
           </CardContent>
         </Card>
       )}
