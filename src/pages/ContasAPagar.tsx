@@ -177,14 +177,21 @@ export default function ContasAPagar() {
       const isAndre = resp.includes("ANDRÉ") || desc.includes("ANDRÉ") || resp.includes("ANDRE") || desc.includes("ANDRE");
       const isPorao = desc.includes("PORÃO") || resp.includes("PORÃO") || desc.includes("PORAO") || resp.includes("PORAO");
 
-      // General logic: if a bill was finished (paid in full) before the target month, hide it
-      if (targetMonth !== null && targetYear !== null) {
-        const targetDate = new Date(targetYear, targetMonth, 1);
+      const targetDate = new Date(targetYear || new Date().getFullYear(), targetMonth ?? 0, 1);
+
+      // Check if bill was finished (paid in full or reached last installment) before the target month
+      if (c.valor_restante <= 0 || (c.total_parcelas > 0 && c.parcela_atual >= c.total_parcelas)) {
         const lastPaymentStr = ultimosPagamentos[c.id];
         if (lastPaymentStr) {
           const lastPaymentDate = new Date(lastPaymentStr.split(' ')[0] + "T12:00:00");
           const finalizedMonth = startOfMonth(lastPaymentDate);
-          if (targetDate > finalizedMonth && c.valor_restante <= 0) {
+          if (targetDate > finalizedMonth) {
+            return false;
+          }
+        } else if (c.total_parcelas > 0 && c.parcela_atual >= c.total_parcelas) {
+          // If no payment history but progress is 100%, check created_at + total_parcelas
+          const estimatedEnd = addMonths(start, c.total_parcelas - 1);
+          if (targetDate > startOfMonth(estimatedEnd)) {
             return false;
           }
         }
@@ -249,16 +256,8 @@ export default function ContasAPagar() {
 
           const targetDate = new Date(targetYear || new Date().getFullYear(), targetMonth ?? 0, 1);
           
-          if (c.valor_restante <= 0 || (c.total_parcelas > 0 && c.parcela_atual >= c.total_parcelas)) {
-            const lastPayment = ultimosPagamentos[c.id];
-            if (lastPayment) {
-              const finalizedMonth = startOfMonth(new Date(lastPayment.split(' ')[0] + "T12:00:00"));
-              if (targetDate > finalizedMonth) return false;
-            } else {
-              // Se não tem histórico mas o progresso está 100%, removemos do fluxo futuro
-              return false;
-            }
-          }
+          const monthsElapsed = (targetDate.getFullYear() - start.getFullYear()) * 12 + (targetDate.getMonth() - start.getMonth());
+          return monthsElapsed >= 0 && monthsElapsed < (c.total_parcelas || 1);
 
           const monthsElapsed = (targetDate.getFullYear() - start.getFullYear()) * 12 + (targetDate.getMonth() - start.getMonth());
           return monthsElapsed >= 0 && monthsElapsed < (c.total_parcelas || 1);
