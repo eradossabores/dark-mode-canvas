@@ -249,11 +249,14 @@ export default function ContasAPagar() {
 
           const targetDate = new Date(targetYear || new Date().getFullYear(), targetMonth ?? 0, 1);
           
-          if (c.valor_restante <= 0) {
+          if (c.valor_restante <= 0 || (c.total_parcelas > 0 && c.parcela_atual >= c.total_parcelas)) {
             const lastPayment = ultimosPagamentos[c.id];
             if (lastPayment) {
-              const finalizedMonth = startOfMonth(new Date(lastPayment + "T12:00:00"));
+              const finalizedMonth = startOfMonth(new Date(lastPayment.split(' ')[0] + "T12:00:00"));
               if (targetDate > finalizedMonth) return false;
+            } else {
+              // Se não tem histórico mas o progresso está 100%, removemos do fluxo futuro
+              return false;
             }
           }
 
