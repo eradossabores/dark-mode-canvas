@@ -95,6 +95,7 @@ export default function ContasAPagar() {
   const [pagarFixoForma, setPagarFixoForma] = useState<string>("pix");
   const [historicoContaId, setHistoricoContaId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"abertas" | "pagas">("abertas");
+  const [activeTabFixos, setActiveTabFixos] = useState<"abertas" | "pagas">("abertas");
 
   // Filters
   const [busca, setBusca] = useState("");
@@ -1506,67 +1507,90 @@ export default function ContasAPagar() {
             </div>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Custo</TableHead>
-                  <TableHead>Cat.</TableHead>
-                  <TableHead>Responsável</TableHead>
-                  <TableHead className="text-center">Mês Pago?</TableHead>
-                  <TableHead className="text-right">Valor Mensal</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {fixas.map(c => (
-                  <TableRow key={c.id}>
-                    <TableCell className="font-medium">{c.descricao.split(" — ")[0]}</TableCell>
-                    <TableCell>
-                      <span title={CATEGORIAS.find(cc => cc.value === c.categoria)?.label || c.categoria}>
-                        {getCategoriaIcon(c.categoria)}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-sm">{c.responsavel || "—"}</TableCell>
-                    <TableCell className="text-center">
-                      <Button
-                        size="sm"
-                        variant={c.pago_mes ? "default" : "outline"}
-                        className={cn(
-                          "h-7 w-7 p-0 transition-all",
-                          c.pago_mes ? "bg-green-600 hover:bg-green-700 shadow-sm" : "hover:bg-destructive/10"
-                        )}
-                        onClick={() => togglePagoMes(c)}
-                        title={c.pago_mes ? "Pago este mês ✅" : "Pendente este mês"}
-                      >
-                        {c.pago_mes ? <Check className="h-4 w-4 text-white" /> : <X className="h-4 w-4 text-destructive" />}
-                      </Button>
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-sm">{R(c.valor_parcela)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setHistoricoContaId(c.id)} title="Histórico">
-                          <History className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => { setPagarFixoConta(c); setPagarFixoValor(String(c.valor_parcela)); }} title="Pagar / Adiantar">
-                          💰 Pagar
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(c)}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setDeleteId(c.id)}>
-                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+            <Tabs defaultValue="abertas" value={activeTabFixos} onValueChange={(v) => setActiveTabFixos(v as any)} className="w-full">
+              <div className="flex items-center justify-between mb-4">
+                <TabsList className="grid w-[300px] grid-cols-2">
+                  <TabsTrigger value="abertas" className="flex items-center gap-2">
+                    Em Aberto 
+                    <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+                      {fixas.filter(c => !c.isPaidInFilteredMonth).length}
+                    </Badge>
+                  </TabsTrigger>
+                  <TabsTrigger value="pagas" className="flex items-center gap-2">
+                    Pagos (Mês)
+                    <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+                      {fixas.filter(c => c.isPaidInFilteredMonth).length}
+                    </Badge>
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Custo</TableHead>
+                      <TableHead>Cat.</TableHead>
+                      <TableHead>Responsável</TableHead>
+                      <TableHead className="text-center">Mês Pago?</TableHead>
+                      <TableHead className="text-right">Valor Mensal</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {fixas
+                      .filter(c => activeTabFixos === "abertas" ? !c.isPaidInFilteredMonth : c.isPaidInFilteredMonth)
+                      .map(c => (
+                      <TableRow key={c.id}>
+                        <TableCell className="font-medium">{c.descricao.split(" — ")[0]}</TableCell>
+                        <TableCell>
+                          <span title={CATEGORIAS.find(cc => cc.value === c.categoria)?.label || c.categoria}>
+                            {getCategoriaIcon(c.categoria)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-sm">{c.responsavel || "—"}</TableCell>
+                        <TableCell className="text-center">
+                          <Button
+                            size="sm"
+                            variant={c.isPaidInFilteredMonth ? "default" : "outline"}
+                            className={cn(
+                              "h-7 w-7 p-0 transition-all",
+                              c.isPaidInFilteredMonth ? "bg-green-600 hover:bg-green-700 shadow-sm" : "hover:bg-destructive/10"
+                            )}
+                            onClick={() => isViewingCurrentMonth && togglePagoMes(c)}
+                            title={c.isPaidInFilteredMonth ? "Pago este mês ✅" : "Pendente este mês"}
+                          >
+                            {c.isPaidInFilteredMonth ? <Check className="h-4 w-4 text-white" /> : <X className="h-4 w-4 text-destructive" />}
+                          </Button>
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-sm">{R(c.valor_parcela)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setHistoricoContaId(c.id)} title="Histórico">
+                              <History className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => { setPagarFixoConta(c); setPagarFixoValor(String(c.valor_parcela)); }} title="Pagar / Adiantar">
+                              💰 Pagar
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(c)}>
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setDeleteId(c.id)}>
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                 <TableRow className="bg-muted/50 font-bold">
                   <TableCell colSpan={4}>TOTAL FIXOS</TableCell>
                   <TableCell className="text-right font-mono">{R(totalFixo)}</TableCell>
                   <TableCell />
                 </TableRow>
-              </TableBody>
-            </Table>
+                  </TableBody>
+                </Table>
+              </div>
+            </Tabs>
           </CardContent>
         </Card>
       )}
