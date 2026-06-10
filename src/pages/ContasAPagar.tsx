@@ -170,9 +170,6 @@ export default function ContasAPagar() {
       const targetMonth = filtroMes === "todos" ? null : parseInt(filtroMes);
       const targetYear = filtroAno === "todos" ? null : parseInt(filtroAno);
 
-      // Blacklist logic for months AFTER June 2026
-      const isAfterJune2026 = (targetYear && targetYear > 2026) || (targetYear === 2026 && targetMonth !== null && targetMonth > 5);
-      
       const desc = (c.descricao || "").toUpperCase();
       const resp = (c.responsavel || "").toUpperCase();
       
@@ -180,10 +177,16 @@ export default function ContasAPagar() {
       const isAndre = resp.includes("ANDRÉ") || desc.includes("ANDRÉ") || resp.includes("ANDRE") || desc.includes("ANDRE");
       const isPorao = desc.includes("PORÃO") || resp.includes("PORÃO") || desc.includes("PORAO") || resp.includes("PORAO");
 
-      // Hide specific completed items after June 2026 if they are truly finished
-      if (isAfterJune2026) {
-        if (isSeladora1 || isAndre || isPorao) {
-          if (c.valor_restante <= 0) return false;
+      // General logic: if a bill was finished (paid in full) before the target month, hide it
+      if (targetMonth !== null && targetYear !== null) {
+        const targetDate = new Date(targetYear, targetMonth, 1);
+        const lastPaymentStr = ultimosPagamentos[c.id];
+        if (lastPaymentStr) {
+          const lastPaymentDate = new Date(lastPaymentStr.split(' ')[0] + "T12:00:00");
+          const finalizedMonth = startOfMonth(lastPaymentDate);
+          if (targetDate > finalizedMonth && c.valor_restante <= 0) {
+            return false;
+          }
         }
       }
 
