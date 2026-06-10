@@ -178,6 +178,8 @@ export default function ContasAPagar() {
       const isPorao = desc.includes("PORÃO") || resp.includes("PORÃO") || desc.includes("PORAO") || resp.includes("PORAO");
 
       const targetDate = new Date(targetYear || new Date().getFullYear(), targetMonth ?? 0, 1);
+      const created = new Date(c.created_at || "");
+      const start = startOfMonth(created);
 
       // Check if bill was finished (paid in full or reached last installment) before the target month
       if (c.valor_restante <= 0 || (c.total_parcelas > 0 && c.parcela_atual >= c.total_parcelas)) {
@@ -238,9 +240,6 @@ export default function ContasAPagar() {
         if (c.tipo === "fixo") {
           return true;
         } else {
-          const created = new Date(c.created_at || "");
-          const start = startOfMonth(created);
-          
           if (targetYear && !targetMonth && targetMonth !== 0) {
             const yearStart = new Date(targetYear, 0, 1);
             const yearEnd = new Date(targetYear, 11, 31);
@@ -253,11 +252,6 @@ export default function ContasAPagar() {
             }
             return start <= yearEnd && endLimit >= yearStart;
           }
-
-          const targetDate = new Date(targetYear || new Date().getFullYear(), targetMonth ?? 0, 1);
-          
-          const monthsElapsed = (targetDate.getFullYear() - start.getFullYear()) * 12 + (targetDate.getMonth() - start.getMonth());
-          return monthsElapsed >= 0 && monthsElapsed < (c.total_parcelas || 1);
 
           const monthsElapsed = (targetDate.getFullYear() - start.getFullYear()) * 12 + (targetDate.getMonth() - start.getMonth());
           return monthsElapsed >= 0 && monthsElapsed < (c.total_parcelas || 1);
