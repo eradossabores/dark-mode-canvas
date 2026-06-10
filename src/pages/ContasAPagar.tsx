@@ -307,32 +307,21 @@ export default function ContasAPagar() {
       const parceladoTotal = contas.filter(c => {
         if (c.tipo !== "parcelado") return false;
         
-        if (isJune2026OrLater) {
-          const desc = (c.descricao || "").toUpperCase();
-          const resp = (c.responsavel || "").toUpperCase();
-          const isSeladora1 = desc.includes("SELADORA 1") || resp.includes("SELADORA 1");
-          const isAndre = resp.includes("ANDRÉ") || desc.includes("ANDRÉ") || resp.includes("ANDRE") || desc.includes("ANDRE");
-          const isPorao = desc.includes("PORÃO") || resp.includes("PORÃO") || desc.includes("PORAO") || resp.includes("PORAO");
-          if (isSeladora1 || isAndre || isPorao) {
-            if (c.valor_restante <= 0) return false;
-          }
-        }
-
         const created = new Date(c.created_at || "");
         const createdMonth = startOfMonth(created);
         const thisMonth = startOfMonth(monthDate);
         if (createdMonth > thisMonth) return false;
 
-        // Verificação de finalização antecipada ou natural
-        if (c.valor_restante <= 0 || c.parcela_atual >= c.total_parcelas) {
-          const lastPayment = ultimosPagamentos[c.id];
-          if (lastPayment) {
-            const finalizedMonth = startOfMonth(new Date(lastPayment.split(' ')[0] + "T12:00:00"));
+        // Same filtering logic as the main list: hide if finished in a previous month
+        if (c.valor_restante <= 0 || (c.total_parcelas > 0 && c.parcela_atual >= c.total_parcelas)) {
+          const lastPaymentStr = ultimosPagamentos[c.id];
+          if (lastPaymentStr) {
+            const lastPaymentDate = new Date(lastPaymentStr.split(' ')[0] + "T12:00:00");
+            const finalizedMonth = startOfMonth(lastPaymentDate);
             if (thisMonth > finalizedMonth) return false;
-          } else {
-            // Se não tem pagamento registrado mas está quitado, usa data de criação + total parcelas como estimativa
-            const estimatedEnd = addMonths(createdMonth, (c.total_parcelas || 1) - 1);
-            if (thisMonth > estimatedEnd) return false;
+          } else if (c.total_parcelas > 0 && c.parcela_atual >= c.total_parcelas) {
+            const estimatedEnd = addMonths(createdMonth, c.total_parcelas - 1);
+            if (thisMonth > startOfMonth(estimatedEnd)) return false;
           }
         }
 
