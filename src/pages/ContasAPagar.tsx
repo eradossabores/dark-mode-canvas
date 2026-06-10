@@ -172,7 +172,6 @@ export default function ContasAPagar() {
 
       // Blacklist logic for months AFTER June 2026
       const isAfterJune2026 = (targetYear && targetYear > 2026) || (targetYear === 2026 && targetMonth !== null && targetMonth > 5);
-      const isJune2026 = (targetYear === 2026 && targetMonth === 5);
       
       const desc = (c.descricao || "").toUpperCase();
       const resp = (c.responsavel || "").toUpperCase();
@@ -180,21 +179,12 @@ export default function ContasAPagar() {
       const isSeladora1 = desc.includes("SELADORA 1") || resp.includes("SELADORA 1");
       const isAndre = resp.includes("ANDRÉ") || desc.includes("ANDRÉ") || resp.includes("ANDRE") || desc.includes("ANDRE");
       const isPorao = desc.includes("PORÃO") || resp.includes("PORÃO") || desc.includes("PORAO") || resp.includes("PORAO");
-      const isFreezerLourdete = resp.includes("LOURDETE") && desc.includes("FREEZER");
-      const isFreezer04 = desc.includes("FREEZER 04");
-      const isCaique = resp.includes("CAIQUE") || desc.includes("CAIQUE");
 
-      // June onwards: Hide Seladora 1, Andre, and Porao
-      if (isJune2026 || isAfterJune2026) {
-        if (isSeladora1 || isAndre || isPorao) {
-          // Keep Freezer 04 and Caique as they are ongoing
-          if (!isFreezer04 && !isCaique) return false;
-        }
-      }
-
-      // After June 2026: Also hide Freezer Lourdete
+      // Hide specific completed items after June 2026 if they are truly finished
       if (isAfterJune2026) {
-        if (isFreezerLourdete) return false;
+        if (isSeladora1 || isAndre || isPorao) {
+          if (c.valor_restante <= 0) return false;
+        }
       }
 
       if (busca.trim() && !c.descricao.toLowerCase().includes(busca.toLowerCase()) && !(c.responsavel || "").toLowerCase().includes(busca.toLowerCase())) return false;
@@ -309,10 +299,7 @@ export default function ContasAPagar() {
           const isAndre = resp.includes("ANDRÉ") || desc.includes("ANDRÉ") || resp.includes("ANDRE") || desc.includes("ANDRE");
           const isPorao = desc.includes("PORÃO") || resp.includes("PORÃO") || desc.includes("PORAO") || resp.includes("PORAO");
           if (isSeladora1 || isAndre || isPorao) {
-            const isFreezerLourdete = resp.includes("LOURDETE") && desc.includes("FREEZER");
-            const isFreezer04 = desc.includes("FREEZER 04");
-            const isCaique = resp.includes("CAIQUE") || desc.includes("CAIQUE");
-            if (!isFreezerLourdete && !isFreezer04 && !isCaique) return false;
+             if (c.valor_restante <= 0) return false;
           }
         }
         return c.tipo === "fixo";
@@ -328,10 +315,7 @@ export default function ContasAPagar() {
           const isAndre = resp.includes("ANDRÉ") || desc.includes("ANDRÉ") || resp.includes("ANDRE") || desc.includes("ANDRE");
           const isPorao = desc.includes("PORÃO") || resp.includes("PORÃO") || desc.includes("PORAO") || resp.includes("PORAO");
           if (isSeladora1 || isAndre || isPorao) {
-            const isFreezerLourdete = resp.includes("LOURDETE") && desc.includes("FREEZER");
-            const isFreezer04 = desc.includes("FREEZER 04");
-            const isCaique = resp.includes("CAIQUE") || desc.includes("CAIQUE");
-            if (!isFreezerLourdete && !isFreezer04 && !isCaique) return false;
+            if (c.valor_restante <= 0) return false;
           }
         }
 
