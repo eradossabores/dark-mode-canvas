@@ -772,10 +772,12 @@ export default function ContasAPagar() {
 
   const fixas = contasProcessed.filter(c => c.tipo === "fixo");
   const parceladas = contasProcessed.filter(c => c.tipo === "parcelado");
+  const parceladasFilteredByTab = parceladas.filter(c => activeTab === "abertas" ? !c.isPaidInFilteredMonth : c.isPaidInFilteredMonth);
+  
   const totalMensal = contasProcessed.reduce((s, c) => s + c.valor_parcela, 0);
-  const totalRestante = parceladas.reduce((s, c) => s + c.valor_restante, 0);
+  const totalRestante = parceladasFilteredByTab.reduce((s, c) => s + c.valor_restante, 0);
   const totalFixo = fixas.reduce((s, c) => s + c.valor_parcela, 0);
-  const totalParcelado = parceladas.reduce((s, c) => s + c.valor_parcela, 0);
+  const totalParcelado = parceladasFilteredByTab.reduce((s, c) => s + c.valor_parcela, 0);
   const contasPagas = contasProcessed.filter(c => c.isPaidInFilteredMonth).length;
   const contasPendentes = contasProcessed.filter(c => !c.isPaidInFilteredMonth).length;
 
@@ -1514,7 +1516,7 @@ export default function ContasAPagar() {
                     <TableCell className="text-right font-mono">{R(totalParcelado)}</TableCell>
                     <TableCell />
                     <TableCell />
-                    <TableCell className="text-right font-mono">{R(parceladas.reduce((s, c) => s + c.valor_total, 0))}</TableCell>
+                    <TableCell className="text-right font-mono">{R(parceladasFilteredByTab.reduce((s, c) => s + c.valor_total, 0))}</TableCell>
                     <TableCell className="text-right font-mono text-destructive">{R(totalRestante)}</TableCell>
                     <TableCell />
                   </TableRow>
