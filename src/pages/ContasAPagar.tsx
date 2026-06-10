@@ -111,6 +111,7 @@ export default function ContasAPagar() {
   const [tipo, setTipo] = useState<"fixo" | "parcelado">("parcelado");
   const [categoria, setCategoria] = useState("outros");
   const [valorTotal, setValorTotal] = useState("");
+  const [dataVencimento, setDataVencimento] = useState<Date | undefined>(undefined);
   const [valorEntrada, setValorEntrada] = useState("");
   const [formaEntrada, setFormaEntrada] = useState("pix");
   const [pagamentosIntermediarios, setPagamentosIntermediarios] = useState<{ valor: string; forma: string; descricao: string }[]>([]);
@@ -128,6 +129,7 @@ export default function ContasAPagar() {
   const [editValorTotal, setEditValorTotal] = useState("");
   const [editValorRestante, setEditValorRestante] = useState("");
   const [editCategoria, setEditCategoria] = useState("outros");
+  const [editProximaParcelaData, setEditProximaParcelaData] = useState<Date | undefined>(undefined);
 
   useEffect(() => {
     if (role !== "super_admin" && !factoryId) { setContas([]); setLoading(false); return; }
@@ -433,7 +435,7 @@ export default function ContasAPagar() {
   function resetForm() {
     setDescricao(""); setResponsavel(""); setTipo("parcelado"); setValorTotal("");
     setValorEntrada(""); setFormaEntrada("pix"); setPagamentosIntermediarios([]);
-    setTotalParcelas(""); setValorParcela(""); setCategoria("outros");
+    setTotalParcelas(""); setValorParcela(""); setCategoria("outros"); setDataVencimento(undefined);
   }
 
   async function handleAdd() {
@@ -472,6 +474,7 @@ export default function ContasAPagar() {
       valor_restante: Math.max(0, Math.round(vr * 100) / 100),
       factory_id: factoryId,
       categoria,
+      proxima_parcela_data: dataVencimento ? format(dataVencimento, "yyyy-MM-dd") : null,
     });
     setSaving(false);
     if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
@@ -490,6 +493,7 @@ export default function ContasAPagar() {
     setEditValorTotal(String(c.valor_total));
     setEditValorRestante(String(c.valor_restante));
     setEditCategoria(c.categoria || "outros");
+    setEditProximaParcelaData(c.proxima_parcela_data ? new Date(c.proxima_parcela_data + "T12:00:00") : undefined);
     setEditOpen(true);
   }
 
@@ -511,6 +515,7 @@ export default function ContasAPagar() {
       valor_total: vt,
       valor_restante: Math.max(0, vr),
       categoria: editCategoria,
+      proxima_parcela_data: editProximaParcelaData ? format(editProximaParcelaData, "yyyy-MM-dd") : null,
     }).eq("id", editId);
     setSaving(false);
     if (error) return toast({ title: "Erro", description: error.message, variant: "destructive" });
@@ -825,6 +830,20 @@ export default function ContasAPagar() {
             <Label>Valor da Parcela</Label>
             <Input type="number" step="0.01" value={editValorParcela} onChange={e => setEditValorParcela(e.target.value)} placeholder="0,00" />
           </div>
+          <div>
+            <Label>Data de Vencimento</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className={cn("w-full justify-start text-left font-normal h-10", !editProximaParcelaData && "text-muted-foreground")}>
+                  <CalendarDays className="h-4 w-4 mr-2" />
+                  {editProximaParcelaData ? format(editProximaParcelaData, "dd/MM/yyyy") : "Selecionar data"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={editProximaParcelaData} onSelect={setEditProximaParcelaData} initialFocus className={cn("p-3 pointer-events-auto")} />
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
         {editTipo === "parcelado" && (
           <>
@@ -894,6 +913,20 @@ export default function ContasAPagar() {
               <Input type="number" step="0.01" value={valorParcela} onChange={e => setValorParcela(e.target.value)} placeholder="0,00" />
             </div>
           )}
+          <div>
+            <Label>Vencimento</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className={cn("w-full justify-start text-left font-normal h-10", !dataVencimento && "text-muted-foreground")}>
+                  <CalendarDays className="h-4 w-4 mr-2" />
+                  {dataVencimento ? format(dataVencimento, "dd/MM/yyyy") : "Selecionar"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={dataVencimento} onSelect={setDataVencimento} initialFocus className={cn("p-3 pointer-events-auto")} />
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
 
         {tipo === "parcelado" && (
