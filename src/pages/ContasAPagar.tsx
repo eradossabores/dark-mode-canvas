@@ -212,7 +212,7 @@ export default function ContasAPagar() {
       const isPorao = desc.includes("PORÃO") || resp.includes("PORÃO") || desc.includes("PORAO") || resp.includes("PORAO");
 
       const targetDate = new Date(targetYear || new Date().getFullYear(), targetMonth ?? 0, 1);
-      const created = new Date(c.created_at || "");
+      const created = parseDateSafe(c.created_at) || new Date();
       const start = startOfMonth(created);
 
       // Esconde parcelados/finalizados de meses posteriores à finalização
@@ -232,7 +232,8 @@ export default function ContasAPagar() {
         } else if (c.tipo === "parcelado" && targetMonth !== null && targetYear !== null) {
           // Verify if this specific installment was paid in the past
           const hasPayment = pagamentos.some(p => {
-            const pDate = new Date(p.data_pagamento);
+            const pDate = parseDateSafe(p.data_pagamento);
+            if (!pDate) return false;
             return p.conta_id === c.id && pDate.getMonth() === targetMonth && pDate.getFullYear() === targetYear;
           });
           if (!hasPayment) return false;
@@ -247,7 +248,8 @@ export default function ContasAPagar() {
           if (c.pago_mes) return false;
         } else if (c.tipo === "parcelado" && targetMonth !== null && targetYear !== null) {
           const hasPayment = pagamentos.some(p => {
-            const pDate = new Date(p.data_pagamento);
+            const pDate = parseDateSafe(p.data_pagamento);
+            if (!pDate) return false;
             return p.conta_id === c.id && pDate.getMonth() === targetMonth && pDate.getFullYear() === targetYear;
           });
           if (hasPayment) return false;
