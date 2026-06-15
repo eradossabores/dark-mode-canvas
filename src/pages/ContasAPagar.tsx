@@ -64,14 +64,22 @@ interface ContaPagar {
   pago_mes: boolean;
   proxima_parcela_data: string | null;
   created_at?: string;
+  updated_at?: string;
   categoria: string;
+}
+
+function parseDateSafe(value?: string | null): Date | null {
+  if (!value) return null;
+  const normalized = value.includes("T") ? value : value.replace(" ", "T");
+  const parsed = new Date(normalized);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
 // Helper: retorna o mês (inicio) em que uma conta parcelada foi finalizada,
 // ou null se ainda não foi. Usa o último pagamento; se não houver,
 // cai para updated_at; em último caso, created_at + total_parcelas - 1 meses.
 function getFinalizedMonth(
-  c: { tipo?: string; valor_restante: number; parcela_atual: number; total_parcelas: number; created_at?: string; updated_at?: string },
+  c: { id: string; tipo?: string; valor_restante: number; parcela_atual: number; total_parcelas: number; created_at?: string; updated_at?: string },
   ultimosPagamentos: Record<string, string>,
 ): Date | null {
   // Só faz sentido para parceladas; contas fixas nunca "finalizam"
@@ -79,16 +87,16 @@ function getFinalizedMonth(
   if (!c.total_parcelas || c.total_parcelas <= 0) return null;
   const finalizada = c.valor_restante <= 0 || c.parcela_atual >= c.total_parcelas;
   if (!finalizada) return null;
-  const lastPayment = ultimosPagamentos[(c as any).id];
-  if (lastPayment) {
-    return startOfMonth(new Date(lastPayment.split(" ")[0] + "T12:00:00"));
-  }
-  if (c.updated_at) {
-    return startOfMonth(new Date(c.updated_at));
-  }
-  if (c.created_at) {
-    return startOfMonth(addMonths(new Date(c.created_at), c.total_parcelas - 1));
-  }
+
+  const lastPaymentDate = parseDateSafe(ultimosPagamentos[c.id]);
+  if (lastPaymentDate) return startOfMonth(lastPaymentDate);
+
+  const updatedDate = parseDateSafe(c.updated_at);
+  if (updatedDate) return startOfMonth(updatedDate);
+
+  const createdDate = parseDateSafe(c.created_at);
+  if (createdDate) return startOfMonth(addMonths(createdDate, c.total_parcelas - 1));
+
   return startOfMonth(new Date());
 }
 
