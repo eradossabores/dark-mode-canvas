@@ -320,7 +320,7 @@ export default function ContasAPagar() {
       const parceladoTotal = contas.filter(c => {
         if (c.tipo !== "parcelado") return false;
         
-        const created = new Date(c.created_at || "");
+        const created = parseDateSafe(c.created_at) || new Date();
         const createdMonth = startOfMonth(created);
         if (createdMonth > thisMonthStart) return false;
 
@@ -353,7 +353,7 @@ export default function ContasAPagar() {
       const fixoTotal = contas.filter(c => c.tipo === "fixo").reduce((s, c) => s + c.valor_parcela, 0);
       const parceladoTotal = contas.filter(c => {
         if (c.tipo !== "parcelado") return false;
-        const created = new Date(c.created_at || "");
+        const created = parseDateSafe(c.created_at) || new Date();
         const createdMonth = startOfMonth(created);
         const thisMonth = startOfMonth(futureDate);
         if (createdMonth > thisMonth) return false;
@@ -716,7 +716,8 @@ export default function ContasAPagar() {
       let isPaid = c.pago_mes;
       if (!isViewingCurrentMonth && targetMonth !== null && targetYear !== null) {
         isPaid = pagamentos.some(p => {
-          const pDate = new Date(p.data_pagamento);
+          const pDate = parseDateSafe(p.data_pagamento);
+          if (!pDate) return false;
           return p.conta_id === c.id && pDate.getMonth() === targetMonth && pDate.getFullYear() === targetYear;
         });
       }
