@@ -343,14 +343,8 @@ export default function ContasAPagar() {
         const thisMonth = startOfMonth(futureDate);
         if (createdMonth > thisMonth) return false;
 
-        // Verificação de finalização antecipada
-        if (c.valor_restante <= 0) {
-          const lastPayment = ultimosPagamentos[c.id];
-          if (lastPayment) {
-            const finalizedMonth = startOfMonth(new Date(lastPayment + "T12:00:00"));
-            if (thisMonth > finalizedMonth) return false;
-          }
-        }
+        const finalizedMonth = getFinalizedMonth(c as any, ultimosPagamentos);
+        if (finalizedMonth && thisMonth > finalizedMonth) return false;
 
         const monthsElapsed = (thisMonth.getFullYear() - createdMonth.getFullYear()) * 12 + (thisMonth.getMonth() - createdMonth.getMonth());
         return monthsElapsed < (c.total_parcelas || 1);
