@@ -296,44 +296,23 @@ export default function ContasAPagar() {
       const monthDate = new Date(currentYear, m, 1);
       const isCurrent = m === currentMonth;
       const isFuture = m > currentMonth;
-      const isJune2026OrLater = (currentYear > 2026) || (currentYear === 2026 && m >= 5);
-      
-      const fixoTotal = contas.filter(c => {
-        if (isJune2026OrLater) {
-          const desc = (c.descricao || "").toUpperCase();
-          const resp = (c.responsavel || "").toUpperCase();
-          const isSeladora1 = desc.includes("SELADORA 1") || resp.includes("SELADORA 1");
-          const isAndre = resp.includes("ANDRÉ") || desc.includes("ANDRÉ") || resp.includes("ANDRE") || desc.includes("ANDRE");
-          const isPorao = desc.includes("PORÃO") || resp.includes("PORÃO") || desc.includes("PORAO") || resp.includes("PORAO");
-          if (isSeladora1 || isAndre || isPorao) {
-             if (c.valor_restante <= 0) return false;
-          }
-        }
-        return c.tipo === "fixo";
-      }).reduce((s, c) => s + c.valor_parcela, 0);
+      const thisMonthStart = startOfMonth(monthDate);
+
+      const fixoTotal = contas
+        .filter(c => c.tipo === "fixo")
+        .reduce((s, c) => s + c.valor_parcela, 0);
       
       const parceladoTotal = contas.filter(c => {
         if (c.tipo !== "parcelado") return false;
         
         const created = new Date(c.created_at || "");
         const createdMonth = startOfMonth(created);
-        const thisMonth = startOfMonth(monthDate);
-        if (createdMonth > thisMonth) return false;
+        if (createdMonth > thisMonthStart) return false;
 
-        // Same filtering logic as the main list: hide if finished in a previous month
-        if (c.valor_restante <= 0 || (c.total_parcelas > 0 && c.parcela_atual >= c.total_parcelas)) {
-          const lastPaymentStr = ultimosPagamentos[c.id];
-          if (lastPaymentStr) {
-            const lastPaymentDate = new Date(lastPaymentStr.split(' ')[0] + "T12:00:00");
-            const finalizedMonth = startOfMonth(lastPaymentDate);
-            if (thisMonth > finalizedMonth) return false;
-          } else if (c.total_parcelas > 0 && c.parcela_atual >= c.total_parcelas) {
-            const estimatedEnd = addMonths(createdMonth, c.total_parcelas - 1);
-            if (thisMonth > startOfMonth(estimatedEnd)) return false;
-          }
-        }
+        const finalizedMonth = getFinalizedMonth(c as any, ultimosPagamentos);
+        if (finalizedMonth && thisMonthStart > finalizedMonth) return false;
 
-        const monthsElapsed = (thisMonth.getFullYear() - createdMonth.getFullYear()) * 12 + (thisMonth.getMonth() - createdMonth.getMonth());
+        const monthsElapsed = (thisMonthStart.getFullYear() - createdMonth.getFullYear()) * 12 + (thisMonthStart.getMonth() - createdMonth.getMonth());
         return monthsElapsed >= 0 && monthsElapsed < (c.total_parcelas || 1);
       }).reduce((s, c) => s + c.valor_parcela, 0);
       
