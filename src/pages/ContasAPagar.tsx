@@ -70,8 +70,9 @@ interface ContaPagar {
 
 function parseDateSafe(value?: string | null): Date | null {
   if (!value) return null;
-  const normalized = value.includes("T") ? value : value.replace(" ", "T");
-  const parsed = new Date(normalized);
+  const dateOnly = value.match(/\d{4}-\d{2}-\d{2}/)?.[0];
+  if (!dateOnly) return null;
+  const parsed = new Date(`${dateOnly}T12:00:00`);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
@@ -267,7 +268,8 @@ export default function ContasAPagar() {
             
             if (c.valor_restante <= 0) {
               const lastPayment = ultimosPagamentos[c.id];
-              if (lastPayment) endLimit = new Date(lastPayment + "T12:00:00");
+              const lastPaymentDate = parseDateSafe(lastPayment);
+              if (lastPaymentDate) endLimit = lastPaymentDate;
             }
             return start <= yearEnd && endLimit >= yearStart;
           }
