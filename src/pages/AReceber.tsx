@@ -1053,49 +1053,91 @@ export default function AReceber() {
 
       {/* Dialog Historico de Abatimentos */}
       <Dialog open={!!historicoVenda} onOpenChange={(open) => { if (!open) setHistoricoVenda(null); }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Historico de Abatimentos</DialogTitle>
+            <DialogTitle>Detalhamento dos Pagamentos</DialogTitle>
           </DialogHeader>
           {historicoVenda && (
             <div className="space-y-3">
-              <div className="rounded-lg bg-muted p-3 space-y-1">
-                <p className="text-sm font-medium">{historicoVenda.clientes?.nome}</p>
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Total da venda:</span>
-                  <span className="font-bold text-foreground">R$ {Number(historicoVenda.total).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Ja pago:</span>
-                  <span className="font-bold text-green-600">R$ {Number(historicoVenda.valor_pago || 0).toFixed(2)}</span>
-                </div>
-              </div>
+              {(() => {
+                const total = Number(historicoVenda.total) || 0;
+                const totalPago = historico.reduce((s: number, h: any) => s + Number(h.valor || 0), 0);
+                const totalPix = historico.reduce((s: number, h: any) => s + Number(h.valor_pix || 0), 0);
+                const totalEsp = historico.reduce((s: number, h: any) => s + Number(h.valor_especie || 0), 0);
+                const saldo = Math.max(0, total - totalPago);
+                const pct = total > 0 ? Math.min(100, (totalPago / total) * 100) : 0;
+                const dataVenda = new Date(historicoVenda.created_at).toLocaleDateString("pt-BR");
+                const primeiro = historico[0]?.created_at;
+                const ultimo = historico[historico.length - 1]?.created_at;
+                const dias = primeiro && ultimo ? Math.round((new Date(ultimo).getTime() - new Date(primeiro).getTime()) / 86400000) : 0;
+                return (
+                  <div className="rounded-lg bg-muted p-3 space-y-2">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="text-sm font-semibold">{historicoVenda.clientes?.nome}</p>
+                        <p className="text-[11px] text-muted-foreground">Venda em {dataVenda} · Pgto orig.: {historicoVenda.forma_pagamento?.replace("_"," ") || "-"}</p>
+                      </div>
+                      <Badge variant={saldo === 0 ? "default" : "secondary"} className="text-[10px]">
+                        {saldo === 0 ? "Quitada" : `${pct.toFixed(0)}% pago`}
+                      </Badge>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-background overflow-hidden">
+                      <div className="h-full bg-green-500 transition-all" style={{ width: `${pct}%` }} />
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-[11px] pt-1">
+                      <div><p className="text-muted-foreground">Total venda</p><p className="font-bold">R$ {total.toFixed(2)}</p></div>
+                      <div><p className="text-muted-foreground">Pago</p><p className="font-bold text-green-600">R$ {totalPago.toFixed(2)}</p></div>
+                      <div><p className="text-muted-foreground">Saldo</p><p className={`font-bold ${saldo > 0 ? "text-destructive" : "text-green-600"}`}>R$ {saldo.toFixed(2)}</p></div>
+                    </div>
+                    {(totalPix > 0 || totalEsp > 0) && (
+                      <div className="grid grid-cols-2 gap-2 text-[11px] pt-1 border-t">
+                        <div className="pt-1"><p className="text-muted-foreground">PIX</p><p className="font-semibold">R$ {totalPix.toFixed(2)}</p></div>
+                        <div className="pt-1"><p className="text-muted-foreground">Espécie</p><p className="font-semibold">R$ {totalEsp.toFixed(2)}</p></div>
+                      </div>
+                    )}
+                    {historico.length > 1 && (
+                      <p className="text-[10px] text-muted-foreground pt-1 border-t">
+                        {historico.length} pagamentos em {dias === 0 ? "menos de 1 dia" : `${dias} dia(s)`}
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
 
               {historico.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">Nenhum abatimento registrado.</p>
               ) : (
                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {historico.map((h, i) => (
-                    <div key={h.id} className="flex items-center justify-between rounded-md border p-3">
-                      <div>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(h.created_at).toLocaleDateString("pt-BR")} às{" "}
-                          {new Date(h.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                        </p>
-                        <p className="text-xs text-muted-foreground">Abatimento #{i + 1}</p>
-                        {h.forma_pagamento && (
-                          <p className="text-xs mt-0.5">
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                              {h.forma_pagamento === "misto"
-                                ? `PIX R$${Number(h.valor_pix || 0).toFixed(2)} + Espécie R$${Number(h.valor_especie || 0).toFixed(2)}`
-                                : h.forma_pagamento === "pix" ? "PIX" : "Espécie"}
-                            </Badge>
+                  {(() => {
+                    const totalVenda = Number(historicoVenda.total) || 0;
+                    let acumulado = 0;
+                    return historico.map((h, i) => {
+                      const valor = Number(h.valor) || 0;
+                      acumulado += valor;
+                      const saldoApos = Math.max(0, totalVenda - acumulado);
+                      const vPix = Number(h.valor_pix || 0);
+                      const vEsp = Number(h.valor_especie || 0);
+                      const forma = h.forma_pagamento || "especie";
+                      const formaLabel = forma === "misto" ? "Misto" : forma === "pix" ? "PIX" : "Espécie";
+                      const formaColor = forma === "pix" ? "bg-blue-500/10 text-blue-600 border-blue-300"
+                        : forma === "misto" ? "bg-purple-500/10 text-purple-600 border-purple-300"
+                        : "bg-emerald-500/10 text-emerald-600 border-emerald-300";
+                      return (
+                    <div key={h.id} className="rounded-md border p-3 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold">Pagamento #{i + 1}</span>
+                            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${formaColor}`}>{formaLabel}</Badge>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground">
+                            {new Date(h.created_at).toLocaleDateString("pt-BR")} às{" "}
+                            {new Date(h.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                           </p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-green-600">R$ {Number(h.valor).toFixed(2)}</span>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={async () => {
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="font-bold text-green-600">R$ {valor.toFixed(2)}</span>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={async () => {
                           if (!confirm("Excluir este abatimento? O valor será estornado.")) return;
                           try {
                             const valor = Number(h.valor);
@@ -1110,10 +1152,23 @@ export default function AReceber() {
                             await loadData();
                             await loadHistorico(h.venda_id);
                           } catch (e: any) { toast({ title: "Erro", description: e.message, variant: "destructive" }); }
-                        }}><Trash2 className="h-4 w-4" /></Button>
+                          }}><Trash2 className="h-4 w-4" /></Button>
+                        </div>
+                      </div>
+                      {forma === "misto" && (vPix > 0 || vEsp > 0) && (
+                        <div className="grid grid-cols-2 gap-2 text-[11px] bg-muted/40 rounded p-2">
+                          <div className="flex justify-between"><span className="text-muted-foreground">PIX:</span><span className="font-medium text-blue-600">R$ {vPix.toFixed(2)}</span></div>
+                          <div className="flex justify-between"><span className="text-muted-foreground">Espécie:</span><span className="font-medium text-emerald-600">R$ {vEsp.toFixed(2)}</span></div>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-[10px] text-muted-foreground border-t pt-1.5">
+                        <span>Acumulado: <span className="font-semibold text-foreground">R$ {acumulado.toFixed(2)}</span></span>
+                        <span>Saldo após: <span className={`font-semibold ${saldoApos === 0 ? "text-green-600" : "text-destructive"}`}>R$ {saldoApos.toFixed(2)}</span></span>
                       </div>
                     </div>
-                  ))}
+                      );
+                    });
+                  })()}
                   <div className="flex justify-between pt-2 border-t text-sm font-semibold">
                     <span>Total abatido:</span>
                     <span className="text-green-600">
