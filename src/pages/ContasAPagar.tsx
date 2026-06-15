@@ -203,23 +203,9 @@ export default function ContasAPagar() {
       const created = new Date(c.created_at || "");
       const start = startOfMonth(created);
 
-      // Check if bill was finished (paid in full or reached last installment) before the target month
-      if (c.valor_restante <= 0 || (c.total_parcelas > 0 && c.parcela_atual >= c.total_parcelas)) {
-        const lastPaymentStr = ultimosPagamentos[c.id];
-        if (lastPaymentStr) {
-          const lastPaymentDate = new Date(lastPaymentStr.split(' ')[0] + "T12:00:00");
-          const finalizedMonth = startOfMonth(lastPaymentDate);
-          if (targetDate > finalizedMonth) {
-            return false;
-          }
-        } else if (c.total_parcelas > 0 && c.parcela_atual >= c.total_parcelas) {
-          // If no payment history but progress is 100%, check created_at + total_parcelas
-          const estimatedEnd = addMonths(start, c.total_parcelas - 1);
-          if (targetDate > startOfMonth(estimatedEnd)) {
-            return false;
-          }
-        }
-      }
+      // Esconde parcelados/finalizados de meses posteriores à finalização
+      const finalizedMonth = getFinalizedMonth(c as any, ultimosPagamentos);
+      if (finalizedMonth && targetDate > finalizedMonth) return false;
 
       if (busca.trim() && !c.descricao.toLowerCase().includes(busca.toLowerCase()) && !(c.responsavel || "").toLowerCase().includes(busca.toLowerCase())) return false;
       if (filtroTipo !== "todos" && c.tipo !== filtroTipo) return false;
