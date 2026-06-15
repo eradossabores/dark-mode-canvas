@@ -67,6 +67,28 @@ interface ContaPagar {
   categoria: string;
 }
 
+// Helper: retorna o mês (inicio) em que uma conta parcelada foi finalizada,
+// ou null se ainda não foi. Usa o último pagamento; se não houver,
+// cai para updated_at; em último caso, created_at + total_parcelas - 1 meses.
+function getFinalizedMonth(
+  c: { valor_restante: number; parcela_atual: number; total_parcelas: number; created_at?: string; updated_at?: string },
+  ultimosPagamentos: Record<string, string>,
+): Date | null {
+  const finalizada = c.valor_restante <= 0 || (c.total_parcelas > 0 && c.parcela_atual >= c.total_parcelas);
+  if (!finalizada) return null;
+  const lastPayment = ultimosPagamentos[(c as any).id];
+  if (lastPayment) {
+    return startOfMonth(new Date(lastPayment.split(" ")[0] + "T12:00:00"));
+  }
+  if (c.updated_at) {
+    return startOfMonth(new Date(c.updated_at));
+  }
+  if (c.created_at && c.total_parcelas > 0) {
+    return startOfMonth(addMonths(new Date(c.created_at), c.total_parcelas - 1));
+  }
+  return startOfMonth(new Date());
+}
+
 interface PagamentoConta {
   id: string;
   conta_id: string;
