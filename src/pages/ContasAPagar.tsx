@@ -64,14 +64,23 @@ interface ContaPagar {
   pago_mes: boolean;
   proxima_parcela_data: string | null;
   created_at?: string;
+  updated_at?: string;
   categoria: string;
+}
+
+function parseDateSafe(value?: string | null): Date | null {
+  if (!value) return null;
+  const dateOnly = value.match(/\d{4}-\d{2}-\d{2}/)?.[0];
+  if (!dateOnly) return null;
+  const parsed = new Date(`${dateOnly}T12:00:00`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
 // Helper: retorna o mês (inicio) em que uma conta parcelada foi finalizada,
 // ou null se ainda não foi. Usa o último pagamento; se não houver,
 // cai para updated_at; em último caso, created_at + total_parcelas - 1 meses.
 function getFinalizedMonth(
-  c: { tipo?: string; valor_restante: number; parcela_atual: number; total_parcelas: number; created_at?: string; updated_at?: string },
+  c: { id: string; tipo?: string; valor_restante: number; parcela_atual: number; total_parcelas: number; created_at?: string; updated_at?: string },
   ultimosPagamentos: Record<string, string>,
 ): Date | null {
   // Só faz sentido para parceladas; contas fixas nunca "finalizam"
@@ -79,16 +88,16 @@ function getFinalizedMonth(
   if (!c.total_parcelas || c.total_parcelas <= 0) return null;
   const finalizada = c.valor_restante <= 0 || c.parcela_atual >= c.total_parcelas;
   if (!finalizada) return null;
-  const lastPayment = ultimosPagamentos[(c as any).id];
-  if (lastPayment) {
-    return startOfMonth(new Date(lastPayment.split(" ")[0] + "T12:00:00"));
-  }
-  if (c.updated_at) {
-    return startOfMonth(new Date(c.updated_at));
-  }
-  if (c.created_at) {
-    return startOfMonth(addMonths(new Date(c.created_at), c.total_parcelas - 1));
-  }
+
+  const lastPaymentDate = parseDateSafe(ultimosPagamentos[c.id]);
+  if (lastPaymentDate) return startOfMonth(lastPaymentDate);
+
+  const updatedDate = parseDateSafe(c.updated_at);
+  if (updatedDate) return startOfMonth(updatedDate);
+
+  const createdDate = parseDateSafe(c.created_at);
+  if (createdDate) return startOfMonth(addMonths(createdDate, c.total_parcelas - 1));
+
   return startOfMonth(new Date());
 }
 
@@ -203,7 +212,7 @@ export default function ContasAPagar() {
       const isPorao = desc.includes("PORÃO") || resp.includes("PORÃO") || desc.includes("PORAO") || resp.includes("PORAO");
 
       const targetDate = new Date(targetYear || new Date().getFullYear(), targetMonth ?? 0, 1);
-      const created = new Date(c.created_at || "");
+      const created = parseDateSafe(c.created_at) || new Date();
       const start = startOfMonth(created);
 
       // Esconde parcelados/finalizados de meses posteriores à finalização
@@ -223,7 +232,8 @@ export default function ContasAPagar() {
         } else if (c.tipo === "parcelado" && targetMonth !== null && targetYear !== null) {
           // Verify if this specific installment was paid in the past
           const hasPayment = pagamentos.some(p => {
-            const pDate = new Date(p.data_pagamento);
+            const pDate = parseDateSafe(p.data_pagamento);
+            if (!pDate) return false;
             return p.conta_id === c.id && pDate.getMonth() === targetMonth && pDate.getFullYear() === targetYear;
           });
           if (!hasPayment) return false;
@@ -238,7 +248,8 @@ export default function ContasAPagar() {
           if (c.pago_mes) return false;
         } else if (c.tipo === "parcelado" && targetMonth !== null && targetYear !== null) {
           const hasPayment = pagamentos.some(p => {
-            const pDate = new Date(p.data_pagamento);
+            const pDate = parseDateSafe(p.data_pagamento);
+            if (!pDate) return false;
             return p.conta_id === c.id && pDate.getMonth() === targetMonth && pDate.getFullYear() === targetYear;
           });
           if (hasPayment) return false;
@@ -259,7 +270,8 @@ export default function ContasAPagar() {
             
             if (c.valor_restante <= 0) {
               const lastPayment = ultimosPagamentos[c.id];
-              if (lastPayment) endLimit = new Date(lastPayment + "T12:00:00");
+              const lastPaymentDate = parseDateSafe(lastPayment);
+              if (lastPaymentDate) endLimit = lastPaymentDate;
             }
             return start <= yearEnd && endLimit >= yearStart;
           }
@@ -308,7 +320,7 @@ export default function ContasAPagar() {
       const parceladoTotal = contas.filter(c => {
         if (c.tipo !== "parcelado") return false;
         
-        const created = new Date(c.created_at || "");
+        const created = parseDateSafe(c.created_at) || new Date();
         const createdMonth = startOfMonth(created);
         if (createdMonth > thisMonthStart) return false;
 
@@ -341,7 +353,7 @@ export default function ContasAPagar() {
       const fixoTotal = contas.filter(c => c.tipo === "fixo").reduce((s, c) => s + c.valor_parcela, 0);
       const parceladoTotal = contas.filter(c => {
         if (c.tipo !== "parcelado") return false;
-        const created = new Date(c.created_at || "");
+        const created = parseDateSafe(c.created_at) || new Date();
         const createdMonth = startOfMonth(created);
         const thisMonth = startOfMonth(futureDate);
         if (createdMonth > thisMonth) return false;
@@ -704,7 +716,8 @@ export default function ContasAPagar() {
       let isPaid = c.pago_mes;
       if (!isViewingCurrentMonth && targetMonth !== null && targetYear !== null) {
         isPaid = pagamentos.some(p => {
-          const pDate = new Date(p.data_pagamento);
+          const pDate = parseDateSafe(p.data_pagamento);
+          if (!pDate) return false;
           return p.conta_id === c.id && pDate.getMonth() === targetMonth && pDate.getFullYear() === targetYear;
         });
       }
