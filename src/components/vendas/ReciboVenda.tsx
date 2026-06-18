@@ -341,7 +341,8 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     const file = new File([pdfBlob], fileName, { type: "application/pdf" });
 
     const displayName = factoryName || "MACUXI ICE";
-    const msg = `*${displayName}*\n\nOlá ${data.cliente_nome}, segue seu recibo.\n\nTotal: R$ ${totalExibido.toFixed(2)}\nData: ${data.data}\nPagamento: ${data.forma_pagamento}`;
+    const vencLine = data.data_vencimento ? `\nVencimento: ${data.data_vencimento}` : "";
+    const msg = `*${displayName}*\n\nOlá ${data.cliente_nome}, segue seu recibo.\n\nTotal: R$ ${totalExibido.toFixed(2)}\nData: ${data.data}\nPagamento: ${data.forma_pagamento}${vencLine}`;
 
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
       try {
