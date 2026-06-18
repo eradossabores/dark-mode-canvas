@@ -448,7 +448,7 @@ export default function Vendas() {
       const vencimentoStr = dataVencimento
         ? toLocalDateStr(dataVencimento)
         : toLocalDateStr(new Date(dataVenda.getTime() + 30 * 86400000));
-      const parcelasData = formaPagamento === "parcelado" && valorEntrada
+      const parcelasData = (formaPagamento === "parcelado" || formaPagamento === "fiado") && valorEntrada && parseDecimal(valorEntrada) > 0
         ? [
             { valor: parseDecimal(valorEntrada), vencimento: toLocalDateStr(dataVenda) },
             ...(parseDecimal(valorRestante) > 0 ? [{ valor: parseDecimal(valorRestante), vencimento: vencimentoStr }] : []),
@@ -457,7 +457,7 @@ export default function Vendas() {
         ? [{ valor: itensValidos.reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0), vencimento: vencimentoStr }]
         : undefined;
 
-      const vencInfo = (formaPagamento === "boleto" || formaPagamento === "parcelado") && dataVencimento
+      const vencInfo = (formaPagamento === "boleto" || formaPagamento === "parcelado" || formaPagamento === "fiado") && dataVencimento
         ? ` | Vencimento: ${format(dataVencimento, "dd/MM/yyyy")}`
         : "";
       const freteInfo = parseDecimal(valorFrete) > 0 ? ` | Frete: R$${parseDecimal(valorFrete).toFixed(2)} (${fretePagoPor === "empresa" ? "empresa" : "cliente"})` : "";
@@ -1208,7 +1208,7 @@ export default function Vendas() {
                 )}
               </div>
               <div><Label>Forma de Pagamento</Label>
-                <Select value={formaPagamento} onValueChange={(v) => { setFormaPagamento(v); if (v !== "parcelado") { setValorTotal(""); setValorEntrada(""); setValorRestante(""); } if (v !== "boleto" && v !== "parcelado") { setDataVencimento(undefined); } }}>
+                <Select value={formaPagamento} onValueChange={(v) => { setFormaPagamento(v); if (v !== "parcelado" && v !== "fiado") { setValorTotal(""); setValorEntrada(""); setValorRestante(""); } if (v !== "boleto" && v !== "parcelado" && v !== "fiado") { setDataVencimento(undefined); } }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{FORMAS_PAGAMENTO.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}</SelectContent>
                 </Select>
@@ -1244,10 +1244,10 @@ export default function Vendas() {
                   )}
                 </div>
               )}
-              {(formaPagamento === "boleto" || formaPagamento === "parcelado") && (
+              {(formaPagamento === "boleto" || formaPagamento === "parcelado" || formaPagamento === "fiado") && (
                 <div className="space-y-3 p-3 border rounded-lg bg-muted/30">
                   <div>
-                    <Label>Data de Vencimento / Pagamento Restante</Label>
+                    <Label>{formaPagamento === "fiado" ? "Data prevista para pagamento" : "Data de Vencimento / Pagamento Restante"}</Label>
                     <Popover open={calendarVencOpen} onOpenChange={setCalendarVencOpen}>
                       <PopoverTrigger asChild>
                         <Button
@@ -1299,6 +1299,26 @@ export default function Vendas() {
                         <Input type="text" inputMode="decimal" value={valorRestante} readOnly className="bg-muted" />
                       </div>
                     </>
+                  )}
+                  {formaPagamento === "fiado" && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground">
+                        Informe a data prevista para pagamento. Caso o cliente pague <strong>parte do valor no ato</strong>, preencha abaixo — o restante ficará em aberto até a data informada. Deixe em branco para lançar o <strong>valor integral</strong> a prazo.
+                      </p>
+                      <Label>Valor pago no ato — opcional (R$)</Label>
+                      <Input type="text" inputMode="decimal" value={valorEntrada} onChange={(e) => {
+                        const v = formatDecimalInput(e.target.value);
+                        setValorEntrada(v);
+                        const total = itens.reduce((s, i) => s + (Number(i.preco_unitario) || 0) * (Number(i.quantidade) || 0), 0);
+                        const entrada = parseDecimal(v);
+                        setValorRestante((total - entrada).toFixed(2));
+                      }} placeholder="0,00 (deixe vazio para integral a prazo)" />
+                      {parseDecimal(valorEntrada) > 0 && (
+                        <p className="text-xs">
+                          Restante a prazo: <span className="font-semibold text-destructive">R$ {parseDecimal(valorRestante).toFixed(2)}</span>
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
