@@ -29,6 +29,7 @@ interface ReciboData {
   valor_pago?: number;
   valor_frete?: number;
   frete_pago_por?: "empresa" | "cliente" | "ambos";
+  data_vencimento?: string;
 }
 
 interface Props {
