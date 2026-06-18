@@ -29,6 +29,7 @@ interface ReciboData {
   valor_pago?: number;
   valor_frete?: number;
   frete_pago_por?: "empresa" | "cliente" | "ambos";
+  data_vencimento?: string;
 }
 
 interface Props {
@@ -145,6 +146,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     infoLabel("Data:", data.data, y); y += 3.5;
     infoLabel("Pgto:", data.forma_pagamento, y); y += 3.5;
     if (data.numero_nf) { infoLabel("NF:", data.numero_nf, y); y += 3.5; }
+    if (data.data_vencimento) { infoLabel("Vencto:", data.data_vencimento, y); y += 3.5; }
     y += 2;
 
     doc.setDrawColor(200, 200, 200);
@@ -339,7 +341,8 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     const file = new File([pdfBlob], fileName, { type: "application/pdf" });
 
     const displayName = factoryName || "MACUXI ICE";
-    const msg = `*${displayName}*\n\nOlá ${data.cliente_nome}, segue seu recibo.\n\nTotal: R$ ${totalExibido.toFixed(2)}\nData: ${data.data}\nPagamento: ${data.forma_pagamento}`;
+    const vencLine = data.data_vencimento ? `\nVencimento: ${data.data_vencimento}` : "";
+    const msg = `*${displayName}*\n\nOlá ${data.cliente_nome}, segue seu recibo.\n\nTotal: R$ ${totalExibido.toFixed(2)}\nData: ${data.data}\nPagamento: ${data.forma_pagamento}${vencLine}`;
 
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
       try {
@@ -378,6 +381,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
             <p><strong>Data:</strong> {data.data}</p>
             <p><strong>Pagamento:</strong> {data.forma_pagamento}</p>
             {data.numero_nf && <p><strong>NF:</strong> {data.numero_nf}</p>}
+            {data.data_vencimento && <p><strong>Vencimento:</strong> {data.data_vencimento}</p>}
           </div>
 
           <div className="border rounded-lg overflow-hidden">

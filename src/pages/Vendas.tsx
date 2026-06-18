@@ -54,6 +54,13 @@ export default function Vendas() {
   const [sabores, setSabores] = useState<any[]>([]);
   const [vendas, setVendas] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
+
+  const clientesOrdenados = useMemo(() => {
+    const counts: Record<string, number> = {};
+    vendas.forEach((v: any) => { counts[v.cliente_id] = (counts[v.cliente_id] || 0) + 1; });
+    return [...clientes].sort((a, b) => (counts[b.id] || 0) - (counts[a.id] || 0) || a.nome.localeCompare(b.nome));
+  }, [clientes, vendas]);
+
   const [editOpen, setEditOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [cancelId, setCancelId] = useState<string | null>(null);
@@ -230,6 +237,7 @@ export default function Vendas() {
       valor_pago: Number(v.valor_pago || 0),
       valor_frete: Number(v.valor_frete || 0),
       frete_pago_por: v.frete_pago_por || undefined,
+      data_vencimento: v.data_vencimento ? new Date(v.data_vencimento + "T00:00:00").toLocaleDateString("pt-BR") : undefined,
       itens: (itensData || []).map((it: any) => ({
         sabor_nome: it.sabores?.nome || "?",
         quantidade: it.quantidade,
@@ -626,6 +634,9 @@ export default function Vendas() {
             valor_pago: statusVenda === "paga" ? totalVenda : (statusVenda === "pendente" ? 0 : totalVenda),
             valor_frete: parseDecimal(valorFrete) || 0,
             frete_pago_por: fretePagoPor,
+            data_vencimento: (formaPagamento === "boleto" || formaPagamento === "parcelado" || formaPagamento === "fiado") && dataVencimento
+              ? format(dataVencimento, "dd/MM/yyyy")
+              : undefined,
             itens: (itensData || []).map((it: any) => ({
               sabor_nome: it.sabores?.nome || "?",
               quantidade: it.quantidade,
@@ -1091,7 +1102,7 @@ export default function Vendas() {
               <div><Label>Cliente</Label>
                 <Select value={clienteId} onValueChange={(v) => { setClienteId(v); recalcPrecos(v); }}>
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{clientes.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
+                  <SelectContent>{clientesOrdenados.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               {/* Venda por Pacote (Sacos) - no topo da comanda */}
