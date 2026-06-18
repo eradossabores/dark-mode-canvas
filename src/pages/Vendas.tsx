@@ -448,7 +448,7 @@ export default function Vendas() {
       const vencimentoStr = dataVencimento
         ? toLocalDateStr(dataVencimento)
         : toLocalDateStr(new Date(dataVenda.getTime() + 30 * 86400000));
-      const parcelasData = formaPagamento === "parcelado" && valorEntrada
+      const parcelasData = (formaPagamento === "parcelado" || formaPagamento === "fiado") && valorEntrada && parseDecimal(valorEntrada) > 0
         ? [
             { valor: parseDecimal(valorEntrada), vencimento: toLocalDateStr(dataVenda) },
             ...(parseDecimal(valorRestante) > 0 ? [{ valor: parseDecimal(valorRestante), vencimento: vencimentoStr }] : []),
@@ -457,7 +457,7 @@ export default function Vendas() {
         ? [{ valor: itensValidos.reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0), vencimento: vencimentoStr }]
         : undefined;
 
-      const vencInfo = (formaPagamento === "boleto" || formaPagamento === "parcelado") && dataVencimento
+      const vencInfo = (formaPagamento === "boleto" || formaPagamento === "parcelado" || formaPagamento === "fiado") && dataVencimento
         ? ` | Vencimento: ${format(dataVencimento, "dd/MM/yyyy")}`
         : "";
       const freteInfo = parseDecimal(valorFrete) > 0 ? ` | Frete: R$${parseDecimal(valorFrete).toFixed(2)} (${fretePagoPor === "empresa" ? "empresa" : "cliente"})` : "";
