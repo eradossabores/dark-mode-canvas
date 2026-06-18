@@ -627,6 +627,9 @@ export default function Vendas() {
             valor_pago: statusVenda === "paga" ? totalVenda : (statusVenda === "pendente" ? 0 : totalVenda),
             valor_frete: parseDecimal(valorFrete) || 0,
             frete_pago_por: fretePagoPor,
+            data_vencimento: (formaPagamento === "boleto" || formaPagamento === "parcelado" || formaPagamento === "fiado") && dataVencimento
+              ? format(dataVencimento, "dd/MM/yyyy")
+              : undefined,
             itens: (itensData || []).map((it: any) => ({
               sabor_nome: it.sabores?.nome || "?",
               quantidade: it.quantidade,
