@@ -1095,7 +1095,7 @@ export default function Vendas() {
               <div><Label>Cliente</Label>
                 <Select value={clienteId} onValueChange={(v) => { setClienteId(v); recalcPrecos(v); }}>
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{clientes.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
+                  <SelectContent>{clientesOrdenados.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               {/* Venda por Pacote (Sacos) - no topo da comanda */}
