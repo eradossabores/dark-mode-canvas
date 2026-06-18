@@ -146,6 +146,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     infoLabel("Data:", data.data, y); y += 3.5;
     infoLabel("Pgto:", data.forma_pagamento, y); y += 3.5;
     if (data.numero_nf) { infoLabel("NF:", data.numero_nf, y); y += 3.5; }
+    if (data.data_vencimento) { infoLabel("Vencto:", data.data_vencimento, y); y += 3.5; }
     y += 2;
 
     doc.setDrawColor(200, 200, 200);
