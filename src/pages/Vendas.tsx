@@ -1300,6 +1300,26 @@ export default function Vendas() {
                       </div>
                     </>
                   )}
+                  {formaPagamento === "fiado" && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground">
+                        Informe a data prevista para pagamento. Caso o cliente pague <strong>parte do valor no ato</strong>, preencha abaixo — o restante ficará em aberto até a data informada. Deixe em branco para lançar o <strong>valor integral</strong> a prazo.
+                      </p>
+                      <Label>Valor pago no ato — opcional (R$)</Label>
+                      <Input type="text" inputMode="decimal" value={valorEntrada} onChange={(e) => {
+                        const v = formatDecimalInput(e.target.value);
+                        setValorEntrada(v);
+                        const total = itensValidos.reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0);
+                        const entrada = parseDecimal(v);
+                        setValorRestante((total - entrada).toFixed(2));
+                      }} placeholder="0,00 (deixe vazio para integral a prazo)" />
+                      {parseDecimal(valorEntrada) > 0 && (
+                        <p className="text-xs">
+                          Restante a prazo: <span className="font-semibold text-destructive">R$ {parseDecimal(valorRestante).toFixed(2)}</span>
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
               <div><Label>Nº Nota Fiscal (NF)</Label><Input value={numeroNf} onChange={(e) => setNumeroNf(e.target.value)} placeholder="Ex: 001234" /></div>
