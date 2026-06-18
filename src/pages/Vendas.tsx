@@ -230,6 +230,7 @@ export default function Vendas() {
       valor_pago: Number(v.valor_pago || 0),
       valor_frete: Number(v.valor_frete || 0),
       frete_pago_por: v.frete_pago_por || undefined,
+      data_vencimento: v.data_vencimento ? new Date(v.data_vencimento + "T00:00:00").toLocaleDateString("pt-BR") : undefined,
       itens: (itensData || []).map((it: any) => ({
         sabor_nome: it.sabores?.nome || "?",
         quantidade: it.quantidade,
