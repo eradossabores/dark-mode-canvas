@@ -380,6 +380,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
             <p><strong>Data:</strong> {data.data}</p>
             <p><strong>Pagamento:</strong> {data.forma_pagamento}</p>
             {data.numero_nf && <p><strong>NF:</strong> {data.numero_nf}</p>}
+            {data.data_vencimento && <p><strong>Vencimento:</strong> {data.data_vencimento}</p>}
           </div>
 
           <div className="border rounded-lg overflow-hidden">
