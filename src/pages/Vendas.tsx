@@ -1309,7 +1309,7 @@ export default function Vendas() {
                       <Input type="text" inputMode="decimal" value={valorEntrada} onChange={(e) => {
                         const v = formatDecimalInput(e.target.value);
                         setValorEntrada(v);
-                        const total = itensValidos.reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0);
+                        const total = itens.reduce((s, i) => s + (Number(i.preco_unitario) || 0) * (Number(i.quantidade) || 0), 0);
                         const entrada = parseDecimal(v);
                         setValorRestante((total - entrada).toFixed(2));
                       }} placeholder="0,00 (deixe vazio para integral a prazo)" />
