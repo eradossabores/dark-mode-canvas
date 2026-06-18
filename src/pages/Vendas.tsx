@@ -54,6 +54,7 @@ export default function Vendas() {
   const [sabores, setSabores] = useState<any[]>([]);
   const [vendas, setVendas] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
+
   const [editOpen, setEditOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [cancelId, setCancelId] = useState<string | null>(null);
