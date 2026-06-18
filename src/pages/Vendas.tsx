@@ -1208,7 +1208,7 @@ export default function Vendas() {
                 )}
               </div>
               <div><Label>Forma de Pagamento</Label>
-                <Select value={formaPagamento} onValueChange={(v) => { setFormaPagamento(v); if (v !== "parcelado") { setValorTotal(""); setValorEntrada(""); setValorRestante(""); } if (v !== "boleto" && v !== "parcelado") { setDataVencimento(undefined); } }}>
+                <Select value={formaPagamento} onValueChange={(v) => { setFormaPagamento(v); if (v !== "parcelado" && v !== "fiado") { setValorTotal(""); setValorEntrada(""); setValorRestante(""); } if (v !== "boleto" && v !== "parcelado" && v !== "fiado") { setDataVencimento(undefined); } }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{FORMAS_PAGAMENTO.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}</SelectContent>
                 </Select>
@@ -1244,10 +1244,10 @@ export default function Vendas() {
                   )}
                 </div>
               )}
-              {(formaPagamento === "boleto" || formaPagamento === "parcelado") && (
+              {(formaPagamento === "boleto" || formaPagamento === "parcelado" || formaPagamento === "fiado") && (
                 <div className="space-y-3 p-3 border rounded-lg bg-muted/30">
                   <div>
-                    <Label>Data de Vencimento / Pagamento Restante</Label>
+                    <Label>{formaPagamento === "fiado" ? "Data prevista para pagamento" : "Data de Vencimento / Pagamento Restante"}</Label>
                     <Popover open={calendarVencOpen} onOpenChange={setCalendarVencOpen}>
                       <PopoverTrigger asChild>
                         <Button
