@@ -55,6 +55,12 @@ export default function Vendas() {
   const [vendas, setVendas] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
 
+  const clientesOrdenados = useMemo(() => {
+    const counts: Record<string, number> = {};
+    vendas.forEach((v: any) => { counts[v.cliente_id] = (counts[v.cliente_id] || 0) + 1; });
+    return [...clientes].sort((a, b) => (counts[b.id] || 0) - (counts[a.id] || 0) || a.nome.localeCompare(b.nome));
+  }, [clientes, vendas]);
+
   const [editOpen, setEditOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [cancelId, setCancelId] = useState<string | null>(null);
