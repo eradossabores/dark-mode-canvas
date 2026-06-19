@@ -3068,6 +3068,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      ajustar_venda_item: {
+        Args: {
+          p_operador?: string
+          p_preco_unitario?: number
+          p_quantidade_nova: number
+          p_regra?: string
+          p_sabor_id: string
+          p_venda_id: string
+        }
+        Returns: Json
+      }
       calcular_comissao_pacote: {
         Args: { _quantidade: number; _recorrente: boolean }
         Returns: {
@@ -3079,6 +3090,10 @@ export type Database = {
       calcular_preco: {
         Args: { p_cliente_id: string; p_quantidade: number; p_sabor_id: string }
         Returns: number
+      }
+      cancelar_venda: {
+        Args: { p_operador?: string; p_venda_id: string }
+        Returns: Json
       }
       cliente_pertence_ao_vendedor: {
         Args: { _cliente_id: string; _user_id: string }
