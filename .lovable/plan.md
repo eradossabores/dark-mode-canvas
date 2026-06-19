@@ -1,53 +1,82 @@
-# Plano: Pagamento no Ato da Entrega
+# Auditoria — Vendas × Estoque
 
-Reaproveita a infraestrutura já criada (`preco_unidade_avista`, `preco_unidade_aprazo`, `forma_pagamento_tipo`, `convertida_automaticamente`, `alertas_financeiros`, recálculo de saldo) e adiciona o fluxo de **confirmação de entrega com pagamento**.
+## Resumo executivo
 
-## 1. Banco de dados (migração)
+A criação de venda (RPC `realizar_venda`) e a exclusão total da venda (trigger `cascade_delete_venda_movimentacoes`) tratam o estoque corretamente. **Mas a edição de uma venda já finalizada NÃO mexe em estoque algum** — é o ponto crítico desta auditoria.
 
-Tabela `vendas`:
-- `status_entrega` text default `'aguardando_entrega'` — valores: `aguardando_entrega`, `entregue_pago`, `entregue_nao_pago`, `convertida_prazo`
-- `entregue_em` timestamptz
-- `entregue_por` text
-- `pagamento_confirmado_em` timestamptz
-- `pagamento_confirmado_por` text
+## Problemas encontrados
 
-Função `confirmar_entrega_venda(p_venda_id uuid, p_pago boolean, p_operador text, p_forma_pagamento text)`:
-- Se `p_pago = true`: marca `status_entrega = entregue_pago`, cria abatimento total em `abatimentos_historico` com a `forma_pagamento`, registra auditoria. Não cria conta a receber (já está quitada via abatimento).
-- Se `p_pago = false`: recalcula `total` e `venda_itens` usando `preco_unidade_aprazo` do cliente (fallback 2,05), seta `forma_pagamento_tipo = aprazo`, `convertida_automaticamente = true`, `data_conversao = now()`, `valor_original = total antigo`, `status_entrega = convertida_prazo`, `data_vencimento = CURRENT_DATE + 7`. Insere alerta `convertida_entrega` e auditoria. O trigger existente recalcula o saldo devedor.
+### 1. CRÍTICO — Edição de venda não ajusta estoque
+Arquivo: `src/pages/Vendas.tsx` → função `handleEditSave` (linhas ~695-814).
 
-Função `realizar_venda` (alteração): nova venda nasce com `forma_pagamento_tipo = 'avista'`, `status_entrega = 'aguardando_entrega'` e usa `preco_unidade_avista` do cliente quando disponível (mantém o `calcular_preco` como fallback).
+O código:
+- Faz `update` em `venda_itens` ao alterar quantidade → **estoque não é debitado/creditado pela diferença**.
+- Faz `delete` em `venda_itens` removidos → **quantidade não volta para `estoque_gelos`**.
+- Faz `insert` de novo item (`isNew`) → **estoque não é debitado**.
+- Não grava nada em `movimentacoes_estoque` → perda total de rastreabilidade dos ajustes.
 
-## 2. Frontend
+Consequência: após qualquer edição, o saldo de `estoque_gelos` fica divergente da realidade. Brindes (preço 0) também não baixam estoque.
 
-**Cadastro de Cliente** (`Clientes.tsx`): a seção "Configuração Financeira" já existe; renomear os labels para "Preço por Unidade (Pagamento na Entrega)" e "Preço por Unidade (A Prazo)". Remover o toggle "Conversão automática após 3 dias" (substituído pelo fluxo de entrega). Mostrar Saldo Devedor, Limite e Status Financeiro (já presentes).
+### 2. CRÍTICO — Cancelamento de venda não devolve estoque
+Arquivo: `src/pages/Vendas.tsx` → `handleCancel` (linha ~851).
 
-**Nova Venda / Finalização** (`Vendas.tsx`, `NovoPedido.tsx`): default = "Pagamento na Entrega"; preço unitário usa `preco_unidade_avista`. Remover o toggle À Vista/A Prazo manual (a conversão acontece via confirmação de entrega).
+Apenas marca `status = 'cancelada'`. O trigger `cascade_delete_venda_movimentacoes` só dispara no DELETE da venda, não em UPDATE de status. Portanto cancelar deixa o estoque deduzido eternamente.
 
-**Histórico de Pedidos / Monitor** (`HistoricoPedidos.tsx`): nova coluna **Status de Entrega** com badge colorido. Botão **"Confirmar Entrega"** abre `AlertDialog` com duas opções: *Pagamento Recebido* (com select PIX/Espécie/Misto) ou *Pagamento Não Recebido (Converter para A Prazo)*. Chama a função `confirmar_entrega_venda` via RPC.
+### 3. MÉDIO — Sem logs de auditoria de movimentação por edição
+Nenhum INSERT em `auditoria` nem em `movimentacoes_estoque` registra: estoque antes, estoque depois, diferença, usuário, venda_id. Edições e cancelamentos passam invisíveis no histórico de estoque.
 
-**A Receber** (`AReceber.tsx`): já existente; passa a listar automaticamente as vendas convertidas. Badge "Convertida na entrega" quando `convertida_automaticamente = true`.
+### 4. BAIXO — `handleDelete` confia no trigger, mas remove `venda_itens` ANTES do `DELETE` da venda
+Arquivo: `src/pages/Vendas.tsx` linha ~913. O trigger `cascade_delete_venda_movimentacoes` lê `movimentacoes_estoque` por `referencia_id = venda.id` (não depende de `venda_itens`), então o estorno funciona, mas é frágil — qualquer mudança futura no trigger pode quebrar silenciosamente.
 
-**Dashboard** (`Dashboard.tsx`): novos KPIs — *Entregues hoje*, *Pagas na entrega (hoje)*, *Convertidas para prazo (hoje)*, *Total a Receber*, *Inadimplentes*, *Valor em aberto*.
+## Correções propostas
 
-**Relatórios** (`Relatorios.tsx`): novas abas — Pagas na Entrega, Convertidas para Prazo, Inadimplentes, Histórico Financeiro por Cliente (filtro de período).
+### A. Nova função SQL `ajustar_venda_item` (transacional)
+Centraliza qualquer mudança de item em uma venda existente:
 
-## 3. Auditoria
+```text
+ajustar_venda_item(p_venda_id, p_sabor_id, p_quantidade_nova, p_operador)
+  ├─ lê quantidade atual em venda_itens (0 se não existe)
+  ├─ calcula delta = nova - atual
+  ├─ se delta > 0: valida estoque, debita estoque_gelos, INSERT movimentacao 'saida'
+  ├─ se delta < 0: credita estoque_gelos, INSERT movimentacao 'entrada' (estorno)
+  ├─ INSERT/UPDATE/DELETE em venda_itens conforme o caso
+  └─ INSERT em auditoria com {estoque_antes, estoque_depois, delta, venda_id, operador}
+```
 
-`confirmar_entrega_venda` grava em `auditoria` com `modulo='vendas'`, `acao='confirmar_entrega'` ou `'converter_entrega_prazo'`, contendo operador, valores e ID do cliente.
+### B. Nova função SQL `cancelar_venda(p_venda_id, p_operador)`
+- Reaproveita a lógica do trigger: para cada item da venda, credita estoque e registra movimentação `entrada` com `referencia = 'cancelamento_venda'`.
+- Atualiza `status = 'cancelada'`.
+- Registra auditoria.
 
-## 4. Cron antigo
+### C. Refatorar frontend
+- `handleEditSave`: substitui os loops de update/insert/delete por chamadas a `ajustar_venda_item` para cada item (incluindo brindes, removidos e novos).
+- `handleCancel`: chama `cancelar_venda` em vez do update direto.
 
-A função `processar_conversoes_e_alertas_diarios` é mantida apenas para emitir alertas de vencimento. A regra de conversão automática "3 dias" é desligada (passamos a converter no momento da entrega).
+### D. Testes automáticos (Vitest)
+Criar `src/tests/vendasEstoque.test.ts` cobrindo (com mocks do supabase client):
+1. Venda simples — debita 1 sabor.
+2. Venda múltipla — debita N sabores.
+3. Edição aumentando qty — debita só a diferença.
+4. Edição diminuindo qty — credita a diferença.
+5. Exclusão de item — credita qty total do item.
+6. Inclusão de novo item — debita qty.
+7. Cancelamento — credita todos os itens.
 
-## Arquivos a editar
-- `src/pages/Clientes.tsx`
-- `src/pages/Vendas.tsx`, `src/pages/NovoPedido.tsx`
-- `src/pages/HistoricoPedidos.tsx` (botão Confirmar Entrega)
-- `src/pages/AReceber.tsx`
-- `src/pages/Dashboard.tsx`
-- `src/pages/Relatorios.tsx`
+Os testes verificam o **payload enviado** às RPCs e o conjunto de chamadas — não tocam banco real.
 
-## Arquivos novos
-- `src/components/vendas/ConfirmarEntregaDialog.tsx`
+## Arquivos afetados
 
-Confirma para eu rodar a migração e implementar o frontend?
+- **Nova migration** (SQL): funções `ajustar_venda_item` e `cancelar_venda` + grants.
+- `src/pages/Vendas.tsx`: `handleEditSave`, `handleCancel`.
+- `src/tests/vendasEstoque.test.ts`: novo.
+
+## Entregáveis finais
+
+Ao final você recebe:
+- Relatório de execução dos 7 cenários de teste.
+- Lista de funções/arquivos alterados.
+- Confirmação de que toda movimentação passa a gerar linha em `movimentacoes_estoque` + `auditoria`.
+
+## Observação importante
+
+Esta é uma mudança estrutural: novas funções no banco e refatoração do fluxo de edição. Quer que eu prossiga com a implementação completa (migration + refactor + testes) ou prefere fatiar (ex.: só A+C primeiro, testes depois)?

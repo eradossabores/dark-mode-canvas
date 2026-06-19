@@ -697,11 +697,6 @@ export default function Vendas() {
     try {
       const itensValidos = editItens.filter((item) => item.sabor_id && item.quantidade > 0);
       const brindesValidos = editBrindes.filter(b => b.sabor_id && Number(b.quantidade) > 0);
-      const allKeptIds = [
-        ...itensValidos.filter((item) => item.id && !item.isNew).map((item) => item.id),
-        ...brindesValidos.filter(b => b.id).map(b => b.id),
-      ];
-      const itemIdsMantidos = allKeptIds;
 
       // Se mudou de paga/cancelada para pendente, resetar valor_pago
       const editTotal = itensValidos.reduce((sum: number, it: any) => sum + Number(it.preco_unitario) * (it.quantidade || 0), 0);
@@ -720,63 +715,57 @@ export default function Vendas() {
       const { error } = await (supabase as any).from("vendas").update(updateData).eq("id", editVenda.id);
       if (error) throw error;
 
-      // Fetch current item IDs from DB to find which ones were removed
+      // ===== Itens pagos: usa RPC transacional que ajusta estoque + auditoria =====
+      // 1) snapshot atual no banco (apenas itens pagos, brindes são tratados separadamente)
       const { data: currentDbItens } = await (supabase as any)
         .from("venda_itens")
-        .select("id")
+        .select("id, sabor_id, quantidade, preco_unitario")
         .eq("venda_id", editVenda.id);
-      const currentDbIds = (currentDbItens || []).map((r: any) => r.id);
-      const idsToDelete = currentDbIds.filter((dbId: string) => !itemIdsMantidos.includes(dbId));
+      const atuaisPagos = (currentDbItens || []).filter((r: any) => Number(r.preco_unitario) > 0);
+      const keptPaidIds = new Set(
+        itensValidos.filter((it: any) => it.id && !it.isNew).map((it: any) => it.id)
+      );
 
-      if (idsToDelete.length > 0) {
-        const { error: deleteError } = await (supabase as any)
-          .from("venda_itens")
-          .delete()
-          .in("id", idsToDelete);
-        if (deleteError) {
-          console.error("Erro ao excluir itens removidos:", deleteError);
-          throw deleteError;
+      // 2) sabores removidos da comanda → ajustar para 0 (estorna estoque)
+      for (const dbItem of atuaisPagos) {
+        if (!keptPaidIds.has(dbItem.id)) {
+          const { error: rmErr } = await (supabase as any).rpc("ajustar_venda_item", {
+            p_venda_id: editVenda.id,
+            p_sabor_id: dbItem.sabor_id,
+            p_quantidade_nova: 0,
+            p_preco_unitario: Number(dbItem.preco_unitario),
+            p_regra: "manual",
+            p_operador: "edicao_comanda",
+          });
+          if (rmErr) throw rmErr;
         }
       }
 
-
-      // Update existing items and insert new ones
+      // 3) itens mantidos e novos → ajusta para a quantidade nova (delta debita/credita)
       let newTotal = 0;
       for (const item of itensValidos) {
-        if (item.isNew) {
-          if (!item.sabor_id || item.quantidade <= 0) continue;
-          const subtotal = Number(item.preco_unitario) * item.quantidade;
-          newTotal += subtotal;
-          console.log("Inserindo novo item:", { venda_id: editVenda.id, sabor_id: item.sabor_id, quantidade: item.quantidade, preco_unitario: Number(item.preco_unitario), subtotal });
-          const { data: insertedData, error: insertError } = await (supabase as any).from("venda_itens").insert({
-            venda_id: editVenda.id,
-            sabor_id: item.sabor_id,
-            quantidade: item.quantidade,
-            preco_unitario: Number(item.preco_unitario),
-            subtotal: subtotal,
-            regra_preco_aplicada: "manual",
-          }).select();
-          console.log("Resultado insert:", { insertedData, insertError });
-          if (insertError) {
-            console.error("Erro ao inserir item:", insertError);
-            throw insertError;
-          }
-          if (!insertedData || insertedData.length === 0) {
-            throw new Error("Item não foi salvo. Verifique as permissões do banco de dados.");
-          }
-        } else {
-          const subtotal = Number(item.preco_unitario) * item.quantidade;
-          newTotal += subtotal;
-          const { error: updateError } = await (supabase as any).from("venda_itens").update({
-            quantidade: item.quantidade,
-            preco_unitario: Number(item.preco_unitario),
-            subtotal: subtotal,
-          }).eq("id", item.id);
-          if (updateError) {
-            console.error("Erro ao atualizar item:", updateError);
-            throw updateError;
-          }
-        }
+        const qty = Number(item.quantidade) || 0;
+        const preco = Number(item.preco_unitario) || 0;
+        newTotal += preco * qty;
+        const { error: ajErr } = await (supabase as any).rpc("ajustar_venda_item", {
+          p_venda_id: editVenda.id,
+          p_sabor_id: item.sabor_id,
+          p_quantidade_nova: qty,
+          p_preco_unitario: preco,
+          p_regra: item.isNew ? "manual" : (item.regra_preco_aplicada || "manual"),
+          p_operador: "edicao_comanda",
+        });
+        if (ajErr) throw ajErr;
+      }
+
+      // 4) brindes removidos da edição → DELETE direto (sem impacto em estoque na lógica atual)
+      const brindeIdsMantidos = new Set(brindesValidos.filter(b => b.id).map((b: any) => b.id));
+      const brindesAntigos = (currentDbItens || []).filter((r: any) => Number(r.preco_unitario) === 0);
+      const brindeIdsRemover = brindesAntigos
+        .filter((b: any) => !brindeIdsMantidos.has(b.id))
+        .map((b: any) => b.id);
+      if (brindeIdsRemover.length > 0) {
+        await (supabase as any).from("venda_itens").delete().in("id", brindeIdsRemover);
       }
 
       // Handle brindes (price = 0)
@@ -852,17 +841,12 @@ export default function Vendas() {
     if (!cancelId) return;
     try {
       const vendaCancelada = vendas.find(v => v.id === cancelId);
-      const { error } = await (supabase as any).from("vendas").update({ status: "cancelada" }).eq("id", cancelId);
-      if (error) throw error;
-
-      // Auditoria - cancelamento
-      await (supabase as any).from("auditoria").insert({
-        usuario_nome: "sistema",
-        modulo: "vendas",
-        acao: "venda_cancelada",
-        registro_afetado: cancelId,
-        descricao: `Venda cancelada - Cliente: ${vendaCancelada?.clientes?.nome || "?"} - R$ ${Number(vendaCancelada?.total || 0).toFixed(2)}`,
+      // RPC: estorna cada item ao estoque + auditoria + movimentação
+      const { error } = await (supabase as any).rpc("cancelar_venda", {
+        p_venda_id: cancelId,
+        p_operador: `cancelamento - ${vendaCancelada?.clientes?.nome || "?"}`,
       });
+      if (error) throw error;
 
       toast({ title: "Venda cancelada!" });
       setCancelId(null);
