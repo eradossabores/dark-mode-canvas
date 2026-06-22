@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -301,8 +301,8 @@ export default function RelatorioFinanceiroCliente() {
                         <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">Nenhuma comanda encontrada.</TableCell></TableRow>
                       )}
                       {vendasCliente.map((v) => (
-                        <>
-                          <TableRow key={v.id}>
+                        <Fragment key={v.id}>
+                          <TableRow>
                             <TableCell className="font-medium">#{v.numero_pedido ?? v.id.slice(0, 6)}</TableCell>
                             <TableCell>{dt(v.created_at)}</TableCell>
                             <TableCell>{dt(v.data_vencimento)}</TableCell>
@@ -315,7 +315,7 @@ export default function RelatorioFinanceiroCliente() {
                             </TableCell>
                           </TableRow>
                           {v.abats.length > 0 && (
-                            <TableRow key={v.id + "_det"} className="bg-muted/30">
+                            <TableRow className="bg-muted/30">
                               <TableCell colSpan={8} className="text-xs">
                                 <div className="pl-4 space-y-1">
                                   {v.abats.map((a) => (
@@ -328,7 +328,7 @@ export default function RelatorioFinanceiroCliente() {
                               </TableCell>
                             </TableRow>
                           )}
-                        </>
+                        </Fragment>
                       ))}
                     </TableBody>
                   </Table>
