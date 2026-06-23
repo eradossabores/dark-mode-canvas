@@ -99,11 +99,15 @@ export default function RelatorioFinanceiroCliente() {
       })
       .map((v) => {
         const abats = abatPorVenda[v.id] || [];
-        const pago = abats.reduce((s, a) => s + Number(a.valor || 0), 0);
+        const pagoAbat = abats.reduce((s, a) => s + Number(a.valor || 0), 0);
         const valorOriginal = Number(v.valor_original ?? v.total ?? 0);
         const valorAtual = Number(v.total ?? 0);
         const desconto = Math.max(0, valorOriginal - valorAtual);
-        const saldo = Math.max(0, valorAtual - pago);
+        // Considera venda já paga (à vista / status paga) mesmo sem registro em abatimentos
+        const pagoDireto = Number(v.valor_pago || 0);
+        const quitadaPorStatus = v.status === "paga";
+        const pago = Math.max(pagoAbat, pagoDireto, quitadaPorStatus ? valorAtual : 0);
+        const saldo = quitadaPorStatus ? 0 : Math.max(0, valorAtual - pago);
         return { ...v, abats, pago, valorOriginal, valorAtual, desconto, saldo };
       })
       .filter((v) => {
@@ -132,7 +136,9 @@ export default function RelatorioFinanceiroCliente() {
   const inadimplentes = useMemo(() => {
     const map: Record<string, { cliente: Cliente; saldo: number; abertas: number }> = {};
     vendas.forEach((v) => {
-      const pago = (abatPorVenda[v.id] || []).reduce((s, a) => s + Number(a.valor || 0), 0);
+      if (v.status === "paga") return;
+      const pagoAbat = (abatPorVenda[v.id] || []).reduce((s, a) => s + Number(a.valor || 0), 0);
+      const pago = Math.max(pagoAbat, Number(v.valor_pago || 0));
       const saldo = Math.max(0, Number(v.total || 0) - pago);
       if (saldo <= 0) return;
       const c = clientes.find((x) => x.id === v.cliente_id);
