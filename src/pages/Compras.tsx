@@ -405,7 +405,11 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
 
     setSaving(false);
     if (error) { toast.error("Erro ao salvar compra"); return; }
-    toast.success(`${rows.length} ite${rows.length > 1 ? "ns registrados e estoque atualizado" : "m registrado e estoque atualizado"}!`);
+    toast.success(
+      emTransito
+        ? `${rows.length} ite${rows.length > 1 ? "ns" : "m"} em trânsito — estoque será creditado ao confirmar chegada.`
+        : `${rows.length} ite${rows.length > 1 ? "ns registrados e estoque atualizado" : "m registrado e estoque atualizado"}!`
+    );
     setOpen(false);
     resetForm();
     onRefresh();
