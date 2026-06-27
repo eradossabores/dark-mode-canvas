@@ -296,6 +296,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     }
     setSaving(true);
     // Save one record per item with proportional cost
+    const emTransito = !!dataPrevistaChegada;
     const rows = filledItems.map(item => {
       const proportion = item.quantidade / totalQty;
       return {
@@ -312,11 +313,16 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
         numero_lote: numeroLote.trim() || null,
         data_fabricacao: dataFabricacao || null,
         data_vencimento: dataVencimento || null,
+        data_prevista_chegada: dataPrevistaChegada || null,
+        transportadora: transportadora.trim() || null,
+        status_recebimento: emTransito ? 'pendente' : 'recebido',
+        quantidade_recebida: emTransito ? 0 : item.quantidade,
+        data_recebimento: emTransito ? null : new Date().toISOString(),
       };
     });
     const { error } = await (supabase as any).from("compras").insert(rows);
     
-    if (!error) {
+    if (!error && !emTransito) {
       // Update inventory for each item
       for (const item of rows) {
         const table = item.tipo === "insumo" ? "materias_primas" : "embalagens";
