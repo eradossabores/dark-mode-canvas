@@ -128,7 +128,7 @@ export default function ContasAPagar() {
   const [pagarFixoValor, setPagarFixoValor] = useState("");
   const [pagarFixoForma, setPagarFixoForma] = useState<string>("pix");
   const [historicoContaId, setHistoricoContaId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"abertas" | "pagas">("abertas");
+  const [activeTab, setActiveTab] = useState<"abertas" | "pagas" | "finalizadas">("abertas");
   const [activeTabFixos, setActiveTabFixos] = useState<"abertas" | "pagas">("abertas");
 
   // Filters
