@@ -15,6 +15,7 @@ import EstoqueInteligente from "@/components/dashboard/EstoqueInteligente";
 import RankingClientes from "@/components/dashboard/RankingClientes";
 import ClientesInativos from "@/components/dashboard/ClientesInativos";
 import AlertasFinanceiros from "@/components/dashboard/AlertasFinanceiros";
+import AlertasComprasTransito from "@/components/dashboard/AlertasComprasTransito";
 import GastosColaboradores from "@/components/dashboard/GastosColaboradores";
 import ComparativoMensal from "@/components/dashboard/ComparativoMensal";
 import MetaVendas from "@/components/dashboard/MetaVendas";
