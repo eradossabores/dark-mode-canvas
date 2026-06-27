@@ -16,6 +16,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import logoRecibo from "@/assets/logo-recibo.webp";
 import { useAuth } from "@/contexts/AuthContext";
+import { maskBRL, parseBRL } from "@/lib/currency-mask";
 
 export default function AReceber() {
   const { factoryId, role, branding, factoryName } = useAuth();
@@ -264,8 +265,8 @@ export default function AReceber() {
       if (error) throw error;
 
       if (restante > 0) {
-        const quitarVPix = formaPgtoQuitar === "pix" ? restante : formaPgtoQuitar === "misto" ? parseFloat(valorPixQuitar.replace(",", ".")) || 0 : 0;
-        const quitarVEsp = formaPgtoQuitar === "especie" ? restante : formaPgtoQuitar === "misto" ? parseFloat(valorEspecieQuitar.replace(",", ".")) || 0 : 0;
+        const quitarVPix = formaPgtoQuitar === "pix" ? restante : formaPgtoQuitar === "misto" ? parseBRL(valorPixQuitar) : 0;
+        const quitarVEsp = formaPgtoQuitar === "especie" ? restante : formaPgtoQuitar === "misto" ? parseBRL(valorEspecieQuitar) : 0;
         await (supabase as any).from("abatimentos_historico").insert({
           venda_id: id,
           valor: restante,
@@ -294,11 +295,11 @@ export default function AReceber() {
     let vEsp = 0;
 
     if (formaPgtoAbater === "misto") {
-      vPix = parseFloat(valorPixAbater.replace(",", ".")) || 0;
-      vEsp = parseFloat(valorEspecieAbater.replace(",", ".")) || 0;
+      vPix = parseBRL(valorPixAbater);
+      vEsp = parseBRL(valorEspecieAbater);
       valor = vPix + vEsp;
     } else {
-      valor = parseFloat(valorAbater.replace(",", "."));
+      valor = parseBRL(valorAbater);
       vPix = formaPgtoAbater === "pix" ? valor : 0;
       vEsp = formaPgtoAbater === "especie" ? valor : 0;
     }
@@ -370,8 +371,8 @@ export default function AReceber() {
     let loteVEsp = 0;
 
     if (formaPgtoLote === "misto") {
-      loteVPix = parseFloat(valorPixLote.replace(",", ".")) || 0;
-      loteVEsp = parseFloat(valorEspecieLote.replace(",", ".")) || 0;
+      loteVPix = parseBRL(valorPixLote);
+      loteVEsp = parseBRL(valorEspecieLote);
       valorTotal = loteVPix + loteVEsp;
     } else {
       valorTotal = parseFloat(abatimentoLoteValor.replace(",", "."));
@@ -819,17 +820,17 @@ export default function AReceber() {
                 <div className="flex gap-2">
                   <div className="flex-1">
                     <Label className="text-xs">PIX (R$)</Label>
-                    <Input type="text" inputMode="decimal" placeholder="0,00" value={valorPixAbater} onChange={(e) => setValorPixAbater(e.target.value)} />
+                    <Input type="text" inputMode="decimal" placeholder="0,00" value={valorPixAbater} onChange={(e) => setValorPixAbater(maskBRL(e.target.value))} />
                   </div>
                   <div className="flex-1">
                     <Label className="text-xs">Espécie (R$)</Label>
-                    <Input type="text" inputMode="decimal" placeholder="0,00" value={valorEspecieAbater} onChange={(e) => setValorEspecieAbater(e.target.value)} />
+                    <Input type="text" inputMode="decimal" placeholder="0,00" value={valorEspecieAbater} onChange={(e) => setValorEspecieAbater(maskBRL(e.target.value))} />
                   </div>
                 </div>
               ) : (
                 <div>
                   <Label className="text-xs">Valor (R$)</Label>
-                  <Input type="text" inputMode="decimal" placeholder="0,00" value={valorAbater} onChange={(e) => setValorAbater(e.target.value)} />
+                  <Input type="text" inputMode="decimal" placeholder="0,00" value={valorAbater} onChange={(e) => setValorAbater(maskBRL(e.target.value))} />
                 </div>
               )}
               <Button onClick={abaterValor} disabled={!abaterVenda} className="w-full">
@@ -879,11 +880,11 @@ export default function AReceber() {
                 <div className="flex gap-2">
                   <div className="flex-1">
                     <Label className="text-xs">PIX (R$)</Label>
-                    <Input type="text" inputMode="decimal" placeholder="0,00" value={valorPixLote} onChange={(e) => setValorPixLote(e.target.value)} />
+                    <Input type="text" inputMode="decimal" placeholder="0,00" value={valorPixLote} onChange={(e) => setValorPixLote(maskBRL(e.target.value))} />
                   </div>
                   <div className="flex-1">
                     <Label className="text-xs">Espécie (R$)</Label>
-                    <Input type="text" inputMode="decimal" placeholder="0,00" value={valorEspecieLote} onChange={(e) => setValorEspecieLote(e.target.value)} />
+                    <Input type="text" inputMode="decimal" placeholder="0,00" value={valorEspecieLote} onChange={(e) => setValorEspecieLote(maskBRL(e.target.value))} />
                   </div>
                 </div>
               ) : (
@@ -1209,11 +1210,11 @@ export default function AReceber() {
                   <div className="flex gap-2">
                     <div className="flex-1">
                       <Label className="text-xs">PIX (R$)</Label>
-                      <Input type="text" inputMode="decimal" placeholder="0,00" value={valorPixQuitar} onChange={(e) => setValorPixQuitar(e.target.value)} />
+                      <Input type="text" inputMode="decimal" placeholder="0,00" value={valorPixQuitar} onChange={(e) => setValorPixQuitar(maskBRL(e.target.value))} />
                     </div>
                     <div className="flex-1">
                       <Label className="text-xs">Espécie (R$)</Label>
-                      <Input type="text" inputMode="decimal" placeholder="0,00" value={valorEspecieQuitar} onChange={(e) => setValorEspecieQuitar(e.target.value)} />
+                      <Input type="text" inputMode="decimal" placeholder="0,00" value={valorEspecieQuitar} onChange={(e) => setValorEspecieQuitar(maskBRL(e.target.value))} />
                     </div>
                   </div>
                 )}
