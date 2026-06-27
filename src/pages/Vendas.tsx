@@ -63,13 +63,6 @@ export default function Vendas() {
     return [...clientes].sort((a, b) => (counts[b.id] || 0) - (counts[a.id] || 0) || a.nome.localeCompare(b.nome));
   }, [clientes, vendas]);
 
-  // Sincroniza o "detalhe de pagamento" automaticamente a partir da forma de pagamento
-  // (elimina o segundo seletor redundante na comanda)
-  useEffect(() => {
-    if (formaPagamento === "pix") setDetalhePgto("pix");
-    else if (formaPagamento === "misto") setDetalhePgto("misto");
-    else if (formaPagamento === "dinheiro") setDetalhePgto("especie");
-  }, [formaPagamento]);
 
   const [editOpen, setEditOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
