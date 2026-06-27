@@ -679,7 +679,6 @@ export default function Vendas() {
   async function openEditDialog(v: any) {
     setEditVenda(v);
     setEditStatus(v.status);
-    setEditForma(v.forma_pagamento || "dinheiro");
     setEditObs(v.observacoes || "");
     setEditNf(v.numero_nf || "");
     setEditData(new Date(v.created_at));
@@ -687,13 +686,16 @@ export default function Vendas() {
     const vPix = Number(v.valor_pix || 0);
     const vEsp = Number(v.valor_especie || 0);
     if (vPix > 0 && vEsp > 0) {
+      setEditForma("misto");
       setEditDetalhePgto("misto");
       setEditDetalhePix(vPix.toString());
       setEditDetalheEspecie(vEsp.toString());
     } else if (vPix > 0) {
+      setEditForma("pix");
       setEditDetalhePgto("pix");
       setEditDetalhePix(""); setEditDetalheEspecie("");
     } else {
+      setEditForma(v.forma_pagamento || "dinheiro");
       setEditDetalhePgto("especie");
       setEditDetalhePix(""); setEditDetalheEspecie("");
     }
