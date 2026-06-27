@@ -1363,7 +1363,7 @@ export default function ContasAPagar() {
           <CardContent>
             <Tabs defaultValue="abertas" value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
               <div className="flex items-center justify-between mb-4">
-                <TabsList className="grid w-[300px] grid-cols-2">
+                <TabsList className="grid w-[450px] grid-cols-3">
                   <TabsTrigger value="abertas" className="flex items-center gap-2">
                     Em Aberto 
                     <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
@@ -1374,6 +1374,12 @@ export default function ContasAPagar() {
                     Pagas (Mês)
                     <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
                       {parceladas.filter(c => c.isPaidInFilteredMonth).length}
+                    </Badge>
+                  </TabsTrigger>
+                  <TabsTrigger value="finalizadas" className="flex items-center gap-2">
+                    Finalizadas
+                    <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+                      {parceladasFinalizadas.length}
                     </Badge>
                   </TabsTrigger>
                 </TabsList>
