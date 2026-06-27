@@ -168,6 +168,23 @@ export default function Funcionarios() {
         </AlertDialogContent>
       </AlertDialog>
 
+      <AlertDialog open={!!hardDeleteId} onOpenChange={(v) => !v && setHardDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir colaborador permanentemente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação é <strong>irreversível</strong>. O colaborador será removido do banco de dados. Se ele tiver registros vinculados (produção, presença, comissões), a exclusão será bloqueada — nesse caso use "Desativar".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleHardDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir definitivamente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={showAccessPrompt} onOpenChange={setShowAccessPrompt}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -220,8 +237,9 @@ export default function Funcionarios() {
                     >{f.ativo ? "Ativo" : "Inativo"}</Badge>
                   </TableCell>
                   <TableCell className="text-right space-x-1">
-                    <Button size="icon" variant="ghost" onClick={() => openEdit(f)}><Pencil className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => setDeleteId(f.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => openEdit(f)} title="Editar"><Pencil className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => setDeleteId(f.id)} title="Desativar"><Power className="h-4 w-4 text-amber-600" /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => setHardDeleteId(f.id)} title="Excluir permanentemente"><Trash2 className="h-4 w-4 text-destructive" /></Button>
                   </TableCell>
                 </TableRow>
               ))}
