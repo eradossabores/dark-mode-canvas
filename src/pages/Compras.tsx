@@ -459,6 +459,8 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     setNumeroLote(c.numero_lote || "");
     setDataFabricacao(c.data_fabricacao || "");
     setDataVencimento(c.data_vencimento || "");
+    setDataPrevistaChegada((c as any).data_prevista_chegada || "");
+    setTransportadora((c as any).transportadora || "");
     setOpen(true);
   };
 
@@ -477,6 +479,8 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     setNumeroLote(c.numero_lote || "");
     setDataFabricacao(c.data_fabricacao || "");
     setDataVencimento(c.data_vencimento || "");
+    setDataPrevistaChegada((c as any).data_prevista_chegada || "");
+    setTransportadora((c as any).transportadora || "");
     setOpen(true);
   };
 
@@ -485,6 +489,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     setTemFrete(false); setTipoFrete("sedex"); setValorFrete(""); setItemUnits({}); setObs("");
     setDataCompra(format(new Date(), "yyyy-MM-dd"));
     setNumeroLote(""); setDataFabricacao(""); setDataVencimento("");
+    setDataPrevistaChegada(""); setTransportadora("");
     setItemQuantities({}); setCustomItems([]); setNewCustomItem("");
     setEditingId(null); setViewingId(null); setEditItemNome(""); setEditQuantidade(""); setEditUnidade("g");
   };
