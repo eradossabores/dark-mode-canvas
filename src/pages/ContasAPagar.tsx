@@ -128,7 +128,7 @@ export default function ContasAPagar() {
   const [pagarFixoValor, setPagarFixoValor] = useState("");
   const [pagarFixoForma, setPagarFixoForma] = useState<string>("pix");
   const [historicoContaId, setHistoricoContaId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"abertas" | "pagas">("abertas");
+  const [activeTab, setActiveTab] = useState<"abertas" | "pagas" | "finalizadas">("abertas");
   const [activeTabFixos, setActiveTabFixos] = useState<"abertas" | "pagas">("abertas");
 
   // Filters
@@ -741,6 +741,9 @@ export default function ContasAPagar() {
 
   const fixas = contasProcessed.filter(c => c.tipo === "fixo");
   const parceladas = contasProcessed.filter(c => c.tipo === "parcelado");
+  const parceladasFinalizadas = contas
+    .filter(c => c.tipo === "parcelado" && (c.valor_restante ?? 0) <= 0 && (c.parcela_atual ?? 0) >= (c.total_parcelas ?? 0))
+    .map(c => ({ ...c, isPaidInFilteredMonth: true, parcelaDisplayInFilteredMonth: c.total_parcelas }));
   const parceladasFilteredByTab = parceladas.filter(c => activeTab === "abertas" ? !c.isPaidInFilteredMonth : c.isPaidInFilteredMonth);
   
   const totalMensal = contasProcessed.reduce((s, c) => s + c.valor_parcela, 0);
@@ -1360,7 +1363,7 @@ export default function ContasAPagar() {
           <CardContent>
             <Tabs defaultValue="abertas" value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
               <div className="flex items-center justify-between mb-4">
-                <TabsList className="grid w-[300px] grid-cols-2">
+                <TabsList className="grid w-[450px] grid-cols-3">
                   <TabsTrigger value="abertas" className="flex items-center gap-2">
                     Em Aberto 
                     <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
@@ -1371,6 +1374,12 @@ export default function ContasAPagar() {
                     Pagas (Mês)
                     <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
                       {parceladas.filter(c => c.isPaidInFilteredMonth).length}
+                    </Badge>
+                  </TabsTrigger>
+                  <TabsTrigger value="finalizadas" className="flex items-center gap-2">
+                    Finalizadas
+                    <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+                      {parceladasFinalizadas.length}
                     </Badge>
                   </TabsTrigger>
                 </TabsList>
@@ -1393,9 +1402,12 @@ export default function ContasAPagar() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {parceladas
-                      .filter(c => activeTab === "abertas" ? !c.isPaidInFilteredMonth : c.isPaidInFilteredMonth)
-                      .filter(c => !(c.valor_restante <= 0 && (c.parcelaDisplayInFilteredMonth ?? 0) >= c.total_parcelas))
+                    {(activeTab === "finalizadas"
+                        ? parceladasFinalizadas
+                        : parceladas
+                            .filter(c => activeTab === "abertas" ? !c.isPaidInFilteredMonth : c.isPaidInFilteredMonth)
+                            .filter(c => !(c.valor_restante <= 0 && (c.parcelaDisplayInFilteredMonth ?? 0) >= c.total_parcelas))
+                      )
                       .map(c => {
                     const descParts = c.descricao.split(" — ");
                     
