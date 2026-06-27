@@ -1056,9 +1056,9 @@ export default function Vendas() {
           }
         }}>
           <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-2" />Nova Venda</Button></DialogTrigger>
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>Nova Venda</DialogTitle></DialogHeader>
-            <div className="space-y-4">
+          <DialogContent className="max-w-lg max-h-[90vh] p-0 flex flex-col gap-0">
+            <DialogHeader className="px-6 pt-6 pb-3 border-b shrink-0"><DialogTitle>Nova Venda</DialogTitle></DialogHeader>
+            <div className="space-y-4 overflow-y-auto px-6 py-4 flex-1 min-h-0">
               <div>
                 <Label>Data da Venda</Label>
               <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
@@ -1086,10 +1086,30 @@ export default function Vendas() {
                 </Popover>
               </div>
               <div><Label>Cliente</Label>
-                <Select value={clienteId} onValueChange={(v) => { setClienteId(v); recalcPrecos(v); }}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{clientesOrdenados.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
-                </Select>
+                <Popover open={clienteSelectOpen} onOpenChange={setClienteSelectOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" role="combobox" className={cn("w-full justify-between font-normal", !clienteId && "text-muted-foreground")}>
+                      {clienteId ? (clientesOrdenados.find(c => c.id === clienteId)?.nome || "Selecione") : "Buscar cliente..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0 pointer-events-auto" align="start">
+                    <Command>
+                      <CommandInput placeholder="Digite o nome..." />
+                      <CommandList>
+                        <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                        <CommandGroup>
+                          {clientesOrdenados.map((c) => (
+                            <CommandItem key={c.id} value={c.nome} onSelect={() => { setClienteId(c.id); recalcPrecos(c.id); setClienteSelectOpen(false); }}>
+                              <Check className={cn("mr-2 h-4 w-4", clienteId === c.id ? "opacity-100" : "opacity-0")} />
+                              {c.nome}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
               {/* Venda por Pacote (Sacos) - no topo da comanda */}
               <div className="space-y-2 p-3 border-2 rounded-lg bg-muted/30 border-primary/20">
@@ -1405,6 +1425,23 @@ export default function Vendas() {
                 <Checkbox id="ignorar-estoque" checked={ignorarEstoque} onCheckedChange={(v) => setIgnorarEstoque(!!v)} />
                 <Label htmlFor="ignorar-estoque" className="text-sm font-normal cursor-pointer">Lançamento retroativo (ignorar estoque)</Label>
               </div>
+            </div>
+            <div className="border-t bg-background/95 backdrop-blur px-6 py-3 shrink-0 space-y-2">
+              {itens.length > 0 && (
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">Total da Venda</span>
+                  <span className="text-lg font-bold">R$ {(() => {
+                    const subtotalProd = itens.reduce((sum, item) => {
+                      const qty = vendaPorPacote ? (item.quantidade || 0) * factoryUnidadesPorSaco : (item.quantidade || 0);
+                      return sum + (parseDecimal(String(item.preco_unitario)) || 0) * qty;
+                    }, 0);
+                    const frete = parseDecimal(valorFrete) || 0;
+                    const freteNaComanda = fretePagoPor === "cliente" ? frete : fretePagoPor === "ambos" ? Math.round(frete / 2 * 100) / 100 : 0;
+                    const geloCuboTotal = geloCuboItens.reduce((s, it) => s + (geloCuboPrecos[it.tamanho] || 0) * it.quantidade, 0);
+                    return (subtotalProd + freteNaComanda + geloCuboTotal).toFixed(2);
+                  })()}</span>
+                </div>
+              )}
               <Button className="w-full" onClick={handleSubmit} disabled={loading}>{loading ? "Processando..." : "Registrar Venda"}</Button>
             </div>
           </DialogContent>
