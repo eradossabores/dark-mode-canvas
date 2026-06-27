@@ -1402,9 +1402,12 @@ export default function ContasAPagar() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {parceladas
-                      .filter(c => activeTab === "abertas" ? !c.isPaidInFilteredMonth : c.isPaidInFilteredMonth)
-                      .filter(c => !(c.valor_restante <= 0 && (c.parcelaDisplayInFilteredMonth ?? 0) >= c.total_parcelas))
+                    {(activeTab === "finalizadas"
+                        ? parceladasFinalizadas
+                        : parceladas
+                            .filter(c => activeTab === "abertas" ? !c.isPaidInFilteredMonth : c.isPaidInFilteredMonth)
+                            .filter(c => !(c.valor_restante <= 0 && (c.parcelaDisplayInFilteredMonth ?? 0) >= c.total_parcelas))
+                      )
                       .map(c => {
                     const descParts = c.descricao.split(" — ");
                     
