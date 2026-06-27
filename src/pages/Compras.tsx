@@ -738,11 +738,11 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
               <div>
                 <Label>Valor Total (R$) *</Label>
                 <Input 
-                  type="number" 
-                  min="0" 
-                  step="0.01" 
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="R$ 0,00"
                   value={valorTotalInput} 
-                  onChange={e => setValorTotalInput(e.target.value)} 
+                  onChange={e => setValorTotalInput(maskBRL(e.target.value))} 
                   disabled={!!viewingId}
                 />
               </div>
@@ -783,11 +783,11 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                       <div>
                         <Label>Valor do Frete (R$)</Label>
                         <Input 
-                          type="number" 
-                          min="0" 
-                          step="0.01" 
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="R$ 0,00"
                           value={valorFrete} 
-                          onChange={e => setValorFrete(e.target.value)} 
+                          onChange={e => setValorFrete(maskBRL(e.target.value))} 
                           disabled={!!viewingId}
                         />
                       </div>
