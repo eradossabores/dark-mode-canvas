@@ -14,8 +14,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { maskBRL, parseBRL, numberToBRL } from "@/lib/currency-mask";
-import { Plus, Truck, Package, ShoppingCart, BarChart3, Trash2, Edit, ChevronDown, ChevronRight, Eye } from "lucide-react";
-import { format, startOfMonth, endOfMonth } from "date-fns";
+import { Plus, Truck, Package, ShoppingCart, BarChart3, Trash2, Edit, ChevronDown, ChevronRight, Eye, PackageCheck, Clock, AlertTriangle } from "lucide-react";
+import { format, startOfMonth, endOfMonth, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface Fornecedor {
@@ -46,6 +46,12 @@ interface Compra {
   numero_lote?: string | null;
   data_fabricacao?: string | null;
   data_vencimento?: string | null;
+  data_prevista_chegada?: string | null;
+  transportadora?: string | null;
+  status_recebimento?: string | null;
+  quantidade_recebida?: number | null;
+  data_recebimento?: string | null;
+  recebido_por?: string | null;
 }
 
 export default function Compras() {
