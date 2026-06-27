@@ -442,9 +442,9 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     setEditQuantidade(String(c.unidade === "kg" ? c.quantidade / 1000 : c.quantidade));
     setEditUnidade(c.unidade || (c.tipo === "insumo" ? "g" : "unid"));
     setFornecedorId(c.fornecedor_id || "");
-    setValorTotalInput(String(c.valor_total));
+    setValorTotalInput(numberToBRL(c.valor_total));
     setTemFrete(c.tem_frete);
-    setValorFrete(String(c.valor_frete));
+    setValorFrete(numberToBRL(c.valor_frete));
     setObs(c.observacoes || "");
     setDataCompra(format(new Date(c.created_at), "yyyy-MM-dd"));
     setNumeroLote(c.numero_lote || "");
