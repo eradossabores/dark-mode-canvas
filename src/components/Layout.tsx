@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, type TouchEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Package, Users, ShoppingCart, Factory,
@@ -104,6 +104,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+  const lastTouchToggleAtRef = useRef(0);
   const location = useLocation();
   const navigate = useNavigate();
   const { role, signOut, factoryName, factoryId, branding, impersonatingFactory, clearImpersonation } = useAuth();
@@ -144,6 +145,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     setMobileOpen(false);
   }, [location.pathname]);
 
+  // Keep the portrait mobile drawer touchable and stable on mobile browsers.
+  useEffect(() => {
+    if (!mobileOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileOpen]);
+
   const toggleMenu = (label: string) => {
     setOpenMenus((prev) => ({ ...prev, [label]: !prev[label] }));
   };
@@ -167,6 +180,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const handleLogout = async () => {
     await signOut();
     navigate("/login");
+  };
+
+  const toggleMobileMenu = () => {
+    setMobileOpen((current) => !current);
+  };
+
+  const handleMobileMenuTouchStart = (event: TouchEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    lastTouchToggleAtRef.current = Date.now();
+    toggleMobileMenu();
+  };
+
+  const handleMobileMenuClick = () => {
+    if (Date.now() - lastTouchToggleAtRef.current < 500) return;
+    toggleMobileMenu();
   };
 
   const renderMenuItem = (item: MenuItem, isCollapsed = false) => {
@@ -366,14 +394,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background fixed inset-0">
+    <div className="fixed inset-0 flex h-screen min-h-screen h-[100dvh] min-h-[100dvh] w-full overflow-hidden bg-background">
       {/* ─── MOBILE HEADER ─── */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-[70] h-14 bg-sidebar border-b border-sidebar-border flex items-center px-3 gap-3 shadow-sm text-sidebar-foreground w-full">
+      <div className="fixed left-0 right-0 top-0 z-[100] flex min-h-14 w-full items-center gap-3 border-b border-sidebar-border bg-sidebar px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] text-sidebar-foreground shadow-sm md:hidden">
         <button
           type="button"
           aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
-          onClick={() => setMobileOpen((v) => !v)}
-          className="h-10 w-10 inline-flex items-center justify-center rounded-lg bg-sidebar-accent/40 hover:bg-sidebar-accent active:bg-sidebar-accent text-sidebar-foreground transition-colors shrink-0"
+          aria-expanded={mobileOpen}
+          aria-controls="mobile-sidebar-menu"
+          onTouchStart={handleMobileMenuTouchStart}
+          onClick={handleMobileMenuClick}
+          className="relative z-[110] inline-flex h-11 w-11 shrink-0 touch-manipulation items-center justify-center rounded-lg bg-sidebar-accent/40 text-sidebar-foreground transition-colors hover:bg-sidebar-accent active:bg-sidebar-accent"
         >
           {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
@@ -391,10 +422,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* ─── MOBILE OVERLAY ─── */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-[80] md:hidden">
+        <div className="fixed inset-0 z-[120] h-screen h-[100dvh] w-full md:hidden">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
-          <aside className="absolute left-0 top-0 h-full w-72 bg-sidebar border-r border-sidebar-border flex flex-col shadow-2xl animate-in slide-in-from-left duration-200 text-sidebar-foreground">
-            <div className="flex items-center gap-3 px-4 h-14 border-b border-sidebar-border shrink-0">
+          <aside id="mobile-sidebar-menu" className="absolute left-0 top-0 z-[130] flex h-screen h-[100dvh] w-[min(18rem,86vw)] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-2xl animate-in slide-in-from-left duration-200">
+            <div className="flex min-h-14 shrink-0 items-center gap-3 border-b border-sidebar-border px-4 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
               {branding?.logoUrl ? (
                 <img src={branding.logoUrl} alt={factoryName || "Logo"} className="h-9 w-9 rounded-lg object-cover" />
               ) : (
@@ -486,7 +517,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         )}
-        <div className="flex-1 p-4 md:p-6 pt-16 md:pt-6 w-full max-w-full overflow-x-hidden">{children}</div>
+        <div className="w-full max-w-full flex-1 overflow-x-hidden p-4 pt-[calc(4.5rem+env(safe-area-inset-top))] md:p-6 md:pt-6">{children}</div>
       </main>
     </div>
   );
