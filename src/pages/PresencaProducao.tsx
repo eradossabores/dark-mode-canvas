@@ -7,6 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { CheckCircle2, Circle, CalendarDays, Users, Clock, MapPin, AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
+import { runOrEnqueue } from "@/lib/offlineQueue";
 
 // Fábrica: Av. Consolação de Matos 103, Cidade Satélite, Boa Vista-RR
 const FABRICA_LAT = 2.8195;
@@ -126,8 +127,14 @@ export default function PresencaProducao() {
     try {
       const existing = presencas.find((p: any) => p.funcionario_id === funcionarioId);
       if (existing) {
-        await (supabase as any).from("presenca_producao").delete().eq("id", existing.id);
-        toast({ title: "Presença removida" });
+        const r = await runOrEnqueue({
+          type: "presenca_remover",
+          payload: { id: existing.id },
+        });
+        toast({
+          title: r.queued ? "📴 Sem conexão — removida localmente" : "Presença removida",
+          description: r.queued ? "Será sincronizado automaticamente ao reconectar." : undefined,
+        });
       } else {
         // Verificar localização antes de confirmar
         const loc = await verificarLocalizacao();
@@ -139,14 +146,23 @@ export default function PresencaProducao() {
           });
           return;
         }
-        const { error } = await (supabase as any).from("presenca_producao").insert({
-          funcionario_id: funcionarioId,
-          data: dataFiltro,
-          confirmado_por: user?.id,
-          factory_id: factoryId,
+        const r = await runOrEnqueue({
+          type: "presenca_confirmar",
+          payload: {
+            funcionario_id: funcionarioId,
+            data: dataFiltro,
+            confirmado_por: user?.id,
+            factory_id: factoryId,
+          },
         });
-        if (error) throw error;
-        toast({ title: `Presença confirmada! ✅`, description: `Distância da fábrica: ${loc.distancia}m` });
+        toast({
+          title: r.queued
+            ? "📴 Sem conexão — presença salva localmente"
+            : "Presença confirmada! ✅",
+          description: r.queued
+            ? `Distância: ${loc.distancia}m · sincroniza ao reconectar.`
+            : `Distância da fábrica: ${loc.distancia}m`,
+        });
       }
       await loadPresencas();
     } catch (e: any) {
