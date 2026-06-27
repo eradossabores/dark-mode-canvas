@@ -667,6 +667,8 @@ export type Database = {
           custo_total_com_frete: number
           custo_unitario_com_frete: number
           data_fabricacao: string | null
+          data_prevista_chegada: string | null
+          data_recebimento: string | null
           data_vencimento: string | null
           factory_id: string | null
           fornecedor_id: string | null
@@ -676,6 +678,9 @@ export type Database = {
           numero_lote: string | null
           observacoes: string | null
           quantidade: number
+          quantidade_recebida: number | null
+          recebido_por: string | null
+          status_recebimento: string
           tem_frete: boolean
           tipo: string
           unidade: string | null
@@ -689,6 +694,8 @@ export type Database = {
           custo_total_com_frete?: number
           custo_unitario_com_frete?: number
           data_fabricacao?: string | null
+          data_prevista_chegada?: string | null
+          data_recebimento?: string | null
           data_vencimento?: string | null
           factory_id?: string | null
           fornecedor_id?: string | null
@@ -698,6 +705,9 @@ export type Database = {
           numero_lote?: string | null
           observacoes?: string | null
           quantidade?: number
+          quantidade_recebida?: number | null
+          recebido_por?: string | null
+          status_recebimento?: string
           tem_frete?: boolean
           tipo?: string
           unidade?: string | null
@@ -711,6 +721,8 @@ export type Database = {
           custo_total_com_frete?: number
           custo_unitario_com_frete?: number
           data_fabricacao?: string | null
+          data_prevista_chegada?: string | null
+          data_recebimento?: string | null
           data_vencimento?: string | null
           factory_id?: string | null
           fornecedor_id?: string | null
@@ -720,6 +732,9 @@ export type Database = {
           numero_lote?: string | null
           observacoes?: string | null
           quantidade?: number
+          quantidade_recebida?: number | null
+          recebido_por?: string | null
+          status_recebimento?: string
           tem_frete?: boolean
           tipo?: string
           unidade?: string | null
@@ -3105,6 +3120,14 @@ export type Database = {
           p_operador: string
           p_pago: boolean
           p_venda_id: string
+        }
+        Returns: Json
+      }
+      confirmar_recebimento_compra: {
+        Args: {
+          p_compra_id: string
+          p_operador?: string
+          p_quantidade_recebida: number
         }
         Returns: Json
       }
