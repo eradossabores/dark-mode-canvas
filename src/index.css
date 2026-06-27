@@ -150,3 +150,15 @@
 .monitor-card-hoje {
   animation: monitor-flash-amber 2.5s ease-in-out infinite;
 }
+
+/* Prevent iOS auto-zoom on input focus and disable pinch zoom artifacts */
+@media (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  touch-action: manipulation;
+}
