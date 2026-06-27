@@ -521,18 +521,36 @@ export default function Estoque() {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
             {[...gelos]
               .sort((a, b) => (b.quantidade || 0) - (a.quantidade || 0))
-              .map((g) => (
-                <div
-                  key={g.id}
-                  className={`rounded-lg border px-3 py-2.5 text-center transition-all hover:scale-[1.03] ${getSaborColor(g.sabores?.nome)}`}
-                >
-                  <p className="text-[11px] font-semibold truncate">{g.sabores?.nome}</p>
-                  <p className="text-lg font-extrabold mt-0.5">{(g.quantidade || 0).toLocaleString()}</p>
-                </div>
-              ))}
-            <div className="rounded-lg border px-3 py-2.5 text-center transition-all hover:scale-[1.03] bg-gray-700/90 text-white border-gray-800">
+              .map((g) => {
+                const qtd = g.quantidade || 0;
+                const level =
+                  qtd <= 0
+                    ? "bg-muted text-muted-foreground border-border"
+                    : qtd < 50
+                    ? "bg-destructive/10 text-destructive border-destructive/40 hover:bg-destructive/15"
+                    : qtd < 200
+                    ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/40 hover:bg-amber-500/15"
+                    : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/15";
+                const status = qtd <= 0 ? "Zerado" : qtd < 50 ? "Crítico" : qtd < 200 ? "Baixo" : "OK";
+                return (
+                  <button
+                    key={g.id}
+                    type="button"
+                    onClick={() => openAjusteDialog("gelo", g.id, qtd)}
+                    title={`Clique para ajustar ${g.sabores?.nome}`}
+                    className={`group relative rounded-lg border px-3 py-2.5 text-center transition-all hover:scale-[1.03] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer ${level}`}
+                  >
+                    <p className="text-[11px] font-semibold truncate">{g.sabores?.nome}</p>
+                    <p className="text-xl font-extrabold mt-0.5 tabular-nums">{qtd.toLocaleString()}</p>
+                    <p className="text-[9px] uppercase tracking-wider opacity-70 mt-0.5">{status}</p>
+                    <Pencil className="absolute top-1 right-1 h-3 w-3 opacity-0 group-hover:opacity-70 transition-opacity" />
+                  </button>
+                );
+              })}
+            <div className="rounded-lg border-2 border-primary/30 bg-primary/10 text-primary px-3 py-2.5 text-center">
               <p className="text-[11px] font-semibold truncate">TOTAL</p>
-              <p className="text-lg font-extrabold mt-0.5">{totalGelos.toLocaleString()}</p>
+              <p className="text-xl font-extrabold mt-0.5 tabular-nums">{totalGelos.toLocaleString()}</p>
+              <p className="text-[9px] uppercase tracking-wider opacity-70 mt-0.5">unidades</p>
             </div>
           </div>
         </div>
