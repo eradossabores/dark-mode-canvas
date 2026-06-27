@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { maskBRL, parseBRL, numberToBRL } from "@/lib/currency-mask";
 import { Plus, Truck, Package, ShoppingCart, BarChart3, Trash2, Edit, ChevronDown, ChevronRight, Eye } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -235,9 +236,9 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
 
   const totalQty = Object.values(itemQuantities).reduce((s, v) => s + v, 0)
     + customItems.reduce((s, ci) => s + ci.quantidade, 0);
-  const valorTotal = parseFloat(valorTotalInput) || 0;
+  const valorTotal = parseBRL(valorTotalInput);
   const unitPrice = totalQty > 0 ? valorTotal / totalQty : 0;
-  const freight = temFrete ? (parseFloat(valorFrete) || 0) : 0;
+  const freight = temFrete ? parseBRL(valorFrete) : 0;
   const custoTotalComFrete = valorTotal + freight;
   const custoUnitarioComFrete = totalQty > 0 ? custoTotalComFrete / totalQty : 0;
 
@@ -423,9 +424,9 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     setEditQuantidade(String(c.unidade === "kg" ? c.quantidade / 1000 : c.quantidade));
     setEditUnidade(c.unidade || (c.tipo === "insumo" ? "g" : "unid"));
     setFornecedorId(c.fornecedor_id || "");
-    setValorTotalInput(String(c.valor_total));
+    setValorTotalInput(numberToBRL(c.valor_total));
     setTemFrete(c.tem_frete);
-    setValorFrete(String(c.valor_frete));
+    setValorFrete(numberToBRL(c.valor_frete));
     setObs(c.observacoes || "");
     setDataCompra(format(new Date(c.created_at), "yyyy-MM-dd"));
     setNumeroLote(c.numero_lote || "");
