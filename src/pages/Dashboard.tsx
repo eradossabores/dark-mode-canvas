@@ -510,7 +510,6 @@ export default function Dashboard() {
               const items = grouped[cat];
               const itemIdx = Math.floor(alertaIndex / categories.length) % items.length;
               const item = items[itemIdx] || items[0];
-              const charImg = postItCharacters[catIdx % postItCharacters.length];
 
               return (
                 <motion.div
@@ -575,26 +574,7 @@ export default function Dashboard() {
                          ))}
                        </div>
 
-                       {/* Character - absolute positioned but relative to this flex container to stay clean */}
-                       {isIceAgeFactory && (
-                         <img
-                           src={charImg}
-                           alt=""
-                           aria-hidden
-                           className="w-12 h-12 object-contain opacity-30 pointer-events-none select-none -mb-2 -mr-2"
-                         />
-                       )}
                      </div>
-
-                    {/* Character - only for Era dos Sabores */}
-                    {isIceAgeFactory && (
-                      <img
-                        src={charImg}
-                        alt=""
-                        aria-hidden
-                        className="absolute bottom-1 right-1 w-16 h-16 object-contain opacity-25 pointer-events-none select-none"
-                      />
-                    )}
                   </div>
                 </motion.div>
               );
@@ -647,17 +627,6 @@ export default function Dashboard() {
                    </div>
                  </div>
 
-                 {/* Character - only for Era dos Sabores */}
-                 {isIceAgeFactory && (
-                   <div className="flex justify-end -mb-3 -mr-3">
-                     <img
-                       src={postItCharacters[3 % postItCharacters.length]}
-                       alt=""
-                       aria-hidden
-                       className="w-12 h-12 object-contain opacity-30 pointer-events-none select-none"
-                     />
-                   </div>
-                 )}
               </div>
             </motion.div>
           </div>
