@@ -85,6 +85,7 @@ export default function Vendas() {
   const [ignorarEstoque, setIgnorarEstoque] = useState(false);
   const [statusVenda, setStatusVenda] = useState("pendente");
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [clienteSelectOpen, setClienteSelectOpen] = useState(false);
   const [detalhePgto, setDetalhePgto] = useState<"pix" | "especie" | "misto">("especie");
   const [detalhePix, setDetalhePix] = useState("");
   const [detalheEspecie, setDetalheEspecie] = useState("");
