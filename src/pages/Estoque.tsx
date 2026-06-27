@@ -76,7 +76,7 @@ export default function Estoque() {
   useEffect(() => { loadData(); }, [factoryId]);
 
   async function loadData() {
-    let gQ = (supabase as any).from("estoque_gelos").select("*, sabores(nome)").order("sabores(nome)");
+    let gQ = (supabase as any).from("estoque_gelos").select("*, sabores!inner(nome, ativo)").eq("sabores.ativo", true).order("sabores(nome)");
     let mQ = (supabase as any).from("materias_primas").select("*").order("nome");
     let eQ = (supabase as any).from("embalagens").select("*").order("nome");
     let movQ = (supabase as any).from("movimentacoes_estoque").select("*").order("created_at", { ascending: false }).limit(50);
