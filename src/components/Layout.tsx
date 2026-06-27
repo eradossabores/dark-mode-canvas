@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type PointerEvent } from "react";
+import { useState, useEffect, useRef, type TouchEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Package, Users, ShoppingCart, Factory,
@@ -186,9 +186,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     setMobileOpen((current) => !current);
   };
 
-  const handleMobileMenuPointerDown = (event: PointerEvent<HTMLButtonElement>) => {
-    if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
-
+  const handleMobileMenuTouchStart = (event: TouchEvent<HTMLButtonElement>) => {
     event.preventDefault();
     lastTouchToggleAtRef.current = Date.now();
     toggleMobileMenu();
@@ -404,7 +402,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
           aria-expanded={mobileOpen}
           aria-controls="mobile-sidebar-menu"
-          onPointerDown={handleMobileMenuPointerDown}
+          onTouchStart={handleMobileMenuTouchStart}
           onClick={handleMobileMenuClick}
           className="relative z-[110] inline-flex h-11 w-11 shrink-0 touch-manipulation items-center justify-center rounded-lg bg-sidebar-accent/40 text-sidebar-foreground transition-colors hover:bg-sidebar-accent active:bg-sidebar-accent"
         >
