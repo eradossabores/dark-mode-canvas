@@ -176,6 +176,8 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const [numeroLote, setNumeroLote] = useState("");
   const [dataFabricacao, setDataFabricacao] = useState("");
   const [dataVencimento, setDataVencimento] = useState("");
+  const [dataPrevistaChegada, setDataPrevistaChegada] = useState("");
+  const [transportadora, setTransportadora] = useState("");
   const [saving, setSaving] = useState(false);
   const [filterTipo, setFilterTipo] = useState("todos");
   const [editingId, setEditingId] = useState<string | null>(null);
