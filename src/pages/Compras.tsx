@@ -437,6 +437,8 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
       numero_lote: numeroLote.trim() || null,
       data_fabricacao: dataFabricacao || null,
       data_vencimento: dataVencimento || null,
+      data_prevista_chegada: dataPrevistaChegada || null,
+      transportadora: transportadora.trim() || null,
     }).eq("id", editingId);
     setSaving(false);
     if (error) { toast.error("Erro ao salvar"); return; }
