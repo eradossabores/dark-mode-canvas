@@ -10,6 +10,7 @@ import GlobalSearch from "@/components/GlobalSearch";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Layout from "@/components/Layout";
 import SnowEffect from "@/components/SnowEffect";
+import OfflineIndicator from "@/components/OfflineIndicator";
 import ThemeProvider from "@/components/ThemeProvider";
 import Login from "@/pages/Login";
 import { Navigate } from "react-router-dom";
@@ -89,6 +90,7 @@ const App = () => (
             <AuthProvider>
               <SnowEffect />
               <GlobalSearch />
+              <OfflineIndicator />
               <Suspense fallback={<PageFallback />}>
               <Routes>
               {/* Public */}
