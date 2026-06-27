@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { insertRow } from "@/lib/supabase-helpers";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, UserPlus, Info } from "lucide-react";
+import { Plus, Pencil, Trash2, UserPlus, Info, Power, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function Funcionarios() {
@@ -22,6 +22,7 @@ export default function Funcionarios() {
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [hardDeleteId, setHardDeleteId] = useState<string | null>(null);
   const [showAccessPrompt, setShowAccessPrompt] = useState(false);
   const [lastCreatedName, setLastCreatedName] = useState("");
   const [form, setForm] = useState({ nome: "", tipo_pagamento: "diaria" as string, valor_pagamento: "", setor: "producao" as string });
@@ -94,6 +95,25 @@ export default function Funcionarios() {
     }
   }
 
+  async function handleHardDelete() {
+    if (!hardDeleteId) return;
+    try {
+      const { error } = await (supabase as any).from("funcionarios").delete().eq("id", hardDeleteId);
+      if (error) throw error;
+      toast({ title: "Colaborador excluído permanentemente!" });
+      setHardDeleteId(null);
+      loadData();
+    } catch (e: any) {
+      toast({
+        title: "Erro ao excluir",
+        description: e.message?.includes("foreign key")
+          ? "Este colaborador possui registros vinculados (produção, presença, etc). Use Desativar."
+          : e.message,
+        variant: "destructive",
+      });
+    }
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -144,6 +164,23 @@ export default function Funcionarios() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete}>Desativar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!hardDeleteId} onOpenChange={(v) => !v && setHardDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir colaborador permanentemente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação é <strong>irreversível</strong>. O colaborador será removido do banco de dados. Se ele tiver registros vinculados (produção, presença, comissões), a exclusão será bloqueada — nesse caso use "Desativar".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleHardDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir definitivamente
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -200,8 +237,9 @@ export default function Funcionarios() {
                     >{f.ativo ? "Ativo" : "Inativo"}</Badge>
                   </TableCell>
                   <TableCell className="text-right space-x-1">
-                    <Button size="icon" variant="ghost" onClick={() => openEdit(f)}><Pencil className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => setDeleteId(f.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => openEdit(f)} title="Editar"><Pencil className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => setDeleteId(f.id)} title="Desativar"><Power className="h-4 w-4 text-amber-600" /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => setHardDeleteId(f.id)} title="Excluir permanentemente"><Trash2 className="h-4 w-4 text-destructive" /></Button>
                   </TableCell>
                 </TableRow>
               ))}
