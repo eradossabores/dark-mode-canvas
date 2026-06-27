@@ -31,8 +31,9 @@ import { ToastAction } from "@/components/ui/toast";
 
 const FORMAS_PAGAMENTO = [
   { value: "amostra", label: "Amostra (Grátis)" },
-  { value: "dinheiro", label: "Dinheiro" },
+  { value: "dinheiro", label: "Dinheiro (Espécie)" },
   { value: "pix", label: "PIX" },
+  { value: "misto", label: "Misto (PIX + Espécie)" },
   { value: "cartao_credito", label: "Cartão de Crédito" },
   { value: "cartao_debito", label: "Cartão de Débito" },
   { value: "boleto", label: "Boleto" },
@@ -62,6 +63,7 @@ export default function Vendas() {
     return [...clientes].sort((a, b) => (counts[b.id] || 0) - (counts[a.id] || 0) || a.nome.localeCompare(b.nome));
   }, [clientes, vendas]);
 
+
   const [editOpen, setEditOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [cancelId, setCancelId] = useState<string | null>(null);
@@ -86,6 +88,13 @@ export default function Vendas() {
   const [statusVenda, setStatusVenda] = useState("pendente");
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [clienteSelectOpen, setClienteSelectOpen] = useState(false);
+
+  // Sincroniza o "detalhe de pagamento" a partir da forma escolhida (elimina seletor redundante)
+  useEffect(() => {
+    if (formaPagamento === "pix") setDetalhePgto("pix");
+    else if (formaPagamento === "misto") setDetalhePgto("misto");
+    else if (formaPagamento === "dinheiro") setDetalhePgto("especie");
+  }, [formaPagamento]);
   const [detalhePgto, setDetalhePgto] = useState<"pix" | "especie" | "misto">("especie");
   const [detalhePix, setDetalhePix] = useState("");
   const [detalheEspecie, setDetalheEspecie] = useState("");
@@ -514,7 +523,9 @@ export default function Vendas() {
         const totalVendaCalc = totalProdutos + freteCliente + geloCuboSubtotal;
         const vPix = detalhePgto === "pix" ? totalVendaCalc : detalhePgto === "misto" ? (parseFloat(detalhePix.replace(",", ".")) || 0) : 0;
         const vEsp = detalhePgto === "especie" ? totalVendaCalc : detalhePgto === "misto" ? (parseFloat(detalheEspecie.replace(",", ".")) || 0) : 0;
-        const updateData: any = { forma_pagamento: formaPagamento, status: statusVenda, valor_pix: vPix, valor_especie: vEsp, total: totalVendaCalc, valor_frete: freteTotal, frete_pago_por: fretePagoPor };
+        // "misto" é mapeado para "dinheiro" no DB para manter compatibilidade com relatórios existentes
+        const formaPagamentoDb = formaPagamento === "misto" ? "dinheiro" : formaPagamento;
+        const updateData: any = { forma_pagamento: formaPagamentoDb, status: statusVenda, valor_pix: vPix, valor_especie: vEsp, total: totalVendaCalc, valor_frete: freteTotal, frete_pago_por: fretePagoPor };
         if (numeroNf.trim()) updateData.numero_nf = numeroNf.trim();
         // 🆕 Tipo de pagamento, vencimento e preço unitário usado
         updateData.forma_pagamento_tipo = formaPagamento === "fiado" ? "aprazo" : "avista";
@@ -1239,26 +1250,19 @@ export default function Vendas() {
                   </SelectContent>
                 </Select>
               </div>
-              {(formaPagamento === "dinheiro" || formaPagamento === "pix") && (
+              {formaPagamento === "misto" && (
                 <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
-                  <Label className="text-xs font-medium">Detalhe do pagamento</Label>
-                  <RadioGroup value={detalhePgto} onValueChange={(v: any) => setDetalhePgto(v)} className="flex gap-3">
-                    <div className="flex items-center gap-1.5"><RadioGroupItem value="pix" id="nv-pix" /><Label htmlFor="nv-pix" className="text-xs cursor-pointer">PIX</Label></div>
-                    <div className="flex items-center gap-1.5"><RadioGroupItem value="especie" id="nv-esp" /><Label htmlFor="nv-esp" className="text-xs cursor-pointer">Espécie</Label></div>
-                    <div className="flex items-center gap-1.5"><RadioGroupItem value="misto" id="nv-mix" /><Label htmlFor="nv-mix" className="text-xs cursor-pointer">Misto</Label></div>
-                  </RadioGroup>
-                  {detalhePgto === "misto" && (
-                    <div className="flex gap-2">
-                      <div className="flex-1">
-                        <Label className="text-xs">PIX (R$)</Label>
-                        <Input type="text" inputMode="decimal" placeholder="0,00" value={detalhePix} onChange={(e) => setDetalhePix(e.target.value)} />
-                      </div>
-                      <div className="flex-1">
-                        <Label className="text-xs">Espécie (R$)</Label>
-                        <Input type="text" inputMode="decimal" placeholder="0,00" value={detalheEspecie} onChange={(e) => setDetalheEspecie(e.target.value)} />
-                      </div>
+                  <Label className="text-xs font-medium">Divisão do pagamento misto</Label>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <Label className="text-xs">PIX (R$)</Label>
+                      <Input type="text" inputMode="decimal" placeholder="0,00" value={detalhePix} onChange={(e) => setDetalhePix(e.target.value)} />
                     </div>
-                  )}
+                    <div className="flex-1">
+                      <Label className="text-xs">Espécie (R$)</Label>
+                      <Input type="text" inputMode="decimal" placeholder="0,00" value={detalheEspecie} onChange={(e) => setDetalheEspecie(e.target.value)} />
+                    </div>
+                  </div>
                 </div>
               )}
               {(formaPagamento === "boleto" || formaPagamento === "parcelado" || formaPagamento === "fiado") && (
