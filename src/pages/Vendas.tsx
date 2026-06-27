@@ -344,8 +344,10 @@ export default function Vendas() {
     setVendas((v.data || []).map((vd: any) => ({ ...vd, totalUnidades: unitsMap[vd.id] || 0, pedido_status: pedidoStatusMap[vd.id] || null, pedido_tipo: pedidoTipoMap[vd.id] || null })));
   }
 
-  function parseDecimal(v: string): number { return Number(v.replace(",", ".")) || 0; }
-  function formatDecimalInput(v: string): string { return v.replace(/[^0-9.,]/g, ""); }
+  // Máscara BRL determinística — ver src/lib/currency-mask.ts
+  // (mantidos os nomes antigos para minimizar diff em todo o arquivo)
+  function parseDecimal(v: string): number { return parseBRL(v); }
+  function formatDecimalInput(v: string): string { return maskBRL(v); }
   function addItem() { setItens([...itens, { sabor_id: "", quantidade: 1, preco_unitario: "", preco_auto: false }]); }
   function removeItem(i: number) { setItens(itens.filter((_, idx) => idx !== i)); }
   function updateItem(i: number, field: string, val: any) {
@@ -1311,7 +1313,7 @@ export default function Vendas() {
                           setValorTotal(v);
                           const total = parseDecimal(v);
                           const entrada = parseDecimal(valorEntrada);
-                          setValorRestante((total - entrada).toFixed(2));
+                           setValorRestante(numberToBRL(total - entrada));
                         }} placeholder="0,00" />
                       </div>
                       <div>
@@ -1321,7 +1323,7 @@ export default function Vendas() {
                           setValorEntrada(v);
                           const total = parseDecimal(valorTotal);
                           const entrada = parseDecimal(v);
-                          setValorRestante((total - entrada).toFixed(2));
+                           setValorRestante(numberToBRL(total - entrada));
                         }} placeholder="0,00" />
                       </div>
                       <div>
@@ -1341,7 +1343,7 @@ export default function Vendas() {
                         setValorEntrada(v);
                         const total = itens.reduce((s, i) => s + (Number(i.preco_unitario) || 0) * (Number(i.quantidade) || 0), 0);
                         const entrada = parseDecimal(v);
-                        setValorRestante((total - entrada).toFixed(2));
+                         setValorRestante(numberToBRL(total - entrada));
                       }} placeholder="0,00 (deixe vazio para integral a prazo)" />
                       {parseDecimal(valorEntrada) > 0 && (
                         <p className="text-xs">
