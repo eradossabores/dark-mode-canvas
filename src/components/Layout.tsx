@@ -441,7 +441,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
             {renderSidebarNav(false)}
 
-            <div className="border-t border-sidebar-border p-3">
+            <div className="shrink-0 border-t border-sidebar-border p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-destructive/10 hover:text-destructive transition-all duration-150"
@@ -489,7 +489,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {renderSidebarNav(collapsed)}
 
         {/* Footer */}
-        <div className={cn("border-t border-sidebar-border space-y-1", collapsed ? "p-2" : "p-3")}>
+        <div className={cn("shrink-0 border-t border-sidebar-border space-y-1", collapsed ? "p-2" : "p-3")}>
           <button
             onClick={handleLogout}
             className={cn(
