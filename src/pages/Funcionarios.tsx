@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { insertRow } from "@/lib/supabase-helpers";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, UserPlus, Info } from "lucide-react";
+import { Plus, Pencil, Trash2, UserPlus, Info, Power, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function Funcionarios() {
@@ -22,6 +22,7 @@ export default function Funcionarios() {
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [hardDeleteId, setHardDeleteId] = useState<string | null>(null);
   const [showAccessPrompt, setShowAccessPrompt] = useState(false);
   const [lastCreatedName, setLastCreatedName] = useState("");
   const [form, setForm] = useState({ nome: "", tipo_pagamento: "diaria" as string, valor_pagamento: "", setor: "producao" as string });
@@ -91,6 +92,25 @@ export default function Funcionarios() {
       loadData();
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+  }
+
+  async function handleHardDelete() {
+    if (!hardDeleteId) return;
+    try {
+      const { error } = await (supabase as any).from("funcionarios").delete().eq("id", hardDeleteId);
+      if (error) throw error;
+      toast({ title: "Colaborador excluído permanentemente!" });
+      setHardDeleteId(null);
+      loadData();
+    } catch (e: any) {
+      toast({
+        title: "Erro ao excluir",
+        description: e.message?.includes("foreign key")
+          ? "Este colaborador possui registros vinculados (produção, presença, etc). Use Desativar."
+          : e.message,
+        variant: "destructive",
+      });
     }
   }
 
