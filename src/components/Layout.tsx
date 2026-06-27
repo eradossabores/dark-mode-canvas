@@ -396,7 +396,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <div className="fixed inset-0 flex h-[100dvh] min-h-[100dvh] w-full overflow-hidden bg-background">
+    <div className="fixed inset-0 flex h-screen min-h-screen h-[100dvh] min-h-[100dvh] w-full overflow-hidden bg-background">
       {/* ─── MOBILE HEADER ─── */}
       <div className="fixed left-0 right-0 top-0 z-[100] flex min-h-14 w-full items-center gap-3 border-b border-sidebar-border bg-sidebar px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] text-sidebar-foreground shadow-sm md:hidden">
         <button
@@ -424,9 +424,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* ─── MOBILE OVERLAY ─── */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-[120] h-[100dvh] w-full md:hidden">
+        <div className="fixed inset-0 z-[120] h-screen h-[100dvh] w-full md:hidden">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
-          <aside id="mobile-sidebar-menu" className="absolute left-0 top-0 z-[130] flex h-[100dvh] w-[min(18rem,86vw)] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-2xl animate-in slide-in-from-left duration-200">
+          <aside id="mobile-sidebar-menu" className="absolute left-0 top-0 z-[130] flex h-screen h-[100dvh] w-[min(18rem,86vw)] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-2xl animate-in slide-in-from-left duration-200">
             <div className="flex min-h-14 shrink-0 items-center gap-3 border-b border-sidebar-border px-4 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
               {branding?.logoUrl ? (
                 <img src={branding.logoUrl} alt={factoryName || "Logo"} className="h-9 w-9 rounded-lg object-cover" />
