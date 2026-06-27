@@ -370,7 +370,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
 
         <div className="space-y-3 text-sm">
           <div className="text-center border-b pb-3">
-            <img src={factoryLogo} alt={factoryName || "Logo"} className="h-28 mx-auto mb-1" />
+            <img src={factoryLogo} alt={factoryName || "Logo"} className="h-28 mx-auto mb-1" / loading="lazy" decoding="async">
             <p className="text-muted-foreground text-xs font-semibold">{factoryName || "MACUXI ICE"}</p>
           </div>
 

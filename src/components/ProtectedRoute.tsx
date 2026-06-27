@@ -55,7 +55,7 @@ export default function ProtectedRoute({ children, adminOnly, superAdminOnly }: 
         <Card className="w-full max-w-md shadow-2xl">
           <CardHeader className="text-center space-y-3">
             <div className="flex justify-center">
-              <img src={logo} alt="MACUXI ICE" className="h-14 w-14 rounded-lg shadow-md" />
+              <img src={logo} alt="MACUXI ICE" className="h-14 w-14 rounded-lg shadow-md" / loading="lazy" decoding="async">
             </div>
             <CardTitle className="text-xl font-bold flex items-center justify-center gap-2">
               <Clock className="h-5 w-5 text-amber-500" />

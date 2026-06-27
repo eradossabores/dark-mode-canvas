@@ -364,7 +364,7 @@ export default function Sabores() {
                     src={imageDialog.imagem_url}
                     alt={imageDialog.nome}
                     className="w-full h-48 object-cover rounded-xl border border-border"
-                  />
+                  / loading="lazy" decoding="async">
                   <Button
                     size="icon"
                     variant="destructive"
@@ -447,7 +447,7 @@ export default function Sabores() {
                         className="w-12 h-12 rounded-lg border border-border overflow-hidden bg-muted/50 hover:ring-2 hover:ring-primary/40 transition-all flex items-center justify-center"
                       >
                         {s.imagem_url ? (
-                          <img src={s.imagem_url} alt={s.nome} className="w-full h-full object-cover" />
+                          <img src={s.imagem_url} alt={s.nome} className="w-full h-full object-cover" / loading="lazy" decoding="async">
                         ) : (
                           <ImagePlus className="h-5 w-5 text-muted-foreground" />
                         )}
