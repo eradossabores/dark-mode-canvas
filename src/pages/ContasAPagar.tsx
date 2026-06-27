@@ -1482,10 +1482,10 @@ export default function ContasAPagar() {
                             </Button>
                             {(c.valor_restante > 0 || !quitado) && (
                               <div className="flex gap-1">
-                                <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => { setPagarConta(c); setPagarData(undefined); setPagarValor(String(c.valor_parcela)); }} title="Pagar próxima parcela">
+                                <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => { setPagarConta(c); setPagarData(undefined); setPagarValor(numberToBRL(c.valor_parcela)); }} title="Pagar próxima parcela">
                                   💰 Pagar
                                 </Button>
-                                <Button size="sm" variant="secondary" className="h-7 text-xs px-2 border-primary/10" onClick={() => { setPagarConta(c); setPagarForma("pix"); setPagarValor(String(c.valor_restante)); }} title="Quitar conta">
+                                <Button size="sm" variant="secondary" className="h-7 text-xs px-2 border-primary/10" onClick={() => { setPagarConta(c); setPagarForma("pix"); setPagarValor(numberToBRL(c.valor_restante)); }} title="Quitar conta">
                                   🏁 Quitar
                                 </Button>
                               </div>
@@ -1594,7 +1594,7 @@ export default function ContasAPagar() {
                             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setHistoricoContaId(c.id)} title="Histórico">
                               <History className="h-3.5 w-3.5" />
                             </Button>
-                            <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => { setPagarFixoConta(c); setPagarFixoValor(String(c.valor_parcela)); }} title="Pagar / Adiantar">
+                            <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => { setPagarFixoConta(c); setPagarFixoValor(numberToBRL(c.valor_parcela)); }} title="Pagar / Adiantar">
                               💰 Pagar
                             </Button>
                             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(c)}>
