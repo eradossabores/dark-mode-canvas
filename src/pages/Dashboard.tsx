@@ -15,6 +15,7 @@ import EstoqueInteligente from "@/components/dashboard/EstoqueInteligente";
 import RankingClientes from "@/components/dashboard/RankingClientes";
 import ClientesInativos from "@/components/dashboard/ClientesInativos";
 import AlertasFinanceiros from "@/components/dashboard/AlertasFinanceiros";
+import AlertasComprasTransito from "@/components/dashboard/AlertasComprasTransito";
 import GastosColaboradores from "@/components/dashboard/GastosColaboradores";
 import ComparativoMensal from "@/components/dashboard/ComparativoMensal";
 import MetaVendas from "@/components/dashboard/MetaVendas";
@@ -860,10 +861,14 @@ export default function Dashboard() {
        </div>
 
        {/* 🆕 Alertas Financeiros (vencimentos, conversões, limite) */}
-       <div className="grid grid-cols-1 gap-4 sm:gap-6 mb-4 sm:mb-6 opacity-0 animate-fade-in" style={{ animationDelay: "850ms", animationFillMode: "forwards" }}>
+       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6 opacity-0 animate-fade-in" style={{ animationDelay: "850ms", animationFillMode: "forwards" }}>
          <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
            <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
            <div className="relative h-full"><AlertasFinanceiros /></div>
+         </div>
+         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
+           <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
+           <div className="relative h-full"><AlertasComprasTransito /></div>
          </div>
        </div>
 

@@ -683,6 +683,7 @@ export type Database = {
           status_recebimento: string
           tem_frete: boolean
           tipo: string
+          transportadora: string | null
           unidade: string | null
           updated_at: string
           valor_frete: number
@@ -710,6 +711,7 @@ export type Database = {
           status_recebimento?: string
           tem_frete?: boolean
           tipo?: string
+          transportadora?: string | null
           unidade?: string | null
           updated_at?: string
           valor_frete?: number
@@ -737,6 +739,7 @@ export type Database = {
           status_recebimento?: string
           tem_frete?: boolean
           tipo?: string
+          transportadora?: string | null
           unidade?: string | null
           updated_at?: string
           valor_frete?: number

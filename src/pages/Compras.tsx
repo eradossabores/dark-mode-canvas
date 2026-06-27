@@ -14,8 +14,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { maskBRL, parseBRL, numberToBRL } from "@/lib/currency-mask";
-import { Plus, Truck, Package, ShoppingCart, BarChart3, Trash2, Edit, ChevronDown, ChevronRight, Eye } from "lucide-react";
-import { format, startOfMonth, endOfMonth } from "date-fns";
+import { Plus, Truck, Package, ShoppingCart, BarChart3, Trash2, Edit, ChevronDown, ChevronRight, Eye, PackageCheck, Clock, AlertTriangle } from "lucide-react";
+import { format, startOfMonth, endOfMonth, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface Fornecedor {
@@ -46,6 +46,12 @@ interface Compra {
   numero_lote?: string | null;
   data_fabricacao?: string | null;
   data_vencimento?: string | null;
+  data_prevista_chegada?: string | null;
+  transportadora?: string | null;
+  status_recebimento?: string | null;
+  quantidade_recebida?: number | null;
+  data_recebimento?: string | null;
+  recebido_por?: string | null;
 }
 
 export default function Compras() {
@@ -115,6 +121,7 @@ export default function Compras() {
       <Tabs defaultValue="compras">
         <TabsList className="mb-4 flex-wrap">
           <TabsTrigger value="compras" className="gap-2"><Package className="h-4 w-4" /> Compras</TabsTrigger>
+          <TabsTrigger value="transito" className="gap-2"><Truck className="h-4 w-4" /> Em Trânsito</TabsTrigger>
           <TabsTrigger value="fornecedores" className="gap-2"><Truck className="h-4 w-4" /> Fornecedores</TabsTrigger>
           <TabsTrigger value="relatorios" className="gap-2"><BarChart3 className="h-4 w-4" /> Relatórios</TabsTrigger>
         </TabsList>
@@ -124,6 +131,14 @@ export default function Compras() {
             fornecedores={fornecedores}
             fornecedorMap={fornecedorMap}
             compras={compras}
+            operador={user?.email || ""}
+            onRefresh={fetchData}
+          />
+        </TabsContent>
+        <TabsContent value="transito">
+          <EmTransitoTab
+            compras={compras}
+            fornecedorMap={fornecedorMap}
             operador={user?.email || ""}
             onRefresh={fetchData}
           />
@@ -161,6 +176,8 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const [numeroLote, setNumeroLote] = useState("");
   const [dataFabricacao, setDataFabricacao] = useState("");
   const [dataVencimento, setDataVencimento] = useState("");
+  const [dataPrevistaChegada, setDataPrevistaChegada] = useState("");
+  const [transportadora, setTransportadora] = useState("");
   const [saving, setSaving] = useState(false);
   const [filterTipo, setFilterTipo] = useState("todos");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -279,6 +296,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     }
     setSaving(true);
     // Save one record per item with proportional cost
+    const emTransito = !!dataPrevistaChegada;
     const rows = filledItems.map(item => {
       const proportion = item.quantidade / totalQty;
       return {
@@ -295,11 +313,16 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
         numero_lote: numeroLote.trim() || null,
         data_fabricacao: dataFabricacao || null,
         data_vencimento: dataVencimento || null,
+        data_prevista_chegada: dataPrevistaChegada || null,
+        transportadora: transportadora.trim() || null,
+        status_recebimento: emTransito ? 'pendente' : 'recebido',
+        quantidade_recebida: emTransito ? 0 : item.quantidade,
+        data_recebimento: emTransito ? null : new Date().toISOString(),
       };
     });
     const { error } = await (supabase as any).from("compras").insert(rows);
     
-    if (!error) {
+    if (!error && !emTransito) {
       // Update inventory for each item
       for (const item of rows) {
         const table = item.tipo === "insumo" ? "materias_primas" : "embalagens";
@@ -382,7 +405,11 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
 
     setSaving(false);
     if (error) { toast.error("Erro ao salvar compra"); return; }
-    toast.success(`${rows.length} ite${rows.length > 1 ? "ns registrados e estoque atualizado" : "m registrado e estoque atualizado"}!`);
+    toast.success(
+      emTransito
+        ? `${rows.length} ite${rows.length > 1 ? "ns" : "m"} em trânsito — estoque será creditado ao confirmar chegada.`
+        : `${rows.length} ite${rows.length > 1 ? "ns registrados e estoque atualizado" : "m registrado e estoque atualizado"}!`
+    );
     setOpen(false);
     resetForm();
     onRefresh();
@@ -410,6 +437,8 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
       numero_lote: numeroLote.trim() || null,
       data_fabricacao: dataFabricacao || null,
       data_vencimento: dataVencimento || null,
+      data_prevista_chegada: dataPrevistaChegada || null,
+      transportadora: transportadora.trim() || null,
     }).eq("id", editingId);
     setSaving(false);
     if (error) { toast.error("Erro ao salvar"); return; }
@@ -432,6 +461,8 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     setNumeroLote(c.numero_lote || "");
     setDataFabricacao(c.data_fabricacao || "");
     setDataVencimento(c.data_vencimento || "");
+    setDataPrevistaChegada((c as any).data_prevista_chegada || "");
+    setTransportadora((c as any).transportadora || "");
     setOpen(true);
   };
 
@@ -450,6 +481,8 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     setNumeroLote(c.numero_lote || "");
     setDataFabricacao(c.data_fabricacao || "");
     setDataVencimento(c.data_vencimento || "");
+    setDataPrevistaChegada((c as any).data_prevista_chegada || "");
+    setTransportadora((c as any).transportadora || "");
     setOpen(true);
   };
 
@@ -458,6 +491,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     setTemFrete(false); setTipoFrete("sedex"); setValorFrete(""); setItemUnits({}); setObs("");
     setDataCompra(format(new Date(), "yyyy-MM-dd"));
     setNumeroLote(""); setDataFabricacao(""); setDataVencimento("");
+    setDataPrevistaChegada(""); setTransportadora("");
     setItemQuantities({}); setCustomItems([]); setNewCustomItem("");
     setEditingId(null); setViewingId(null); setEditItemNome(""); setEditQuantidade(""); setEditUnidade("g");
   };
@@ -842,6 +876,36 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                       Estes dados serão aplicados a todos os {filledItems.length} itens da comanda.
                     </p>
                   )}
+                </CardContent>
+              </Card>
+              <Card className="bg-blue-500/5 border-blue-500/20 border-dashed">
+                <CardContent className="py-3 space-y-3">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    <Truck className="h-4 w-4 text-blue-500" /> Compra em Trânsito (opcional)
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Preencha a <b>data prevista de chegada</b> para marcar como em trânsito. O estoque só será creditado ao confirmar o recebimento.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs">Data Prevista Chegada</Label>
+                      <Input
+                        type="date"
+                        value={dataPrevistaChegada}
+                        onChange={e => setDataPrevistaChegada(e.target.value)}
+                        disabled={!!viewingId}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Transportadora</Label>
+                      <Input
+                        placeholder="Ex: Correios, Jadlog..."
+                        value={transportadora}
+                        onChange={e => setTransportadora(e.target.value)}
+                        disabled={!!viewingId}
+                      />
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
               {((editingId ? (parseFloat(editQuantidade) || 0) : totalQty) > 0 && valorTotal > 0) && (
@@ -1251,6 +1315,153 @@ function RelatoriosTab({ compras, fornecedorMap }: { compras: Compra[]; forneced
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+// ─── EM TRÂNSITO TAB ───
+function EmTransitoTab({ compras, fornecedorMap, operador, onRefresh }: {
+  compras: Compra[]; fornecedorMap: Record<string, string>; operador: string; onRefresh: () => void;
+}) {
+  const pendentes = useMemo(
+    () => compras.filter(c => c.status_recebimento && c.status_recebimento !== 'recebido'),
+    [compras]
+  );
+  const [confirmando, setConfirmando] = useState<Compra | null>(null);
+  const [qtdRecebida, setQtdRecebida] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const openConfirm = (c: Compra) => {
+    setConfirmando(c);
+    const pre = c.unidade === 'kg' ? (Number(c.quantidade) / 1000) : Number(c.quantidade);
+    setQtdRecebida(String(pre));
+  };
+
+  const handleConfirmar = async () => {
+    if (!confirmando) return;
+    const raw = parseFloat(qtdRecebida.replace(',', '.')) || 0;
+    const qty = (confirmando.unidade === 'kg') ? raw * 1000 : raw;
+    if (qty < 0) { toast.error("Quantidade inválida"); return; }
+    setSaving(true);
+    const { error } = await (supabase as any).rpc('confirmar_recebimento_compra', {
+      p_compra_id: confirmando.id,
+      p_quantidade_recebida: qty,
+      p_operador: operador || 'sistema',
+    });
+    setSaving(false);
+    if (error) { toast.error(error.message || "Erro ao confirmar"); return; }
+    toast.success("Recebimento confirmado e estoque atualizado!");
+    setConfirmando(null);
+    onRefresh();
+  };
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Truck className="h-4 w-4" /> Compras em Trânsito ({pendentes.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Pedido</TableHead>
+                  <TableHead>Item</TableHead>
+                  <TableHead>Fornecedor</TableHead>
+                  <TableHead>Transportadora</TableHead>
+                  <TableHead className="text-right">Qtd</TableHead>
+                  <TableHead>Prev. Chegada</TableHead>
+                  <TableHead className="text-center">Dias</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pendentes.length === 0 ? (
+                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">Nenhuma compra em trânsito.</TableCell></TableRow>
+                ) : pendentes.map(c => {
+                  const dias = differenceInDays(new Date(), new Date(c.created_at));
+                  const alerta = dias > 20;
+                  return (
+                    <TableRow key={c.id} className={alerta ? "bg-destructive/5" : ""}>
+                      <TableCell className="whitespace-nowrap text-xs">{format(new Date(c.created_at), "dd/MM/yy")}</TableCell>
+                      <TableCell className="font-medium">{c.item_nome}</TableCell>
+                      <TableCell>{c.fornecedor_id ? fornecedorMap[c.fornecedor_id] || "—" : "—"}</TableCell>
+                      <TableCell>{c.transportadora || "—"}</TableCell>
+                      <TableCell className="text-right">
+                        {c.unidade === 'kg' ? (Number(c.quantidade)/1000).toLocaleString("pt-BR") : Number(c.quantidade).toLocaleString("pt-BR")} {c.unidade || "un"}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-xs">
+                        {c.data_prevista_chegada ? format(new Date(c.data_prevista_chegada + "T12:00:00"), "dd/MM/yy") : "—"}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant={alerta ? "destructive" : "outline"} className="gap-1">
+                          {alerta && <AlertTriangle className="h-3 w-3" />}
+                          {dias}d
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={c.status_recebimento === 'recebido_parcial' ? "secondary" : "outline"} className="gap-1">
+                          <Clock className="h-3 w-3" />
+                          {c.status_recebimento === 'recebido_parcial' ? 'Parcial' : 'Pendente'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button size="sm" className="gap-1" onClick={() => openConfirm(c)}>
+                          <PackageCheck className="h-4 w-4" /> Confirmar Chegada
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Dialog open={!!confirmando} onOpenChange={(v) => !v && setConfirmando(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <PackageCheck className="h-5 w-5 text-primary" /> Confirmar Recebimento
+            </DialogTitle>
+          </DialogHeader>
+          {confirmando && (
+            <div className="space-y-4">
+              <div className="rounded-md border bg-muted/30 p-3 text-sm space-y-1">
+                <div><span className="text-muted-foreground">Item:</span> <b>{confirmando.item_nome}</b></div>
+                <div><span className="text-muted-foreground">Qtd pedida:</span> <b>
+                  {confirmando.unidade === 'kg' ? (Number(confirmando.quantidade)/1000).toLocaleString("pt-BR") : Number(confirmando.quantidade).toLocaleString("pt-BR")} {confirmando.unidade || "un"}
+                </b></div>
+                {confirmando.transportadora && <div><span className="text-muted-foreground">Transportadora:</span> {confirmando.transportadora}</div>}
+              </div>
+              <div>
+                <Label>Quantidade recebida ({confirmando.unidade || 'un'})</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={qtdRecebida}
+                  onChange={e => setQtdRecebida(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Ajuste para baixo se houve avaria ou falta. O estoque será creditado com o valor confirmado.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => setConfirmando(null)}>Cancelar</Button>
+                <Button className="flex-1 gap-1" disabled={saving} onClick={handleConfirmar}>
+                  <PackageCheck className="h-4 w-4" /> {saving ? "Confirmando..." : "Confirmar"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
