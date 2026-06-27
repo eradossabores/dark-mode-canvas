@@ -375,7 +375,7 @@ export default function AReceber() {
       loteVEsp = parseBRL(valorEspecieLote);
       valorTotal = loteVPix + loteVEsp;
     } else {
-      valorTotal = parseFloat(abatimentoLoteValor.replace(",", "."));
+      valorTotal = parseBRL(abatimentoLoteValor);
       loteVPix = formaPgtoLote === "pix" ? valorTotal : 0;
       loteVEsp = formaPgtoLote === "especie" ? valorTotal : 0;
     }
@@ -890,7 +890,7 @@ export default function AReceber() {
               ) : (
                 <div>
                   <Label className="text-xs">Valor recebido (R$)</Label>
-                  <Input type="text" inputMode="decimal" placeholder="0,00" value={abatimentoLoteValor} onChange={(e) => setAbatimentoLoteValor(e.target.value)} />
+                  <Input type="text" inputMode="decimal" placeholder="0,00" value={abatimentoLoteValor} onChange={(e) => setAbatimentoLoteValor(maskBRL(e.target.value))} />
                 </div>
               )}
               <Button onClick={abaterEmLote} disabled={processandoLote} className="w-full">
