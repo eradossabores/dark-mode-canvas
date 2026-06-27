@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Package, Users, ShoppingCart, Factory,
@@ -104,6 +104,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+  const lastTouchToggleAtRef = useRef(0);
   const location = useLocation();
   const navigate = useNavigate();
   const { role, signOut, factoryName, factoryId, branding, impersonatingFactory, clearImpersonation } = useAuth();
@@ -179,6 +180,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const handleLogout = async () => {
     await signOut();
     navigate("/login");
+  };
+
+  const toggleMobileMenu = () => {
+    setMobileOpen((current) => !current);
+  };
+
+  const handleMobileMenuPointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
+
+    event.preventDefault();
+    lastTouchToggleAtRef.current = Date.now();
+    toggleMobileMenu();
+  };
+
+  const handleMobileMenuClick = () => {
+    if (Date.now() - lastTouchToggleAtRef.current < 500) return;
+    toggleMobileMenu();
   };
 
   const renderMenuItem = (item: MenuItem, isCollapsed = false) => {
@@ -384,7 +402,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <button
           type="button"
           aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
-          onClick={() => setMobileOpen((v) => !v)}
+          aria-expanded={mobileOpen}
+          aria-controls="mobile-sidebar-menu"
+          onPointerDown={handleMobileMenuPointerDown}
+          onClick={handleMobileMenuClick}
           className="relative z-[110] inline-flex h-11 w-11 shrink-0 touch-manipulation items-center justify-center rounded-lg bg-sidebar-accent/40 text-sidebar-foreground transition-colors hover:bg-sidebar-accent active:bg-sidebar-accent"
         >
           {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -405,7 +426,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {mobileOpen && (
         <div className="fixed inset-0 z-[120] h-[100dvh] w-full md:hidden">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
-          <aside className="absolute left-0 top-0 z-[130] flex h-[100dvh] w-[min(18rem,86vw)] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-2xl animate-in slide-in-from-left duration-200">
+          <aside id="mobile-sidebar-menu" className="absolute left-0 top-0 z-[130] flex h-[100dvh] w-[min(18rem,86vw)] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-2xl animate-in slide-in-from-left duration-200">
             <div className="flex min-h-14 shrink-0 items-center gap-3 border-b border-sidebar-border px-4 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
               {branding?.logoUrl ? (
                 <img src={branding.logoUrl} alt={factoryName || "Logo"} className="h-9 w-9 rounded-lg object-cover" />
