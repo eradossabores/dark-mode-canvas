@@ -135,6 +135,12 @@ export default function Vendas() {
   const [editDetalhePgto, setEditDetalhePgto] = useState<"pix" | "especie" | "misto">("especie");
   const [editDetalhePix, setEditDetalhePix] = useState("");
   const [editDetalheEspecie, setEditDetalheEspecie] = useState("");
+  // Sincroniza detalhe a partir da forma escolhida no dialog de edição
+  useEffect(() => {
+    if (editForma === "pix") setEditDetalhePgto("pix");
+    else if (editForma === "misto") setEditDetalhePgto("misto");
+    else if (editForma === "dinheiro") setEditDetalhePgto("especie");
+  }, [editForma]);
   const [editValorFrete, setEditValorFrete] = useState("");
   const [editFretePagoPor, setEditFretePagoPor] = useState<"empresa" | "cliente" | "ambos">("cliente");
   const [editBrindes, setEditBrindes] = useState<{ sabor_id: string; quantidade: string; id?: string | null }[]>([]);
@@ -717,8 +723,9 @@ export default function Vendas() {
       const eVEsp = editDetalhePgto === "especie" ? editTotal : editDetalhePgto === "misto" ? (parseFloat(editDetalheEspecie.replace(",", ".")) || 0) : 0;
       const editFreteVal = parseFloat((editValorFrete || "0").replace(",", ".")) || 0;
       const editFreteCliente = editFretePagoPor === "cliente" ? editFreteVal : editFretePagoPor === "ambos" ? Math.round(editFreteVal / 2 * 100) / 100 : 0;
+      const editFormaDb = editForma === "misto" ? "dinheiro" : editForma;
       const updateData: any = {
-        status: editStatus, forma_pagamento: editForma, observacoes: editObs, numero_nf: editNf.trim() || null,
+        status: editStatus, forma_pagamento: editFormaDb, observacoes: editObs, numero_nf: editNf.trim() || null,
         created_at: `${editData.getFullYear()}-${String(editData.getMonth() + 1).padStart(2, "0")}-${String(editData.getDate()).padStart(2, "0")}T12:00:00`,
         valor_pix: eVPix, valor_especie: eVEsp, valor_frete: editFreteVal, frete_pago_por: editFretePagoPor,
       };
@@ -1487,14 +1494,9 @@ export default function Vendas() {
                 <SelectContent>{FORMAS_PAGAMENTO.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
-              <Label className="text-xs font-medium">Detalhe do pagamento</Label>
-              <RadioGroup value={editDetalhePgto} onValueChange={(v: any) => setEditDetalhePgto(v)} className="flex gap-3">
-                <div className="flex items-center gap-1.5"><RadioGroupItem value="pix" id="ed-pix" /><Label htmlFor="ed-pix" className="text-xs cursor-pointer">PIX</Label></div>
-                <div className="flex items-center gap-1.5"><RadioGroupItem value="especie" id="ed-esp" /><Label htmlFor="ed-esp" className="text-xs cursor-pointer">Espécie</Label></div>
-                <div className="flex items-center gap-1.5"><RadioGroupItem value="misto" id="ed-mix" /><Label htmlFor="ed-mix" className="text-xs cursor-pointer">Misto</Label></div>
-              </RadioGroup>
-              {editDetalhePgto === "misto" && (
+            {editForma === "misto" && (
+              <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
+                <Label className="text-xs font-medium">Divisão do pagamento</Label>
                 <div className="flex gap-2">
                   <div className="flex-1">
                     <Label className="text-xs">PIX (R$)</Label>
@@ -1505,8 +1507,8 @@ export default function Vendas() {
                     <Input type="text" inputMode="decimal" placeholder="0,00" value={editDetalheEspecie} onChange={(e) => setEditDetalheEspecie(e.target.value)} />
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
             <div>
                 <div className="flex items-center justify-between mb-2">
                   <Label className="text-base font-semibold">Itens da Venda</Label>
