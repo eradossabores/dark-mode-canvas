@@ -523,14 +523,10 @@ export default function Estoque() {
               .sort((a, b) => (b.quantidade || 0) - (a.quantidade || 0))
               .map((g) => {
                 const qtd = g.quantidade || 0;
-                const level =
-                  qtd <= 0
-                    ? "bg-muted text-muted-foreground border-border"
-                    : qtd < 50
-                    ? "bg-destructive/10 text-destructive border-destructive/40 hover:bg-destructive/15"
-                    : qtd < 200
-                    ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/40 hover:bg-amber-500/15"
-                    : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/15";
+                const saborColor = getSaborColor(g.sabores?.nome || "");
+                const level = qtd <= 0
+                  ? "bg-muted text-muted-foreground border-border opacity-60"
+                  : saborColor;
                 const status = qtd <= 0 ? "Zerado" : qtd < 50 ? "Crítico" : qtd < 200 ? "Baixo" : "OK";
                 return (
                   <button
