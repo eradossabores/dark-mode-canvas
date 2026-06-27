@@ -75,6 +75,18 @@ export default function Estoque() {
   const [deleteAvariaLoading, setDeleteAvariaLoading] = useState(false);
   useEffect(() => { loadData(); }, [factoryId]);
 
+  // Realtime: refresh ao detectar mudanças em estoque/movimentações/vendas
+  useEffect(() => {
+    if (!factoryId) return;
+    const ch = (supabase as any)
+      .channel("estoque-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "estoque_gelos" }, () => loadData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "movimentacoes_estoque" }, () => loadData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "venda_itens" }, () => loadData())
+      .subscribe();
+    return () => { (supabase as any).removeChannel(ch); };
+  }, [factoryId]);
+
   async function loadData() {
     let gQ = (supabase as any).from("estoque_gelos").select("*, sabores!inner(nome, ativo)").eq("sabores.ativo", true).order("sabores(nome)");
     let mQ = (supabase as any).from("materias_primas").select("*").order("nome");
