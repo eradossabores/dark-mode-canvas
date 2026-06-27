@@ -1318,3 +1318,150 @@ function RelatoriosTab({ compras, fornecedorMap }: { compras: Compra[]; forneced
     </div>
   );
 }
+
+// ─── EM TRÂNSITO TAB ───
+function EmTransitoTab({ compras, fornecedorMap, operador, onRefresh }: {
+  compras: Compra[]; fornecedorMap: Record<string, string>; operador: string; onRefresh: () => void;
+}) {
+  const pendentes = useMemo(
+    () => compras.filter(c => c.status_recebimento && c.status_recebimento !== 'recebido'),
+    [compras]
+  );
+  const [confirmando, setConfirmando] = useState<Compra | null>(null);
+  const [qtdRecebida, setQtdRecebida] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const openConfirm = (c: Compra) => {
+    setConfirmando(c);
+    const pre = c.unidade === 'kg' ? (Number(c.quantidade) / 1000) : Number(c.quantidade);
+    setQtdRecebida(String(pre));
+  };
+
+  const handleConfirmar = async () => {
+    if (!confirmando) return;
+    const raw = parseFloat(qtdRecebida.replace(',', '.')) || 0;
+    const qty = (confirmando.unidade === 'kg') ? raw * 1000 : raw;
+    if (qty < 0) { toast.error("Quantidade inválida"); return; }
+    setSaving(true);
+    const { error } = await (supabase as any).rpc('confirmar_recebimento_compra', {
+      p_compra_id: confirmando.id,
+      p_quantidade_recebida: qty,
+      p_operador: operador || 'sistema',
+    });
+    setSaving(false);
+    if (error) { toast.error(error.message || "Erro ao confirmar"); return; }
+    toast.success("Recebimento confirmado e estoque atualizado!");
+    setConfirmando(null);
+    onRefresh();
+  };
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Truck className="h-4 w-4" /> Compras em Trânsito ({pendentes.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Pedido</TableHead>
+                  <TableHead>Item</TableHead>
+                  <TableHead>Fornecedor</TableHead>
+                  <TableHead>Transportadora</TableHead>
+                  <TableHead className="text-right">Qtd</TableHead>
+                  <TableHead>Prev. Chegada</TableHead>
+                  <TableHead className="text-center">Dias</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pendentes.length === 0 ? (
+                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">Nenhuma compra em trânsito.</TableCell></TableRow>
+                ) : pendentes.map(c => {
+                  const dias = differenceInDays(new Date(), new Date(c.created_at));
+                  const alerta = dias > 20;
+                  return (
+                    <TableRow key={c.id} className={alerta ? "bg-destructive/5" : ""}>
+                      <TableCell className="whitespace-nowrap text-xs">{format(new Date(c.created_at), "dd/MM/yy")}</TableCell>
+                      <TableCell className="font-medium">{c.item_nome}</TableCell>
+                      <TableCell>{c.fornecedor_id ? fornecedorMap[c.fornecedor_id] || "—" : "—"}</TableCell>
+                      <TableCell>{c.transportadora || "—"}</TableCell>
+                      <TableCell className="text-right">
+                        {c.unidade === 'kg' ? (Number(c.quantidade)/1000).toLocaleString("pt-BR") : Number(c.quantidade).toLocaleString("pt-BR")} {c.unidade || "un"}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-xs">
+                        {c.data_prevista_chegada ? format(new Date(c.data_prevista_chegada + "T12:00:00"), "dd/MM/yy") : "—"}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant={alerta ? "destructive" : "outline"} className="gap-1">
+                          {alerta && <AlertTriangle className="h-3 w-3" />}
+                          {dias}d
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={c.status_recebimento === 'recebido_parcial' ? "secondary" : "outline"} className="gap-1">
+                          <Clock className="h-3 w-3" />
+                          {c.status_recebimento === 'recebido_parcial' ? 'Parcial' : 'Pendente'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button size="sm" className="gap-1" onClick={() => openConfirm(c)}>
+                          <PackageCheck className="h-4 w-4" /> Confirmar Chegada
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Dialog open={!!confirmando} onOpenChange={(v) => !v && setConfirmando(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <PackageCheck className="h-5 w-5 text-primary" /> Confirmar Recebimento
+            </DialogTitle>
+          </DialogHeader>
+          {confirmando && (
+            <div className="space-y-4">
+              <div className="rounded-md border bg-muted/30 p-3 text-sm space-y-1">
+                <div><span className="text-muted-foreground">Item:</span> <b>{confirmando.item_nome}</b></div>
+                <div><span className="text-muted-foreground">Qtd pedida:</span> <b>
+                  {confirmando.unidade === 'kg' ? (Number(confirmando.quantidade)/1000).toLocaleString("pt-BR") : Number(confirmando.quantidade).toLocaleString("pt-BR")} {confirmando.unidade || "un"}
+                </b></div>
+                {confirmando.transportadora && <div><span className="text-muted-foreground">Transportadora:</span> {confirmando.transportadora}</div>}
+              </div>
+              <div>
+                <Label>Quantidade recebida ({confirmando.unidade || 'un'})</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={qtdRecebida}
+                  onChange={e => setQtdRecebida(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Ajuste para baixo se houve avaria ou falta. O estoque será creditado com o valor confirmado.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => setConfirmando(null)}>Cancelar</Button>
+                <Button className="flex-1 gap-1" disabled={saving} onClick={handleConfirmar}>
+                  <PackageCheck className="h-4 w-4" /> {saving ? "Confirmando..." : "Confirmar"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
