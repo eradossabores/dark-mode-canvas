@@ -741,6 +741,9 @@ export default function ContasAPagar() {
 
   const fixas = contasProcessed.filter(c => c.tipo === "fixo");
   const parceladas = contasProcessed.filter(c => c.tipo === "parcelado");
+  const parceladasFinalizadas = contas
+    .filter(c => c.tipo === "parcelado" && (c.valor_restante ?? 0) <= 0 && (c.parcela_atual ?? 0) >= (c.total_parcelas ?? 0))
+    .map(c => ({ ...c, isPaidInFilteredMonth: true, parcelaDisplayInFilteredMonth: c.total_parcelas }));
   const parceladasFilteredByTab = parceladas.filter(c => activeTab === "abertas" ? !c.isPaidInFilteredMonth : c.isPaidInFilteredMonth);
   
   const totalMensal = contasProcessed.reduce((s, c) => s + c.valor_parcela, 0);
