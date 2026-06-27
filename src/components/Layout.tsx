@@ -368,12 +368,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background fixed inset-0">
       {/* ─── MOBILE HEADER ─── */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 h-14 bg-sidebar border-b border-sidebar-border flex items-center px-4 gap-3 shadow-sm text-sidebar-foreground w-full">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-[70] h-14 bg-sidebar border-b border-sidebar-border flex items-center px-3 gap-3 shadow-sm text-sidebar-foreground w-full">
         <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+          type="button"
+          aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
+          onClick={() => setMobileOpen((v) => !v)}
+          className="h-10 w-10 inline-flex items-center justify-center rounded-lg bg-sidebar-accent/40 hover:bg-sidebar-accent active:bg-sidebar-accent text-sidebar-foreground transition-colors shrink-0"
         >
-          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
         <div className="flex items-center gap-2 min-w-0">
           {branding?.logoUrl ? (
@@ -389,7 +391,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* ─── MOBILE OVERLAY ─── */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-[60] md:hidden">
+        <div className="fixed inset-0 z-[80] md:hidden">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
           <aside className="absolute left-0 top-0 h-full w-72 bg-sidebar border-r border-sidebar-border flex flex-col shadow-2xl animate-in slide-in-from-left duration-200 text-sidebar-foreground">
             <div className="flex items-center gap-3 px-4 h-14 border-b border-sidebar-border shrink-0">
