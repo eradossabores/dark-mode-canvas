@@ -31,8 +31,9 @@ import { ToastAction } from "@/components/ui/toast";
 
 const FORMAS_PAGAMENTO = [
   { value: "amostra", label: "Amostra (Grátis)" },
-  { value: "dinheiro", label: "Dinheiro" },
+  { value: "dinheiro", label: "Dinheiro (Espécie)" },
   { value: "pix", label: "PIX" },
+  { value: "misto", label: "Misto (PIX + Espécie)" },
   { value: "cartao_credito", label: "Cartão de Crédito" },
   { value: "cartao_debito", label: "Cartão de Débito" },
   { value: "boleto", label: "Boleto" },
