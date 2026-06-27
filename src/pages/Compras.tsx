@@ -121,6 +121,7 @@ export default function Compras() {
       <Tabs defaultValue="compras">
         <TabsList className="mb-4 flex-wrap">
           <TabsTrigger value="compras" className="gap-2"><Package className="h-4 w-4" /> Compras</TabsTrigger>
+          <TabsTrigger value="transito" className="gap-2"><Truck className="h-4 w-4" /> Em Trânsito</TabsTrigger>
           <TabsTrigger value="fornecedores" className="gap-2"><Truck className="h-4 w-4" /> Fornecedores</TabsTrigger>
           <TabsTrigger value="relatorios" className="gap-2"><BarChart3 className="h-4 w-4" /> Relatórios</TabsTrigger>
         </TabsList>
@@ -130,6 +131,14 @@ export default function Compras() {
             fornecedores={fornecedores}
             fornecedorMap={fornecedorMap}
             compras={compras}
+            operador={user?.email || ""}
+            onRefresh={fetchData}
+          />
+        </TabsContent>
+        <TabsContent value="transito">
+          <EmTransitoTab
+            compras={compras}
+            fornecedorMap={fornecedorMap}
             operador={user?.email || ""}
             onRefresh={fetchData}
           />
