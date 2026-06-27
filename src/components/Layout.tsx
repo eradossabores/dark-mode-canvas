@@ -338,7 +338,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   };
 
   const renderSidebarNav = (isCollapsedMode: boolean) => (
-    <nav className={cn("flex-1 overflow-y-auto py-4 space-y-6", isCollapsedMode ? "px-2" : "px-3")}>
+    <nav className={cn("flex-1 min-h-0 overflow-y-auto py-4 space-y-6", isCollapsedMode ? "px-2" : "px-3")}>
       {filteredGroups.map((group) => (
         <div key={group.label}>
           {!isCollapsedMode && (
