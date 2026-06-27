@@ -23,6 +23,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { exportToPDF, exportToExcel } from "@/lib/export-utils";
 import jsPDF from "jspdf";
 import logoUrl from "@/assets/logo.png";
+import { maskBRL, parseBRL, numberToBRL } from "@/lib/currency-mask";
 
 const FORMAS_PAGAMENTO = [
   { value: "pix", label: "PIX" },
@@ -171,9 +172,9 @@ export default function ContasAPagar() {
   }, [factoryId, role]);
 
   // Auto-calculate remaining and installment value
-  const calcValorTotalNum = parseFloat(valorTotal || "0");
-  const calcEntrada = parseFloat(valorEntrada || "0");
-  const calcIntermediarios = pagamentosIntermediarios.reduce((s, p) => s + (parseFloat(p.valor || "0")), 0);
+  const calcValorTotalNum = parseBRL(valorTotal);
+  const calcEntrada = parseBRL(valorEntrada);
+  const calcIntermediarios = pagamentosIntermediarios.reduce((s, p) => s + parseBRL(p.valor), 0);
   const calcRestanteParaParcelar = Math.max(0, calcValorTotalNum - calcEntrada - calcIntermediarios);
   const calcTotalParcelas = parseInt(totalParcelas || "0");
   const calcValorParcela = calcTotalParcelas > 0 ? calcRestanteParaParcelar / calcTotalParcelas : 0;
@@ -413,7 +414,7 @@ export default function ContasAPagar() {
 
     setSaving(true);
 
-    const vp = tipo === "parcelado" ? calcValorParcela : parseFloat(valorParcela || "0");
+    const vp = tipo === "parcelado" ? calcValorParcela : parseBRL(valorParcela);
     const tp = tipo === "parcelado" ? calcTotalParcelas : 0;
     const vt = tipo === "parcelado" ? calcValorTotalNum : 0;
     const vr = tipo === "parcelado" ? calcRestanteParaParcelar : 0;
@@ -423,10 +424,10 @@ export default function ContasAPagar() {
       obs += `Entrada: R$${calcEntrada.toFixed(2)} (${FORMAS_PAGAMENTO.find(f => f.value === formaEntrada)?.label || formaEntrada})`;
     }
     if (pagamentosIntermediarios.length > 0) {
-      const pagtos = pagamentosIntermediarios.filter(p => parseFloat(p.valor || "0") > 0);
+      const pagtos = pagamentosIntermediarios.filter(p => parseBRL(p.valor) > 0);
       if (pagtos.length > 0) {
         obs += (obs ? " | " : "") + pagtos.map(p =>
-          `${p.descricao || "Pgto"}: R$${parseFloat(p.valor).toFixed(2)} (${FORMAS_PAGAMENTO.find(f => f.value === p.forma)?.label || p.forma})`
+          `${p.descricao || "Pgto"}: R$${parseBRL(p.valor).toFixed(2)} (${FORMAS_PAGAMENTO.find(f => f.value === p.forma)?.label || p.forma})`
         ).join(" | ");
       }
     }
@@ -454,12 +455,12 @@ export default function ContasAPagar() {
     setEditId(c.id);
     setEditDescricao(c.descricao);
     setEditResponsavel(c.responsavel || "");
-    setEditValorParcela(String(c.valor_parcela));
+    setEditValorParcela(numberToBRL(c.valor_parcela));
     setEditParcelaAtual(String(c.parcela_atual));
     setEditTotalParcelas(String(c.total_parcelas));
     setEditTipo(c.tipo);
-    setEditValorTotal(String(c.valor_total));
-    setEditValorRestante(String(c.valor_restante));
+    setEditValorTotal(numberToBRL(c.valor_total));
+    setEditValorRestante(numberToBRL(c.valor_restante));
     setEditCategoria(c.categoria || "outros");
     setEditProximaParcelaData(c.proxima_parcela_data ? new Date(c.proxima_parcela_data + "T12:00:00") : undefined);
     setEditOpen(true);
@@ -468,11 +469,11 @@ export default function ContasAPagar() {
   async function handleEdit() {
     if (!editDescricao || !editValorParcela) return toast({ title: "Preencha descrição e valor", variant: "destructive" });
     setSaving(true);
-    const vp = parseFloat(editValorParcela);
+    const vp = parseBRL(editValorParcela);
     const tp = editTipo === "parcelado" ? parseInt(editTotalParcelas || "0") : 0;
     const pa = editTipo === "parcelado" ? parseInt(editParcelaAtual || "0") : 0;
-    const vt = editTipo === "parcelado" ? parseFloat(editValorTotal || "0") : 0;
-    const vr = editTipo === "parcelado" ? parseFloat(editValorRestante || String(vp * (tp - pa))) : 0;
+    const vt = editTipo === "parcelado" ? parseBRL(editValorTotal) : 0;
+    const vr = editTipo === "parcelado" ? (editValorRestante ? parseBRL(editValorRestante) : vp * (tp - pa)) : 0;
     const { error } = await (supabase as any).from("contas_a_pagar").update({
       descricao: editDescricao,
       responsavel: editResponsavel || null,
@@ -511,7 +512,7 @@ export default function ContasAPagar() {
 
   async function avancarParcela(c: ContaPagar, proximaData?: Date) {
     if (c.tipo !== "parcelado" || c.parcela_atual >= c.total_parcelas) return;
-    const valorPago = parseFloat(pagarValor || String(c.valor_parcela));
+    const valorPago = pagarValor ? parseBRL(pagarValor) : Number(c.valor_parcela);
     const novoRestante = Math.max(0, c.valor_restante - valorPago);
     const novaParcela = novoRestante <= 0 ? c.total_parcelas : c.parcela_atual + 1;
     const formaLabel = FORMAS_PAGAMENTO.find(f => f.value === pagarForma)?.label || pagarForma;
@@ -648,7 +649,7 @@ export default function ContasAPagar() {
 
   async function handlePagarFixoAdiantamento() {
     if (!pagarFixoConta) return;
-    const valor = parseFloat(pagarFixoValor || "0");
+    const valor = parseBRL(pagarFixoValor);
     if (valor <= 0) return toast({ title: "Informe um valor válido", variant: "destructive" });
     const formaLabel = FORMAS_PAGAMENTO.find(f => f.value === pagarFixoForma)?.label || pagarFixoForma;
     
@@ -809,7 +810,7 @@ export default function ContasAPagar() {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label>Valor da Parcela</Label>
-            <Input type="number" step="0.01" value={editValorParcela} onChange={e => setEditValorParcela(e.target.value)} placeholder="0,00" />
+            <Input type="text" inputMode="decimal" value={editValorParcela} onChange={e => setEditValorParcela(maskBRL(e.target.value))} placeholder="R$ 0,00" />
           </div>
           <div>
             <Label>Data de Vencimento</Label>
@@ -841,11 +842,11 @@ export default function ContasAPagar() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Valor Total</Label>
-                <Input type="number" step="0.01" value={editValorTotal} onChange={e => setEditValorTotal(e.target.value)} placeholder="0.00" />
+                <Input type="text" inputMode="decimal" value={editValorTotal} onChange={e => setEditValorTotal(maskBRL(e.target.value))} placeholder="R$ 0,00" />
               </div>
               <div>
                 <Label>Valor Restante</Label>
-                <Input type="number" step="0.01" value={editValorRestante} onChange={e => setEditValorRestante(e.target.value)} placeholder="0.00" />
+                <Input type="text" inputMode="decimal" value={editValorRestante} onChange={e => setEditValorRestante(maskBRL(e.target.value))} placeholder="R$ 0,00" />
               </div>
             </div>
           </>
@@ -891,7 +892,7 @@ export default function ContasAPagar() {
           {tipo === "fixo" && (
             <div>
               <Label>Valor Mensal</Label>
-              <Input type="number" step="0.01" value={valorParcela} onChange={e => setValorParcela(e.target.value)} placeholder="0,00" />
+              <Input type="text" inputMode="decimal" value={valorParcela} onChange={e => setValorParcela(maskBRL(e.target.value))} placeholder="R$ 0,00" />
             </div>
           )}
           <div>
@@ -916,7 +917,7 @@ export default function ContasAPagar() {
               <Label className="text-sm font-bold">💰 1. Valor Total da Compra</Label>
               <div className="relative">
                 <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
-                <Input type="number" step="0.01" className="pl-7 text-lg font-bold" value={valorTotal} onChange={e => setValorTotal(e.target.value)} placeholder="40.000,00" />
+                <Input type="text" inputMode="decimal" className="pl-7 text-lg font-bold" value={valorTotal} onChange={e => setValorTotal(maskBRL(e.target.value))} placeholder="40.000,00" />
               </div>
             </div>
 
@@ -925,7 +926,7 @@ export default function ContasAPagar() {
               <div className="grid grid-cols-2 gap-2">
                 <div className="relative">
                   <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
-                  <Input type="number" step="0.01" className="pl-7" value={valorEntrada} onChange={e => setValorEntrada(e.target.value)} placeholder="10.000,00" />
+                  <Input type="text" inputMode="decimal" className="pl-7" value={valorEntrada} onChange={e => setValorEntrada(maskBRL(e.target.value))} placeholder="10.000,00" />
                 </div>
                 <Select value={formaEntrada} onValueChange={setFormaEntrada}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -949,10 +950,10 @@ export default function ContasAPagar() {
                 <div key={i} className="grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center">
                   <div className="relative">
                     <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
-                    <Input type="number" step="0.01" className="pl-7" value={p.valor}
+                    <Input type="text" inputMode="decimal" className="pl-7" value={p.valor}
                       onChange={e => {
                         const list = [...pagamentosIntermediarios];
-                        list[i].valor = e.target.value;
+                        list[i].valor = maskBRL(e.target.value);
                         setPagamentosIntermediarios(list);
                       }} placeholder="Valor" />
                   </div>
@@ -988,7 +989,7 @@ export default function ContasAPagar() {
                 </div>
                 <div>
                   <Label className="text-xs">Valor da Parcela</Label>
-                  <Input type="number" step="0.01" value={calcValorParcela.toFixed(2)} disabled className="bg-muted font-mono" />
+                  <Input type="text" inputMode="decimal" value={numberToBRL(calcValorParcela)} disabled className="bg-muted font-mono" />
                 </div>
               </div>
             </div>
@@ -1481,10 +1482,10 @@ export default function ContasAPagar() {
                             </Button>
                             {(c.valor_restante > 0 || !quitado) && (
                               <div className="flex gap-1">
-                                <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => { setPagarConta(c); setPagarData(undefined); setPagarValor(String(c.valor_parcela)); }} title="Pagar próxima parcela">
+                                <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => { setPagarConta(c); setPagarData(undefined); setPagarValor(numberToBRL(c.valor_parcela)); }} title="Pagar próxima parcela">
                                   💰 Pagar
                                 </Button>
-                                <Button size="sm" variant="secondary" className="h-7 text-xs px-2 border-primary/10" onClick={() => { setPagarConta(c); setPagarForma("pix"); setPagarValor(String(c.valor_restante)); }} title="Quitar conta">
+                                <Button size="sm" variant="secondary" className="h-7 text-xs px-2 border-primary/10" onClick={() => { setPagarConta(c); setPagarForma("pix"); setPagarValor(numberToBRL(c.valor_restante)); }} title="Quitar conta">
                                   🏁 Quitar
                                 </Button>
                               </div>
@@ -1593,7 +1594,7 @@ export default function ContasAPagar() {
                             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setHistoricoContaId(c.id)} title="Histórico">
                               <History className="h-3.5 w-3.5" />
                             </Button>
-                            <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => { setPagarFixoConta(c); setPagarFixoValor(String(c.valor_parcela)); }} title="Pagar / Adiantar">
+                            <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => { setPagarFixoConta(c); setPagarFixoValor(numberToBRL(c.valor_parcela)); }} title="Pagar / Adiantar">
                               💰 Pagar
                             </Button>
                             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(c)}>
@@ -1667,7 +1668,7 @@ export default function ContasAPagar() {
                 <Label className="text-xs mb-1.5 block">Valor do pagamento</Label>
                 <div className="relative">
                   <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
-                  <Input type="number" step="0.01" className="pl-7" value={pagarValor} onChange={e => setPagarValor(e.target.value)} />
+                  <Input type="text" inputMode="decimal" className="pl-7" value={pagarValor} onChange={e => setPagarValor(maskBRL(e.target.value))} />
                 </div>
               </div>
               <div>
@@ -1725,7 +1726,7 @@ export default function ContasAPagar() {
                 <Label className="text-xs mb-1.5 block">Valor real deste mês *</Label>
                 <div className="relative">
                   <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
-                  <Input type="number" step="0.01" className="pl-7" value={pagarFixoValor} onChange={e => setPagarFixoValor(e.target.value)} placeholder="Ex: 185,50" />
+                  <Input type="text" inputMode="decimal" className="pl-7" value={pagarFixoValor} onChange={e => setPagarFixoValor(maskBRL(e.target.value))} placeholder="Ex: 185,50" />
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-1">
                   💡 Para despesas com valor variável (ex: energia, água), informe o valor real da conta deste mês.

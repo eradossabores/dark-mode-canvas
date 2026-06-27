@@ -18,6 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
+import { maskBRL, parseBRL, numberToBRL } from "@/lib/currency-mask";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -344,8 +345,10 @@ export default function Vendas() {
     setVendas((v.data || []).map((vd: any) => ({ ...vd, totalUnidades: unitsMap[vd.id] || 0, pedido_status: pedidoStatusMap[vd.id] || null, pedido_tipo: pedidoTipoMap[vd.id] || null })));
   }
 
-  function parseDecimal(v: string): number { return Number(v.replace(",", ".")) || 0; }
-  function formatDecimalInput(v: string): string { return v.replace(/[^0-9.,]/g, ""); }
+  // Máscara BRL determinística — ver src/lib/currency-mask.ts
+  // (mantidos os nomes antigos para minimizar diff em todo o arquivo)
+  function parseDecimal(v: string): number { return parseBRL(v); }
+  function formatDecimalInput(v: string): string { return maskBRL(v); }
   function addItem() { setItens([...itens, { sabor_id: "", quantidade: 1, preco_unitario: "", preco_auto: false }]); }
   function removeItem(i: number) { setItens(itens.filter((_, idx) => idx !== i)); }
   function updateItem(i: number, field: string, val: any) {
@@ -527,8 +530,8 @@ export default function Vendas() {
         // Add gelo cubo subtotal
         const geloCuboSubtotal = geloCuboItens.reduce((s, it) => s + (geloCuboPrecos[it.tamanho] || 0) * it.quantidade, 0);
         const totalVendaCalc = totalProdutos + freteCliente + geloCuboSubtotal;
-        const vPix = detalhePgto === "pix" ? totalVendaCalc : detalhePgto === "misto" ? (parseFloat(detalhePix.replace(",", ".")) || 0) : 0;
-        const vEsp = detalhePgto === "especie" ? totalVendaCalc : detalhePgto === "misto" ? (parseFloat(detalheEspecie.replace(",", ".")) || 0) : 0;
+        const vPix = detalhePgto === "pix" ? totalVendaCalc : detalhePgto === "misto" ? parseBRL(detalhePix) : 0;
+        const vEsp = detalhePgto === "especie" ? totalVendaCalc : detalhePgto === "misto" ? parseBRL(detalheEspecie) : 0;
         // "misto" é mapeado para "dinheiro" no DB para manter compatibilidade com relatórios existentes
         const formaPagamentoDb = formaPagamento === "misto" ? "dinheiro" : formaPagamento;
         const updateData: any = { forma_pagamento: formaPagamentoDb, status: statusVenda, valor_pix: vPix, valor_especie: vEsp, total: totalVendaCalc, valor_frete: freteTotal, frete_pago_por: fretePagoPor };
@@ -688,8 +691,8 @@ export default function Vendas() {
     if (vPix > 0 && vEsp > 0) {
       setEditForma("misto");
       setEditDetalhePgto("misto");
-      setEditDetalhePix(vPix.toString());
-      setEditDetalheEspecie(vEsp.toString());
+      setEditDetalhePix(numberToBRL(vPix));
+      setEditDetalheEspecie(numberToBRL(vEsp));
     } else if (vPix > 0) {
       setEditForma("pix");
       setEditDetalhePgto("pix");
@@ -700,7 +703,7 @@ export default function Vendas() {
       setEditDetalhePix(""); setEditDetalheEspecie("");
     }
     // Frete
-    setEditValorFrete(Number(v.valor_frete || 0) > 0 ? String(v.valor_frete) : "");
+    setEditValorFrete(Number(v.valor_frete || 0) > 0 ? numberToBRL(Number(v.valor_frete)) : "");
     setEditFretePagoPor(v.frete_pago_por || "cliente");
     // Load items
     const { data } = await (supabase as any).from("venda_itens").select("*, sabores(nome)").eq("venda_id", v.id);
@@ -721,8 +724,8 @@ export default function Vendas() {
 
       // Se mudou de paga/cancelada para pendente, resetar valor_pago
       const editTotal = itensValidos.reduce((sum: number, it: any) => sum + Number(it.preco_unitario) * (it.quantidade || 0), 0);
-      const eVPix = editDetalhePgto === "pix" ? editTotal : editDetalhePgto === "misto" ? (parseFloat(editDetalhePix.replace(",", ".")) || 0) : 0;
-      const eVEsp = editDetalhePgto === "especie" ? editTotal : editDetalhePgto === "misto" ? (parseFloat(editDetalheEspecie.replace(",", ".")) || 0) : 0;
+      const eVPix = editDetalhePgto === "pix" ? editTotal : editDetalhePgto === "misto" ? parseBRL(editDetalhePix) : 0;
+      const eVEsp = editDetalhePgto === "especie" ? editTotal : editDetalhePgto === "misto" ? parseBRL(editDetalheEspecie) : 0;
       const editFreteVal = parseFloat((editValorFrete || "0").replace(",", ".")) || 0;
       const editFreteCliente = editFretePagoPor === "cliente" ? editFreteVal : editFretePagoPor === "ambos" ? Math.round(editFreteVal / 2 * 100) / 100 : 0;
       const editFormaDb = editForma === "misto" ? "dinheiro" : editForma;
@@ -840,7 +843,7 @@ export default function Vendas() {
     setDataVenda(new Date());
     setStatusVenda("pendente");
     setIgnorarEstoque(false);
-    setValorFrete(Number(v.valor_frete || 0) > 0 ? String(v.valor_frete) : "");
+    setValorFrete(Number(v.valor_frete || 0) > 0 ? numberToBRL(Number(v.valor_frete)) : "");
     setFretePagoPor(v.frete_pago_por || "cliente");
     setBrindes([]);
     setVendaPorPacote(false);
@@ -1265,11 +1268,11 @@ export default function Vendas() {
                   <div className="flex gap-2">
                     <div className="flex-1">
                       <Label className="text-xs">PIX (R$)</Label>
-                      <Input type="text" inputMode="decimal" placeholder="0,00" value={detalhePix} onChange={(e) => setDetalhePix(e.target.value)} />
+                      <Input type="text" inputMode="decimal" placeholder="0,00" value={detalhePix} onChange={(e) => setDetalhePix(maskBRL(e.target.value))} />
                     </div>
                     <div className="flex-1">
                       <Label className="text-xs">Espécie (R$)</Label>
-                      <Input type="text" inputMode="decimal" placeholder="0,00" value={detalheEspecie} onChange={(e) => setDetalheEspecie(e.target.value)} />
+                      <Input type="text" inputMode="decimal" placeholder="0,00" value={detalheEspecie} onChange={(e) => setDetalheEspecie(maskBRL(e.target.value))} />
                     </div>
                   </div>
                 </div>
@@ -1311,7 +1314,7 @@ export default function Vendas() {
                           setValorTotal(v);
                           const total = parseDecimal(v);
                           const entrada = parseDecimal(valorEntrada);
-                          setValorRestante((total - entrada).toFixed(2));
+                           setValorRestante(numberToBRL(total - entrada));
                         }} placeholder="0,00" />
                       </div>
                       <div>
@@ -1321,7 +1324,7 @@ export default function Vendas() {
                           setValorEntrada(v);
                           const total = parseDecimal(valorTotal);
                           const entrada = parseDecimal(v);
-                          setValorRestante((total - entrada).toFixed(2));
+                           setValorRestante(numberToBRL(total - entrada));
                         }} placeholder="0,00" />
                       </div>
                       <div>
@@ -1341,7 +1344,7 @@ export default function Vendas() {
                         setValorEntrada(v);
                         const total = itens.reduce((s, i) => s + (Number(i.preco_unitario) || 0) * (Number(i.quantidade) || 0), 0);
                         const entrada = parseDecimal(v);
-                        setValorRestante((total - entrada).toFixed(2));
+                         setValorRestante(numberToBRL(total - entrada));
                       }} placeholder="0,00 (deixe vazio para integral a prazo)" />
                       {parseDecimal(valorEntrada) > 0 && (
                         <p className="text-xs">
@@ -1502,11 +1505,11 @@ export default function Vendas() {
                 <div className="flex gap-2">
                   <div className="flex-1">
                     <Label className="text-xs">PIX (R$)</Label>
-                    <Input type="text" inputMode="decimal" placeholder="0,00" value={editDetalhePix} onChange={(e) => setEditDetalhePix(e.target.value)} />
+                    <Input type="text" inputMode="decimal" placeholder="0,00" value={editDetalhePix} onChange={(e) => setEditDetalhePix(maskBRL(e.target.value))} />
                   </div>
                   <div className="flex-1">
                     <Label className="text-xs">Espécie (R$)</Label>
-                    <Input type="text" inputMode="decimal" placeholder="0,00" value={editDetalheEspecie} onChange={(e) => setEditDetalheEspecie(e.target.value)} />
+                    <Input type="text" inputMode="decimal" placeholder="0,00" value={editDetalheEspecie} onChange={(e) => setEditDetalheEspecie(maskBRL(e.target.value))} />
                   </div>
                 </div>
               </div>
