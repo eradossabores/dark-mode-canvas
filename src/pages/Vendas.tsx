@@ -88,6 +88,13 @@ export default function Vendas() {
   const [statusVenda, setStatusVenda] = useState("pendente");
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [clienteSelectOpen, setClienteSelectOpen] = useState(false);
+
+  // Sincroniza o "detalhe de pagamento" a partir da forma escolhida (elimina seletor redundante)
+  useEffect(() => {
+    if (formaPagamento === "pix") setDetalhePgto("pix");
+    else if (formaPagamento === "misto") setDetalhePgto("misto");
+    else if (formaPagamento === "dinheiro") setDetalhePgto("especie");
+  }, [formaPagamento]);
   const [detalhePgto, setDetalhePgto] = useState<"pix" | "especie" | "misto">("especie");
   const [detalhePix, setDetalhePix] = useState("");
   const [detalheEspecie, setDetalheEspecie] = useState("");
