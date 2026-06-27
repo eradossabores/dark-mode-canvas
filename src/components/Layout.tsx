@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type PointerEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Package, Users, ShoppingCart, Factory,
@@ -186,7 +186,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     setMobileOpen((current) => !current);
   };
 
-  const handleMobileMenuPointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
+  const handleMobileMenuPointerDown = (event: PointerEvent<HTMLButtonElement>) => {
     if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
 
     event.preventDefault();
