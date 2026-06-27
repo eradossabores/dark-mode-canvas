@@ -330,7 +330,7 @@ export default function Pedir() {
         <header className="sticky top-0 z-50 border-b border-border/50 bg-card/90 backdrop-blur-xl shadow-sm">
           <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-2.5">
             <Link to="/" className="flex items-center gap-2">
-              <img src={logo} alt="MACUXI ICE" className="h-10" / loading="lazy" decoding="async">
+              <img src={logo} alt="MACUXI ICE" className="h-10"  loading="lazy" decoding="async" />
             </Link>
             {step !== "hero" && totalItens > 0 && step === "catalogo" && (
               <Button
@@ -361,7 +361,7 @@ export default function Pedir() {
                 src={geloProducao}
                 alt="Gelos artesanais"
                 className="h-full w-full object-cover"
-              / loading="lazy" decoding="async">
+               loading="lazy" decoding="async" />
             </div>
 
             <div className="relative z-20 mx-auto max-w-2xl px-4 py-16 sm:py-24 text-center">
@@ -422,14 +422,14 @@ export default function Pedir() {
                 src={geloMorango}
                 alt=""
                 className="w-20 h-20 object-contain opacity-80 rotate-[-15deg] drop-shadow-2xl"
-              / loading="lazy" decoding="async">
+               loading="lazy" decoding="async" />
             </div>
             <div className="absolute bottom-8 right-6 z-20 hidden sm:block">
               <img
                 src={geloBobMarleyDetalhe}
                 alt=""
                 className="w-24 h-24 object-contain opacity-80 rotate-[10deg] drop-shadow-2xl"
-              / loading="lazy" decoding="async">
+               loading="lazy" decoding="async" />
             </div>
           </section>
         )}
@@ -562,7 +562,7 @@ export default function Pedir() {
                             <div className="flex items-start gap-3 mb-3">
                               {img ? (
                                 <div className="w-16 h-16 rounded-xl overflow-hidden bg-card/80 backdrop-blur-sm border border-border/50 flex-shrink-0 shadow-sm">
-                                  <img src={img} alt={s.nome} className="w-full h-full object-cover" / loading="lazy" decoding="async">
+                                  <img src={img} alt={s.nome} className="w-full h-full object-cover"  loading="lazy" decoding="async" />
                                 </div>
                               ) : (
                                 <div className="w-16 h-16 rounded-xl bg-card/80 backdrop-blur-sm border border-border/50 flex items-center justify-center flex-shrink-0 text-3xl shadow-sm">

@@ -305,7 +305,7 @@ export default function FactoryDetailsDialog({ open, onOpenChange, factory, onAd
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             {factory.logo_url ? (
-              <img src={factory.logo_url} alt={factory.name} className="h-10 w-10 rounded-lg object-cover" / loading="lazy" decoding="async">
+              <img src={factory.logo_url} alt={factory.name} className="h-10 w-10 rounded-lg object-cover"  loading="lazy" decoding="async" />
             ) : (
               <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Factory className="h-5 w-5 text-primary" />

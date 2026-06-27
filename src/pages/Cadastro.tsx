@@ -128,7 +128,7 @@ export default function Cadastro() {
       <Card className="w-full max-w-md shadow-2xl border-sky-200/50">
         <CardHeader className="text-center space-y-3">
           <div className="flex justify-center">
-            <img src={logo} alt="MACUXI ICE" className="h-16 w-16 rounded-lg shadow-md" / loading="lazy" decoding="async">
+            <img src={logo} alt="MACUXI ICE" className="h-16 w-16 rounded-lg shadow-md"  loading="lazy" decoding="async" />
           </div>
           <CardTitle className="text-2xl font-bold">Criar sua conta</CardTitle>
           <p className="text-sm text-muted-foreground">
