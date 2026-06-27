@@ -878,6 +878,36 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                   )}
                 </CardContent>
               </Card>
+              <Card className="bg-blue-500/5 border-blue-500/20 border-dashed">
+                <CardContent className="py-3 space-y-3">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    <Truck className="h-4 w-4 text-blue-500" /> Compra em Trânsito (opcional)
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Preencha a <b>data prevista de chegada</b> para marcar como em trânsito. O estoque só será creditado ao confirmar o recebimento.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs">Data Prevista Chegada</Label>
+                      <Input
+                        type="date"
+                        value={dataPrevistaChegada}
+                        onChange={e => setDataPrevistaChegada(e.target.value)}
+                        disabled={!!viewingId}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Transportadora</Label>
+                      <Input
+                        placeholder="Ex: Correios, Jadlog..."
+                        value={transportadora}
+                        onChange={e => setTransportadora(e.target.value)}
+                        disabled={!!viewingId}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
               {((editingId ? (parseFloat(editQuantidade) || 0) : totalQty) > 0 && valorTotal > 0) && (
                 <Card className="bg-primary/5 border-primary/20">
                   <CardContent className="py-3">
