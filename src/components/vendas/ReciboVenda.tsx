@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Printer, MessageCircle } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import logoRecibo from "@/assets/logo-recibo.png";
+import logoRecibo from "@/assets/logo-recibo.png?format=webp&quality=80&w=400";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface ReciboItem {
