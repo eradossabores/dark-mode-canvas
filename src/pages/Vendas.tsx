@@ -523,7 +523,9 @@ export default function Vendas() {
         const totalVendaCalc = totalProdutos + freteCliente + geloCuboSubtotal;
         const vPix = detalhePgto === "pix" ? totalVendaCalc : detalhePgto === "misto" ? (parseFloat(detalhePix.replace(",", ".")) || 0) : 0;
         const vEsp = detalhePgto === "especie" ? totalVendaCalc : detalhePgto === "misto" ? (parseFloat(detalheEspecie.replace(",", ".")) || 0) : 0;
-        const updateData: any = { forma_pagamento: formaPagamento, status: statusVenda, valor_pix: vPix, valor_especie: vEsp, total: totalVendaCalc, valor_frete: freteTotal, frete_pago_por: fretePagoPor };
+        // "misto" é mapeado para "dinheiro" no DB para manter compatibilidade com relatórios existentes
+        const formaPagamentoDb = formaPagamento === "misto" ? "dinheiro" : formaPagamento;
+        const updateData: any = { forma_pagamento: formaPagamentoDb, status: statusVenda, valor_pix: vPix, valor_especie: vEsp, total: totalVendaCalc, valor_frete: freteTotal, frete_pago_por: fretePagoPor };
         if (numeroNf.trim()) updateData.numero_nf = numeroNf.trim();
         // 🆕 Tipo de pagamento, vencimento e preço unitário usado
         updateData.forma_pagamento_tipo = formaPagamento === "fiado" ? "aprazo" : "avista";
