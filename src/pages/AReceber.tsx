@@ -14,7 +14,7 @@ import { DollarSign, CheckCircle, AlertTriangle, MinusCircle, History, Search, M
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import logoRecibo from "@/assets/logo-recibo.png?format=webp&quality=80&w=400";
+import logoRecibo from "@/assets/logo-recibo.webp";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function AReceber() {
