@@ -11,12 +11,6 @@ import { useNavigate } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserPlus, PlusCircle } from "lucide-react";
-import sidImg from "@/assets/sid.png";
-import buckImg from "@/assets/buck.png";
-import scrat3dImg from "@/assets/scrat-3d.png";
-import scratAcornImg from "@/assets/scrat-acorn.png";
-import scratStandingImg from "@/assets/scrat-standing.png";
-import scratHangingImg from "@/assets/scrat-hanging.png";
 import EstoqueInteligente from "@/components/dashboard/EstoqueInteligente";
 import RankingClientes from "@/components/dashboard/RankingClientes";
 import ClientesInativos from "@/components/dashboard/ClientesInativos";
@@ -30,7 +24,6 @@ import HistoricoProdutividade from "@/components/dashboard/HistoricoProdutividad
 import RankingProdutividade from "@/components/dashboard/RankingProdutividade";
 import DesempenhoVendedores from "@/components/dashboard/DesempenhoVendedores";
 
-const postItCharacters = [sidImg, scratAcornImg, buckImg, scrat3dImg, scratStandingImg, scratHangingImg];
 const ERA_DOS_SABORES_ID = "00000000-0000-0000-0000-000000000001";
 
 const CHART_COLORS = [
@@ -156,8 +149,6 @@ function getDailyMessage(userId: string) {
 export default function Dashboard() {
   const navigate = useNavigate();
   const { user, factoryId, role } = useAuth();
-  // Personagens da Era do Gelo removidos da fábrica Macuxi Ice
-  const isIceAgeFactory = false;
   const [userName, setUserName] = useState("");
   const [stats, setStats] = useState({
     totalGelos: 0, totalClientes: 0, totalVendas: 0,
@@ -436,23 +427,6 @@ export default function Dashboard() {
           <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-background to-transparent" />
         </div>
 
-        {/* Character watermark - only for Era dos Sabores */}
-        {isIceAgeFactory && (
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 0.18, x: 0 }}
-            transition={{ delay: 0.6, duration: 0.8 }}
-            className="absolute -bottom-2 -right-2 w-20 h-20 pointer-events-none select-none z-10"
-          >
-            <img
-              src={postItCharacters[Math.abs((user?.id || "").charCodeAt(0) || 0) % postItCharacters.length]}
-              alt=""
-              aria-hidden
-              className="w-full h-full object-contain drop-shadow-sm"
-            />
-          </motion.div>
-        )}
-
         {/* Content */}
         <div className="relative z-20 px-4 py-3 sm:px-6 sm:py-5">
           <motion.div
@@ -536,7 +510,6 @@ export default function Dashboard() {
               const items = grouped[cat];
               const itemIdx = Math.floor(alertaIndex / categories.length) % items.length;
               const item = items[itemIdx] || items[0];
-              const charImg = postItCharacters[catIdx % postItCharacters.length];
 
               return (
                 <motion.div
@@ -601,26 +574,7 @@ export default function Dashboard() {
                          ))}
                        </div>
 
-                       {/* Character - absolute positioned but relative to this flex container to stay clean */}
-                       {isIceAgeFactory && (
-                         <img
-                           src={charImg}
-                           alt=""
-                           aria-hidden
-                           className="w-12 h-12 object-contain opacity-30 pointer-events-none select-none -mb-2 -mr-2"
-                         />
-                       )}
                      </div>
-
-                    {/* Character - only for Era dos Sabores */}
-                    {isIceAgeFactory && (
-                      <img
-                        src={charImg}
-                        alt=""
-                        aria-hidden
-                        className="absolute bottom-1 right-1 w-16 h-16 object-contain opacity-25 pointer-events-none select-none"
-                      />
-                    )}
                   </div>
                 </motion.div>
               );
@@ -673,17 +627,6 @@ export default function Dashboard() {
                    </div>
                  </div>
 
-                 {/* Character - only for Era dos Sabores */}
-                 {isIceAgeFactory && (
-                   <div className="flex justify-end -mb-3 -mr-3">
-                     <img
-                       src={postItCharacters[3 % postItCharacters.length]}
-                       alt=""
-                       aria-hidden
-                       className="w-12 h-12 object-contain opacity-30 pointer-events-none select-none"
-                     />
-                   </div>
-                 )}
               </div>
             </motion.div>
           </div>
