@@ -102,7 +102,7 @@ export default function EditFactoryDialog({ open, onOpenChange, factory, onSaved
             <div className="mt-1 flex items-center gap-4">
               {logoPreview ? (
                 <div className="relative">
-                  <img src={logoPreview} alt="Logo" className="h-16 w-16 rounded-lg object-contain border border-border bg-muted" />
+                  <img src={logoPreview} alt="Logo" className="h-16 w-16 rounded-lg object-contain border border-border bg-muted"  loading="lazy" decoding="async" />
                   <button
                     type="button"
                     onClick={() => { setLogoFile(null); setLogoPreview(null); }}

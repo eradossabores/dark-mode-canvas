@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,49 +10,57 @@ import GlobalSearch from "@/components/GlobalSearch";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Layout from "@/components/Layout";
 import SnowEffect from "@/components/SnowEffect";
+import OfflineIndicator from "@/components/OfflineIndicator";
 import ThemeProvider from "@/components/ThemeProvider";
 import Login from "@/pages/Login";
 import { Navigate } from "react-router-dom";
-import Dashboard from "@/pages/Dashboard";
-import Producao from "@/pages/Producao";
-import Vendas from "@/pages/Vendas";
-import Estoque from "@/pages/Estoque";
-import Clientes from "@/pages/Clientes";
-import Funcionarios from "@/pages/Funcionarios";
-import Sabores from "@/pages/Sabores";
-import Auditoria from "@/pages/Auditoria";
-import Relatorios from "@/pages/Relatorios";
-import ImportarPlanilha from "@/pages/ImportarPlanilha";
-import AReceber from "@/pages/AReceber";
-import ContasAPagar from "@/pages/ContasAPagar";
-import PedidosProducao from "@/pages/PedidosProducao";
-import MonitorProducao from "@/pages/MonitorProducao";
-import Diagnostico from "@/pages/Diagnostico";
-import VerificacaoVendas from "@/pages/VerificacaoVendas";
-import GerenciarUsuarios from "@/pages/GerenciarUsuarios";
-import PrevisaoDemanda from "@/pages/PrevisaoDemanda";
-import PlanoProducaoDiario from "@/pages/PlanoProducaoDiario";
-import PlanoSemanal from "@/pages/PlanoSemanal";
-import MapaEntregas from "@/pages/MapaEntregas";
-import MapaClientes from "@/pages/MapaClientes";
-import Prospeccao from "@/pages/Prospeccao";
-import Cadastro from "@/pages/Cadastro";
-import Pedir from "@/pages/Pedir";
-import Backup from "@/pages/Backup";
-import PresencaProducao from "@/pages/PresencaProducao";
-import SuperAdmin from "@/pages/SuperAdmin";
-import Suporte from "@/pages/Suporte";
-import ConfigurarFabrica from "@/pages/ConfigurarFabrica";
-import NotFound from "@/pages/NotFound";
-import Compras from "@/pages/Compras";
-import Vendedores from "@/pages/Vendedores";
-import MeusClientes from "@/pages/vendedor/MeusClientes";
-import NovoPedido from "@/pages/vendedor/NovoPedido";
-import EstoqueDisponivel from "@/pages/vendedor/EstoqueDisponivel";
-import MinhasComissoes from "@/pages/vendedor/MinhasComissoes";
-import DashboardVendedor from "@/pages/vendedor/DashboardVendedor";
-import HistoricoVendas from "@/pages/vendedor/HistoricoVendas";
+import { Loader2 } from "lucide-react";
 
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const Producao = lazy(() => import("@/pages/Producao"));
+const Vendas = lazy(() => import("@/pages/Vendas"));
+const Estoque = lazy(() => import("@/pages/Estoque"));
+const Clientes = lazy(() => import("@/pages/Clientes"));
+const Funcionarios = lazy(() => import("@/pages/Funcionarios"));
+const Sabores = lazy(() => import("@/pages/Sabores"));
+const Auditoria = lazy(() => import("@/pages/Auditoria"));
+const Relatorios = lazy(() => import("@/pages/Relatorios"));
+const ImportarPlanilha = lazy(() => import("@/pages/ImportarPlanilha"));
+const AReceber = lazy(() => import("@/pages/AReceber"));
+const ContasAPagar = lazy(() => import("@/pages/ContasAPagar"));
+const PedidosProducao = lazy(() => import("@/pages/PedidosProducao"));
+const MonitorProducao = lazy(() => import("@/pages/MonitorProducao"));
+const Diagnostico = lazy(() => import("@/pages/Diagnostico"));
+const VerificacaoVendas = lazy(() => import("@/pages/VerificacaoVendas"));
+const GerenciarUsuarios = lazy(() => import("@/pages/GerenciarUsuarios"));
+const PrevisaoDemanda = lazy(() => import("@/pages/PrevisaoDemanda"));
+const PlanoProducaoDiario = lazy(() => import("@/pages/PlanoProducaoDiario"));
+const PlanoSemanal = lazy(() => import("@/pages/PlanoSemanal"));
+const MapaEntregas = lazy(() => import("@/pages/MapaEntregas"));
+const MapaClientes = lazy(() => import("@/pages/MapaClientes"));
+const Prospeccao = lazy(() => import("@/pages/Prospeccao"));
+const Cadastro = lazy(() => import("@/pages/Cadastro"));
+const Pedir = lazy(() => import("@/pages/Pedir"));
+const Backup = lazy(() => import("@/pages/Backup"));
+const PresencaProducao = lazy(() => import("@/pages/PresencaProducao"));
+const SuperAdmin = lazy(() => import("@/pages/SuperAdmin"));
+const Suporte = lazy(() => import("@/pages/Suporte"));
+const ConfigurarFabrica = lazy(() => import("@/pages/ConfigurarFabrica"));
+const NotFound = lazy(() => import("@/pages/NotFound"));
+const Compras = lazy(() => import("@/pages/Compras"));
+const Vendedores = lazy(() => import("@/pages/Vendedores"));
+const MeusClientes = lazy(() => import("@/pages/vendedor/MeusClientes"));
+const NovoPedido = lazy(() => import("@/pages/vendedor/NovoPedido"));
+const EstoqueDisponivel = lazy(() => import("@/pages/vendedor/EstoqueDisponivel"));
+const MinhasComissoes = lazy(() => import("@/pages/vendedor/MinhasComissoes"));
+const DashboardVendedor = lazy(() => import("@/pages/vendedor/DashboardVendedor"));
+const HistoricoVendas = lazy(() => import("@/pages/vendedor/HistoricoVendas"));
+
+const PageFallback = () => (
+  <div className="flex h-screen w-full items-center justify-center bg-background">
+    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+  </div>
+);
 
 const queryClient = new QueryClient();
 
@@ -81,6 +90,8 @@ const App = () => (
             <AuthProvider>
               <SnowEffect />
               <GlobalSearch />
+              <OfflineIndicator />
+              <Suspense fallback={<PageFallback />}>
               <Routes>
               {/* Public */}
               <Route path="/" element={<Navigate to="/login" replace />} />
@@ -134,6 +145,7 @@ const App = () => (
 
               <Route path="*" element={<NotFound />} />
               </Routes>
+              </Suspense>
             </AuthProvider>
           </BrowserRouter>
         </TooltipProvider>

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Printer, MessageCircle } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import logoRecibo from "@/assets/logo-recibo.png";
+import logoRecibo from "@/assets/logo-recibo.webp";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface ReciboItem {
@@ -370,7 +370,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
 
         <div className="space-y-3 text-sm">
           <div className="text-center border-b pb-3">
-            <img src={factoryLogo} alt={factoryName || "Logo"} className="h-28 mx-auto mb-1" />
+            <img src={factoryLogo} alt={factoryName || "Logo"} className="h-28 mx-auto mb-1"  loading="lazy" decoding="async" />
             <p className="text-muted-foreground text-xs font-semibold">{factoryName || "MACUXI ICE"}</p>
           </div>
 

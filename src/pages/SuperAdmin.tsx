@@ -771,7 +771,7 @@ export default function SuperAdmin() {
                         <div className="mt-1 flex items-center gap-4">
                           {logoPreview ? (
                             <div className="relative">
-                              <img src={logoPreview} alt="Preview" className="h-16 w-16 rounded-lg object-contain border border-border bg-muted" />
+                              <img src={logoPreview} alt="Preview" className="h-16 w-16 rounded-lg object-contain border border-border bg-muted"  loading="lazy" decoding="async" />
                               <button type="button" onClick={() => { setLogoFile(null); setLogoPreview(null); }} className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-xs">×</button>
                             </div>
                           ) : (
@@ -937,7 +937,7 @@ export default function SuperAdmin() {
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
                           {factory.logo_url ? (
-                            <img src={factory.logo_url} alt={factory.name} className="h-10 w-10 rounded-lg object-cover" />
+                            <img src={factory.logo_url} alt={factory.name} className="h-10 w-10 rounded-lg object-cover"  loading="lazy" decoding="async" />
                           ) : (
                             <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                               <Factory className="h-5 w-5 text-primary" />

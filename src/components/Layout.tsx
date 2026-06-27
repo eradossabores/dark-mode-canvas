@@ -410,7 +410,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </button>
         <div className="flex items-center gap-2 min-w-0">
           {branding?.logoUrl ? (
-            <img src={branding.logoUrl} alt={factoryName || "Logo"} className="h-8 w-8 rounded-lg object-cover" />
+            <img src={branding.logoUrl} alt={factoryName || "Logo"} className="h-8 w-8 rounded-lg object-cover"  loading="lazy" decoding="async" />
           ) : (
             <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
               <Factory className="h-4 w-4 text-primary-foreground" />
@@ -427,7 +427,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <aside id="mobile-sidebar-menu" className="absolute left-0 top-0 z-[130] flex h-screen h-[100dvh] w-[min(18rem,86vw)] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-2xl animate-in slide-in-from-left duration-200">
             <div className="flex min-h-14 shrink-0 items-center gap-3 border-b border-sidebar-border px-4 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
               {branding?.logoUrl ? (
-                <img src={branding.logoUrl} alt={factoryName || "Logo"} className="h-9 w-9 rounded-lg object-cover" />
+                <img src={branding.logoUrl} alt={factoryName || "Logo"} className="h-9 w-9 rounded-lg object-cover"  loading="lazy" decoding="async" />
               ) : (
                 <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
                   <Factory className="h-5 w-5 text-primary-foreground" />
@@ -469,7 +469,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           collapsed ? "justify-center px-2" : "gap-3 px-4"
         )}>
           {branding?.logoUrl ? (
-            <img src={branding.logoUrl} alt={factoryName || "Logo"} className={cn("rounded-xl object-cover shrink-0", collapsed ? "h-9 w-9" : "h-10 w-10")} />
+            <img src={branding.logoUrl} alt={factoryName || "Logo"} className={cn("rounded-xl object-cover shrink-0", collapsed ? "h-9 w-9" : "h-10 w-10")}  loading="lazy" decoding="async" />
           ) : (
             <div className={cn(
               "rounded-xl bg-sidebar-primary flex items-center justify-center shadow-sm shrink-0",
