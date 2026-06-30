@@ -53,6 +53,7 @@ export default function RelatorioFinanceiroCliente() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [vendas, setVendas] = useState<Venda[]>([]);
   const [abatimentos, setAbatimentos] = useState<Abatimento[]>([]);
+  const [unidadesPorVenda, setUnidadesPorVenda] = useState<Record<string, number>>({});
   const [selectedClienteId, setSelectedClienteId] = useState<string>("");
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
@@ -63,14 +64,20 @@ export default function RelatorioFinanceiroCliente() {
   useEffect(() => {
     if (!factoryId) return;
     (async () => {
-      const [c, v, a] = await Promise.all([
+      const [c, v, a, vi] = await Promise.all([
         supabase.from("clientes").select("id,nome,telefone,created_at,saldo_devedor_atual,status_financeiro").eq("factory_id", factoryId).order("nome"),
         supabase.from("vendas").select("id,numero_pedido,created_at,status,status_entrega,forma_pagamento_tipo,data_vencimento,total,valor_original,valor_pago,cliente_id").eq("factory_id", factoryId).neq("status", "cancelada"),
         supabase.from("abatimentos_historico").select("id,venda_id,valor,forma_pagamento,created_at").eq("factory_id", factoryId),
+        supabase.from("venda_itens").select("venda_id,quantidade").eq("factory_id", factoryId),
       ]);
       setClientes((c.data as Cliente[]) || []);
       setVendas((v.data as Venda[]) || []);
       setAbatimentos((a.data as Abatimento[]) || []);
+      const map: Record<string, number> = {};
+      ((vi.data as { venda_id: string; quantidade: number }[]) || []).forEach((it) => {
+        map[it.venda_id] = (map[it.venda_id] || 0) + Number(it.quantidade || 0);
+      });
+      setUnidadesPorVenda(map);
     })();
   }, [factoryId]);
 
@@ -108,7 +115,8 @@ export default function RelatorioFinanceiroCliente() {
         const quitadaPorStatus = v.status === "paga";
         const pago = Math.max(pagoAbat, pagoDireto, quitadaPorStatus ? valorAtual : 0);
         const saldo = quitadaPorStatus ? 0 : Math.max(0, valorAtual - pago);
-        return { ...v, abats, pago, valorOriginal, valorAtual, desconto, saldo };
+        const unidades = unidadesPorVenda[v.id] || 0;
+        return { ...v, abats, pago, valorOriginal, valorAtual, desconto, saldo, unidades };
       })
       .filter((v) => {
         if (statusFilter !== "todos" && v.status !== statusFilter) return false;
@@ -117,7 +125,7 @@ export default function RelatorioFinanceiroCliente() {
         return true;
       })
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  }, [vendas, selectedClienteId, abatPorVenda, startDate, endDate, statusFilter, situacaoFilter]);
+  }, [vendas, selectedClienteId, abatPorVenda, startDate, endDate, statusFilter, situacaoFilter, unidadesPorVenda]);
 
   const resumo = useMemo(() => {
     const totalComandas = vendasCliente.length;
@@ -153,10 +161,11 @@ export default function RelatorioFinanceiroCliente() {
   }, [vendas, abatPorVenda, clientes, searchInad]);
 
   function buildRows() {
-    const headers = ["Comanda", "Data", "Status", "Valor Original", "Desconto", "Abatimentos", "Saldo Devedor"];
+    const headers = ["Comanda", "Data", "Unid.", "Status", "Valor Original", "Desconto", "Abatimentos", "Saldo Devedor"];
     const rows = vendasCliente.map((v) => [
       `#${v.numero_pedido ?? v.id.slice(0, 6)}`,
       dt(v.created_at),
+      String(v.unidades),
       v.saldo > 0 ? "Em aberto" : "Quitada",
       brl(v.valorOriginal),
       brl(v.desconto),
@@ -169,6 +178,7 @@ export default function RelatorioFinanceiroCliente() {
   function handlePDF() {
     if (!cliente) return;
     const { headers, rows } = buildRows();
+    const totalUnidades = vendasCliente.reduce((s, v) => s + v.unidades, 0);
     exportToPDF(
       `Relatório Financeiro - ${cliente.nome}`,
       headers,
@@ -176,6 +186,7 @@ export default function RelatorioFinanceiroCliente() {
       `financeiro_${cliente.nome.replace(/\s+/g, "_")}`,
       [
         { label: "Comandas", value: String(resumo.totalComandas) },
+        { label: "Unidades", value: String(totalUnidades) },
         { label: "Em Aberto", value: String(resumo.comandasEmAberto) },
         { label: "Total Vendido", value: brl(resumo.totalVendido) },
         { label: "Saldo Devedor", value: brl(resumo.saldoDevedor) },
@@ -295,6 +306,7 @@ export default function RelatorioFinanceiroCliente() {
                         <TableHead>Comanda</TableHead>
                         <TableHead>Data</TableHead>
                         <TableHead>Vencimento</TableHead>
+                        <TableHead className="text-center">Unid.</TableHead>
                         <TableHead className="text-right">Original</TableHead>
                         <TableHead className="text-right">Desconto</TableHead>
                         <TableHead className="text-right">Pagamentos</TableHead>
@@ -304,7 +316,7 @@ export default function RelatorioFinanceiroCliente() {
                     </TableHeader>
                     <TableBody>
                       {vendasCliente.length === 0 && (
-                        <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">Nenhuma comanda encontrada.</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-6">Nenhuma comanda encontrada.</TableCell></TableRow>
                       )}
                       {vendasCliente.map((v) => (
                         <Fragment key={v.id}>
@@ -312,6 +324,7 @@ export default function RelatorioFinanceiroCliente() {
                             <TableCell className="font-medium">#{v.numero_pedido ?? v.id.slice(0, 6)}</TableCell>
                             <TableCell>{dt(v.created_at)}</TableCell>
                             <TableCell>{dt(v.data_vencimento)}</TableCell>
+                            <TableCell className="text-center">{v.unidades}</TableCell>
                             <TableCell className="text-right">{brl(v.valorOriginal)}</TableCell>
                             <TableCell className="text-right text-amber-600">{v.desconto > 0 ? `- ${brl(v.desconto)}` : "—"}</TableCell>
                             <TableCell className="text-right text-emerald-600">{v.pago > 0 ? `- ${brl(v.pago)}` : "—"}</TableCell>
@@ -322,7 +335,7 @@ export default function RelatorioFinanceiroCliente() {
                           </TableRow>
                           {v.abats.length > 0 && (
                             <TableRow className="bg-muted/30">
-                              <TableCell colSpan={8} className="text-xs">
+                              <TableCell colSpan={9} className="text-xs">
                                 <div className="pl-4 space-y-1">
                                   {v.abats.map((a) => (
                                     <div key={a.id} className="flex justify-between max-w-md">
