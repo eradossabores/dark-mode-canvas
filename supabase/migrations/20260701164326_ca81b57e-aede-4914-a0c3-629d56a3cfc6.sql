@@ -1,0 +1,1 @@
+UPDATE public.factories SET logo_url='https://crugiszdfjruvdsqdnha.supabase.co/storage/v1/object/public/factory-logos/gelo-drink-pe-logo.png?v=' || extract(epoch from now())::bigint WHERE id='eab694a4-fdb2-40dd-808e-7d0c80f0f730';
