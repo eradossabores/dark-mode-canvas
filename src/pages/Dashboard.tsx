@@ -850,10 +850,15 @@ export default function Dashboard() {
            <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
            <div className="relative h-full"><RankingClientes factoryId={factoryId} /></div>
          </div>
-         <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
-           <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
-           <div className="relative h-full"><ClientesInativos factoryId={factoryId} /></div>
-         </div>
+          <button
+            type="button"
+            onClick={() => navigate("/painel/clientes-sem-compra")}
+            className="relative rounded-xl border-[0.75px] border-border p-0.5 text-left transition-transform hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label="Abrir página de clientes sem compra"
+          >
+            <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
+            <div className="relative h-full pointer-events-none"><ClientesInativos factoryId={factoryId} /></div>
+          </button>
          <div className="relative rounded-xl border-[0.75px] border-border p-0.5">
            <GlowingEffect spread={15} glow disabled={false} proximity={32} inactiveZone={0.3} borderWidth={3} />
            <div className="relative h-full"><ClassificacaoABC factoryId={factoryId} /></div>
