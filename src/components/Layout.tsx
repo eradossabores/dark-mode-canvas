@@ -6,6 +6,7 @@ import {
   ShoppingBag, Database, LogOut, Shield, Brain, MapPin, Map, Target,
   HardDrive, UserCheck, Crown, MessageCircle, Settings, CalendarDays,
   ChevronDown, Menu, X, PanelLeftClose, PanelLeftOpen, Wallet, History
+  , UserX
 } from "lucide-react";
 import PaymentBanner from "@/components/PaymentBanner";
 import { cn } from "@/lib/utils";
@@ -75,6 +76,7 @@ const menuGroups: MenuGroup[] = [
     label: "Cadastros",
     items: [
       { path: "/painel/clientes", label: "Clientes", icon: Users },
+      { path: "/painel/clientes-sem-compra", label: "Clientes sem Compra", icon: UserX },
       { path: "/painel/funcionarios", label: "Colaboradores", icon: UserCog },
       { path: "/painel/sabores", label: "Sabores", icon: Package },
     ],
