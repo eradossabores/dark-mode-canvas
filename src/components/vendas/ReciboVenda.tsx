@@ -2,6 +2,8 @@ import { useRef, useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Printer, MessageCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import logoRecibo from "@/assets/logo-recibo.webp";
@@ -41,6 +43,7 @@ interface Props {
 export default function ReciboVenda({ open, onOpenChange, data }: Props) {
   const { branding, factoryName } = useAuth();
   const [factoryLogo, setFactoryLogo] = useState<string>(logoRecibo);
+  const [formato, setFormato] = useState<"escpos" | "a4">("escpos");
 
   useEffect(() => {
     if (branding?.logoUrl) {
@@ -77,7 +80,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     }
   }
 
-  function gerarPDFDoc(): jsPDF | null {
+  function gerarPDFDocEscPos(): jsPDF | null {
     if (!data) return null;
     const doc = new jsPDF({ unit: "mm", format: [80, 280] });
     const w = 80;
@@ -324,10 +327,214 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     return doc;
   }
 
+  function gerarPDFDocA4(): jsPDF | null {
+    if (!data) return null;
+    const doc = new jsPDF({ unit: "mm", format: "a4" });
+    const W = 210;
+    const M = 18;
+    let y = M;
+
+    // Top band
+    doc.setFillColor(0, 100, 160);
+    doc.rect(0, 0, W, 6, "F");
+    y = 14;
+
+    // Logo
+    const logoH = 30;
+    const logoW = 40;
+    try {
+      doc.addImage(factoryLogo, "PNG", M, y, logoW, logoH);
+    } catch { /* ignore */ }
+
+    // Header text
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 100, 160);
+    doc.text(factoryName || "MACUXI ICE", M + logoW + 6, y + 10);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(90, 90, 90);
+    doc.text("Recibo de Venda", M + logoW + 6, y + 17);
+    doc.setFontSize(9);
+    doc.text(`Emitido em: ${new Date().toLocaleString("pt-BR")}`, M + logoW + 6, y + 23);
+
+    y += logoH + 8;
+    doc.setDrawColor(0, 100, 160);
+    doc.setLineWidth(0.6);
+    doc.line(M, y, W - M, y);
+    y += 6;
+
+    // Client info box
+    doc.setFillColor(240, 246, 252);
+    const infoH = 34;
+    doc.roundedRect(M, y, W - M * 2, infoH, 2, 2, "F");
+    doc.setFontSize(9);
+    doc.setTextColor(60, 60, 60);
+
+    const col1X = M + 4;
+    const col2X = M + (W - M * 2) / 2 + 4;
+    let ly = y + 6;
+
+    const field = (label: string, value: string, x: number, yy: number) => {
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(100, 100, 100);
+      doc.text(label, x, yy);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(20, 20, 20);
+      doc.text(value, x + 26, yy);
+    };
+
+    field("Cliente:", data.cliente_nome, col1X, ly);
+    field("Data:", data.data, col2X, ly);
+    ly += 6;
+    if (data.endereco) field("Endereço:", data.endereco.substring(0, 60), col1X, ly);
+    field("Pagamento:", data.forma_pagamento, col2X, ly);
+    ly += 6;
+    if (data.numero_pedido) field("Pedido:", `#${data.numero_pedido}`, col1X, ly);
+    if (data.numero_nf) field("NF:", data.numero_nf, col2X, ly);
+    ly += 6;
+    if (data.data_vencimento) field("Vencimento:", data.data_vencimento, col1X, ly);
+    if (data.telefone) field("Telefone:", data.telefone, col2X, ly);
+
+    y += infoH + 6;
+
+    // Itens table
+    const paidItems = data.itens.filter(i => i.preco_unitario > 0);
+    const giftItems = data.itens.filter(i => i.preco_unitario === 0);
+
+    if (paidItems.length > 0) {
+      autoTable(doc, {
+        startY: y,
+        margin: { left: M, right: M },
+        head: [["Sabor", "Qtd", "Valor Unit.", "Subtotal"]],
+        body: paidItems.map(i => [
+          i.sabor_nome,
+          String(i.quantidade),
+          `R$ ${i.preco_unitario.toFixed(2)}`,
+          `R$ ${i.subtotal.toFixed(2)}`,
+        ]),
+        styles: { fontSize: 10, cellPadding: 3 },
+        headStyles: { fillColor: [0, 100, 160], textColor: 255, fontStyle: "bold" },
+        alternateRowStyles: { fillColor: [245, 249, 253] },
+        columnStyles: {
+          1: { halign: "center" },
+          2: { halign: "right" },
+          3: { halign: "right" },
+        },
+        theme: "grid",
+      });
+      y = (doc as any).lastAutoTable.finalY + 4;
+    }
+
+    if (giftItems.length > 0) {
+      doc.setFillColor(255, 243, 224);
+      doc.roundedRect(M, y, W - M * 2, 6, 1.5, 1.5, "F");
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(200, 120, 0);
+      doc.text("BRINDES / CORTESIA", W / 2, y + 4, { align: "center" });
+      y += 8;
+      giftItems.forEach(i => {
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(60, 60, 60);
+        doc.text(`• ${i.sabor_nome}  x${i.quantidade}`, M + 4, y);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(34, 139, 34);
+        doc.text("CORTESIA", W - M - 4, y, { align: "right" });
+        y += 5;
+      });
+      y += 2;
+    }
+
+    // Frete
+    if (freteVal > 0 && data.frete_pago_por !== "empresa") {
+      const freteLabel = data.frete_pago_por === "ambos" ? "Frete (50/50)" : "Frete";
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 100, 160);
+      doc.text(`${freteLabel}: R$ ${freteCliente.toFixed(2)}`, W - M, y + 4, { align: "right" });
+      y += 8;
+    }
+
+    // TOTAL box
+    doc.setFillColor(0, 100, 160);
+    doc.roundedRect(W - M - 90, y, 90, 14, 2, 2, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text(`TOTAL: R$ ${totalExibido.toFixed(2)}`, W - M - 45, y + 9, { align: "center" });
+    y += 20;
+
+    // Status & paid
+    const isPago = data.status === "paga";
+    const valorPago = data.valor_pago ?? (isPago ? totalExibido : 0);
+    const restante = totalExibido - valorPago;
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    if (valorPago > 0) {
+      doc.setTextColor(34, 139, 34);
+      doc.text(`Pago: R$ ${valorPago.toFixed(2)}`, M, y);
+      y += 5;
+    }
+    if (!isPago && restante > 0) {
+      doc.setTextColor(200, 120, 0);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Restante: R$ ${restante.toFixed(2)}`, M, y);
+      y += 5;
+    }
+
+    if (data.observacoes) {
+      y += 3;
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "italic");
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Obs: ${data.observacoes}`, M, y, { maxWidth: W - M * 2 });
+      y += 6;
+    }
+
+    // Carimbo
+    y += 6;
+    const cx = W / 2;
+    if (isPago) {
+      doc.setDrawColor(34, 160, 34);
+      doc.setLineWidth(2.5);
+      doc.roundedRect(cx - 40, y, 80, 24, 5, 5, "S");
+      doc.setTextColor(34, 160, 34);
+      doc.setFontSize(32);
+      doc.setFont("helvetica", "bold");
+      doc.text("PAGO", cx, y + 17, { align: "center" });
+    } else {
+      doc.setDrawColor(200, 120, 0);
+      doc.setLineWidth(2);
+      doc.roundedRect(cx - 45, y, 90, 24, 5, 5, "S");
+      doc.setTextColor(200, 120, 0);
+      doc.setFontSize(26);
+      doc.setFont("helvetica", "bold");
+      doc.text("PENDENTE", cx, y + 17, { align: "center" });
+    }
+
+    // Footer
+    const pageH = doc.internal.pageSize.getHeight();
+    doc.setFillColor(0, 100, 160);
+    doc.rect(0, pageH - 6, W, 6, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "italic");
+    doc.text(`${factoryName || "MACUXI ICE"} — Obrigado pela preferência!`, W / 2, pageH - 2, { align: "center" });
+
+    return doc;
+  }
+
+  function gerarPDFDoc(): jsPDF | null {
+    return formato === "a4" ? gerarPDFDocA4() : gerarPDFDocEscPos();
+  }
+
   function gerarPDF() {
     const doc = gerarPDFDoc();
     if (!doc || !data) return;
-    doc.save(`recibo-${data.cliente_nome.replace(/\s+/g, "-")}.pdf`);
+    doc.save(`recibo-${formato}-${data.cliente_nome.replace(/\s+/g, "-")}.pdf`);
   }
 
   async function enviarWhatsApp() {
@@ -454,8 +661,20 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
         </div>
 
         <div className="flex gap-2 pt-2">
-          <Button onClick={gerarPDF} className="flex-1">
-            <Printer className="h-4 w-4 mr-1" /> Imprimir PDF
+          <div className="flex-1 flex flex-col gap-1">
+            <Label className="text-xs text-muted-foreground">Formato de impressão</Label>
+            <Select value={formato} onValueChange={(v) => setFormato(v as "escpos" | "a4")}>
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="escpos">ESC/POS (Térmica 80mm)</SelectItem>
+                <SelectItem value="a4">A4 (Folha padrão)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={gerarPDF} className="self-end">
+            <Printer className="h-4 w-4 mr-1" /> Imprimir
           </Button>
           <Button onClick={enviarWhatsApp} variant="outline" className="flex-1 text-white bg-blue-600 hover:bg-blue-700 border-blue-600">
             <MessageCircle className="h-4 w-4 mr-1" /> WhatsApp
