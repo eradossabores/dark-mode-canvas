@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { UserX, Clock, Phone, MessageCircle, Copy } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 const DEFAULT_WHATSAPP_TEMPLATE = `Oi, {nome}! Tudo bem? 😊
 
@@ -27,6 +28,7 @@ export default function ClientesInativos({ factoryId }: { factoryId?: string | n
   const [mensagemModelo, setMensagemModelo] = useState(DEFAULT_WHATSAPP_TEMPLATE);
   const [mostrarMensagemWhatsapp, setMostrarMensagemWhatsapp] = useState(false);
   const [clienteMensagem, setClienteMensagem] = useState<ClienteInativo | null>(null);
+  const [busca, setBusca] = useState("");
 
   useEffect(() => { load(); }, [factoryId]);
 
@@ -58,7 +60,16 @@ export default function ClientesInativos({ factoryId }: { factoryId?: string | n
     }
   }
 
-  const filtrados = clientes.filter(c => c.diasSemCompra >= diasLimite);
+  const filtrados = clientes.filter(c => {
+    if (c.diasSemCompra < diasLimite) return false;
+    if (!busca.trim()) return true;
+    const q = busca.trim().toLowerCase();
+    return (
+      c.nome.toLowerCase().includes(q) ||
+      (c.bairro?.toLowerCase().includes(q) ?? false) ||
+      (c.telefone?.toLowerCase().includes(q) ?? false)
+    );
+  });
   const clienteMensagemValido = useMemo(
     () => filtrados.find((cliente) => cliente.id === clienteMensagem?.id) ?? null,
     [clienteMensagem, filtrados],
@@ -134,9 +145,17 @@ export default function ClientesInativos({ factoryId }: { factoryId?: string | n
         </div>
       </CardHeader>
       <CardContent>
+        <div className="mb-3">
+          <Input
+            placeholder="Buscar por nome, bairro ou telefone..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            className="h-9 text-sm"
+          />
+        </div>
         {filtrados.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">
-            Todos os clientes compraram recentemente! 🎉
+            {busca.trim() ? "Nenhum cliente encontrado para essa busca." : "Todos os clientes compraram recentemente! 🎉"}
           </p>
         ) : (
           <div className="space-y-3">
