@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
-import icetechLogo from "@/assets/icetech-logo.webp";
+import icetechLogo from "@/assets/icetech-logo.png.asset.json";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -114,8 +114,8 @@ export default function Login() {
       {/* Logo */}
       <div className="mb-6 flex flex-col items-center">
         <img
-          src={icetechLogo}
-          alt="MACUXI ICE"
+          src={icetechLogo.url}
+          alt="ICETECH"
           className="h-28 w-28 sm:h-36 sm:w-36 object-contain drop-shadow-2xl"
         />
       </div>
