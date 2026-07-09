@@ -660,11 +660,11 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
           )}
         </div>
 
-        <div className="flex gap-2 pt-2">
-          <div className="flex-1 flex flex-col gap-1">
+        <div className="flex flex-col gap-3 pt-2 border-t">
+          <div className="flex flex-col gap-1">
             <Label className="text-xs text-muted-foreground">Formato de impressão</Label>
             <Select value={formato} onValueChange={(v) => setFormato(v as "escpos" | "a4")}>
-              <SelectTrigger className="h-9">
+              <SelectTrigger className="h-9 w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -673,12 +673,18 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={gerarPDF} className="self-end">
-            <Printer className="h-4 w-4 mr-1" /> Imprimir
-          </Button>
-          <Button onClick={enviarWhatsApp} variant="outline" className="flex-1 text-white bg-blue-600 hover:bg-blue-700 border-blue-600">
-            <MessageCircle className="h-4 w-4 mr-1" /> WhatsApp
-          </Button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button onClick={gerarPDF} className="w-full">
+              <Printer className="h-4 w-4 mr-1" /> Imprimir
+            </Button>
+            <Button
+              onClick={enviarWhatsApp}
+              variant="outline"
+              className="w-full text-white bg-blue-600 hover:bg-blue-700 border-blue-600"
+            >
+              <MessageCircle className="h-4 w-4 mr-1" /> WhatsApp
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
