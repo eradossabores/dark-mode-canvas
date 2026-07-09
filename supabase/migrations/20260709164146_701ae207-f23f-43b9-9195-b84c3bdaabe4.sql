@@ -1,0 +1,1 @@
+UPDATE public.factories SET logo_url='https://crugiszdfjruvdsqdnha.supabase.co/storage/v1/object/public/factory-logos/macuxi-ice-recibo-v1.png?t=' || extract(epoch from now())::text, updated_at=now() WHERE id='00000000-0000-0000-0000-000000000001';
