@@ -216,22 +216,23 @@ export default function ClientesInativos({ factoryId }: { factoryId?: string | n
                         : "border-border bg-muted/20"
                     }`}
                   >
-                    <div className="space-y-1.5">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="font-semibold text-sm leading-tight break-words">{c.nome}</p>
-                        <Badge
-                          variant={critico ? "destructive" : c.diasSemCompra >= 15 ? "secondary" : "outline"}
-                          className="shrink-0"
-                        >
-                          <Clock className="h-3 w-3 mr-1" />
-                          {c.diasSemCompra === 999 ? "Nunca" : `${c.diasSemCompra}d`}
-                        </Badge>
-                      </div>
+                    <div className="space-y-2">
+                      <Badge
+                        variant={critico ? "destructive" : c.diasSemCompra >= 15 ? "secondary" : "outline"}
+                        className="w-fit text-[10px] px-1.5 py-0"
+                      >
+                        <Clock className="h-3 w-3 mr-1" />
+                        {c.diasSemCompra === 999 ? "Nunca comprou" : `${c.diasSemCompra} dias`}
+                      </Badge>
+                      <p className="font-semibold text-sm leading-tight break-words line-clamp-2">
+                        {c.nome}
+                      </p>
                       <div className="flex flex-col gap-0.5 text-[11px] text-muted-foreground">
                         {c.bairro && <span className="truncate">{c.bairro}</span>}
                         {c.telefone && (
-                          <span className="flex items-center gap-1 text-primary">
-                            <Phone className="h-3 w-3" />{c.telefone}
+                          <span className="flex items-center gap-1 text-primary truncate">
+                            <Phone className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{c.telefone}</span>
                           </span>
                         )}
                       </div>
