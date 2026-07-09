@@ -503,9 +503,14 @@ export default function AReceber() {
       doc.text(value, 28, yPos);
     };
 
+    const formaLabelFor = (f?: string) =>
+      f === "pix" ? "PIX" : f === "misto" ? "Misto (PIX + Espécie)" : f === "especie" ? "Espécie" : (f?.replace("_", " ") || "-");
+    const ultimoAbat = abatimentos && abatimentos.length > 0 ? abatimentos[abatimentos.length - 1] : null;
+    const formaExibida = ultimoAbat?.forma_pagamento || venda.forma_pagamento;
+
     infoLabel("Cliente:", venda.clientes?.nome || "-", y); y += 3.5;
     infoLabel("Data:", new Date(venda.created_at).toLocaleDateString("pt-BR"), y); y += 3.5;
-    infoLabel("Pgto:", venda.forma_pagamento?.replace("_", " ") || "-", y); y += 3.5;
+    infoLabel("Pgto:", formaLabelFor(formaExibida), y); y += 3.5;
     if (venda.numero_nf) { infoLabel("NF:", venda.numero_nf, y); y += 3.5; }
     y += 2;
 
@@ -588,19 +593,21 @@ export default function AReceber() {
       autoTable(doc, {
         startY: y,
         margin: { left: 4, right: 4 },
-        head: [["#", "Data / Hora", "Valor"]],
+        head: [["#", "Data", "Forma", "Valor"]],
         body: abatimentos.map((h: any, i: number) => [
           String(i + 1),
           new Date(h.created_at).toLocaleDateString("pt-BR") + " " + new Date(h.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+          formaLabelFor(h.forma_pagamento),
           `R$ ${Number(h.valor).toFixed(2)}`,
         ]),
         styles: { fontSize: 6.5, cellPadding: 1.8, textColor: [40, 40, 40] },
         headStyles: { fillColor: [0, 100, 160], fontSize: 6.5, textColor: [255, 255, 255], fontStyle: "bold" },
         alternateRowStyles: { fillColor: [240, 246, 252] },
         columnStyles: {
-          0: { cellWidth: 8, halign: "center" },
-          1: { cellWidth: 30 },
-          2: { cellWidth: 26, halign: "right" },
+          0: { cellWidth: 6, halign: "center" },
+          1: { cellWidth: 26 },
+          2: { cellWidth: 16, halign: "center" },
+          3: { cellWidth: 16, halign: "right" },
         },
         theme: "grid",
         tableLineColor: [200, 210, 220],
@@ -696,7 +703,16 @@ export default function AReceber() {
 
     const pagoLine = pago > 0 ? `\nPago: R$ ${pago.toFixed(2)}` : "";
     const displayName2 = factoryName || "MACUXI ICE";
-    const msg = `*${displayName2}*\n\nOlá ${clienteNome}, segue seu recibo.\n\nTotal: R$ ${total.toFixed(2)}${pagoLine}\nRestante: R$ ${restante.toFixed(2)}\nData: ${new Date(venda.created_at).toLocaleDateString("pt-BR")}\nPagamento: ${venda.forma_pagamento?.replace("_", " ") || "-"}`;
+    // Busca a forma de pagamento do último abatimento (reflete pgto real, não o original da venda)
+    const { data: ultimosAbat } = await (supabase as any)
+      .from("abatimentos_historico")
+      .select("forma_pagamento")
+      .eq("venda_id", v.id)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    const formaReal = ultimosAbat?.[0]?.forma_pagamento || venda.forma_pagamento;
+    const formaMsg = formaReal === "pix" ? "PIX" : formaReal === "misto" ? "Misto (PIX + Espécie)" : formaReal === "especie" ? "Espécie" : (formaReal?.replace("_", " ") || "-");
+    const msg = `*${displayName2}*\n\nOlá ${clienteNome}, segue seu recibo.\n\nTotal: R$ ${total.toFixed(2)}${pagoLine}\nRestante: R$ ${restante.toFixed(2)}\nData: ${new Date(venda.created_at).toLocaleDateString("pt-BR")}\nPagamento: ${formaMsg}`;
 
     const pdfBlob = doc.output("blob");
     const file = new File([pdfBlob], fileName, { type: "application/pdf" });
