@@ -181,55 +181,53 @@ export default function ClientesInativos({ factoryId }: { factoryId?: string | n
               </div>
             )}
 
-            <div className="space-y-2 max-h-[280px] overflow-y-auto">
-              {filtrados.slice(0, 10).map(c => {
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 max-h-[520px] overflow-y-auto pr-1">
+              {filtrados.map(c => {
                 const ativo = clienteMensagemValido?.id === c.id;
+                const critico = c.diasSemCompra >= 30 || c.diasSemCompra === 999;
 
                 return (
                   <div
                     key={c.id}
-                    className={`flex w-full items-center justify-between gap-3 rounded-lg border p-2 text-left text-sm transition-colors ${
-                      ativo ? "border-primary bg-primary/5" : "border-transparent bg-muted/30 hover:border-border"
+                    className={`flex flex-col justify-between gap-3 rounded-xl border p-3 text-sm transition-all hover:shadow-md ${
+                      ativo
+                        ? "border-primary bg-primary/5"
+                        : critico
+                        ? "border-destructive/40 bg-destructive/5"
+                        : "border-border bg-muted/20"
                     }`}
                   >
-                    <div className="flex min-w-0 items-start gap-2">
-                      <div className="min-w-0">
-                        <p className="font-medium truncate">{c.nome}</p>
-                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                          {c.bairro && <span>{c.bairro}</span>}
-                          {c.telefone && (
-                            <span className="flex items-center gap-0.5 text-primary">
-                              <Phone className="h-2.5 w-2.5" />{c.telefone}
-                            </span>
-                          )}
-                        </div>
+                    <div className="space-y-1.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-semibold text-sm leading-tight break-words">{c.nome}</p>
+                        <Badge
+                          variant={critico ? "destructive" : c.diasSemCompra >= 15 ? "secondary" : "outline"}
+                          className="shrink-0"
+                        >
+                          <Clock className="h-3 w-3 mr-1" />
+                          {c.diasSemCompra === 999 ? "Nunca" : `${c.diasSemCompra}d`}
+                        </Badge>
+                      </div>
+                      <div className="flex flex-col gap-0.5 text-[11px] text-muted-foreground">
+                        {c.bairro && <span className="truncate">{c.bairro}</span>}
+                        {c.telefone && (
+                          <span className="flex items-center gap-1 text-primary">
+                            <Phone className="h-3 w-3" />{c.telefone}
+                          </span>
+                        )}
                       </div>
                     </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <Badge
-                        variant={c.diasSemCompra >= 30 ? "destructive" : c.diasSemCompra >= 15 ? "secondary" : "outline"}
-                        className="shrink-0"
-                      >
-                        <Clock className="h-3 w-3 mr-1" />
-                        {c.diasSemCompra === 999 ? "Nunca" : `${c.diasSemCompra}d`}
-                      </Badge>
-                      <button
-                        type="button"
-                        onClick={() => abrirMensagemCliente(c)}
-                        className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-[11px] font-medium text-primary-foreground transition-colors hover:opacity-90"
-                      >
-                        <MessageCircle className="h-3.5 w-3.5" />
-                        Enviar mensagem
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => abrirMensagemCliente(c)}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-[11px] font-medium text-primary-foreground transition-colors hover:opacity-90"
+                    >
+                      <MessageCircle className="h-3.5 w-3.5" />
+                      Enviar mensagem
+                    </button>
                   </div>
                 );
               })}
-              {filtrados.length > 10 && (
-                <p className="text-xs text-muted-foreground text-center pt-1">
-                  +{filtrados.length - 10} cliente(s)
-                </p>
-              )}
             </div>
           </div>
         )}
