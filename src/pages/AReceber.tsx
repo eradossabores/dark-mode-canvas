@@ -346,7 +346,13 @@ export default function AReceber() {
           : `R$ ${valor.toFixed(2)} recebido. Restante: R$ ${(restante - valor).toFixed(2)}`,
       });
 
-      await checkWhatsappPrompt(abaterVenda.id, abaterVenda.cliente_id, abaterVenda.clientes?.nome || "?", totalVenda, novoValorPago, quitou);
+      if (quitou) {
+        // Ao quitar via abatimento, compartilha recibo detalhado com carimbo PAGO
+        const vendaAtualizada = { ...abaterVenda, valor_pago: novoValorPago, status: "paga" };
+        await enviarReciboWhatsAppDireto(vendaAtualizada);
+      } else {
+        await checkWhatsappPrompt(abaterVenda.id, abaterVenda.cliente_id, abaterVenda.clientes?.nome || "?", totalVenda, novoValorPago, quitou);
+      }
 
       setAbaterVenda(null);
       setValorAbater("");
