@@ -277,7 +277,9 @@ export default function AReceber() {
       }
 
       toast({ title: "Venda marcada como paga!" });
-      await checkWhatsappPrompt(id, venda.cliente_id, venda.clientes?.nome || "?", Number(venda.total), Number(venda.total), true);
+      // Compartilhar recibo detalhado com carimbo PAGO
+      const vendaAtualizada = { ...venda, valor_pago: Number(venda.total), status: "paga" };
+      await enviarReciboWhatsAppDireto(vendaAtualizada);
       setConfirmarQuitarId(null);
       setFormaPgtoQuitar("especie");
       setValorPixQuitar("");
