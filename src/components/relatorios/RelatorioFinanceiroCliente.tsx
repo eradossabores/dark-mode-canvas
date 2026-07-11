@@ -64,19 +64,27 @@ export default function RelatorioFinanceiroCliente() {
   useEffect(() => {
     if (!factoryId) return;
     (async () => {
-      const [c, v, a, vi] = await Promise.all([
+      const [c, v, a] = await Promise.all([
         supabase.from("clientes").select("id,nome,telefone,created_at,saldo_devedor_atual,status_financeiro").eq("factory_id", factoryId).order("nome"),
         supabase.from("vendas").select("id,numero_pedido,created_at,status,status_entrega,forma_pagamento_tipo,data_vencimento,total,valor_original,valor_pago,cliente_id").eq("factory_id", factoryId).neq("status", "cancelada"),
         supabase.from("abatimentos_historico").select("id,venda_id,valor,forma_pagamento,created_at").eq("factory_id", factoryId),
-        supabase.from("venda_itens").select("venda_id,quantidade").eq("factory_id", factoryId),
       ]);
       setClientes((c.data as Cliente[]) || []);
       setVendas((v.data as Venda[]) || []);
       setAbatimentos((a.data as Abatimento[]) || []);
       const map: Record<string, number> = {};
-      ((vi.data as { venda_id: string; quantidade: number }[]) || []).forEach((it) => {
-        map[it.venda_id] = (map[it.venda_id] || 0) + Number(it.quantidade || 0);
-      });
+      const vendaIds = ((v.data as Venda[]) || []).map((x) => x.id);
+      for (let i = 0; i < vendaIds.length; i += 200) {
+        const chunk = vendaIds.slice(i, i + 200);
+        if (chunk.length === 0) continue;
+        const { data: viData } = await supabase
+          .from("venda_itens")
+          .select("venda_id,quantidade")
+          .in("venda_id", chunk);
+        ((viData as { venda_id: string; quantidade: number }[]) || []).forEach((it) => {
+          map[it.venda_id] = (map[it.venda_id] || 0) + Number(it.quantidade || 0);
+        });
+      }
       setUnidadesPorVenda(map);
     })();
   }, [factoryId]);
