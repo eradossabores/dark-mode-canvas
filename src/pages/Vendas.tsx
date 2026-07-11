@@ -299,10 +299,21 @@ export default function Vendas() {
     let cQ = (supabase as any).from("clientes").select("id, nome, preco_unidade_avista, preco_unidade_aprazo, limite_credito, saldo_devedor_atual, conversao_automatica_prazo").eq("status", "ativo").order("nome");
     let sQ = (supabase as any).from("sabores").select("*").eq("ativo", true).order("nome");
     let vQ = (supabase as any).from("vendas").select("*, clientes(nome, preco_unidade_aprazo)").order("created_at", { ascending: false }).limit(500);
-    let viQ = (supabase as any).from("venda_itens").select("venda_id, quantidade");
     let ppQ = (supabase as any).from("pedidos_producao").select("venda_id, status, tipo_pedido").not("venda_id", "is", null);
-    if (factoryId) { cQ = cQ.eq("factory_id", factoryId); sQ = sQ.eq("factory_id", factoryId); vQ = vQ.eq("factory_id", factoryId); viQ = viQ.eq("factory_id", factoryId); ppQ = ppQ.eq("factory_id", factoryId); }
-    const [c, s, v, vi, pp] = await Promise.all([cQ, sQ, vQ, viQ, ppQ]);
+    if (factoryId) { cQ = cQ.eq("factory_id", factoryId); sQ = sQ.eq("factory_id", factoryId); vQ = vQ.eq("factory_id", factoryId); ppQ = ppQ.eq("factory_id", factoryId); }
+    const [c, s, v, pp] = await Promise.all([cQ, sQ, vQ, ppQ]);
+    // Fetch venda_itens scoped to the returned vendas to avoid the 1000-row default limit
+    const vendaIds = (v.data || []).map((vd: any) => vd.id);
+    let vi: any = { data: [] };
+    if (vendaIds.length > 0) {
+      // chunk into batches of 200 to keep URL length safe
+      const chunks: string[][] = [];
+      for (let i = 0; i < vendaIds.length; i += 200) chunks.push(vendaIds.slice(i, i + 200));
+      const results = await Promise.all(
+        chunks.map((ids) => (supabase as any).from("venda_itens").select("venda_id, quantidade").in("venda_id", ids))
+      );
+      vi = { data: results.flatMap((r: any) => r.data || []) };
+    }
     setClientes(c.data || []);
     setSabores(s.data || []);
 
