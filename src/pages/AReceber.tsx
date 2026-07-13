@@ -279,7 +279,7 @@ export default function AReceber() {
       toast({ title: "Venda marcada como paga!" });
       // Compartilhar recibo detalhado com carimbo PAGO
       const vendaAtualizada = { ...venda, valor_pago: Number(venda.total), status: "paga" };
-      await enviarReciboWhatsAppDireto(vendaAtualizada);
+      await enviarReciboWhatsAppDireto(vendaAtualizada, formaPgtoQuitar);
       setConfirmarQuitarId(null);
       setFormaPgtoQuitar("especie");
       setValorPixQuitar("");
@@ -349,7 +349,7 @@ export default function AReceber() {
       if (quitou) {
         // Ao quitar via abatimento, compartilha recibo detalhado com carimbo PAGO
         const vendaAtualizada = { ...abaterVenda, valor_pago: novoValorPago, status: "paga" };
-        await enviarReciboWhatsAppDireto(vendaAtualizada);
+        await enviarReciboWhatsAppDireto(vendaAtualizada, formaPgtoAbater);
       } else {
         await checkWhatsappPrompt(abaterVenda.id, abaterVenda.cliente_id, abaterVenda.clientes?.nome || "?", totalVenda, novoValorPago, quitou);
       }
