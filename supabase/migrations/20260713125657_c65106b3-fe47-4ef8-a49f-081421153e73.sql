@@ -1,0 +1,1 @@
+UPDATE public.vendas SET valor_original = total WHERE valor_original IS NOT NULL AND valor_original < total;
