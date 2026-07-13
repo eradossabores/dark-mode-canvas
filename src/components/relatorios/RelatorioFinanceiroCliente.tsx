@@ -115,8 +115,11 @@ export default function RelatorioFinanceiroCliente() {
       .map((v) => {
         const abats = abatPorVenda[v.id] || [];
         const pagoAbat = abats.reduce((s, a) => s + Number(a.valor || 0), 0);
-        const valorOriginal = Number(v.valor_original ?? v.total ?? 0);
         const valorAtual = Number(v.total ?? 0);
+        // Salvaguarda: valor_original nunca pode ser menor que o total atual
+        // (anomalia observada em vendas convertidas automaticamente de fiado).
+        const valorOriginalBruto = Number(v.valor_original ?? v.total ?? 0);
+        const valorOriginal = Math.max(valorOriginalBruto, valorAtual);
         const desconto = Math.max(0, valorOriginal - valorAtual);
         // Considera venda já paga (à vista / status paga) mesmo sem registro em abatimentos
         const pagoDireto = Number(v.valor_pago || 0);
