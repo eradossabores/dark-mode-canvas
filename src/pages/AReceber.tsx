@@ -434,7 +434,7 @@ export default function AReceber() {
     }
   }
 
-  async function gerarReciboVenda(v: any) {
+  async function gerarReciboVenda(v: any, formaOverride?: string) {
     // Fetch latest venda data from DB
     const { data: vendaAtual } = await (supabase as any)
       .from("vendas")
@@ -514,7 +514,7 @@ export default function AReceber() {
     const formaLabelFor = (f?: string) =>
       f === "pix" ? "PIX" : f === "misto" ? "Misto (PIX + Espécie)" : f === "especie" ? "Espécie" : (f?.replace("_", " ") || "-");
     const ultimoAbat = abatimentos && abatimentos.length > 0 ? abatimentos[abatimentos.length - 1] : null;
-    const formaExibida = ultimoAbat?.forma_pagamento || venda.forma_pagamento;
+    const formaExibida = formaOverride || ultimoAbat?.forma_pagamento || venda.forma_pagamento;
 
     infoLabel("Cliente:", venda.clientes?.nome || "-", y); y += 3.5;
     infoLabel("Data:", new Date(venda.created_at).toLocaleDateString("pt-BR"), y); y += 3.5;
@@ -699,8 +699,8 @@ export default function AReceber() {
     toast({ title: "Recibo gerado!", description: "PDF salvo no dispositivo." });
   }
 
-  async function enviarReciboWhatsAppDireto(v: any) {
-    const result = await gerarReciboVenda(v);
+  async function enviarReciboWhatsAppDireto(v: any, formaOverride?: string) {
+    const result = await gerarReciboVenda(v, formaOverride);
     if (!result) return;
     const { doc, venda } = result;
     const clienteNome = venda.clientes?.nome || "-";
@@ -718,7 +718,7 @@ export default function AReceber() {
       .eq("venda_id", v.id)
       .order("created_at", { ascending: false })
       .limit(1);
-    const formaReal = ultimosAbat?.[0]?.forma_pagamento || venda.forma_pagamento;
+    const formaReal = formaOverride || ultimosAbat?.[0]?.forma_pagamento || venda.forma_pagamento;
     const formaMsg = formaReal === "pix" ? "PIX" : formaReal === "misto" ? "Misto (PIX + Espécie)" : formaReal === "especie" ? "Espécie" : (formaReal?.replace("_", " ") || "-");
     const msg = `*${displayName2}*\n\nOlá ${clienteNome}, segue seu recibo.\n\nTotal: R$ ${total.toFixed(2)}${pagoLine}\nRestante: R$ ${restante.toFixed(2)}\nData: ${new Date(venda.created_at).toLocaleDateString("pt-BR")}\nPagamento: ${formaMsg}`;
 
