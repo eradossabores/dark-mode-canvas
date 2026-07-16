@@ -713,7 +713,7 @@ export default function Dashboard() {
                 </div>
                 {periodoFaturamento === "mensal" && (
                   <div className="flex gap-1 flex-wrap">
-                    {MESES_NOME.map((nome, idx) => (
+                    {MESES_NOME.slice(0, new Date().getMonth() + 1).map((nome, idx) => (
                       <button
                         key={idx}
                         onClick={() => setMesFaturamento(idx)}
@@ -770,7 +770,7 @@ export default function Dashboard() {
                 </div>
                 {periodoProducao === "mensal" && (
                   <div className="flex gap-1 flex-wrap">
-                    {MESES_NOME.map((nome, idx) => (
+                    {MESES_NOME.slice(0, new Date().getMonth() + 1).map((nome, idx) => (
                       <button
                         key={idx}
                         onClick={() => setMesProducao(idx)}
