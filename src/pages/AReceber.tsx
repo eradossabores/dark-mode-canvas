@@ -512,7 +512,15 @@ export default function AReceber() {
     };
 
     const formaLabelFor = (f?: string) =>
-      f === "pix" ? "PIX" : f === "misto" ? "Misto (PIX + Espécie)" : f === "especie" ? "Espécie" : (f?.replace("_", " ") || "-");
+      f === "pix" ? "PIX"
+        : f === "misto" ? "Misto (PIX + Espécie)"
+        : f === "especie" ? "Espécie"
+        : f === "fiado" || f === "aprazo" ? "A Prazo"
+        : f === "dinheiro" ? "Dinheiro"
+        : f === "cartao" ? "Cartão"
+        : f === "boleto" ? "Boleto"
+        : f === "parcelado" ? "Parcelado"
+        : (f?.replace("_", " ") || "-");
     const ultimoAbat = abatimentos && abatimentos.length > 0 ? abatimentos[abatimentos.length - 1] : null;
     const formaExibida = formaOverride || ultimoAbat?.forma_pagamento || venda.forma_pagamento;
 
@@ -528,16 +536,25 @@ export default function AReceber() {
 
     // Items table
     if (itens && itens.length > 0) {
+      // Fonte da verdade é venda.total. Recalcula o preço unitário efetivo
+      // (evita divergências de 1,95 vs 2,05 em vendas convertidas p/ A Prazo).
+      const totalQtdItens = itens.reduce((s: number, i: any) => s + Number(i.quantidade || 0), 0);
+      const precoUnitEfetivo = totalQtdItens > 0 ? Number(venda.total) / totalQtdItens : 0;
       autoTable(doc, {
         startY: y,
         margin: { left: 4, right: 4 },
         head: [["Sabor", "Qtd", "Unit.", "Subtotal"]],
-        body: itens.map((i: any) => [
-          i.sabores?.nome || "-",
-          String(i.quantidade),
-          `R$${Number(i.preco_unitario).toFixed(2)}`,
-          `R$${Number(i.subtotal).toFixed(2)}`,
-        ]),
+        body: itens.map((i: any) => {
+          const isBrinde = Number(i.preco_unitario) === 0;
+          const unit = isBrinde ? 0 : precoUnitEfetivo;
+          const sub = unit * Number(i.quantidade);
+          return [
+            i.sabores?.nome || "-",
+            String(i.quantidade),
+            `R$${unit.toFixed(2)}`,
+            `R$${sub.toFixed(2)}`,
+          ];
+        }),
         styles: { fontSize: 6.5, cellPadding: 1.8, textColor: [40, 40, 40] },
         headStyles: { fillColor: [0, 100, 160], fontSize: 6.5, textColor: [255, 255, 255], fontStyle: "bold" },
         alternateRowStyles: { fillColor: [240, 246, 252] },
