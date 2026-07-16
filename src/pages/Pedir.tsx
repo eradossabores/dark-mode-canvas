@@ -110,7 +110,7 @@ const pedidoSchema = z.object({
   telefone: z.string().trim().min(10, "Telefone inválido").max(20),
   endereco: z.string().trim().min(5, "Endereço deve ter pelo menos 5 caracteres").max(300),
   bairro: z.string().trim().min(2, "Bairro é obrigatório").max(100),
-  formaPagamento: z.enum(["dinheiro", "pix", "cartao", "fiado"], { required_error: "Selecione a forma de pagamento" }),
+  formaPagamento: z.enum(["dinheiro", "pix", "cartao", "fiado"], { message: "Selecione a forma de pagamento" }),
   observacoes: z.string().max(500).optional(),
 });
 
@@ -237,7 +237,7 @@ export default function Pedir() {
     const result = pedidoSchema.safeParse({ nome, telefone, endereco, bairro, formaPagamento, observacoes });
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
-      result.error.errors.forEach((e) => {
+      result.error.issues.forEach((e) => {
         fieldErrors[e.path[0] as string] = e.message;
       });
       setErrors(fieldErrors);

@@ -374,7 +374,7 @@ export default function Vendas() {
     }
   }
 
-  async function recalcPrecosTotalComanda(currentItens: typeof itens, cId: string) {
+  async function recalcPrecosTotalComanda(currentItens: typeof itens, cId: string, formaOverride?: string) {
     // When selling by package, convert to real units for price calculation
     const totalQtd = currentItens.reduce((s, it) => {
       const qty = vendaPorPacote ? (it.quantidade || 0) * factoryUnidadesPorSaco : (it.quantidade || 0);
@@ -383,7 +383,8 @@ export default function Vendas() {
     const updated = [...currentItens];
     // 🆕 Preço por cliente conforme forma de pagamento (À Vista / A Prazo)
     const cli = clientes.find((c) => c.id === cId);
-    const isAPrazo = formaPagamento === "fiado";
+    const formaAtual = formaOverride ?? formaPagamento;
+    const isAPrazo = formaAtual === "fiado";
     const precoCliente = cli
       ? (isAPrazo
           ? (cli.preco_unidade_aprazo != null ? Number(cli.preco_unidade_aprazo) : null)
@@ -442,7 +443,7 @@ export default function Vendas() {
   // 🆕 Recalcular ao alternar forma de pagamento (À Vista ↔ A Prazo)
   useEffect(() => {
     if (clienteId && itens.length > 0) {
-      recalcPrecosTotalComanda(itens, clienteId);
+      recalcPrecosTotalComanda(itens, clienteId, formaPagamento);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formaPagamento]);
