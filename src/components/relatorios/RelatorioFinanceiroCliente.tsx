@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { FileText, FileSpreadsheet, Printer, AlertTriangle, User, Wallet, Receipt, TrendingDown } from "lucide-react";
+import { FileText, FileSpreadsheet, Printer, AlertTriangle, User, Wallet, Receipt, TrendingDown, MessageCircle } from "lucide-react";
 import { exportToPDF, exportToExcel } from "@/lib/export-utils";
 import DateRangeFilter from "@/components/relatorios/DateRangeFilter";
 import KpiCard from "@/components/relatorios/KpiCard";
@@ -219,6 +219,29 @@ export default function RelatorioFinanceiroCliente() {
     exportToExcel(headers, rows, "Financeiro", `financeiro_${cliente.nome.replace(/\s+/g, "_")}`);
   }
 
+  function handleWhatsApp() {
+    if (!cliente) return;
+    const telefone = (cliente.telefone || "").replace(/\D/g, "");
+    const hoje = new Date().toLocaleDateString("pt-BR");
+    const linhas = [
+      `Olá, ${cliente.nome}! 👋`,
+      "",
+      `Segue o *Relatório Financeiro* atualizado em ${hoje}:`,
+      "",
+      `📄 Comandas: ${resumo.totalComandas}`,
+      `🟡 Em aberto: ${resumo.comandasEmAberto}`,
+      `💰 Total vendido: ${brl(resumo.totalVendido)}`,
+      `✅ Total pago: ${brl(resumo.totalPago)}`,
+      `🔻 Descontos: ${brl(resumo.totalDescontos)}`,
+      `❗ *Saldo devedor: ${brl(resumo.saldoDevedor)}*`,
+      "",
+      "Qualquer dúvida estamos à disposição. Obrigado! 🙏",
+    ];
+    const msg = encodeURIComponent(linhas.join("\n"));
+    const base = telefone ? `https://wa.me/55${telefone}` : "https://wa.me/";
+    window.open(`${base}?text=${msg}`, "_blank");
+  }
+
   return (
     <div className="space-y-4">
       <Tabs defaultValue="individual">
@@ -306,6 +329,7 @@ export default function RelatorioFinanceiroCliente() {
               <div className="flex gap-2">
                 <Button size="sm" onClick={handlePDF}><FileText className="h-4 w-4 mr-1" /> PDF</Button>
                 <Button size="sm" variant="outline" onClick={handleExcel}><FileSpreadsheet className="h-4 w-4 mr-1" /> Excel</Button>
+                <Button size="sm" variant="outline" className="bg-emerald-600 text-white hover:bg-emerald-700" onClick={handleWhatsApp}><MessageCircle className="h-4 w-4 mr-1" /> WhatsApp</Button>
                 <Button size="sm" variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-1" /> Imprimir</Button>
               </div>
 
