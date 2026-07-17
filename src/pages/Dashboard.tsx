@@ -686,6 +686,23 @@ export default function Dashboard() {
                          </button>
                        ))}
                      </div>
+                      {c.periodo === "mensal" && c.onMesChange && (
+                        <div className="flex flex-wrap gap-1 bg-black/20 p-1 rounded-lg border border-white/5">
+                          {MESES_NOME.slice(0, new Date().getMonth() + 1).map((nome, idx) => (
+                            <button
+                              key={nome}
+                              onClick={(e) => { e.stopPropagation(); c.onMesChange(idx); }}
+                              className={`px-1.5 py-0.5 text-[9px] font-semibold rounded-md transition-all ${
+                                c.mes === idx
+                                  ? "bg-primary text-primary-foreground shadow-sm"
+                                  : "text-[hsl(var(--kpi-surface-muted-foreground))] hover:bg-white/10 hover:text-white"
+                              }`}
+                            >
+                              {nome.slice(0, 3)}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                    </div>
                  ) : (
                    <div className="h-[26px]" aria-hidden="true" />
