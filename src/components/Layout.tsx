@@ -113,6 +113,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { role, signOut, factoryName, factoryId, branding, impersonatingFactory, clearImpersonation } = useAuth();
   useKeyboardShortcuts();
 
+  // Breadcrumb resolution from menuGroups
+  const breadcrumb = (() => {
+    const path = location.pathname;
+    for (const g of menuGroups) {
+      for (const it of g.items) {
+        if (it.path === path) return { group: g.label, label: it.label };
+        if (it.children) {
+          const c = it.children.find((c) => c.path === path);
+          if (c) return { group: g.label, parent: it.label, label: c.label };
+        }
+      }
+    }
+    if (path === "/super-admin") return { group: "Sistema", label: "Super Admin" };
+    return null;
+  })();
+
   // Apply factory theme
   useEffect(() => {
     if (branding?.theme) {
