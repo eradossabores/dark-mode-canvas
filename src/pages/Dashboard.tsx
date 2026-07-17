@@ -177,6 +177,10 @@ export default function Dashboard() {
   const [vendasPeriodo, setVendasPeriodo] = useState<ResumoPeriodo>("total");
   const [producoesPeriodo, setProducoesPeriodo] = useState<ResumoPeriodo>("total");
   const [receberPeriodo, setReceberPeriodo] = useState<ResumoPeriodo>("total");
+  const [fatMes, setFatMes] = useState(new Date().getMonth());
+  const [vendasMes, setVendasMes] = useState(new Date().getMonth());
+  const [producoesMes, setProducoesMes] = useState(new Date().getMonth());
+  const [receberMes, setReceberMes] = useState(new Date().getMonth());
   useEffect(() => { loadStats(); loadUserName(); }, [factoryId]);
 
   async function loadUserName() {
