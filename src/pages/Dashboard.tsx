@@ -24,6 +24,7 @@ import ClassificacaoABC from "@/components/dashboard/ClassificacaoABC";
 import HistoricoProdutividade from "@/components/dashboard/HistoricoProdutividade";
 import RankingProdutividade from "@/components/dashboard/RankingProdutividade";
 import DesempenhoVendedores from "@/components/dashboard/DesempenhoVendedores";
+import NotaRapidaCard from "@/components/dashboard/NotaRapidaCard";
 
 const ERA_DOS_SABORES_ID = "00000000-0000-0000-0000-000000000001";
 
