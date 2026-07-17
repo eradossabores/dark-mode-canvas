@@ -353,22 +353,22 @@ export default function Dashboard() {
 
   const faturamentoValor = useMemo(() => {
     return allVendas
-      .filter((v: any) => isWithinResumoPeriod(v.created_at, fatPeriodo))
+      .filter((v: any) => isWithinResumoPeriod(v.created_at, fatPeriodo, fatMes))
       .reduce((s: number, v: any) => s + Number(v.total), 0);
-  }, [allVendas, fatPeriodo]);
+  }, [allVendas, fatPeriodo, fatMes]);
 
   const vendasCardValor = useMemo(() => {
-    return allVendas.filter((v: any) => isWithinResumoPeriod(v.created_at, vendasPeriodo)).length;
-  }, [allVendas, vendasPeriodo]);
+    return allVendas.filter((v: any) => isWithinResumoPeriod(v.created_at, vendasPeriodo, vendasMes)).length;
+  }, [allVendas, vendasPeriodo, vendasMes]);
 
   const producoesCardValor = useMemo(() => {
-    return allProducoes.filter((p: any) => isWithinResumoPeriod(p.created_at, producoesPeriodo)).length;
-  }, [allProducoes, producoesPeriodo]);
+    return allProducoes.filter((p: any) => isWithinResumoPeriod(p.created_at, producoesPeriodo, producoesMes)).length;
+  }, [allProducoes, producoesPeriodo, producoesMes]);
 
   const contasReceberResumo = useMemo(() => {
     const hoje = new Date().toISOString().split("T")[0];
     const pendentesFiltradas = allVendas.filter(
-      (v: any) => v.status === "pendente" && isWithinResumoPeriod(v.created_at, receberPeriodo),
+      (v: any) => v.status === "pendente" && isWithinResumoPeriod(v.created_at, receberPeriodo, receberMes),
     );
 
     return {
@@ -376,15 +376,15 @@ export default function Dashboard() {
       quantidade: pendentesFiltradas.length,
       vencidas: pendentesFiltradas.filter((v: any) => v.created_at.split("T")[0] < hoje).length,
     };
-  }, [allVendas, receberPeriodo]);
+  }, [allVendas, receberPeriodo, receberMes]);
 
   const cards = [
     { title: "Gelos em Estoque", value: stats.totalGelos.toLocaleString(), icon: Package, color: "text-primary", href: "/painel/estoque" },
     { title: "Clientes Ativos", value: stats.totalClientes, icon: Users, color: "text-secondary-foreground", href: "/painel/clientes" },
-    { title: getResumoTitle("Vendas", vendasPeriodo), value: vendasCardValor, icon: ShoppingCart, color: "text-accent", href: "/painel/vendas", periodo: vendasPeriodo, onPeriodoChange: setVendasPeriodo },
-    { title: getResumoTitle("Faturamento", fatPeriodo), value: `R$ ${faturamentoValor.toFixed(2)}`, icon: TrendingUp, color: "text-primary", href: "/painel/vendas", periodo: fatPeriodo, onPeriodoChange: setFatPeriodo },
-    { title: getResumoTitle("Produções", producoesPeriodo), value: producoesCardValor, icon: Factory, color: "text-secondary-foreground", href: "/painel/producao", periodo: producoesPeriodo, onPeriodoChange: setProducoesPeriodo },
-    { title: getResumoTitle("A Receber", receberPeriodo), value: `R$ ${contasReceberResumo.total.toFixed(2)}`, icon: DollarSign, color: contasReceberResumo.vencidas > 0 ? "text-destructive" : "text-primary", href: "/painel/a-receber", periodo: receberPeriodo, onPeriodoChange: setReceberPeriodo },
+    { title: getResumoTitle("Vendas", vendasPeriodo, vendasMes), value: vendasCardValor, icon: ShoppingCart, color: "text-accent", href: "/painel/vendas", periodo: vendasPeriodo, onPeriodoChange: setVendasPeriodo, mes: vendasMes, onMesChange: setVendasMes },
+    { title: getResumoTitle("Faturamento", fatPeriodo, fatMes), value: `R$ ${faturamentoValor.toFixed(2)}`, icon: TrendingUp, color: "text-primary", href: "/painel/vendas", periodo: fatPeriodo, onPeriodoChange: setFatPeriodo, mes: fatMes, onMesChange: setFatMes },
+    { title: getResumoTitle("Produções", producoesPeriodo, producoesMes), value: producoesCardValor, icon: Factory, color: "text-secondary-foreground", href: "/painel/producao", periodo: producoesPeriodo, onPeriodoChange: setProducoesPeriodo, mes: producoesMes, onMesChange: setProducoesMes },
+    { title: getResumoTitle("A Receber", receberPeriodo, receberMes), value: `R$ ${contasReceberResumo.total.toFixed(2)}`, icon: DollarSign, color: contasReceberResumo.vencidas > 0 ? "text-destructive" : "text-primary", href: "/painel/a-receber", periodo: receberPeriodo, onPeriodoChange: setReceberPeriodo, mes: receberMes, onMesChange: setReceberMes },
   ];
 
   return (
