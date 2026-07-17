@@ -24,6 +24,7 @@ import ClassificacaoABC from "@/components/dashboard/ClassificacaoABC";
 import HistoricoProdutividade from "@/components/dashboard/HistoricoProdutividade";
 import RankingProdutividade from "@/components/dashboard/RankingProdutividade";
 import DesempenhoVendedores from "@/components/dashboard/DesempenhoVendedores";
+import NotaRapidaCard from "@/components/dashboard/NotaRapidaCard";
 
 const ERA_DOS_SABORES_ID = "00000000-0000-0000-0000-000000000001";
 
@@ -505,7 +506,7 @@ export default function Dashboard() {
         const currentItem = currentItems[Math.floor(alertaIndex / categories.length) % currentItems.length] || currentItems[0];
 
         return (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-4 sm:mb-6">
             {/* Rotating category cards */}
             {categories.slice(0, 3).map((cat, catIdx) => {
               const items = grouped[cat];
@@ -630,6 +631,9 @@ export default function Dashboard() {
 
               </div>
             </motion.div>
+
+            {/* Bloco de Notas editável (persistido por fábrica) */}
+            <NotaRapidaCard factoryId={factoryId} />
           </div>
         );
       })()}
