@@ -5,7 +5,7 @@ import {
   Warehouse, ClipboardList, UserCog, BarChart3, FileUp, DollarSign, Monitor,
   ShoppingBag, Database, LogOut, Shield, Brain, MapPin, Map, Target,
   HardDrive, UserCheck, Crown, MessageCircle, Settings, CalendarDays,
-  ChevronDown, Menu, X, PanelLeftClose, PanelLeftOpen, Wallet, History
+  ChevronDown, Menu, X, PanelLeftClose, PanelLeftOpen, Wallet, History, TrendingUp
   , UserX
 } from "lucide-react";
 import PaymentBanner from "@/components/PaymentBanner";
