@@ -107,6 +107,7 @@ const App = () => (
               {/* Admin only routes */}
               <Route path="/painel" element={<AdminRoute><Dashboard /></AdminRoute>} />
               <Route path="/painel/vendas" element={<AdminRoute><Vendas /></AdminRoute>} />
+              <Route path="/painel/faturamento" element={<AdminRoute><Faturamento /></AdminRoute>} />
               <Route path="/painel/vendedores" element={<AdminRoute><Vendedores /></AdminRoute>} />
               <Route path="/painel/a-receber" element={<AdminRoute><AReceber /></AdminRoute>} />
               <Route path="/painel/contas-a-pagar" element={<AdminRoute><ContasAPagar /></AdminRoute>} />
