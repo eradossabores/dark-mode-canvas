@@ -360,7 +360,11 @@ export default function Vendas() {
   // (mantidos os nomes antigos para minimizar diff em todo o arquivo)
   function parseDecimal(v: string): number { return parseBRL(v); }
   function formatDecimalInput(v: string): string { return maskBRL(v); }
-  function addItem() { setItens([...itens, { sabor_id: "", quantidade: 1, preco_unitario: "", preco_auto: false }]); }
+  function addItem() {
+    const next = [...itens, { sabor_id: "", quantidade: 1, preco_unitario: "", preco_auto: false }];
+    setItens(next);
+    if (clienteId) recalcPrecosTotalComanda(next, clienteId, formaPagamento);
+  }
   function removeItem(i: number) { setItens(itens.filter((_, idx) => idx !== i)); }
   function updateItem(i: number, field: string, val: any) {
     const list = [...itens];
