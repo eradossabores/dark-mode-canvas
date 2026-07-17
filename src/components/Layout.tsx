@@ -5,7 +5,7 @@ import {
   Warehouse, ClipboardList, UserCog, BarChart3, FileUp, DollarSign, Monitor,
   ShoppingBag, Database, LogOut, Shield, Brain, MapPin, Map, Target,
   HardDrive, UserCheck, Crown, MessageCircle, Settings, CalendarDays,
-  ChevronDown, Menu, X, PanelLeftClose, PanelLeftOpen, Wallet, History, TrendingUp
+  ChevronDown, ChevronRight, Menu, X, PanelLeftClose, PanelLeftOpen, Wallet, History, TrendingUp, Home
   , UserX
 } from "lucide-react";
 import PaymentBanner from "@/components/PaymentBanner";
@@ -112,6 +112,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const { role, signOut, factoryName, factoryId, branding, impersonatingFactory, clearImpersonation } = useAuth();
   useKeyboardShortcuts();
+
+  // Breadcrumb resolution from menuGroups
+  const breadcrumb = (() => {
+    const path = location.pathname;
+    for (const g of menuGroups) {
+      for (const it of g.items) {
+        if (it.path === path) return { group: g.label, label: it.label };
+        if (it.children) {
+          const c = it.children.find((c) => c.path === path);
+          if (c) return { group: g.label, parent: it.label, label: c.label };
+        }
+      }
+    }
+    if (path === "/super-admin") return { group: "Sistema", label: "Super Admin" };
+    return null;
+  })();
 
   // Apply factory theme
   useEffect(() => {
@@ -328,14 +344,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         key={item.path}
         to={item.path}
         className={cn(
-          "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
+          "relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
           active
-            ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+            ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-6 before:w-1 before:rounded-r-full before:bg-primary-foreground/80"
             : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
         )}
       >
         <item.icon className="h-[18px] w-[18px] shrink-0" />
         <span>{item.label}</span>
+        {active && <span aria-hidden className="ml-auto h-1.5 w-1.5 rounded-full bg-primary-foreground/80" />}
       </Link>
     );
   };
@@ -520,7 +537,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         )}
-        <div className="w-full max-w-full flex-1 overflow-x-hidden p-4 pt-[calc(4.5rem+env(safe-area-inset-top))] md:p-6 md:pt-6">{children}</div>
+        <div className="w-full max-w-full flex-1 overflow-x-hidden p-4 pt-[calc(4.5rem+env(safe-area-inset-top))] md:p-6 md:pt-6">
+          {breadcrumb && (
+            <nav aria-label="Breadcrumb" className="mb-4 flex items-center gap-1.5 text-xs text-muted-foreground overflow-x-auto whitespace-nowrap">
+              <Link to="/painel" className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+                <Home className="h-3.5 w-3.5" />
+                <span>Painel</span>
+              </Link>
+              <ChevronRight className="h-3.5 w-3.5 opacity-50" />
+              <span>{breadcrumb.group}</span>
+              {breadcrumb.parent && (
+                <>
+                  <ChevronRight className="h-3.5 w-3.5 opacity-50" />
+                  <span>{breadcrumb.parent}</span>
+                </>
+              )}
+              <ChevronRight className="h-3.5 w-3.5 opacity-50" />
+              <span className="font-semibold text-foreground">{breadcrumb.label}</span>
+            </nav>
+          )}
+          {children}
+        </div>
       </main>
     </div>
   );
