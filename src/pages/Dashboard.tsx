@@ -630,6 +630,9 @@ export default function Dashboard() {
 
               </div>
             </motion.div>
+
+            {/* Bloco de Notas editável (persistido por fábrica) */}
+            <NotaRapidaCard factoryId={factoryId} />
           </div>
         );
       })()}
