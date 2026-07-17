@@ -739,6 +739,12 @@ export default function Dashboard() {
                     ))}
                   </div>
                 </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-primary">
+                    R$ {vendasPorDia.reduce((s, d: any) => s + Number(d.valor || 0), 0).toFixed(2)}
+                  </span>
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Total do período</span>
+                </div>
                 {periodoFaturamento === "mensal" && (
                   <div className="flex gap-1 flex-wrap">
                     {MESES_NOME.slice(0, new Date().getMonth() + 1).map((nome, idx) => (
