@@ -1178,6 +1178,18 @@ export default function Vendas() {
                   <Label className="text-base font-semibold flex items-center gap-2">
                     <ShoppingCart className="h-4 w-4" /> Gelos
                     {vendaPorPacote && <Badge variant="secondary" className="text-[10px] ml-1">Modo Pacote</Badge>}
+                    {(() => {
+                      const cli = clientes.find((c) => c.id === clienteId);
+                      if (!cli) return null;
+                      const isAPrazo = formaPagamento === "fiado";
+                      const preco = isAPrazo ? cli.preco_unidade_aprazo : cli.preco_unidade_avista;
+                      if (preco == null) return null;
+                      return (
+                        <Badge className={cn("text-[10px] ml-1", isAPrazo ? "bg-amber-500/15 text-amber-700 border-amber-300" : "bg-emerald-500/15 text-emerald-700 border-emerald-300")}>
+                          {isAPrazo ? "A Prazo" : "À Vista"}: R$ {Number(preco).toFixed(2)}/un
+                        </Badge>
+                      );
+                    })()}
                   </Label>
                   <Button size="sm" variant="outline" onClick={addItem}><Plus className="h-3 w-3 mr-1" />Add</Button>
                 </div>
