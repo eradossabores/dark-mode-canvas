@@ -328,14 +328,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         key={item.path}
         to={item.path}
         className={cn(
-          "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
+          "relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
           active
-            ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+            ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-6 before:w-1 before:rounded-r-full before:bg-primary-foreground/80"
             : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
         )}
       >
         <item.icon className="h-[18px] w-[18px] shrink-0" />
         <span>{item.label}</span>
+        {active && <span aria-hidden className="ml-auto h-1.5 w-1.5 rounded-full bg-primary-foreground/80" />}
       </Link>
     );
   };
