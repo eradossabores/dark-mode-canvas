@@ -382,7 +382,7 @@ export default function Dashboard() {
     { title: "Gelos em Estoque", value: stats.totalGelos.toLocaleString(), icon: Package, color: "text-primary", href: "/painel/estoque" },
     { title: "Clientes Ativos", value: stats.totalClientes, icon: Users, color: "text-secondary-foreground", href: "/painel/clientes" },
     { title: getResumoTitle("Vendas", vendasPeriodo, vendasMes), value: vendasCardValor, icon: ShoppingCart, color: "text-accent", href: "/painel/vendas", periodo: vendasPeriodo, onPeriodoChange: setVendasPeriodo, mes: vendasMes, onMesChange: setVendasMes },
-    { title: getResumoTitle("Faturamento", fatPeriodo, fatMes), value: `R$ ${faturamentoValor.toFixed(2)}`, icon: TrendingUp, color: "text-primary", href: "/painel/vendas", periodo: fatPeriodo, onPeriodoChange: setFatPeriodo, mes: fatMes, onMesChange: setFatMes },
+    { title: getResumoTitle("Faturamento", fatPeriodo, fatMes), value: `R$ ${faturamentoValor.toFixed(2)}`, icon: TrendingUp, color: "text-primary", href: "/painel/faturamento", periodo: fatPeriodo, onPeriodoChange: setFatPeriodo, mes: fatMes, onMesChange: setFatMes },
     { title: getResumoTitle("Produções", producoesPeriodo, producoesMes), value: producoesCardValor, icon: Factory, color: "text-secondary-foreground", href: "/painel/producao", periodo: producoesPeriodo, onPeriodoChange: setProducoesPeriodo, mes: producoesMes, onMesChange: setProducoesMes },
     { title: getResumoTitle("A Receber", receberPeriodo, receberMes), value: `R$ ${contasReceberResumo.total.toFixed(2)}`, icon: DollarSign, color: contasReceberResumo.vencidas > 0 ? "text-destructive" : "text-primary", href: "/painel/a-receber", periodo: receberPeriodo, onPeriodoChange: setReceberPeriodo, mes: receberMes, onMesChange: setReceberMes },
   ];
