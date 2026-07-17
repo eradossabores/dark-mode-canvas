@@ -13,12 +13,14 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 type FretePagoPor = "cliente" | "empresa" | "ambos" | "todos";
+type Agrupamento = "nenhum" | "dia" | "semana";
 
 export default function RelatorioEntregas() {
   const { factoryId } = useAuth();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState<FretePagoPor>("todos");
+  const [agrupamento, setAgrupamento] = useState<Agrupamento>("nenhum");
   const hoje = new Date();
   const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0, 10);
   const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().slice(0, 10);
@@ -50,6 +52,40 @@ export default function RelatorioEntregas() {
     return rows.filter((r) => (r.frete_pago_por || "cliente") === filtro);
   }, [rows, filtro]);
 
+  function weekKey(d: Date) {
+    // ISO-ish week: segunda a domingo
+    const dt = new Date(d);
+    const day = (dt.getDay() + 6) % 7; // 0 = seg
+    dt.setDate(dt.getDate() - day);
+    return dt.toISOString().slice(0, 10);
+  }
+  function groupLabel(iso: string) {
+    const d = new Date(iso);
+    if (agrupamento === "dia") return d.toLocaleDateString("pt-BR");
+    const start = new Date(weekKey(d));
+    const end = new Date(start); end.setDate(end.getDate() + 6);
+    return `Semana ${start.toLocaleDateString("pt-BR")} → ${end.toLocaleDateString("pt-BR")}`;
+  }
+  const grouped = useMemo(() => {
+    if (agrupamento === "nenhum") return null;
+    const map = new Map<string, any[]>();
+    for (const r of filtered) {
+      const d = new Date(r.created_at);
+      const key = agrupamento === "dia" ? d.toISOString().slice(0, 10) : weekKey(d);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(r);
+    }
+    return Array.from(map.entries())
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([key, items]) => ({
+        key,
+        label: groupLabel(items[0].created_at),
+        items,
+        totalFrete: items.reduce((s, r) => s + Number(r.valor_frete || 0), 0),
+        count: items.length,
+      }));
+  }, [filtered, agrupamento]);
+
   const totals = useMemo(() => {
     let cliente = 0, empresa = 0, ambos = 0, count = 0;
     for (const r of filtered) {
@@ -79,19 +115,42 @@ export default function RelatorioEntregas() {
     doc.setFontSize(14);
     doc.text("Relatório de Entregas (Frete)", 14, 14);
     doc.setFontSize(9);
-    doc.text(`Período: ${dtIni} a ${dtFim}  |  Filtro: ${filtro}`, 14, 20);
+    doc.text(`Período: ${dtIni} a ${dtFim}  |  Filtro: ${filtro}  |  Agrupamento: ${agrupamento}`, 14, 20);
+    const body: any[] = [];
+    if (grouped) {
+      for (const g of grouped) {
+        body.push([{ content: `${g.label} — ${g.count} entrega(s) — Frete R$ ${g.totalFrete.toFixed(2)}`, colSpan: 8, styles: { fillColor: [240, 240, 245], fontStyle: "bold" } }]);
+        for (const r of g.items) {
+          body.push([
+            `#${r.numero_pedido || "-"}`,
+            new Date(r.created_at).toLocaleDateString("pt-BR"),
+            r.clientes?.nome || "-",
+            `R$ ${Number(r.total || 0).toFixed(2)}`,
+            `R$ ${Number(r.valor_frete || 0).toFixed(2)}`,
+            pagadorLabel(r.frete_pago_por || "cliente"),
+            r.entregue_por || "-",
+            r.status_entrega || "-",
+          ]);
+        }
+      }
+    } else {
+      for (const r of filtered) {
+        body.push([
+          `#${r.numero_pedido || "-"}`,
+          new Date(r.created_at).toLocaleDateString("pt-BR"),
+          r.clientes?.nome || "-",
+          `R$ ${Number(r.total || 0).toFixed(2)}`,
+          `R$ ${Number(r.valor_frete || 0).toFixed(2)}`,
+          pagadorLabel(r.frete_pago_por || "cliente"),
+          r.entregue_por || "-",
+          r.status_entrega || "-",
+        ]);
+      }
+    }
     autoTable(doc, {
       startY: 26,
-      head: [["#", "Data", "Cliente", "Total Venda", "Frete", "Pago por", "Entrega"]],
-      body: filtered.map((r) => [
-        `#${r.numero_pedido || "-"}`,
-        new Date(r.created_at).toLocaleDateString("pt-BR"),
-        r.clientes?.nome || "-",
-        `R$ ${Number(r.total || 0).toFixed(2)}`,
-        `R$ ${Number(r.valor_frete || 0).toFixed(2)}`,
-        pagadorLabel(r.frete_pago_por || "cliente"),
-        r.status_entrega || "-",
-      ]),
+      head: [["#", "Data", "Cliente", "Total", "Frete", "Pago por", "Entregador", "Status"]],
+      body,
       styles: { fontSize: 8 },
     });
     const finalY = (doc as any).lastAutoTable.finalY + 6;
@@ -121,6 +180,17 @@ export default function RelatorioEntregas() {
                 <SelectItem value="cliente">👤 Cliente</SelectItem>
                 <SelectItem value="empresa">🏭 Empresa</SelectItem>
                 <SelectItem value="ambos">🤝 50/50</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="min-w-[160px]">
+            <Label>Agrupar por</Label>
+            <Select value={agrupamento} onValueChange={(v) => setAgrupamento(v as Agrupamento)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="nenhum">Sem agrupamento</SelectItem>
+                <SelectItem value="dia">Dia</SelectItem>
+                <SelectItem value="semana">Semana</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -156,15 +226,34 @@ export default function RelatorioEntregas() {
                 <TableHead className="text-right">Total</TableHead>
                 <TableHead className="text-right">Frete</TableHead>
                 <TableHead>Pago por</TableHead>
-                <TableHead>Entrega</TableHead>
+                <TableHead>Entregador</TableHead>
+                <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-6"><Loader2 className="h-4 w-4 animate-spin inline" /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center py-6"><Loader2 className="h-4 w-4 animate-spin inline" /></TableCell></TableRow>
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">Nenhuma entrega no período.</TableCell></TableRow>
-              ) : filtered.map((r) => (
+                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">Nenhuma entrega no período.</TableCell></TableRow>
+              ) : grouped ? grouped.flatMap((g) => [
+                <TableRow key={`h-${g.key}`} className="bg-muted/50">
+                  <TableCell colSpan={8} className="font-semibold text-sm">
+                    {g.label} · {g.count} entrega(s) · Frete <span className="text-primary">R$ {g.totalFrete.toFixed(2)}</span>
+                  </TableCell>
+                </TableRow>,
+                ...g.items.map((r: any) => (
+                  <TableRow key={r.id}>
+                    <TableCell className="font-bold text-primary">#{r.numero_pedido || "-"}</TableCell>
+                    <TableCell>{new Date(r.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                    <TableCell>{r.clientes?.nome || "-"}</TableCell>
+                    <TableCell className="text-right">R$ {Number(r.total || 0).toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-semibold">R$ {Number(r.valor_frete || 0).toFixed(2)}</TableCell>
+                    <TableCell><Badge variant={pagadorColor(r.frete_pago_por || "cliente")}>{pagadorLabel(r.frete_pago_por || "cliente")}</Badge></TableCell>
+                    <TableCell className="text-xs">{r.entregue_por || "-"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{r.status_entrega || "-"}</TableCell>
+                  </TableRow>
+                )),
+              ]) : filtered.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell className="font-bold text-primary">#{r.numero_pedido || "-"}</TableCell>
                   <TableCell>{new Date(r.created_at).toLocaleDateString("pt-BR")}</TableCell>
@@ -172,6 +261,7 @@ export default function RelatorioEntregas() {
                   <TableCell className="text-right">R$ {Number(r.total || 0).toFixed(2)}</TableCell>
                   <TableCell className="text-right font-semibold">R$ {Number(r.valor_frete || 0).toFixed(2)}</TableCell>
                   <TableCell><Badge variant={pagadorColor(r.frete_pago_por || "cliente")}>{pagadorLabel(r.frete_pago_por || "cliente")}</Badge></TableCell>
+                  <TableCell className="text-xs">{r.entregue_por || "-"}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{r.status_entrega || "-"}</TableCell>
                 </TableRow>
               ))}
