@@ -779,6 +779,11 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                   onChange={e => setValorTotalInput(maskBRL(e.target.value))} 
                   disabled={!!viewingId}
                 />
+                {valorTotalInput && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Você digitou: <span className="font-bold text-primary">R$ {valorTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span> — confira antes de salvar.
+                  </p>
+                )}
               </div>
               {totalQty > 0 && valorTotal > 0 && (
                 <div className="text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
@@ -824,6 +829,11 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                           onChange={e => setValorFrete(maskBRL(e.target.value))} 
                           disabled={!!viewingId}
                         />
+                        {valorFrete && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Você digitou: <span className="font-bold text-primary">R$ {freight.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span> — confira antes de salvar.
+                          </p>
+                        )}
                       </div>
                     </div>
                   )}
