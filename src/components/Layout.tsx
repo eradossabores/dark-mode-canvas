@@ -537,7 +537,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         )}
-        <div className="w-full max-w-full flex-1 overflow-x-hidden p-4 pt-[calc(4.5rem+env(safe-area-inset-top))] md:p-6 md:pt-6">{children}</div>
+        <div className="w-full max-w-full flex-1 overflow-x-hidden p-4 pt-[calc(4.5rem+env(safe-area-inset-top))] md:p-6 md:pt-6">
+          {breadcrumb && (
+            <nav aria-label="Breadcrumb" className="mb-4 flex items-center gap-1.5 text-xs text-muted-foreground overflow-x-auto whitespace-nowrap">
+              <Link to="/painel" className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+                <Home className="h-3.5 w-3.5" />
+                <span>Painel</span>
+              </Link>
+              <ChevronRight className="h-3.5 w-3.5 opacity-50" />
+              <span>{breadcrumb.group}</span>
+              {breadcrumb.parent && (
+                <>
+                  <ChevronRight className="h-3.5 w-3.5 opacity-50" />
+                  <span>{breadcrumb.parent}</span>
+                </>
+              )}
+              <ChevronRight className="h-3.5 w-3.5 opacity-50" />
+              <span className="font-semibold text-foreground">{breadcrumb.label}</span>
+            </nav>
+          )}
+          {children}
+        </div>
       </main>
     </div>
   );
