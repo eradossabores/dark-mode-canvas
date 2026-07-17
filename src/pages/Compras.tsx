@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { maskBRL, parseBRL, numberToBRL } from "@/lib/currency-mask";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Plus, Truck, Package, ShoppingCart, BarChart3, Trash2, Edit, ChevronDown, ChevronRight, Eye, PackageCheck, Clock, AlertTriangle } from "lucide-react";
 import { format, startOfMonth, endOfMonth, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -771,17 +772,15 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
 
               <div>
                 <Label>Valor Total (R$) *</Label>
-                <Input 
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="R$ 0,00"
-                  value={valorTotalInput} 
-                  onChange={e => setValorTotalInput(maskBRL(e.target.value))} 
+                <CurrencyInput
+                  value={valorTotal}
+                  onValueChange={(n) => setValorTotalInput(numberToBRL(n))}
+                  max={9_999_999.99}
                   disabled={!!viewingId}
                 />
-                {valorTotalInput && (
+                {valorTotal > 0 && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Você digitou: <span className="font-bold text-primary">R$ {valorTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span> — confira antes de salvar.
+                    Valor: <span className="font-bold text-primary">R$ {valorTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span> — confira antes de salvar.
                   </p>
                 )}
               </div>
@@ -821,17 +820,15 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                       </div>
                       <div>
                         <Label>Valor do Frete (R$)</Label>
-                        <Input 
-                          type="text"
-                          inputMode="numeric"
-                          placeholder="R$ 0,00"
-                          value={valorFrete} 
-                          onChange={e => setValorFrete(maskBRL(e.target.value))} 
+                        <CurrencyInput
+                          value={freight}
+                          onValueChange={(n) => setValorFrete(numberToBRL(n))}
+                          max={9_999_999.99}
                           disabled={!!viewingId}
                         />
-                        {valorFrete && (
+                        {freight > 0 && (
                           <p className="text-xs text-muted-foreground mt-1">
-                            Você digitou: <span className="font-bold text-primary">R$ {freight.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span> — confira antes de salvar.
+                            Valor: <span className="font-bold text-primary">R$ {freight.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span> — confira antes de salvar.
                           </p>
                         )}
                       </div>
