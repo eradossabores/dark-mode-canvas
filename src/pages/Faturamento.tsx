@@ -7,7 +7,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
-type Venda = { id: string; total: number; created_at: string };
+type Venda = { id: string; total: number; created_at: string; status?: string | null; forma_pagamento?: string | null; cliente_nome?: string | null };
 
 export default function Faturamento() {
   const { factoryId } = useAuth();
@@ -23,10 +23,10 @@ export default function Faturamento() {
       const ano = new Date().getFullYear();
       const { data } = await supabase
         .from("vendas")
-        .select("id,total,created_at")
+        .select("id,total,created_at,status,forma_pagamento,cliente_nome")
         .eq("factory_id", factoryId)
         .gte("created_at", `${ano}-01-01`)
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: false });
       setVendas((data as Venda[]) || []);
       setLoading(false);
     })();
@@ -138,6 +138,70 @@ export default function Faturamento() {
       </Card>
 
       {loading && <p className="text-sm text-muted-foreground">Carregando...</p>}
+
+      {/* Tabela detalhada */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">
+            Detalhamento {mesFiltro === "todos" ? "· Ano Todo" : `· ${MESES[mesFiltro as number]}`} ({filtradas.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto max-h-[500px] overflow-y-auto rounded-md border">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 sticky top-0">
+                <tr className="text-left">
+                  <th className="px-3 py-2 font-semibold">Data</th>
+                  <th className="px-3 py-2 font-semibold">Cliente</th>
+                  <th className="px-3 py-2 font-semibold">Pagamento</th>
+                  <th className="px-3 py-2 font-semibold">Status</th>
+                  <th className="px-3 py-2 font-semibold text-right">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtradas.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-3 py-6 text-center text-muted-foreground">
+                      Nenhuma venda no período.
+                    </td>
+                  </tr>
+                ) : (
+                  filtradas.map((v) => {
+                    const status = v.status || "concluida";
+                    const statusColor =
+                      status === "concluida" || status === "finalizada"
+                        ? "bg-green-500/15 text-green-600 dark:text-green-400"
+                        : status === "cancelada"
+                        ? "bg-red-500/15 text-red-600 dark:text-red-400"
+                        : "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400";
+                    return (
+                      <tr key={v.id} className="border-t hover:bg-muted/30">
+                        <td className="px-3 py-2">
+                          {new Date(v.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" })}
+                        </td>
+                        <td className="px-3 py-2">{v.cliente_nome || "—"}</td>
+                        <td className="px-3 py-2 capitalize">{v.forma_pagamento || "—"}</td>
+                        <td className="px-3 py-2">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColor}`}>{status}</span>
+                        </td>
+                        <td className="px-3 py-2 text-right font-semibold">R$ {Number(v.total || 0).toFixed(2)}</td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+              {filtradas.length > 0 && (
+                <tfoot className="bg-muted/50 sticky bottom-0">
+                  <tr>
+                    <td colSpan={4} className="px-3 py-2 font-semibold text-right">Total</td>
+                    <td className="px-3 py-2 text-right font-bold">R$ {totalGeral.toFixed(2)}</td>
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
