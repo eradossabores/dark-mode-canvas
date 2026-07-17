@@ -7,7 +7,15 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
-type Venda = { id: string; total: number; created_at: string; status?: string | null; forma_pagamento?: string | null; cliente_nome?: string | null };
+type Venda = {
+  id: string;
+  total: number;
+  created_at: string;
+  status?: string | null;
+  forma_pagamento?: string | null;
+  cliente_id?: string | null;
+  clientes?: { nome: string | null } | null;
+};
 
 export default function Faturamento() {
   const { factoryId } = useAuth();
@@ -23,11 +31,11 @@ export default function Faturamento() {
       const ano = new Date().getFullYear();
       const { data } = await supabase
         .from("vendas")
-        .select("id,total,created_at,status,forma_pagamento,cliente_nome")
+        .select("id,total,created_at,status,forma_pagamento,cliente_id,clientes(nome)")
         .eq("factory_id", factoryId)
         .gte("created_at", `${ano}-01-01`)
         .order("created_at", { ascending: false });
-      setVendas((data as Venda[]) || []);
+      setVendas(((data as unknown) as Venda[]) || []);
       setLoading(false);
     })();
   }, [factoryId]);
@@ -179,7 +187,7 @@ export default function Faturamento() {
                         <td className="px-3 py-2">
                           {new Date(v.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" })}
                         </td>
-                        <td className="px-3 py-2">{v.cliente_nome || "—"}</td>
+                        <td className="px-3 py-2">{v.clientes?.nome || "—"}</td>
                         <td className="px-3 py-2 capitalize">{v.forma_pagamento || "—"}</td>
                         <td className="px-3 py-2">
                           <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColor}`}>{status}</span>
