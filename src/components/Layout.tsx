@@ -5,7 +5,7 @@ import {
   Warehouse, ClipboardList, UserCog, BarChart3, FileUp, DollarSign, Monitor,
   ShoppingBag, Database, LogOut, Shield, Brain, MapPin, Map, Target,
   HardDrive, UserCheck, Crown, MessageCircle, Settings, CalendarDays,
-  ChevronDown, Menu, X, PanelLeftClose, PanelLeftOpen, Wallet, History
+  ChevronDown, Menu, X, PanelLeftClose, PanelLeftOpen, Wallet, History, TrendingUp
   , UserX
 } from "lucide-react";
 import PaymentBanner from "@/components/PaymentBanner";
@@ -65,6 +65,7 @@ const menuGroups: MenuGroup[] = [
     label: "Comercial",
     items: [
       { path: "/painel/vendas", label: "Vendas", icon: ShoppingCart },
+      { path: "/painel/faturamento", label: "Faturamento", icon: TrendingUp },
       { path: "/painel/vendedores", label: "Vendedores", icon: UserCog },
       { path: "/painel/a-receber", label: "A Receber", icon: DollarSign },
       { path: "/painel/contas-a-pagar", label: "Contas a Pagar", icon: ClipboardList },
