@@ -93,22 +93,25 @@ const RESUMO_PERIODOS: { value: ResumoPeriodo; label: string }[] = [
   { value: "anual", label: "Ano" },
 ];
 
-function isWithinResumoPeriod(dateValue: string, periodo: ResumoPeriodo) {
+function isWithinResumoPeriod(dateValue: string, periodo: ResumoPeriodo, mesSelecionado?: number) {
   const data = new Date(dateValue);
   const now = new Date();
 
   if (periodo === "total") return true;
   if (periodo === "anual") return data.getFullYear() === now.getFullYear();
-  if (periodo === "mensal") return data.getMonth() === now.getMonth() && data.getFullYear() === now.getFullYear();
+  if (periodo === "mensal") {
+    const mes = mesSelecionado ?? now.getMonth();
+    return data.getMonth() === mes && data.getFullYear() === now.getFullYear();
+  }
 
   const inicioSemana = new Date();
   inicioSemana.setDate(inicioSemana.getDate() - 7);
   return data >= inicioSemana;
 }
 
-function getResumoTitle(base: string, periodo: ResumoPeriodo) {
+function getResumoTitle(base: string, periodo: ResumoPeriodo, mesSelecionado?: number) {
   if (periodo === "semanal") return `${base} · Semana`;
-  if (periodo === "mensal") return `${base} · Mês`;
+  if (periodo === "mensal") return `${base} · ${MESES_NOME[mesSelecionado ?? new Date().getMonth()]}`;
   if (periodo === "anual") return `${base} · Ano`;
   return `${base} · Total`;
 }
