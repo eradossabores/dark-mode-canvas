@@ -57,6 +57,15 @@ const EstoqueDisponivel = lazy(() => import("@/pages/vendedor/EstoqueDisponivel"
 const MinhasComissoes = lazy(() => import("@/pages/vendedor/MinhasComissoes"));
 const DashboardVendedor = lazy(() => import("@/pages/vendedor/DashboardVendedor"));
 const HistoricoVendas = lazy(() => import("@/pages/vendedor/HistoricoVendas"));
+const OpExtDashboard = lazy(() => import("@/pages/operacao/Dashboard"));
+const OpExtMinhaRota = lazy(() => import("@/pages/operacao/MinhaRota"));
+const OpExtAtendimento = lazy(() => import("@/pages/operacao/Atendimento"));
+const OpExtProspeccao = lazy(() => import("@/pages/operacao/Prospeccao"));
+const OpExtOcorrencias = lazy(() => import("@/pages/operacao/Ocorrencias"));
+const OpExtHistorico = lazy(() => import("@/pages/operacao/Historico"));
+const OpExtDesempenho = lazy(() => import("@/pages/operacao/MeuDesempenho"));
+const OpExtAdmin = lazy(() => import("@/pages/operacao/AdminVisao"));
+const TrocarSenha = lazy(() => import("@/pages/TrocarSenha"));
 
 const PageFallback = () => (
   <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -146,6 +155,20 @@ const App = () => (
               <Route path="/painel/vendedor/estoque" element={<ProdRoute><EstoqueDisponivel /></ProdRoute>} />
               <Route path="/painel/vendedor/comissoes" element={<ProdRoute><MinhasComissoes /></ProdRoute>} />
               <Route path="/painel/vendedor/historico" element={<ProdRoute><HistoricoVendas /></ProdRoute>} />
+
+              {/* Trocar senha (todos os perfis) */}
+              <Route path="/painel/trocar-senha" element={<ProdRoute><TrocarSenha /></ProdRoute>} />
+
+              {/* Operação Externa (auxiliar_externo + admin/factory_owner/super_admin) */}
+              <Route path="/painel/operacao-externa" element={<ProdRoute><OpExtDashboard /></ProdRoute>} />
+              <Route path="/painel/operacao-externa/minha-rota" element={<ProdRoute><OpExtMinhaRota /></ProdRoute>} />
+              <Route path="/painel/operacao-externa/atendimento" element={<ProdRoute><OpExtAtendimento /></ProdRoute>} />
+              <Route path="/painel/operacao-externa/atendimento/:visitaId" element={<ProdRoute><OpExtAtendimento /></ProdRoute>} />
+              <Route path="/painel/operacao-externa/prospeccao" element={<ProdRoute><OpExtProspeccao /></ProdRoute>} />
+              <Route path="/painel/operacao-externa/ocorrencias" element={<ProdRoute><OpExtOcorrencias /></ProdRoute>} />
+              <Route path="/painel/operacao-externa/historico" element={<ProdRoute><OpExtHistorico /></ProdRoute>} />
+              <Route path="/painel/operacao-externa/desempenho" element={<ProdRoute><OpExtDesempenho /></ProdRoute>} />
+              <Route path="/painel/operacao-externa/admin" element={<AdminRoute><OpExtAdmin /></AdminRoute>} />
 
               <Route path="*" element={<NotFound />} />
               </Routes>

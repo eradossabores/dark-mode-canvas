@@ -21,6 +21,18 @@ const VENDEDOR_ROUTES = [
   "/painel/vendedor/comissoes",
 ];
 
+const AUXILIAR_ROUTES = [
+  "/painel/operacao-externa",
+  "/painel/operacao-externa/minha-rota",
+  "/painel/operacao-externa/atendimento",
+  "/painel/operacao-externa/prospeccao",
+  "/painel/operacao-externa/ocorrencias",
+  "/painel/operacao-externa/historico",
+  "/painel/operacao-externa/desempenho",
+  "/painel/operacao-externa/admin",
+  "/painel/trocar-senha",
+];
+
 // Routes only super_admin can access
 const SUPER_ADMIN_ROUTES = [
   "/super-admin",
@@ -177,6 +189,7 @@ export default function ProtectedRoute({ children, adminOnly, superAdminOnly }: 
   // Producao and vendedor should redirect to their allowed areas
   if (adminOnly && role !== "admin" && role !== "factory_owner" && role !== "super_admin") {
     if ((role as string) === "vendedor") return <Navigate to="/painel/vendedor" replace />;
+    if ((role as string) === "auxiliar_externo") return <Navigate to="/painel/operacao-externa" replace />;
     return <Navigate to="/painel/producao" replace />;
   }
 
@@ -192,7 +205,10 @@ export function isRouteAllowed(path: string, role: string | null): boolean {
   if (role === "vendedor") {
     return VENDEDOR_ROUTES.some((r) => path === r || path.startsWith(r + "/"));
   }
+  if (role === "auxiliar_externo") {
+    return AUXILIAR_ROUTES.some((r) => path === r || path.startsWith(r + "/"));
+  }
   return false;
 }
 
-export { PRODUCAO_ROUTES, VENDEDOR_ROUTES, SUPER_ADMIN_ROUTES };
+export { PRODUCAO_ROUTES, VENDEDOR_ROUTES, SUPER_ADMIN_ROUTES, AUXILIAR_ROUTES };

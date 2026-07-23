@@ -1,82 +1,97 @@
-# Auditoria — Vendas × Estoque
+# Módulo Operação Externa — ICETECH
 
-## Resumo executivo
+Adicionar um novo perfil operacional para trabalho de campo (entregas, abastecimento de freezer, prospecção, ocorrências) com pontuação de desempenho. Nada do perfil Admin será alterado.
 
-A criação de venda (RPC `realizar_venda`) e a exclusão total da venda (trigger `cascade_delete_venda_movimentacoes`) tratam o estoque corretamente. **Mas a edição de uma venda já finalizada NÃO mexe em estoque algum** — é o ponto crítico desta auditoria.
+## 1. Novo perfil de acesso
 
-## Problemas encontrados
+- Adicionar valor `auxiliar_externo` ao enum `app_role`.
+- Rota `/painel/operacao-externa/*` liberada apenas para esse role (+ admin/factory_owner/super_admin em modo leitura).
+- Bloqueios explícitos: Financeiro, Custos, Relatórios, Configurações, Usuários, Dados estratégicos.
+- Ajustes em `ProtectedRoute.tsx` e `Layout.tsx` (nova seção lateral "Operação Externa" visível ao role).
 
-### 1. CRÍTICO — Edição de venda não ajusta estoque
-Arquivo: `src/pages/Vendas.tsx` → função `handleEditSave` (linhas ~695-814).
+## 2. Usuário inicial
 
-O código:
-- Faz `update` em `venda_itens` ao alterar quantidade → **estoque não é debitado/creditado pela diferença**.
-- Faz `delete` em `venda_itens` removidos → **quantidade não volta para `estoque_gelos`**.
-- Faz `insert` de novo item (`isNew`) → **estoque não é debitado**.
-- Não grava nada em `movimentacoes_estoque` → perda total de rastreabilidade dos ajustes.
+- Criar via edge function `create-user` existente:
+  - Nome: Brendo
+  - E-mail: Brendo@icetech.com
+  - Senha: `Brendo@2026`
+  - Role: `auxiliar_externo`
+  - Fábrica: MACUXI ICE
+- Flag `must_change_password` no `profiles` + tela obrigatória de troca no primeiro login.
 
-Consequência: após qualquer edição, o saldo de `estoque_gelos` fica divergente da realidade. Brindes (preço 0) também não baixam estoque.
+## 3. Estrutura de banco (migrations)
 
-### 2. CRÍTICO — Cancelamento de venda não devolve estoque
-Arquivo: `src/pages/Vendas.tsx` → `handleCancel` (linha ~851).
+Todas com `factory_id`, RLS, GRANT, timestamps.
 
-Apenas marca `status = 'cancelada'`. O trigger `cascade_delete_venda_movimentacoes` só dispara no DELETE da venda, não em UPDATE de status. Portanto cancelar deixa o estoque deduzido eternamente.
+- `rotas_externas` (data, auxiliar_user_id, status)
+- `rota_paradas` (rota_id, cliente_id, ordem, quantidade_prevista, status)
+- `visitas_externas` (rota_parada_id, cliente_id, auxiliar_user_id, chegada_em, saida_em, quantidade_entregue, foto_antes_url, foto_depois_url, observacao_inicial, observacao_organizacao, checklist_json)
+- `visita_checklist_items` (visita_id, chave, marcado) — ou JSONB dentro da própria visita
+- `prospeccoes_externas` (nome, responsavel, telefone, endereco, tipo, foto_fachada_url, potencial, status, observacoes, criado_por)
+- `ocorrencias_externas` (cliente_id, tipo, descricao, foto_url, criado_por)
+- `pontuacao_eventos` (auxiliar_user_id, tipo, pontos, referencia_id, referencia_tabela, created_at)
+- `metas_operacao_externa` (auxiliar_user_id, mes, clientes_visitados, prospeccoes, novos_clientes, pct_checklist, meta_ruptura)
+- Bucket storage `operacao-externa` (público) para fotos.
 
-### 3. MÉDIO — Sem logs de auditoria de movimentação por edição
-Nenhum INSERT em `auditoria` nem em `movimentacoes_estoque` registra: estoque antes, estoque depois, diferença, usuário, venda_id. Edições e cancelamentos passam invisíveis no histórico de estoque.
+Triggers para pontuação: ao inserir prospecção, visita finalizada com checklist completo, novo cliente convertido, etc.
 
-### 4. BAIXO — `handleDelete` confia no trigger, mas remove `venda_itens` ANTES do `DELETE` da venda
-Arquivo: `src/pages/Vendas.tsx` linha ~913. O trigger `cascade_delete_venda_movimentacoes` lê `movimentacoes_estoque` por `referencia_id = venda.id` (não depende de `venda_itens`), então o estorno funciona, mas é frágil — qualquer mudança futura no trigger pode quebrar silenciosamente.
+## 4. Telas do Auxiliar (mobile-first)
 
-## Correções propostas
+Rota base `/painel/operacao-externa`:
 
-### A. Nova função SQL `ajustar_venda_item` (transacional)
-Centraliza qualquer mudança de item em uma venda existente:
+- **Dashboard pessoal** — saudação "Olá, Brendo", cards do dia (entregas, clientes, unidades, checklists pendentes, pontuação, meta do mês) + botão gigante **INICIAR ROTA DO DIA**.
+- **Minha Rota** — lista de paradas ordenadas com status, botão Google Maps/Waze.
+- **Fluxo de Atendimento** (wizard 6 etapas):
+  1. Iniciar atendimento (registra chegada)
+  2. Foto ANTES + observação (câmera nativa `<input capture>`)
+  3. Registrar entrega (qtd + obs)
+  4. Checklist de organização (7 itens)
+  5. Foto DEPOIS
+  6. Finalizar (grava tudo + fotos + gera pontos)
+- **Prospecção** — formulário com foto de fachada, tipo, potencial, status.
+- **Ocorrências** — formulário rápido com tipo + foto + descrição.
+- **Clientes Visitados** — histórico próprio.
+- **Meu Desempenho** — pontuação total, nível (Bronze/Prata/Ouro), breakdown por categoria, progresso das metas.
 
-```text
-ajustar_venda_item(p_venda_id, p_sabor_id, p_quantidade_nova, p_operador)
-  ├─ lê quantidade atual em venda_itens (0 se não existe)
-  ├─ calcula delta = nova - atual
-  ├─ se delta > 0: valida estoque, debita estoque_gelos, INSERT movimentacao 'saida'
-  ├─ se delta < 0: credita estoque_gelos, INSERT movimentacao 'entrada' (estorno)
-  ├─ INSERT/UPDATE/DELETE em venda_itens conforme o caso
-  └─ INSERT em auditoria com {estoque_antes, estoque_depois, delta, venda_id, operador}
-```
+## 5. Telas do Admin
 
-### B. Nova função SQL `cancelar_venda(p_venda_id, p_operador)`
-- Reaproveita a lógica do trigger: para cada item da venda, credita estoque e registra movimentação `entrada` com `referencia = 'cancelamento_venda'`.
-- Atualiza `status = 'cancelada'`.
-- Registra auditoria.
+- Nova aba **Operação Externa** dentro do Dashboard (ou página `/painel/operacao-externa/admin`):
+  - KPIs: entregas realizadas, clientes visitados, rotas concluídas, fotos, checklists, rupturas, prospecções, novos clientes.
+  - Filtros: data, funcionário, cliente, região.
+- Aba **Histórico Operacional** dentro do cadastro de cliente (`Clientes.tsx`) mostrando linha do tempo de visitas com fotos antes/depois.
+- Configuração de **metas mensais** por auxiliar.
 
-### C. Refatorar frontend
-- `handleEditSave`: substitui os loops de update/insert/delete por chamadas a `ajustar_venda_item` para cada item (incluindo brindes, removidos e novos).
-- `handleCancel`: chama `cancelar_venda` em vez do update direto.
+## 6. Sistema de pontuação
 
-### D. Testes automáticos (Vitest)
-Criar `src/tests/vendasEstoque.test.ts` cobrindo (com mocks do supabase client):
-1. Venda simples — debita 1 sabor.
-2. Venda múltipla — debita N sabores.
-3. Edição aumentando qty — debita só a diferença.
-4. Edição diminuindo qty — credita a diferença.
-5. Exclusão de item — credita qty total do item.
-6. Inclusão de novo item — debita qty.
-7. Cancelamento — credita todos os itens.
+Tabela `pontuacao_eventos` alimentada por triggers/RPCs:
 
-Os testes verificam o **payload enviado** às RPCs e o conjunto de chamadas — não tocam banco real.
+| Ação | Pontos |
+|---|---|
+| Cliente estratégico visitado | +10 |
+| Cliente recorrente visitado | +5 |
+| Novo ponto prospectado | +20 |
+| Novo cliente convertido | +50 |
+| Checklist completo | +5 |
+| 100% checklists na semana | +20 |
+| Mês sem ruptura | +30 |
+| Freezer abastecido/organizado | +5 |
+| Cliente aprovado padrão visual | +10 |
 
-## Arquivos afetados
+Níveis: Bronze < 200 · Prata 200–499 · Ouro ≥ 500 (mês corrente).
 
-- **Nova migration** (SQL): funções `ajustar_venda_item` e `cancelar_venda` + grants.
-- `src/pages/Vendas.tsx`: `handleEditSave`, `handleCancel`.
-- `src/tests/vendasEstoque.test.ts`: novo.
+## Detalhes técnicos
 
-## Entregáveis finais
+- Fotos: `supabase.storage.from('operacao-externa').upload(...)` com path `visitas/{visita_id}/antes.jpg`.
+- Câmera mobile: `<input type="file" accept="image/*" capture="environment">`.
+- Enum novo `app_role` exige `ALTER TYPE ... ADD VALUE` em migration isolada (Postgres exige commit antes de usar).
+- `ProtectedRoute` ganha lista `AUXILIAR_ROUTES`; redirect padrão do role vai para `/painel/operacao-externa`.
+- Cada visita gera eventos em `pontuacao_eventos` via trigger AFTER INSERT/UPDATE.
+- Views agregadas: `v_desempenho_auxiliar_mes` (soma pontos, conta ações no mês).
 
-Ao final você recebe:
-- Relatório de execução dos 7 cenários de teste.
-- Lista de funções/arquivos alterados.
-- Confirmação de que toda movimentação passa a gerar linha em `movimentacoes_estoque` + `auditoria`.
+## Entrega em fases (sugestão)
 
-## Observação importante
+1. **Fase 1 (base)**: enum de role, tabelas, RLS, buckets, usuário Brendo, layout/menu, dashboard pessoal, fluxo de atendimento completo com fotos.
+2. **Fase 2**: prospecção, ocorrências, histórico operacional no cliente.
+3. **Fase 3**: pontuação, metas, dashboards do admin.
 
-Esta é uma mudança estrutural: novas funções no banco e refatoração do fluxo de edição. Quer que eu prossiga com a implementação completa (migration + refactor + testes) ou prefere fatiar (ex.: só A+C primeiro, testes depois)?
+Confirma que posso ir direto na Fase 1 completa nesta rodada, ou prefere que eu entregue tudo (1+2+3) num só ciclo?
