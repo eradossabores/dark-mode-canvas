@@ -1570,6 +1570,56 @@ export type Database = {
           },
         ]
       }
+      metas_operacao_externa: {
+        Row: {
+          auxiliar_user_id: string
+          created_at: string
+          factory_id: string
+          id: string
+          mes: string
+          meta_clientes_visitados: number | null
+          meta_novos_clientes: number | null
+          meta_pct_checklist: number | null
+          meta_prospeccoes: number | null
+          meta_reducao_ruptura: number | null
+          updated_at: string
+        }
+        Insert: {
+          auxiliar_user_id: string
+          created_at?: string
+          factory_id: string
+          id?: string
+          mes: string
+          meta_clientes_visitados?: number | null
+          meta_novos_clientes?: number | null
+          meta_pct_checklist?: number | null
+          meta_prospeccoes?: number | null
+          meta_reducao_ruptura?: number | null
+          updated_at?: string
+        }
+        Update: {
+          auxiliar_user_id?: string
+          created_at?: string
+          factory_id?: string
+          id?: string
+          mes?: string
+          meta_clientes_visitados?: number | null
+          meta_novos_clientes?: number | null
+          meta_pct_checklist?: number | null
+          meta_prospeccoes?: number | null
+          meta_reducao_ruptura?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "metas_operacao_externa_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       metas_vendas: {
         Row: {
           created_at: string
@@ -1723,6 +1773,60 @@ export type Database = {
             columns: ["venda_id"]
             isOneToOne: false
             referencedRelation: "vendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ocorrencias_externas: {
+        Row: {
+          cliente_id: string | null
+          created_at: string
+          criado_por: string
+          descricao: string
+          factory_id: string
+          foto_url: string | null
+          id: string
+          resolvida: boolean
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          cliente_id?: string | null
+          created_at?: string
+          criado_por: string
+          descricao: string
+          factory_id: string
+          foto_url?: string | null
+          id?: string
+          resolvida?: boolean
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          cliente_id?: string | null
+          created_at?: string
+          criado_por?: string
+          descricao?: string
+          factory_id?: string
+          foto_url?: string | null
+          id?: string
+          resolvida?: boolean
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ocorrencias_externas_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ocorrencias_externas_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
             referencedColumns: ["id"]
           },
         ]
@@ -2096,6 +2200,50 @@ export type Database = {
           },
         ]
       }
+      pontuacao_eventos: {
+        Row: {
+          auxiliar_user_id: string
+          created_at: string
+          descricao: string | null
+          factory_id: string
+          id: string
+          pontos: number
+          referencia_id: string | null
+          referencia_tabela: string | null
+          tipo: string
+        }
+        Insert: {
+          auxiliar_user_id: string
+          created_at?: string
+          descricao?: string | null
+          factory_id: string
+          id?: string
+          pontos?: number
+          referencia_id?: string | null
+          referencia_tabela?: string | null
+          tipo: string
+        }
+        Update: {
+          auxiliar_user_id?: string
+          created_at?: string
+          descricao?: string | null
+          factory_id?: string
+          id?: string
+          pontos?: number
+          referencia_id?: string | null
+          referencia_tabela?: string | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pontuacao_eventos_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       presenca_producao: {
         Row: {
           confirmado_por: string | null
@@ -2244,6 +2392,7 @@ export type Database = {
           email: string | null
           factory_id: string | null
           id: string
+          must_change_password: boolean
           nome: string
         }
         Insert: {
@@ -2251,6 +2400,7 @@ export type Database = {
           email?: string | null
           factory_id?: string | null
           id: string
+          must_change_password?: boolean
           nome?: string
         }
         Update: {
@@ -2258,11 +2408,81 @@ export type Database = {
           email?: string | null
           factory_id?: string | null
           id?: string
+          must_change_password?: boolean
           nome?: string
         }
         Relationships: [
           {
             foreignKeyName: "profiles_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prospeccoes_externas: {
+        Row: {
+          cliente_convertido_id: string | null
+          created_at: string
+          criado_por: string
+          endereco: string | null
+          factory_id: string
+          foto_fachada_url: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          potencial: string | null
+          responsavel: string | null
+          status: string
+          telefone: string | null
+          tipo: string | null
+          updated_at: string
+        }
+        Insert: {
+          cliente_convertido_id?: string | null
+          created_at?: string
+          criado_por: string
+          endereco?: string | null
+          factory_id: string
+          foto_fachada_url?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          potencial?: string | null
+          responsavel?: string | null
+          status?: string
+          telefone?: string | null
+          tipo?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cliente_convertido_id?: string | null
+          created_at?: string
+          criado_por?: string
+          endereco?: string | null
+          factory_id?: string
+          foto_fachada_url?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          potencial?: string | null
+          responsavel?: string | null
+          status?: string
+          telefone?: string | null
+          tipo?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prospeccoes_externas_cliente_convertido_id_fkey"
+            columns: ["cliente_convertido_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prospeccoes_externas_factory_id_fkey"
             columns: ["factory_id"]
             isOneToOne: false
             referencedRelation: "factories"
@@ -2394,6 +2614,114 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "prospectos_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rota_paradas: {
+        Row: {
+          cliente_id: string | null
+          created_at: string
+          factory_id: string
+          id: string
+          observacoes: string | null
+          ordem: number
+          quantidade_prevista: number | null
+          rota_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          cliente_id?: string | null
+          created_at?: string
+          factory_id: string
+          id?: string
+          observacoes?: string | null
+          ordem?: number
+          quantidade_prevista?: number | null
+          rota_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          cliente_id?: string | null
+          created_at?: string
+          factory_id?: string
+          id?: string
+          observacoes?: string | null
+          ordem?: number
+          quantidade_prevista?: number | null
+          rota_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rota_paradas_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rota_paradas_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rota_paradas_rota_id_fkey"
+            columns: ["rota_id"]
+            isOneToOne: false
+            referencedRelation: "rotas_externas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rotas_externas: {
+        Row: {
+          auxiliar_user_id: string
+          created_at: string
+          data: string
+          factory_id: string
+          finalizada_em: string | null
+          id: string
+          iniciada_em: string | null
+          observacoes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          auxiliar_user_id: string
+          created_at?: string
+          data?: string
+          factory_id: string
+          finalizada_em?: string | null
+          id?: string
+          iniciada_em?: string | null
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          auxiliar_user_id?: string
+          created_at?: string
+          data?: string
+          factory_id?: string
+          finalizada_em?: string | null
+          id?: string
+          iniciada_em?: string | null
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rotas_externas_factory_id_fkey"
             columns: ["factory_id"]
             isOneToOne: false
             referencedRelation: "factories"
@@ -3081,6 +3409,88 @@ export type Database = {
         }
         Relationships: []
       }
+      visitas_externas: {
+        Row: {
+          auxiliar_user_id: string
+          checklist: Json
+          chegada_em: string
+          cliente_id: string | null
+          created_at: string
+          factory_id: string
+          foto_antes_url: string | null
+          foto_depois_url: string | null
+          id: string
+          observacao_entrega: string | null
+          observacao_inicial: string | null
+          observacao_organizacao: string | null
+          quantidade_entregue: number | null
+          rota_parada_id: string | null
+          saida_em: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          auxiliar_user_id: string
+          checklist?: Json
+          chegada_em?: string
+          cliente_id?: string | null
+          created_at?: string
+          factory_id: string
+          foto_antes_url?: string | null
+          foto_depois_url?: string | null
+          id?: string
+          observacao_entrega?: string | null
+          observacao_inicial?: string | null
+          observacao_organizacao?: string | null
+          quantidade_entregue?: number | null
+          rota_parada_id?: string | null
+          saida_em?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          auxiliar_user_id?: string
+          checklist?: Json
+          chegada_em?: string
+          cliente_id?: string | null
+          created_at?: string
+          factory_id?: string
+          foto_antes_url?: string | null
+          foto_depois_url?: string | null
+          id?: string
+          observacao_entrega?: string | null
+          observacao_inicial?: string | null
+          observacao_organizacao?: string | null
+          quantidade_entregue?: number | null
+          rota_parada_id?: string | null
+          saida_em?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visitas_externas_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitas_externas_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitas_externas_rota_parada_id_fkey"
+            columns: ["rota_parada_id"]
+            isOneToOne: false
+            referencedRelation: "rota_paradas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -3193,6 +3603,7 @@ export type Database = {
         | "super_admin"
         | "factory_owner"
         | "vendedor"
+        | "auxiliar_externo"
       modo_producao: "unidade" | "lote"
       prioridade_prospecto: "alta" | "media" | "baixa"
       status_cliente: "ativo" | "inativo"
@@ -3357,6 +3768,7 @@ export const Constants = {
         "super_admin",
         "factory_owner",
         "vendedor",
+        "auxiliar_externo",
       ],
       modo_producao: ["unidade", "lote"],
       prioridade_prospecto: ["alta", "media", "baixa"],

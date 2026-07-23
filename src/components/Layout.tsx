@@ -6,7 +6,7 @@ import {
   ShoppingBag, Database, LogOut, Shield, Brain, MapPin, Map, Target,
   HardDrive, UserCheck, Crown, MessageCircle, Settings, CalendarDays,
   ChevronDown, ChevronRight, Menu, X, PanelLeftClose, PanelLeftOpen, Wallet, History, TrendingUp, Home
-  , UserX
+  , UserX, Route as RouteIcon, Camera, ClipboardCheck, AlertTriangle, Award, Truck
 } from "lucide-react";
 import PaymentBanner from "@/components/PaymentBanner";
 import { cn } from "@/lib/utils";
@@ -102,6 +102,20 @@ const menuGroups: MenuGroup[] = [
     ],
   },
 ];
+
+menuGroups.splice(menuGroups.length, 0, {
+  label: "Operação Externa",
+  items: [
+    { path: "/painel/operacao-externa", label: "Meu Painel", icon: LayoutDashboard },
+    { path: "/painel/operacao-externa/minha-rota", label: "Minha Rota", icon: RouteIcon },
+    { path: "/painel/operacao-externa/atendimento", label: "Novo Atendimento", icon: Camera },
+    { path: "/painel/operacao-externa/prospeccao", label: "Prospecção", icon: Target },
+    { path: "/painel/operacao-externa/ocorrencias", label: "Ocorrências", icon: AlertTriangle },
+    { path: "/painel/operacao-externa/historico", label: "Histórico", icon: History },
+    { path: "/painel/operacao-externa/desempenho", label: "Meu Desempenho", icon: Award },
+    { path: "/painel/operacao-externa/admin", label: "Visão Admin", icon: Truck },
+  ],
+});
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
