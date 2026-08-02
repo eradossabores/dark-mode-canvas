@@ -3207,6 +3207,7 @@ export type Database = {
           pagamento_confirmado_em: string | null
           pagamento_confirmado_por: string | null
           preco_unitario_usado: number | null
+          sem_baixa_estoque: boolean
           status: Database["public"]["Enums"]["status_venda"]
           status_entrega: string
           total: number
@@ -3238,6 +3239,7 @@ export type Database = {
           pagamento_confirmado_em?: string | null
           pagamento_confirmado_por?: string | null
           preco_unitario_usado?: number | null
+          sem_baixa_estoque?: boolean
           status?: Database["public"]["Enums"]["status_venda"]
           status_entrega?: string
           total?: number
@@ -3269,6 +3271,7 @@ export type Database = {
           pagamento_confirmado_em?: string | null
           pagamento_confirmado_por?: string | null
           preco_unitario_usado?: number | null
+          sem_baixa_estoque?: boolean
           status?: Database["public"]["Enums"]["status_venda"]
           status_entrega?: string
           total?: number
