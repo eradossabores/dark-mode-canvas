@@ -26,15 +26,16 @@ export default function MinhaRota() {
   const [novoQtd, setNovoQtd] = useState<string>("0");
 
   async function carregar() {
-    if (!user?.id) return;
+    if (!user?.id || !factoryId) return;
     const hoje = new Date().toISOString().split("T")[0];
     const { data: rota } = await (supabase as any)
       .from("rotas_externas").select("*")
-      .eq("auxiliar_user_id", user.id).eq("data", hoje).maybeSingle();
+      .eq("auxiliar_user_id", user.id).eq("factory_id", factoryId).eq("data", hoje).maybeSingle();
     if (rota) { setRotaId(rota.id); setStatus(rota.status); await carregarParadas(rota.id); }
     else { setRotaId(null); setParadas([]); }
 
-    const { data: cs } = await (supabase as any).from("clientes").select("id,nome,endereco,telefone").order("nome").limit(500);
+    const { data: cs } = await (supabase as any).from("clientes")
+      .select("id,nome,endereco,telefone").eq("factory_id", factoryId).order("nome").limit(500);
     setClientes(cs ?? []);
   }
 
@@ -44,7 +45,7 @@ export default function MinhaRota() {
     setParadas(data ?? []);
   }
 
-  useEffect(() => { carregar(); }, [user?.id]);
+  useEffect(() => { carregar(); }, [user?.id, factoryId]);
 
   async function criarRota() {
     if (!user?.id || !factoryId) return;

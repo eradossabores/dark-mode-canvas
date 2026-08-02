@@ -6,18 +6,18 @@ import { Badge } from "@/components/ui/badge";
 import { History } from "lucide-react";
 
 export default function Historico() {
-  const { user } = useAuth();
+  const { user, factoryId } = useAuth();
   const [visitas, setVisitas] = useState<any[]>([]);
 
   useEffect(() => {
     (async () => {
-      if (!user?.id) return;
+      if (!user?.id || !factoryId) return;
       const { data } = await (supabase as any).from("visitas_externas")
-        .select("*, clientes(nome)").eq("auxiliar_user_id", user.id)
+        .select("*, clientes(nome)").eq("auxiliar_user_id", user.id).eq("factory_id", factoryId)
         .order("chegada_em", { ascending: false }).limit(100);
       setVisitas(data ?? []);
     })();
-  }, [user?.id]);
+  }, [user?.id, factoryId]);
 
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-4">

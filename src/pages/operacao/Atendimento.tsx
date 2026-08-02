@@ -46,10 +46,12 @@ export default function Atendimento() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await (supabase as any).from("clientes").select("id,nome").order("nome").limit(500);
+      if (!factoryId) { setClientes([]); return; }
+      const { data } = await (supabase as any).from("clientes")
+        .select("id,nome").eq("factory_id", factoryId).order("nome").limit(500);
       setClientes(data ?? []);
     })();
-  }, []);
+  }, [factoryId]);
 
   async function iniciarVisita() {
     if (!user?.id || !factoryId || !clienteId) return toast({ title: "Selecione um cliente", variant: "destructive" });
