@@ -1465,9 +1465,12 @@ export default function Vendas() {
                 </div>
               )}
               <div><Label>Observações</Label><Input value={observacoes} onChange={(e) => setObservacoes(e.target.value)} /></div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="ignorar-estoque" checked={ignorarEstoque} onCheckedChange={(v) => setIgnorarEstoque(!!v)} />
-                <Label htmlFor="ignorar-estoque" className="text-sm font-normal cursor-pointer">Lançamento retroativo (ignorar estoque)</Label>
+              <div className="flex items-start space-x-2">
+                <Checkbox id="ignorar-estoque" checked={ignorarEstoque} onCheckedChange={(v) => setIgnorarEstoque(!!v)} className="mt-0.5" />
+                <Label htmlFor="ignorar-estoque" className="text-sm font-normal cursor-pointer leading-snug">
+                  Lançamento retroativo (não descontar do estoque)
+                  <span className="block text-xs text-muted-foreground">Nenhum gelo será baixado e o estoque não fica negativo.</span>
+                </Label>
               </div>
             </div>
             <div className="border-t bg-background/95 backdrop-blur px-6 py-3 shrink-0 space-y-2">
