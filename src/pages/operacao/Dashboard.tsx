@@ -16,18 +16,18 @@ export default function OperacaoDashboard() {
 
   useEffect(() => {
     (async () => {
-      if (!user?.id) return;
+      if (!user?.id || !factoryId) return;
       const hoje = new Date().toISOString().split("T")[0];
       const inicio = new Date(); inicio.setDate(1);
       const inicioMes = inicio.toISOString();
 
       const { data: visitas } = await (supabase as any)
         .from("visitas_externas").select("id, quantidade_entregue, cliente_id, checklist, status")
-        .eq("auxiliar_user_id", user.id).gte("chegada_em", `${hoje}T00:00:00`);
+        .eq("auxiliar_user_id", user.id).eq("factory_id", factoryId).gte("chegada_em", `${hoje}T00:00:00`);
 
       const { data: pontos } = await (supabase as any)
         .from("pontuacao_eventos").select("pontos")
-        .eq("auxiliar_user_id", user.id).gte("created_at", inicioMes);
+        .eq("auxiliar_user_id", user.id).eq("factory_id", factoryId).gte("created_at", inicioMes);
 
       const totalPontos = (pontos ?? []).reduce((s: number, p: any) => s + (p.pontos ?? 0), 0);
       const clientesUnicos = new Set((visitas ?? []).map((v: any) => v.cliente_id).filter(Boolean));
