@@ -33,14 +33,20 @@ export default function Ocorrencias() {
   const [saving, setSaving] = useState(false);
 
   async function carregar() {
-    const { data: cs } = await (supabase as any).from("clientes").select("id,nome").order("nome").limit(500);
-    setClientes(cs ?? []);
-    if (!user?.id) return;
+    if (factoryId) {
+      const { data: cs } = await (supabase as any).from("clientes")
+        .select("id,nome").eq("factory_id", factoryId).order("nome").limit(500);
+      setClientes(cs ?? []);
+    } else {
+      setClientes([]);
+    }
+    if (!user?.id || !factoryId) return;
     const { data } = await (supabase as any).from("ocorrencias_externas")
-      .select("*, clientes(nome)").eq("auxiliar_user_id", user.id).order("created_at", { ascending: false }).limit(20);
+      .select("*, clientes(nome)").eq("auxiliar_user_id", user.id).eq("factory_id", factoryId)
+      .order("created_at", { ascending: false }).limit(20);
     setLista(data ?? []);
   }
-  useEffect(() => { carregar(); }, [user?.id]);
+  useEffect(() => { carregar(); }, [user?.id, factoryId]);
 
   async function handleFoto(file: File) {
     if (!user?.id) return;
