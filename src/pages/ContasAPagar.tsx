@@ -133,7 +133,6 @@ export default function ContasAPagar() {
   const [activeTab, setActiveTab] = useState<"abertas" | "pagas" | "finalizadas">("abertas");
   const [activeTabFixos, setActiveTabFixos] = useState<"abertas" | "pagas">("abertas");
   const [secao, setSecao] = useState<"contas" | "despesas">("contas");
-  const [secao, setSecao] = useState<"contas" | "despesas">("contas");
 
   // Filters
   const [busca, setBusca] = useState("");
