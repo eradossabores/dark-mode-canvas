@@ -1111,6 +1111,19 @@ export default function ContasAPagar() {
           </CardContent>
         </Card>
       )}
+
+      {/* Seções: Contas x Despesas */}
+      <Tabs value={secao} onValueChange={(v) => setSecao(v as any)}>
+        <TabsList>
+          <TabsTrigger value="contas" className="gap-2"><Receipt className="h-4 w-4" /> Contas</TabsTrigger>
+          <TabsTrigger value="despesas" className="gap-2"><CircleDollarSign className="h-4 w-4" /> Despesas</TabsTrigger>
+        </TabsList>
+        <TabsContent value="despesas" className="mt-4">
+          <DespesasSection factoryId={factoryId} categorias={CATEGORIAS} formasPagamento={FORMAS_PAGAMENTO} />
+        </TabsContent>
+      </Tabs>
+
+      <div className={cn("space-y-6", secao !== "contas" && "hidden")}>
       {/* Filtros */}
       <div className="flex flex-wrap items-end gap-3 p-4 bg-card rounded-lg border">
         <div>
