@@ -24,6 +24,7 @@ import { exportToPDF, exportToExcel } from "@/lib/export-utils";
 import jsPDF from "jspdf";
 import logoUrl from "@/assets/logo.png";
 import { maskBRL, parseBRL, numberToBRL } from "@/lib/currency-mask";
+import DespesasSection from "@/components/contas/DespesasSection";
 
 const FORMAS_PAGAMENTO = [
   { value: "pix", label: "PIX" },
@@ -131,6 +132,7 @@ export default function ContasAPagar() {
   const [historicoContaId, setHistoricoContaId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"abertas" | "pagas" | "finalizadas">("abertas");
   const [activeTabFixos, setActiveTabFixos] = useState<"abertas" | "pagas">("abertas");
+  const [secao, setSecao] = useState<"contas" | "despesas">("contas");
 
   // Filters
   const [busca, setBusca] = useState("");
@@ -1109,6 +1111,19 @@ export default function ContasAPagar() {
           </CardContent>
         </Card>
       )}
+
+      {/* Seções: Contas x Despesas */}
+      <Tabs value={secao} onValueChange={(v) => setSecao(v as any)}>
+        <TabsList>
+          <TabsTrigger value="contas" className="gap-2"><Receipt className="h-4 w-4" /> Contas</TabsTrigger>
+          <TabsTrigger value="despesas" className="gap-2"><CircleDollarSign className="h-4 w-4" /> Despesas</TabsTrigger>
+        </TabsList>
+        <TabsContent value="despesas" className="mt-4">
+          <DespesasSection factoryId={factoryId} categorias={CATEGORIAS} formasPagamento={FORMAS_PAGAMENTO} />
+        </TabsContent>
+      </Tabs>
+
+      <div className={cn("space-y-6", secao !== "contas" && "hidden")}>
       {/* Filtros */}
       <div className="flex flex-wrap items-end gap-3 p-4 bg-card rounded-lg border">
         <div>
@@ -1798,6 +1813,7 @@ export default function ContasAPagar() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </div>
     </div>
   );
 }
