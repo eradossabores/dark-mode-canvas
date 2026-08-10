@@ -1814,5 +1814,6 @@ export default function ContasAPagar() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </div>
   );
 }
