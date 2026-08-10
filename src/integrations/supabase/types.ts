@@ -935,6 +935,59 @@ export type Database = {
           },
         ]
       }
+      despesas: {
+        Row: {
+          categoria: string
+          created_at: string
+          data_despesa: string
+          descricao: string
+          factory_id: string | null
+          forma_pagamento: string
+          id: string
+          observacoes: string | null
+          pago: boolean
+          responsavel: string | null
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          categoria?: string
+          created_at?: string
+          data_despesa?: string
+          descricao: string
+          factory_id?: string | null
+          forma_pagamento?: string
+          id?: string
+          observacoes?: string | null
+          pago?: boolean
+          responsavel?: string | null
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          categoria?: string
+          created_at?: string
+          data_despesa?: string
+          descricao?: string
+          factory_id?: string | null
+          forma_pagamento?: string
+          id?: string
+          observacoes?: string | null
+          pago?: boolean
+          responsavel?: string | null
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "despesas_factory_id_fkey"
+            columns: ["factory_id"]
+            isOneToOne: false
+            referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       embalagens: {
         Row: {
           created_at: string
