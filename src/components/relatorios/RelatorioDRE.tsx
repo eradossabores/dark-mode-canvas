@@ -124,7 +124,17 @@ export default function RelatorioDRE({ factoryId, dateRange }: Props) {
     setLoading(false);
   }
 
-  if (loading || !data) return <div className="animate-pulse p-4 text-muted-foreground">Carregando DRE...</div>;
+  const filtro = (
+    <DateRangeFilter startDate={inicio} endDate={fim} onStartChange={setInicio} onEndChange={setFim} />
+  );
+
+  if (loading || !data)
+    return (
+      <div>
+        {filtro}
+        <div className="animate-pulse p-4 text-muted-foreground">Carregando DRE...</div>
+      </div>
+    );
 
   const receitaLiquida = data.receitaBruta - data.amostras;
   const lucroBruto = receitaLiquida - data.cmv;
@@ -203,7 +213,9 @@ export default function RelatorioDRE({ factoryId, dateRange }: Props) {
   );
 
   return (
-    <Card>
+    <div>
+      {filtro}
+      <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-sm flex items-center gap-2">
           <FileText className="h-4 w-4 text-primary" />
@@ -231,6 +243,7 @@ export default function RelatorioDRE({ factoryId, dateRange }: Props) {
           </TabsContent>
         </Tabs>
       </CardContent>
-    </Card>
+      </Card>
+    </div>
   );
 }
