@@ -6,6 +6,16 @@ import type { User, Session } from "@supabase/supabase-js";
 type AppRole = "super_admin" | "admin" | "factory_owner" | "producao" | "vendedor" | "auxiliar_externo" | null;
 type ApprovalStatus = "pendente" | "aprovado" | "rejeitado" | null;
 
+/** Ordem de prioridade para definir o perfil "principal" quando o usuário tem vários. */
+const ROLE_PRIORITY: string[] = [
+  "super_admin",
+  "factory_owner",
+  "admin",
+  "producao",
+  "vendedor",
+  "auxiliar_externo",
+];
+
 interface SubscriptionInfo {
   status: string; // trial, active, overdue, blocked
   daysUntilDue: number | null;
@@ -27,6 +37,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   role: AppRole;
+  roles: string[];
   approvalStatus: ApprovalStatus;
   loading: boolean;
   factoryId: string | null;
@@ -43,6 +54,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
   role: null,
+  roles: [],
   approvalStatus: null,
   loading: true,
   factoryId: null,
@@ -61,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<AppRole>(null);
+  const [roles, setRoles] = useState<string[]>([]);
   const [approvalStatus, setApprovalStatus] = useState<ApprovalStatus>(null);
   const [loading, setLoading] = useState(true);
   const [factoryId, setFactoryId] = useState<string | null>(null);
