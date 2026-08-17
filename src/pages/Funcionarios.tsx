@@ -15,6 +15,13 @@ import { toast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, UserPlus, Info, Power, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
+/** Setores disponíveis para colaboradores. */
+const SETOR_LABELS = {
+  producao: "🏭 Produção",
+  vendas: "🛒 Vendas",
+  entregas: "🚚 Entregas",
+} as const;
+
 export default function Funcionarios() {
   const { factoryId } = useAuth();
   const navigate = useNavigate();
@@ -133,6 +140,7 @@ export default function Funcionarios() {
                 <SelectContent>
                   <SelectItem value="producao">🏭 Produção</SelectItem>
                   <SelectItem value="vendas">🛒 Vendas</SelectItem>
+                  <SelectItem value="entregas">🚚 Entregas</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -224,7 +232,7 @@ export default function Funcionarios() {
                   <TableCell className="font-medium">{f.nome}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className="text-xs">
-                      {f.setor === "vendas" ? "🛒 Vendas" : "🏭 Produção"}
+                      {SETOR_LABELS[f.setor as keyof typeof SETOR_LABELS] ?? SETOR_LABELS.producao}
                     </Badge>
                   </TableCell>
                   <TableCell className="capitalize">{f.tipo_pagamento === "diaria" ? "Diária" : "Fixo"}</TableCell>
