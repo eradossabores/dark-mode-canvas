@@ -154,10 +154,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
       
       setRole(null);
+      
+      setRoles([]);
       setApprovalStatus(requestData?.status || null);
     } catch (error) {
       console.error("Erro ao buscar role/aprovação:", error);
       setRole(null);
+      setRoles([]);
       setApprovalStatus(null);
     }
   }
@@ -210,6 +213,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!nextSession?.user) {
         setRole(null);
+        setRoles([]);
         setApprovalStatus(null);
         setFactoryId(null);
         setFactoryName(null);
@@ -237,6 +241,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         setSession(null);
         setRole(null);
+        setRoles([]);
         setApprovalStatus(null);
         setFactoryId(null);
         setFactoryName(null);
@@ -249,6 +254,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         setSession(null);
         setRole(null);
+        setRoles([]);
         setApprovalStatus(null);
         setFactoryId(null);
         setFactoryName(null);
@@ -284,6 +290,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setSession(null);
       setRole(null);
+      setRoles([]);
       setApprovalStatus(null);
       setFactoryId(null);
       setFactoryName(null);
@@ -299,7 +306,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <AuthContext.Provider value={{ user, session, role, approvalStatus, loading, factoryId, factoryName, subscription, branding, signOut, impersonatingFactory, impersonateFactory, clearImpersonation }}>
+    <AuthContext.Provider value={{ user, session, role, roles, approvalStatus, loading, factoryId, factoryName, subscription, branding, signOut, impersonatingFactory, impersonateFactory, clearImpersonation }}>
       {children}
     </AuthContext.Provider>
   );
