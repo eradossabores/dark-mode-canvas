@@ -124,7 +124,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const lastTouchToggleAtRef = useRef(0);
   const location = useLocation();
   const navigate = useNavigate();
-  const { role, signOut, factoryName, factoryId, branding, impersonatingFactory, clearImpersonation } = useAuth();
+  const { role, roles, signOut, factoryName, factoryId, branding, impersonatingFactory, clearImpersonation } = useAuth();
   useKeyboardShortcuts();
 
   // Breadcrumb resolution from menuGroups
@@ -196,16 +196,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const filteredGroups = menuGroups
     .filter((g) => {
-      // "Vendedor" group is exclusive to users with the vendedor role
-      if (g.label === "Vendedor") return role === "vendedor";
-      // Non-vendedor groups are hidden from vendedores
-      return role !== "vendedor";
+      const isVendedor = roles.includes("vendedor");
+      const somenteVendedor = isVendedor && roles.length === 1;
+      // Grupo "Vendedor" só aparece para quem tem o perfil de vendas
+      if (g.label === "Vendedor") return isVendedor;
+      // Quem é APENAS vendedor não vê os demais grupos
+      return !somenteVendedor;
     })
     .map((g) => ({
       ...g,
       items: g.items.filter((item) => {
         if (item.path === "/painel/vendedores" && role !== "super_admin" && factoryId !== ERA_DOS_SABORES_ID) return false;
-        return isRouteAllowed(item.path, role);
+        return isRouteAllowed(item.path, roles.length > 0 ? roles : role);
       }),
     }))
     .filter((g) => g.items.length > 0);

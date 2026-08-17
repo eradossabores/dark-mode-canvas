@@ -196,7 +196,7 @@ export default function ProtectedRoute({ children, adminOnly, superAdminOnly }: 
   return <>{children}</>;
 }
 
-export function isRouteAllowed(path: string, role: string | null): boolean {
+function isRouteAllowedForRole(path: string, role: string | null): boolean {
   if (role === "super_admin") return true;
   if (role === "admin" || role === "factory_owner") return true;
   if (role === "producao") {
@@ -209,6 +209,13 @@ export function isRouteAllowed(path: string, role: string | null): boolean {
     return AUXILIAR_ROUTES.some((r) => path === r || path.startsWith(r + "/"));
   }
   return false;
+}
+
+/** Aceita um perfil único ou a lista de perfis do usuário (acesso é a união deles). */
+export function isRouteAllowed(path: string, role: string | string[] | null): boolean {
+  const list = Array.isArray(role) ? role : [role];
+  if (list.length === 0) return false;
+  return list.some((r) => isRouteAllowedForRole(path, r ?? null));
 }
 
 export { PRODUCAO_ROUTES, VENDEDOR_ROUTES, SUPER_ADMIN_ROUTES, AUXILIAR_ROUTES };

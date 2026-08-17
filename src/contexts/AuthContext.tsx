@@ -6,6 +6,16 @@ import type { User, Session } from "@supabase/supabase-js";
 type AppRole = "super_admin" | "admin" | "factory_owner" | "producao" | "vendedor" | "auxiliar_externo" | null;
 type ApprovalStatus = "pendente" | "aprovado" | "rejeitado" | null;
 
+/** Ordem de prioridade para definir o perfil "principal" quando o usuário tem vários. */
+const ROLE_PRIORITY: string[] = [
+  "super_admin",
+  "factory_owner",
+  "admin",
+  "producao",
+  "vendedor",
+  "auxiliar_externo",
+];
+
 interface SubscriptionInfo {
   status: string; // trial, active, overdue, blocked
   daysUntilDue: number | null;
@@ -27,6 +37,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   role: AppRole;
+  roles: string[];
   approvalStatus: ApprovalStatus;
   loading: boolean;
   factoryId: string | null;
@@ -43,6 +54,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
   role: null,
+  roles: [],
   approvalStatus: null,
   loading: true,
   factoryId: null,
@@ -61,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<AppRole>(null);
+  const [roles, setRoles] = useState<string[]>([]);
   const [approvalStatus, setApprovalStatus] = useState<ApprovalStatus>(null);
   const [loading, setLoading] = useState(true);
   const [factoryId, setFactoryId] = useState<string | null>(null);
@@ -98,20 +111,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function fetchRoleAndApproval(userId: string) {
     try {
-      // Check role
-      const { data: roleData } = await (supabase as any)
+      // Um usuário pode ter múltiplos perfis (ex.: produção + vendas + operação externa)
+      const { data: rolesData } = await (supabase as any)
         .from("user_roles")
         .select("role, factory_id")
-        .eq("user_id", userId)
-        .maybeSingle();
-      
-      if (roleData?.role) {
-        setRole(roleData.role);
+        .eq("user_id", userId);
+
+      const list: string[] = (rolesData ?? []).map((r: any) => r.role).filter(Boolean);
+      const primary = ROLE_PRIORITY.find((r) => list.includes(r)) ?? list[0] ?? null;
+      const roleData = (rolesData ?? []).find((r: any) => r.role === primary) ?? null;
+
+      if (primary) {
+        setRoles(list);
+        setRole(primary as AppRole);
         setApprovalStatus("aprovado");
-        setFactoryId(roleData.factory_id || null);
+        setFactoryId(roleData?.factory_id || null);
 
         // Fetch factory name if factory_id exists
-        if (roleData.factory_id) {
+        if (roleData?.factory_id) {
           const { data: factoryData } = await (supabase as any)
             .from("factories")
             .select("name, logo_url, theme")
@@ -137,10 +154,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
       
       setRole(null);
+      
+      setRoles([]);
       setApprovalStatus(requestData?.status || null);
     } catch (error) {
       console.error("Erro ao buscar role/aprovação:", error);
       setRole(null);
+      setRoles([]);
       setApprovalStatus(null);
     }
   }
@@ -193,6 +213,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!nextSession?.user) {
         setRole(null);
+        setRoles([]);
         setApprovalStatus(null);
         setFactoryId(null);
         setFactoryName(null);
@@ -220,6 +241,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         setSession(null);
         setRole(null);
+        setRoles([]);
         setApprovalStatus(null);
         setFactoryId(null);
         setFactoryName(null);
@@ -232,6 +254,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         setSession(null);
         setRole(null);
+        setRoles([]);
         setApprovalStatus(null);
         setFactoryId(null);
         setFactoryName(null);
@@ -267,6 +290,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setSession(null);
       setRole(null);
+      setRoles([]);
       setApprovalStatus(null);
       setFactoryId(null);
       setFactoryName(null);
@@ -282,7 +306,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <AuthContext.Provider value={{ user, session, role, approvalStatus, loading, factoryId, factoryName, subscription, branding, signOut, impersonatingFactory, impersonateFactory, clearImpersonation }}>
+    <AuthContext.Provider value={{ user, session, role, roles, approvalStatus, loading, factoryId, factoryName, subscription, branding, signOut, impersonatingFactory, impersonateFactory, clearImpersonation }}>
       {children}
     </AuthContext.Provider>
   );
