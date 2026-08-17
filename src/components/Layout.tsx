@@ -124,7 +124,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const lastTouchToggleAtRef = useRef(0);
   const location = useLocation();
   const navigate = useNavigate();
-  const { role, signOut, factoryName, factoryId, branding, impersonatingFactory, clearImpersonation } = useAuth();
+  const { role, roles, signOut, factoryName, factoryId, branding, impersonatingFactory, clearImpersonation } = useAuth();
   useKeyboardShortcuts();
 
   // Breadcrumb resolution from menuGroups
