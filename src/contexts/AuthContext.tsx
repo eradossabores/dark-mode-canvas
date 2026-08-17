@@ -111,20 +111,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function fetchRoleAndApproval(userId: string) {
     try {
-      // Check role
-      const { data: roleData } = await (supabase as any)
+      // Um usuário pode ter múltiplos perfis (ex.: produção + vendas + operação externa)
+      const { data: rolesData } = await (supabase as any)
         .from("user_roles")
         .select("role, factory_id")
-        .eq("user_id", userId)
-        .maybeSingle();
-      
-      if (roleData?.role) {
-        setRole(roleData.role);
+        .eq("user_id", userId);
+
+      const list: string[] = (rolesData ?? []).map((r: any) => r.role).filter(Boolean);
+      const primary = ROLE_PRIORITY.find((r) => list.includes(r)) ?? list[0] ?? null;
+      const roleData = (rolesData ?? []).find((r: any) => r.role === primary) ?? null;
+
+      if (primary) {
+        setRoles(list);
+        setRole(primary as AppRole);
         setApprovalStatus("aprovado");
-        setFactoryId(roleData.factory_id || null);
+        setFactoryId(roleData?.factory_id || null);
 
         // Fetch factory name if factory_id exists
-        if (roleData.factory_id) {
+        if (roleData?.factory_id) {
           const { data: factoryData } = await (supabase as any)
             .from("factories")
             .select("name, logo_url, theme")
