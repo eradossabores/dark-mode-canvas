@@ -133,6 +133,7 @@ export default function Funcionarios() {
                 <SelectContent>
                   <SelectItem value="producao">🏭 Produção</SelectItem>
                   <SelectItem value="vendas">🛒 Vendas</SelectItem>
+                  <SelectItem value="entregas">🚚 Entregas</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -224,7 +225,7 @@ export default function Funcionarios() {
                   <TableCell className="font-medium">{f.nome}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className="text-xs">
-                      {f.setor === "vendas" ? "🛒 Vendas" : "🏭 Produção"}
+                      {SETOR_LABELS[f.setor as keyof typeof SETOR_LABELS] ?? SETOR_LABELS.producao}
                     </Badge>
                   </TableCell>
                   <TableCell className="capitalize">{f.tipo_pagamento === "diaria" ? "Diária" : "Fixo"}</TableCell>
