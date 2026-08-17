@@ -15,6 +15,13 @@ import { toast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, UserPlus, Info, Power, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
+/** Setores disponíveis para colaboradores. */
+const SETOR_LABELS = {
+  producao: "🏭 Produção",
+  vendas: "🛒 Vendas",
+  entregas: "🚚 Entregas",
+} as const;
+
 export default function Funcionarios() {
   const { factoryId } = useAuth();
   const navigate = useNavigate();
