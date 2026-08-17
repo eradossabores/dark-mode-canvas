@@ -66,6 +66,8 @@ export default function Producao() {
   const [loading, setLoading] = useState(false);
   // Funcionário vinculado ao usuário logado (responsável padrão da produção)
   const [meuFuncionarioId, setMeuFuncionarioId] = useState<string>("");
+  // Nome do usuário logado (usado como responsável quando não há cadastro de colaborador)
+  const [meuNome, setMeuNome] = useState<string>("");
 
   // Edit state
   const [editProd, setEditProd] = useState<any>(null);
@@ -95,12 +97,14 @@ export default function Producao() {
   useEffect(() => {
     let cancelled = false;
     async function matchFuncionario() {
-      if (!user?.id || funcionarios.length === 0) return;
+      if (!user?.id) return;
       const norm = (v: string) =>
         (v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
       try {
         const { data: profile } = await (supabase as any)
           .from("profiles").select("nome, email").eq("id", user.id).maybeSingle();
+        const displayName = (profile?.nome || (profile?.email || user.email || "").split("@")[0] || "").trim();
+        if (!cancelled && displayName) setMeuNome(displayName);
         const nome = norm(profile?.nome || "");
         const emailLocal = norm((profile?.email || user.email || "").split("@")[0]);
         const found = funcionarios.find((f: any) => {
@@ -273,9 +277,13 @@ export default function Producao() {
   async function handleSubmit() {
     if (prodItens.length === 0) return toast({ title: "Adicione ao menos um sabor", variant: "destructive" });
     const validFuncs = funcList.filter(f => f !== "");
-    if (validFuncs.length === 0) return toast({ title: "Adicione ao menos um responsável", variant: "destructive" });
+    if (validFuncs.length === 0 && !meuNome) {
+      return toast({ title: "Adicione ao menos um responsável", variant: "destructive" });
+    }
 
-    const nomesFuncionarios = validFuncs.map(f => funcionarios.find(fn => fn.id === f)?.nome).filter(Boolean).join(", ");
+    // Responsável: colaboradores selecionados ou, na ausência deles, o próprio usuário logado.
+    const nomesFuncionarios =
+      validFuncs.map(f => funcionarios.find(fn => fn.id === f)?.nome).filter(Boolean).join(", ") || meuNome;
 
     setLoading(true);
     try {
