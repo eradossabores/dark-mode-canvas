@@ -27,7 +27,7 @@ import EditDayProducoesDialog from "@/components/producao/EditDayProducoesDialog
 import ConfigProducaoDialog from "@/components/producao/ConfigProducaoDialog";
 
 export default function Producao() {
-  const { factoryId } = useAuth();
+  const { factoryId, user } = useAuth();
   const [searchParams] = useSearchParams();
   const dataParam = searchParams.get("data");
   const historicoRef = useRef<HTMLDivElement>(null);
@@ -64,6 +64,10 @@ export default function Producao() {
   const [dataProducao, setDataProducao] = useState<Date>(new Date());
   const [funcList, setFuncList] = useState<string[]>([""]);
   const [loading, setLoading] = useState(false);
+  // Funcionário vinculado ao usuário logado (responsável padrão da produção)
+  const [meuFuncionarioId, setMeuFuncionarioId] = useState<string>("");
+  // Nome do usuário logado (usado como responsável quando não há cadastro de colaborador)
+  const [meuNome, setMeuNome] = useState<string>("");
 
   // Edit state
   const [editProd, setEditProd] = useState<any>(null);
@@ -87,6 +91,42 @@ export default function Producao() {
   }, [dataParam]);
 
   useEffect(() => { loadData(); }, [factoryId]);
+
+  // Identifica o funcionário correspondente ao usuário logado para pré-selecionar
+  // como responsável ao lançar uma nova produção.
+  useEffect(() => {
+    let cancelled = false;
+    async function matchFuncionario() {
+      if (!user?.id) return;
+      const norm = (v: string) =>
+        (v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+      try {
+        const { data: profile } = await (supabase as any)
+          .from("profiles").select("nome, email").eq("id", user.id).maybeSingle();
+        const displayName = (profile?.nome || (profile?.email || user.email || "").split("@")[0] || "").trim();
+        if (!cancelled && displayName) setMeuNome(displayName);
+        const nome = norm(profile?.nome || "");
+        const emailLocal = norm((profile?.email || user.email || "").split("@")[0]);
+        const found = funcionarios.find((f: any) => {
+          const fn = norm(f.nome);
+          if (!fn) return false;
+          return fn === nome || (!!emailLocal && (fn === emailLocal || fn.split(" ")[0] === emailLocal));
+        });
+        if (!cancelled && found) setMeuFuncionarioId(found.id);
+      } catch {
+        // silencioso: apenas não pré-seleciona
+      }
+    }
+    matchFuncionario();
+    return () => { cancelled = true; };
+  }, [user?.id, funcionarios]);
+
+  // Pré-seleciona o próprio usuário como responsável ao abrir o formulário
+  useEffect(() => {
+    if (open && meuFuncionarioId) {
+      setFuncList((prev) => (prev.length === 1 && prev[0] === "" ? [meuFuncionarioId] : prev));
+    }
+  }, [open, meuFuncionarioId]);
 
   // Scroll to specific date from query param
   useEffect(() => {
@@ -214,7 +254,9 @@ export default function Producao() {
   function updateFunc(i: number, val: string) { const list = [...funcList]; list[i] = val; setFuncList(list); }
 
   function resetForm() {
-    setSaborId(""); setModo("lote"); setQtdLotes(6); setQtdTotal(6 * getGelosPorLote()); setObservacoes(""); setFuncList([""]); setDataProducao(new Date()); setProdItens([]); setIgnorarEstoque(false);
+    setSaborId(""); setModo("lote"); setQtdLotes(6); setQtdTotal(6 * getGelosPorLote()); setObservacoes("");
+    setFuncList(meuFuncionarioId ? [meuFuncionarioId] : [""]);
+    setDataProducao(new Date()); setProdItens([]); setIgnorarEstoque(false);
   }
 
   function addProdItem() {
@@ -235,9 +277,13 @@ export default function Producao() {
   async function handleSubmit() {
     if (prodItens.length === 0) return toast({ title: "Adicione ao menos um sabor", variant: "destructive" });
     const validFuncs = funcList.filter(f => f !== "");
-    if (validFuncs.length === 0) return toast({ title: "Adicione ao menos um responsável", variant: "destructive" });
+    if (validFuncs.length === 0 && !meuNome) {
+      return toast({ title: "Adicione ao menos um responsável", variant: "destructive" });
+    }
 
-    const nomesFuncionarios = validFuncs.map(f => funcionarios.find(fn => fn.id === f)?.nome).filter(Boolean).join(", ");
+    // Responsável: colaboradores selecionados ou, na ausência deles, o próprio usuário logado.
+    const nomesFuncionarios =
+      validFuncs.map(f => funcionarios.find(fn => fn.id === f)?.nome).filter(Boolean).join(", ") || meuNome;
 
     setLoading(true);
     try {
@@ -525,6 +571,11 @@ export default function Producao() {
                     <Button size="icon" variant="ghost" onClick={() => removeFunc(i)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                   </div>
                 ))}
+                {!meuFuncionarioId && meuNome && (
+                  <p className="text-xs text-muted-foreground">
+                    Responsável padrão: <strong>{meuNome}</strong> (usuário logado)
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-2 p-3 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30">
                 <Checkbox id="ignorar-estoque" checked={ignorarEstoque} onCheckedChange={(v) => setIgnorarEstoque(!!v)} />
