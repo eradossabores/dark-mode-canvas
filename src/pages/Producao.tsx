@@ -571,6 +571,11 @@ export default function Producao() {
                     <Button size="icon" variant="ghost" onClick={() => removeFunc(i)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                   </div>
                 ))}
+                {!meuFuncionarioId && meuNome && (
+                  <p className="text-xs text-muted-foreground">
+                    Responsável padrão: <strong>{meuNome}</strong> (usuário logado)
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-2 p-3 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30">
                 <Checkbox id="ignorar-estoque" checked={ignorarEstoque} onCheckedChange={(v) => setIgnorarEstoque(!!v)} />
