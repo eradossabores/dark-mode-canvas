@@ -27,7 +27,7 @@ import EditDayProducoesDialog from "@/components/producao/EditDayProducoesDialog
 import ConfigProducaoDialog from "@/components/producao/ConfigProducaoDialog";
 
 export default function Producao() {
-  const { factoryId } = useAuth();
+  const { factoryId, user } = useAuth();
   const [searchParams] = useSearchParams();
   const dataParam = searchParams.get("data");
   const historicoRef = useRef<HTMLDivElement>(null);
@@ -64,6 +64,8 @@ export default function Producao() {
   const [dataProducao, setDataProducao] = useState<Date>(new Date());
   const [funcList, setFuncList] = useState<string[]>([""]);
   const [loading, setLoading] = useState(false);
+  // Funcionário vinculado ao usuário logado (responsável padrão da produção)
+  const [meuFuncionarioId, setMeuFuncionarioId] = useState<string>("");
 
   // Edit state
   const [editProd, setEditProd] = useState<any>(null);
@@ -87,6 +89,40 @@ export default function Producao() {
   }, [dataParam]);
 
   useEffect(() => { loadData(); }, [factoryId]);
+
+  // Identifica o funcionário correspondente ao usuário logado para pré-selecionar
+  // como responsável ao lançar uma nova produção.
+  useEffect(() => {
+    let cancelled = false;
+    async function matchFuncionario() {
+      if (!user?.id || funcionarios.length === 0) return;
+      const norm = (v: string) =>
+        (v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+      try {
+        const { data: profile } = await (supabase as any)
+          .from("profiles").select("nome, email").eq("id", user.id).maybeSingle();
+        const nome = norm(profile?.nome || "");
+        const emailLocal = norm((profile?.email || user.email || "").split("@")[0]);
+        const found = funcionarios.find((f: any) => {
+          const fn = norm(f.nome);
+          if (!fn) return false;
+          return fn === nome || (!!emailLocal && (fn === emailLocal || fn.split(" ")[0] === emailLocal));
+        });
+        if (!cancelled && found) setMeuFuncionarioId(found.id);
+      } catch {
+        // silencioso: apenas não pré-seleciona
+      }
+    }
+    matchFuncionario();
+    return () => { cancelled = true; };
+  }, [user?.id, funcionarios]);
+
+  // Pré-seleciona o próprio usuário como responsável ao abrir o formulário
+  useEffect(() => {
+    if (open && meuFuncionarioId) {
+      setFuncList((prev) => (prev.length === 1 && prev[0] === "" ? [meuFuncionarioId] : prev));
+    }
+  }, [open, meuFuncionarioId]);
 
   // Scroll to specific date from query param
   useEffect(() => {
@@ -214,7 +250,9 @@ export default function Producao() {
   function updateFunc(i: number, val: string) { const list = [...funcList]; list[i] = val; setFuncList(list); }
 
   function resetForm() {
-    setSaborId(""); setModo("lote"); setQtdLotes(6); setQtdTotal(6 * getGelosPorLote()); setObservacoes(""); setFuncList([""]); setDataProducao(new Date()); setProdItens([]); setIgnorarEstoque(false);
+    setSaborId(""); setModo("lote"); setQtdLotes(6); setQtdTotal(6 * getGelosPorLote()); setObservacoes("");
+    setFuncList(meuFuncionarioId ? [meuFuncionarioId] : [""]);
+    setDataProducao(new Date()); setProdItens([]); setIgnorarEstoque(false);
   }
 
   function addProdItem() {
