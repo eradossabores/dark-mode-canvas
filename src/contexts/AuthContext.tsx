@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSessionTracker } from "@/hooks/useSessionTracker";
+import { useAutoColaborador } from "@/hooks/useAutoColaborador";
 import type { User, Session } from "@supabase/supabase-js";
 
 type AppRole = "super_admin" | "admin" | "factory_owner" | "producao" | "vendedor" | "auxiliar_externo" | null;
@@ -303,6 +304,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useSessionTracker(
     !impersonatingFactory ? user?.id ?? null : null,
     !impersonatingFactory ? factoryId : null
+  );
+
+  // Garante o cadastro de Colaborador no setor correto ao entrar no sistema
+  useAutoColaborador(
+    !impersonatingFactory ? user?.id ?? null : null,
+    !impersonatingFactory ? factoryId : null,
+    roles
   );
 
   return (
