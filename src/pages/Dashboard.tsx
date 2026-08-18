@@ -151,7 +151,14 @@ function getDailyMessage(userId: string) {
   return motivationalMessages[Math.abs(hash) % motivationalMessages.length];
 }
 
-export default function Dashboard() {
+interface DashboardProps {
+  /** "welcome" mostra só as boas-vindas; "content" só os widgets; "full" ambos. */
+  mode?: "full" | "welcome" | "content";
+}
+
+export default function Dashboard({ mode = "full" }: DashboardProps) {
+  const showWelcome = mode === "full" || mode === "welcome";
+  const showContent = mode === "full" || mode === "content";
   const navigate = useNavigate();
   const { user, factoryId, role } = useAuth();
   const [userName, setUserName] = useState("");
