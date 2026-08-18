@@ -114,7 +114,8 @@ const App = () => (
               <Route path="/super-admin" element={<SuperRoute><SuperAdmin /></SuperRoute>} />
 
               {/* Admin only routes */}
-              <Route path="/painel" element={<AdminRoute><Dashboard /></AdminRoute>} />
+              <Route path="/painel" element={<AdminRoute><Dashboard mode="welcome" /></AdminRoute>} />
+              <Route path="/painel/painel-vendas" element={<AdminRoute><Dashboard mode="content" /></AdminRoute>} />
               <Route path="/painel/vendas" element={<AdminRoute><Vendas /></AdminRoute>} />
               <Route path="/painel/faturamento" element={<AdminRoute><Faturamento /></AdminRoute>} />
               <Route path="/painel/vendedores" element={<AdminRoute><Vendedores /></AdminRoute>} />

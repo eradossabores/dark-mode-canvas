@@ -44,6 +44,7 @@ const menuGroups: MenuGroup[] = [
     label: "Principal",
     items: [
       { path: "/painel", label: "Dashboard", icon: LayoutDashboard },
+      { path: "/painel/painel-vendas", label: "Painel de Vendas", icon: BarChart3 },
     ],
   },
   {

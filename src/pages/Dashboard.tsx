@@ -151,7 +151,14 @@ function getDailyMessage(userId: string) {
   return motivationalMessages[Math.abs(hash) % motivationalMessages.length];
 }
 
-export default function Dashboard() {
+interface DashboardProps {
+  /** "welcome" mostra só as boas-vindas; "content" só os widgets; "full" ambos. */
+  mode?: "full" | "welcome" | "content";
+}
+
+export default function Dashboard({ mode = "full" }: DashboardProps) {
+  const showWelcome = mode === "full" || mode === "welcome";
+  const showContent = mode === "full" || mode === "content";
   const navigate = useNavigate();
   const { user, factoryId, role } = useAuth();
   const [userName, setUserName] = useState("");
@@ -391,6 +398,7 @@ export default function Dashboard() {
     <div className="relative space-y-4 sm:space-y-6 pb-8 w-full overflow-x-hidden">
       <GradientDots duration={30} colorCycleDuration={10} dotSize={5} spacing={14} className="opacity-15 pointer-events-none z-0 fixed" />
       {/* Animated Welcome Banner with Lamp Effect */}
+      {showWelcome && (
       <div className="mb-4 sm:mb-6 relative overflow-hidden rounded-xl sm:rounded-2xl border border-primary/20 bg-gradient-to-b from-background via-background to-primary/5">
         {/* Lamp glow effect - centered top (teal/cyan theme) */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -461,9 +469,11 @@ export default function Dashboard() {
           </motion.div>
         </div>
       </div>
+      )}
 
+      {showContent && (<>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold">Dashboard</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">Painel de Vendas</h1>
         
         {role === "vendedor" && (
           <div className="flex items-center gap-2">
@@ -1045,6 +1055,7 @@ export default function Dashboard() {
           <div className="relative"><GastosColaboradores factoryId={factoryId} /></div>
         </div>
       </div>
+      </>)}
     </div>
   );
 }
