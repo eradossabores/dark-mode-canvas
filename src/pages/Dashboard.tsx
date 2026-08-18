@@ -1055,6 +1055,7 @@ export default function Dashboard({ mode = "full" }: DashboardProps) {
           <div className="relative"><GastosColaboradores factoryId={factoryId} /></div>
         </div>
       </div>
+      </>)}
     </div>
   );
 }
