@@ -26,7 +26,6 @@ import { startOfMonth, endOfMonth, format, subMonths, setMonth } from "date-fns"
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
-const AJUDA_CUSTO_SEMANAL = 80;
 
 function calcularBonus(unidades: number) {
   if (unidades >= 2000) return 100;
@@ -227,16 +226,6 @@ export default function MinhasComissoes() {
 
   useEffect(() => { load(); }, [user?.id]);
   
-  const semanasNoMes = useMemo(() => {
-    const hoje = new Date();
-    const diaAtual = hoje.getDate();
-    if (diaAtual <= 7) return 1;
-    if (diaAtual <= 14) return 2;
-    if (diaAtual <= 21) return 3;
-    if (diaAtual <= 28) return 4;
-    return 5;
-  }, []);
-
   const totalComissao = useMemo(() => {
     return comissoes
       .filter(c => ["paga", "pago", "reposicao"].includes(c.status))
