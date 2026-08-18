@@ -151,14 +151,8 @@ function getDailyMessage(userId: string) {
   return motivationalMessages[Math.abs(hash) % motivationalMessages.length];
 }
 
-interface DashboardProps {
-  /** "welcome" mostra só as boas-vindas; "content" só os widgets; "full" ambos. */
-  mode?: "full" | "welcome" | "content";
-}
-
-export default function Dashboard({ mode = "full" }: DashboardProps) {
-  const showWelcome = mode === "full" || mode === "welcome";
-  const showContent = mode === "full" || mode === "content";
+export default function Dashboard() {
+  const showContent = true;
   const navigate = useNavigate();
   const { user, factoryId, role } = useAuth();
   const [userName, setUserName] = useState("");
@@ -397,80 +391,6 @@ export default function Dashboard({ mode = "full" }: DashboardProps) {
   return (
     <div className="relative space-y-4 sm:space-y-6 pb-8 w-full overflow-x-hidden">
       <GradientDots duration={30} colorCycleDuration={10} dotSize={5} spacing={14} className="opacity-15 pointer-events-none z-0 fixed" />
-      {/* Animated Welcome Banner with Lamp Effect */}
-      {showWelcome && (
-      <div className="mb-4 sm:mb-6 relative overflow-hidden rounded-xl sm:rounded-2xl border border-primary/20 bg-gradient-to-b from-background via-background to-primary/5">
-        {/* Lamp glow effect - centered top (teal/cyan theme) */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {/* Main conic rays - left */}
-          <motion.div
-            initial={{ opacity: 0, width: "6rem" }}
-            animate={{ opacity: 0.45, width: "22rem" }}
-            transition={{ delay: 0.1, duration: 1.2, ease: "easeOut" }}
-            style={{ backgroundImage: `conic-gradient(from 70deg at center top, hsl(174, 50%, 45%), transparent, transparent)` }}
-            className="absolute -top-4 right-1/2 h-28"
-          >
-            <div className="absolute w-full left-0 bg-background/80 h-16 bottom-0 [mask-image:linear-gradient(to_top,white,transparent)]" />
-            <div className="absolute w-16 h-full left-0 bg-background/80 bottom-0 [mask-image:linear-gradient(to_right,white,transparent)]" />
-          </motion.div>
-          {/* Main conic rays - right */}
-          <motion.div
-            initial={{ opacity: 0, width: "6rem" }}
-            animate={{ opacity: 0.45, width: "22rem" }}
-            transition={{ delay: 0.1, duration: 1.2, ease: "easeOut" }}
-            style={{ backgroundImage: `conic-gradient(from 290deg at center top, transparent, transparent, hsl(174, 50%, 45%))` }}
-            className="absolute -top-4 left-1/2 h-28"
-          >
-            <div className="absolute w-16 h-full right-0 bg-background/80 bottom-0 [mask-image:linear-gradient(to_left,white,transparent)]" />
-            <div className="absolute w-full right-0 bg-background/80 h-16 bottom-0 [mask-image:linear-gradient(to_top,white,transparent)]" />
-          </motion.div>
-          {/* Soft glow blob */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 0.25, scale: 1 }}
-            transition={{ delay: 0.3, duration: 1, ease: "easeOut" }}
-            className="absolute top-0 left-1/2 -translate-x-1/2 w-80 h-24 rounded-full blur-3xl"
-            style={{ background: "hsl(174, 45%, 45%)" }}
-          />
-          {/* Thin light bar */}
-          <motion.div
-            initial={{ width: "4rem", opacity: 0 }}
-            animate={{ width: "14rem", opacity: 0.6 }}
-            transition={{ delay: 0.2, duration: 1, ease: "easeOut" }}
-            className="absolute top-0 left-1/2 -translate-x-1/2 h-[2px]"
-            style={{ background: "linear-gradient(to right, transparent, hsl(174, 50%, 50%), transparent)" }}
-          />
-          {/* Bottom fade to blend */}
-          <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-background to-transparent" />
-        </div>
-
-        {/* Content */}
-        <div className="relative z-20 px-4 py-3 sm:px-6 sm:py-5">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35, duration: 0.5, ease: "easeOut" }}
-            className="space-y-1 sm:space-y-1.5"
-          >
-            <div className="flex items-center gap-2 sm:gap-2.5">
-              <span className="text-xl sm:text-2xl">{dailyMessage.emoji}</span>
-              <h2 className="text-base sm:text-lg font-bold text-foreground tracking-tight">
-                {getGreeting()}, <span className="text-primary">{userName || "Colaborador"}</span>!
-              </h2>
-            </div>
-            <p className="text-xs sm:text-sm text-muted-foreground max-w-lg leading-relaxed pl-8 sm:pl-[2.75rem]">
-              {dailyMessage.text}
-            </p>
-            <div className="pl-8 sm:pl-[2.75rem]">
-              <span className="text-[9px] sm:text-[10px] text-muted-foreground/50 tracking-wide uppercase">
-                {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
-              </span>
-            </div>
-          </motion.div>
-        </div>
-      </div>
-      )}
-
       {showContent && (<>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 sm:mb-6">
         <h1 className="text-xl sm:text-2xl font-bold">Painel de Vendas</h1>
