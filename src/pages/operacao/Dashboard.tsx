@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Route as RouteIcon, ClipboardCheck, Users, Package, Award, Target, AlertTriangle, PlayCircle } from "lucide-react";
+import { WelcomeBanner } from "@/components/WelcomeBanner";
 
 export default function OperacaoDashboard() {
   const { user, factoryId } = useAuth();
@@ -46,10 +47,8 @@ export default function OperacaoDashboard() {
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-4xl mx-auto">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold">Olá, {nome} 👋</h1>
-        <p className="text-muted-foreground">Resumo da sua operação hoje</p>
-      </div>
+      <WelcomeBanner />
+      <p className="text-muted-foreground">Resumo da sua operação hoje</p>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <ResumoCard icon={<Package className="h-5 w-5" />} label="Entregas" value={resumo.entregas} />
