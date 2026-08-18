@@ -128,7 +128,7 @@ export default function DashboardVendedor() {
 
     // Profile
     const { data: prof } = await (supabase as any).from("profiles").select("nome").eq("id", user.id).maybeSingle();
-    setNome(prof?.nome === "Yuri" ? "Iury" : (prof?.nome || "Iury"));
+    setNome(prof?.nome || user.email?.split("@")[0] || "Vendedor");
 
     // Vínculos
     const { data: vinculos } = await (supabase as any)
