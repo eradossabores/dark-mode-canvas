@@ -26,7 +26,6 @@ import { startOfMonth, endOfMonth, format, subMonths, setMonth } from "date-fns"
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
-const AJUDA_CUSTO_SEMANAL = 80;
 
 function calcularBonus(unidades: number) {
   if (unidades >= 2000) return 100;
@@ -227,16 +226,6 @@ export default function MinhasComissoes() {
 
   useEffect(() => { load(); }, [user?.id]);
   
-  const semanasNoMes = useMemo(() => {
-    const hoje = new Date();
-    const diaAtual = hoje.getDate();
-    if (diaAtual <= 7) return 1;
-    if (diaAtual <= 14) return 2;
-    if (diaAtual <= 21) return 3;
-    if (diaAtual <= 28) return 4;
-    return 5;
-  }, []);
-
   const totalComissao = useMemo(() => {
     return comissoes
       .filter(c => ["paga", "pago", "reposicao"].includes(c.status))
@@ -244,8 +233,7 @@ export default function MinhasComissoes() {
   }, [comissoes]);
 
   const bonusMeta = calcularBonus(unidadesMes);
-  const ajudaCusto = AJUDA_CUSTO_SEMANAL * semanasNoMes; 
-  const totalGeral = totalComissao + bonusMeta + bonusFidelizacao + ajudaCusto;
+  const totalGeral = totalComissao + bonusMeta + bonusFidelizacao;
 
   const meta1 = 1000;
   const meta2 = 2000;
@@ -305,7 +293,7 @@ export default function MinhasComissoes() {
           },
           { label: "Comissões", value: `R$ ${totalComissao.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}`, sub: <p className="text-[10px] uppercase font-bold text-muted-foreground/60">{comissoes.length} vendas pagas</p>, icon: Receipt, color: "text-green-500", bg: "bg-green-50" },
           { label: "Bônus Fidelidade", value: `R$ ${bonusFidelizacao.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}`, sub: <p className="text-[10px] uppercase font-bold text-muted-foreground/60">Recompras</p>, icon: Award, color: "text-amber-500", bg: "bg-amber-50" },
-          { label: "Ajuda de Custo", value: `R$ ${ajudaCusto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}`, sub: <p className="text-[10px] uppercase font-bold text-muted-foreground/60">{semanasNoMes} {semanasNoMes === 1 ? 'semana' : 'semanas'}</p>, icon: Wallet, color: "text-rose-500", bg: "bg-rose-50" },
+          { label: "Bônus Meta", value: `R$ ${bonusMeta.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}`, sub: <p className="text-[10px] uppercase font-bold text-muted-foreground/60">{unidadesMes} un no mês</p>, icon: Award, color: "text-rose-500", bg: "bg-rose-50" },
         ].map((item, i) => (
           <Card key={i} className="overflow-hidden border-none shadow-md hover:shadow-xl transition-all duration-300 group">
             <CardContent className="p-5">
