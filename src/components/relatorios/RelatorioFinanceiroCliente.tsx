@@ -303,6 +303,7 @@ export default function RelatorioFinanceiroCliente() {
         <TabsList>
           <TabsTrigger value="individual" className="gap-2"><User className="h-4 w-4" /> Individual</TabsTrigger>
           <TabsTrigger value="inadimplencia" className="gap-2"><AlertTriangle className="h-4 w-4" /> Inadimplência</TabsTrigger>
+          <TabsTrigger value="cobranca" className="gap-2"><Send className="h-4 w-4" /> Cobrança em Massa</TabsTrigger>
         </TabsList>
 
         <TabsContent value="individual" className="space-y-4">
