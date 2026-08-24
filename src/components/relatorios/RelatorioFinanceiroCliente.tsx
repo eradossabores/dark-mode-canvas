@@ -193,22 +193,58 @@ export default function RelatorioFinanceiroCliente() {
 
   // Detalhamento por cliente com saldo pendente (usado na cobrança em massa)
   const inadimplentesDetalhado = useMemo(() => {
-    const map: Record<string, { cliente: Cliente; saldo: number; abertas: number; comandas: { numero: string; data: string; venc: string | null; saldo: number }[] }> = {};
+    type ComandaDet = {
+      numero: string;
+      data: string;
+      venc: string | null;
+      unidades: number;
+      valorOriginal: number;
+      desconto: number;
+      pago: number;
+      saldo: number;
+    };
+    const map: Record<
+      string,
+      {
+        cliente: Cliente;
+        saldo: number;
+        abertas: number;
+        unidades: number;
+        totalOriginal: number;
+        descontos: number;
+        pagos: number;
+        comandas: ComandaDet[];
+      }
+    > = {};
     vendas.forEach((v) => {
       if (v.status === "paga") return;
       const pagoAbat = (abatPorVenda[v.id] || []).reduce((s, a) => s + Number(a.valor || 0), 0);
       const pago = Math.max(pagoAbat, Number(v.valor_pago || 0));
-      const saldo = Math.max(0, Number(v.total || 0) - pago);
+      const valorAtual = Number(v.total || 0);
+      const saldo = Math.max(0, valorAtual - pago);
       if (saldo <= 0) return;
       const c = clientes.find((x) => x.id === v.cliente_id);
       if (!c) return;
-      if (!map[c.id]) map[c.id] = { cliente: c, saldo: 0, abertas: 0, comandas: [] };
+      // valor_original nunca deve ser menor que o total atual (anomalia de conversão fiado)
+      const valorOriginal = Math.max(Number(v.valor_original ?? valorAtual), valorAtual);
+      const desconto = Math.max(0, valorOriginal - valorAtual);
+      const unidades = unidadesPorVenda[v.id] || 0;
+      if (!map[c.id])
+        map[c.id] = { cliente: c, saldo: 0, abertas: 0, unidades: 0, totalOriginal: 0, descontos: 0, pagos: 0, comandas: [] };
       map[c.id].saldo += saldo;
       map[c.id].abertas += 1;
+      map[c.id].unidades += unidades;
+      map[c.id].totalOriginal += valorOriginal;
+      map[c.id].descontos += desconto;
+      map[c.id].pagos += pago;
       map[c.id].comandas.push({
         numero: `#${v.numero_pedido ?? v.id.slice(0, 6)}`,
         data: dt(v.created_at),
         venc: v.data_vencimento,
+        unidades,
+        valorOriginal,
+        desconto,
+        pago,
         saldo,
       });
     });
