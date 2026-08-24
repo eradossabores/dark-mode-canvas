@@ -68,6 +68,7 @@ const menuGroups: MenuGroup[] = [
       { path: "/painel/faturamento", label: "Faturamento", icon: TrendingUp },
       { path: "/painel/vendedores", label: "Vendedores", icon: UserCog },
       { path: "/painel/a-receber", label: "A Receber", icon: DollarSign },
+      { path: "/painel/cobranca", label: "Cobrança em Massa", icon: Send },
       { path: "/painel/contas-a-pagar", label: "Contas a Pagar", icon: ClipboardList },
       { path: "/painel/compras", label: "Compras", icon: ShoppingBag },
       { path: "/painel/prospeccao", label: "Prospecção", icon: Target },
