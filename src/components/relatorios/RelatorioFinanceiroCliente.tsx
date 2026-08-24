@@ -74,6 +74,31 @@ export default function RelatorioFinanceiroCliente() {
   const [searchInad, setSearchInad] = useState("");
   const [enviados, setEnviados] = useState<Record<string, boolean>>({});
   const [selecionados, setSelecionados] = useState<Record<string, boolean>>({});
+  const [previaAberta, setPreviaAberta] = useState(false);
+  const [confirmado, setConfirmado] = useState(false);
+
+  const segunda = segundaDaSemana();
+  const chaveSemana = `cobranca_confirmada_${factoryId || "sem-fabrica"}_${semanaKey(segunda)}`;
+
+  // Confirmação é válida apenas para a semana corrente (reabre o dry-run toda segunda).
+  useEffect(() => {
+    try {
+      setConfirmado(localStorage.getItem(chaveSemana) === "1");
+    } catch {
+      setConfirmado(false);
+    }
+  }, [chaveSemana]);
+
+  function confirmarEnvio() {
+    try { localStorage.setItem(chaveSemana, "1"); } catch { /* storage indisponível */ }
+    setConfirmado(true);
+  }
+
+  function reabrirPrevia() {
+    try { localStorage.removeItem(chaveSemana); } catch { /* storage indisponível */ }
+    setConfirmado(false);
+    setEnviados({});
+  }
 
   useEffect(() => {
     if (!factoryId) return;
