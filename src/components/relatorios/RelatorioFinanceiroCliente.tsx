@@ -152,8 +152,9 @@ export default function RelatorioFinanceiroCliente() {
     return { totalComandas, totalVendido, totalOriginal, totalPago, totalDescontos, totalAbatimentos, saldoDevedor, comandasEmAberto, consistente };
   }, [vendasCliente]);
 
-  const inadimplentes = useMemo(() => {
-    const map: Record<string, { cliente: Cliente; saldo: number; abertas: number }> = {};
+  // Detalhamento por cliente com saldo pendente (usado na cobrança em massa)
+  const inadimplentesDetalhado = useMemo(() => {
+    const map: Record<string, { cliente: Cliente; saldo: number; abertas: number; comandas: { numero: string; data: string; venc: string | null; saldo: number }[] }> = {};
     vendas.forEach((v) => {
       if (v.status === "paga") return;
       const pagoAbat = (abatPorVenda[v.id] || []).reduce((s, a) => s + Number(a.valor || 0), 0);
@@ -162,14 +163,66 @@ export default function RelatorioFinanceiroCliente() {
       if (saldo <= 0) return;
       const c = clientes.find((x) => x.id === v.cliente_id);
       if (!c) return;
-      if (!map[c.id]) map[c.id] = { cliente: c, saldo: 0, abertas: 0 };
+      if (!map[c.id]) map[c.id] = { cliente: c, saldo: 0, abertas: 0, comandas: [] };
       map[c.id].saldo += saldo;
       map[c.id].abertas += 1;
+      map[c.id].comandas.push({
+        numero: `#${v.numero_pedido ?? v.id.slice(0, 6)}`,
+        data: dt(v.created_at),
+        venc: v.data_vencimento,
+        saldo,
+      });
     });
     return Object.values(map)
-      .filter((x) => !searchInad || x.cliente.nome.toLowerCase().includes(searchInad.toLowerCase()))
+      .map((x) => ({ ...x, comandas: x.comandas.sort((a, b) => a.numero.localeCompare(b.numero)) }))
       .sort((a, b) => b.saldo - a.saldo);
-  }, [vendas, abatPorVenda, clientes, searchInad]);
+  }, [vendas, abatPorVenda, clientes]);
+
+  const inadimplentes = useMemo(
+    () => inadimplentesDetalhado.filter((x) => !searchInad || x.cliente.nome.toLowerCase().includes(searchInad.toLowerCase())),
+    [inadimplentesDetalhado, searchInad],
+  );
+
+  // ---------- Cobrança em massa ----------
+  function buildMensagemCobranca(item: (typeof inadimplentesDetalhado)[number]) {
+    const hoje = new Date().toLocaleDateString("pt-BR");
+    const linhas = [
+      `Olá, ${item.cliente.nome}! 👋`,
+      "",
+      `Segue seu *resumo financeiro* atualizado em ${hoje}:`,
+      "",
+      ...item.comandas.map((c) => `• ${c.numero} — ${c.data}${c.venc ? ` (vence ${dt(c.venc)})` : ""}: ${brl(c.saldo)}`),
+      "",
+      `❗ *Saldo devedor total: ${brl(item.saldo)}* (${item.abertas} comanda(s) em aberto)`,
+      "",
+      "Qualquer dúvida estamos à disposição. Obrigado! 🙏",
+    ];
+    return linhas.join("\n");
+  }
+
+  function abrirWhatsApp(item: (typeof inadimplentesDetalhado)[number]) {
+    const telefone = (item.cliente.telefone || "").replace(/\D/g, "");
+    const base = telefone ? `https://wa.me/55${telefone}` : "https://wa.me/";
+    window.open(`${base}?text=${encodeURIComponent(buildMensagemCobranca(item))}`, "_blank");
+    setEnviados((p) => ({ ...p, [item.cliente.id]: true }));
+  }
+
+  function pdfCobranca(item: (typeof inadimplentesDetalhado)[number]) {
+    exportToPDF(
+      `Relatório Financeiro - ${item.cliente.nome}`,
+      ["Comanda", "Data", "Vencimento", "Saldo"],
+      item.comandas.map((c) => [c.numero, c.data, dt(c.venc), brl(c.saldo)]),
+      `financeiro_${item.cliente.nome.replace(/\s+/g, "_")}`,
+      [
+        { label: "Comandas em aberto", value: String(item.abertas) },
+        { label: "Saldo Devedor", value: brl(item.saldo) },
+      ],
+      undefined,
+      undefined,
+      [{ label: "(=) Saldo Devedor", value: brl(item.saldo) }],
+    );
+  }
+
 
   function buildRows() {
     const headers = ["Comanda", "Data", "Unid.", "Status", "Valor Original", "Desconto", "Abatimentos", "Saldo Devedor"];
