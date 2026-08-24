@@ -61,7 +61,7 @@ const semanaKey = (d = segundaDaSemana()) => d.toISOString().slice(0, 10);
 
 
 export default function RelatorioFinanceiroCliente() {
-  const { factoryId } = useAuth();
+  const { factoryId, factoryName, branding } = useAuth();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [vendas, setVendas] = useState<Venda[]>([]);
   const [abatimentos, setAbatimentos] = useState<Abatimento[]>([]);
