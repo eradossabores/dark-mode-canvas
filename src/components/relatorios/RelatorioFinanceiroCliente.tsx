@@ -49,6 +49,17 @@ type Cliente = {
 const brl = (n: number) => (n || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const dt = (s: string | null) => (s ? new Date(s).toLocaleDateString("pt-BR") : "—");
 
+/** Segunda-feira da semana corrente (referência do disparo semanal). */
+function segundaDaSemana(base = new Date()) {
+  const d = new Date(base);
+  d.setHours(0, 0, 0, 0);
+  const diff = (d.getDay() + 6) % 7; // 0 = segunda
+  d.setDate(d.getDate() - diff);
+  return d;
+}
+const semanaKey = (d = segundaDaSemana()) => d.toISOString().slice(0, 10);
+
+
 export default function RelatorioFinanceiroCliente() {
   const { factoryId } = useAuth();
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -63,6 +74,31 @@ export default function RelatorioFinanceiroCliente() {
   const [searchInad, setSearchInad] = useState("");
   const [enviados, setEnviados] = useState<Record<string, boolean>>({});
   const [selecionados, setSelecionados] = useState<Record<string, boolean>>({});
+  const [previaAberta, setPreviaAberta] = useState(false);
+  const [confirmado, setConfirmado] = useState(false);
+
+  const segunda = segundaDaSemana();
+  const chaveSemana = `cobranca_confirmada_${factoryId || "sem-fabrica"}_${semanaKey(segunda)}`;
+
+  // Confirmação é válida apenas para a semana corrente (reabre o dry-run toda segunda).
+  useEffect(() => {
+    try {
+      setConfirmado(localStorage.getItem(chaveSemana) === "1");
+    } catch {
+      setConfirmado(false);
+    }
+  }, [chaveSemana]);
+
+  function confirmarEnvio() {
+    try { localStorage.setItem(chaveSemana, "1"); } catch { /* storage indisponível */ }
+    setConfirmado(true);
+  }
+
+  function reabrirPrevia() {
+    try { localStorage.removeItem(chaveSemana); } catch { /* storage indisponível */ }
+    setConfirmado(false);
+    setEnviados({});
+  }
 
   useEffect(() => {
     if (!factoryId) return;
@@ -187,6 +223,17 @@ export default function RelatorioFinanceiroCliente() {
   );
 
   // ---------- Cobrança em massa ----------
+  /** Itens que entram na rodada: seleção manual quando houver, senão todos os pendentes. */
+  const previaItens = useMemo(() => {
+    const marcados = inadimplentesDetalhado.filter((x) => selecionados[x.cliente.id]);
+    return marcados.length > 0 ? marcados : inadimplentesDetalhado;
+  }, [inadimplentesDetalhado, selecionados]);
+
+  const semTelefone = useMemo(
+    () => previaItens.filter((x) => !(x.cliente.telefone || "").replace(/\D/g, "")),
+    [previaItens],
+  );
+
   function buildMensagemCobranca(item: (typeof inadimplentesDetalhado)[number]) {
     const hoje = new Date().toLocaleDateString("pt-BR");
     const linhas = [
@@ -204,6 +251,8 @@ export default function RelatorioFinanceiroCliente() {
   }
 
   function abrirWhatsApp(item: (typeof inadimplentesDetalhado)[number]) {
+    // Dry-run: nada é aberto/enviado antes da confirmação da prévia semanal.
+    if (!confirmado) return;
     const telefone = (item.cliente.telefone || "").replace(/\D/g, "");
     const base = telefone ? `https://wa.me/55${telefone}` : "https://wa.me/";
     window.open(`${base}?text=${encodeURIComponent(buildMensagemCobranca(item))}`, "_blank");
@@ -494,6 +543,67 @@ export default function RelatorioFinanceiroCliente() {
         </TabsContent>
 
         <TabsContent value="cobranca" className="space-y-4">
+          {/* Dry-run: prévia obrigatória da rodada semanal antes de liberar os envios */}
+          <Card className={confirmado ? "border-emerald-600/50" : "border-amber-500/60"}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                {confirmado ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <AlertTriangle className="h-4 w-4 text-amber-500" />}
+                Disparo da semana de {segunda.toLocaleDateString("pt-BR")}
+                <Badge variant={confirmado ? "default" : "secondary"}>
+                  {confirmado ? "Envio liberado" : "Prévia (dry-run)"}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="text-sm text-muted-foreground">
+                {confirmado
+                  ? "Você já revisou e confirmou esta rodada. Os envios estão liberados até a próxima segunda-feira."
+                  : "Revise abaixo os clientes e as mensagens que seriam enviadas. Nada é disparado enquanto você não confirmar."}
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                <div><div className="text-xs text-muted-foreground">Clientes na fila</div><div className="font-bold">{previaItens.length}</div></div>
+                <div><div className="text-xs text-muted-foreground">Comandas em aberto</div><div className="font-bold">{previaItens.reduce((s, x) => s + x.abertas, 0)}</div></div>
+                <div><div className="text-xs text-muted-foreground">Total a cobrar</div><div className="font-bold text-destructive">{brl(previaItens.reduce((s, x) => s + x.saldo, 0))}</div></div>
+                <div><div className="text-xs text-muted-foreground">Sem telefone</div><div className="font-bold text-amber-600">{semTelefone.length}</div></div>
+              </div>
+              {semTelefone.length > 0 && (
+                <div className="text-xs text-amber-600">
+                  Sem telefone cadastrado: {semTelefone.map((x) => x.cliente.nome).join(", ")}
+                </div>
+              )}
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" onClick={() => setPreviaAberta((p) => !p)}>
+                  {previaAberta ? "Ocultar mensagens" : "Ver mensagens da prévia"}
+                </Button>
+                {!confirmado ? (
+                  <Button size="sm" onClick={confirmarEnvio} disabled={previaItens.length === 0}>
+                    <CheckCircle2 className="h-4 w-4 mr-1" /> Confirmar e liberar envio
+                  </Button>
+                ) : (
+                  <Button size="sm" variant="outline" onClick={reabrirPrevia}>
+                    <RotateCcw className="h-4 w-4 mr-1" /> Voltar para a prévia
+                  </Button>
+                )}
+              </div>
+
+              {previaAberta && (
+                <div className="space-y-2 max-h-96 overflow-y-auto rounded-md border p-2">
+                  {previaItens.map((x) => (
+                    <div key={x.cliente.id} className="rounded-md bg-muted/40 p-2">
+                      <div className="text-xs font-medium mb-1">
+                        {x.cliente.nome} · {x.cliente.telefone || "sem telefone"}
+                      </div>
+                      <pre className="text-xs whitespace-pre-wrap font-sans text-muted-foreground">{buildMensagemCobranca(x)}</pre>
+                    </div>
+                  ))}
+                  {previaItens.length === 0 && (
+                    <div className="text-center text-sm text-muted-foreground py-4">Nenhuma pendência para esta semana.</div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardContent className="p-4 space-y-3">
               <div className="text-sm text-muted-foreground">
@@ -567,6 +677,8 @@ export default function RelatorioFinanceiroCliente() {
                       size="sm"
                       className="bg-emerald-600 text-primary-foreground hover:bg-emerald-700"
                       onClick={() => abrirWhatsApp(x)}
+                      disabled={!confirmado}
+                      title={confirmado ? "Enviar cobrança" : "Confirme a prévia da semana para liberar o envio"}
                     >
                       <MessageCircle className="h-4 w-4 mr-1" /> WhatsApp
                     </Button>
