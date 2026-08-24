@@ -286,7 +286,11 @@ export async function exportToPDF(
     doc.setTextColor(0);
   }
 
+  if (options?.save === false) {
+    return doc;
+  }
   doc.save(`${filename}.pdf`);
+  return doc;
 }
 
 export function exportToExcel(
