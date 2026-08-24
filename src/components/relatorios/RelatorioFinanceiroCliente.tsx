@@ -223,6 +223,17 @@ export default function RelatorioFinanceiroCliente() {
   );
 
   // ---------- Cobrança em massa ----------
+  /** Itens que entram na rodada: seleção manual quando houver, senão todos os pendentes. */
+  const previaItens = useMemo(() => {
+    const marcados = inadimplentesDetalhado.filter((x) => selecionados[x.cliente.id]);
+    return marcados.length > 0 ? marcados : inadimplentesDetalhado;
+  }, [inadimplentesDetalhado, selecionados]);
+
+  const semTelefone = useMemo(
+    () => previaItens.filter((x) => !(x.cliente.telefone || "").replace(/\D/g, "")),
+    [previaItens],
+  );
+
   function buildMensagemCobranca(item: (typeof inadimplentesDetalhado)[number]) {
     const hoje = new Date().toLocaleDateString("pt-BR");
     const linhas = [
