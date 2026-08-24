@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { FileText, FileSpreadsheet, Printer, AlertTriangle, User, Wallet, Receipt, TrendingDown, MessageCircle } from "lucide-react";
+import { FileText, FileSpreadsheet, Printer, AlertTriangle, User, Wallet, Receipt, TrendingDown, MessageCircle, Send, CheckCircle2, RotateCcw } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { exportToPDF, exportToExcel } from "@/lib/export-utils";
 import DateRangeFilter from "@/components/relatorios/DateRangeFilter";
 import KpiCard from "@/components/relatorios/KpiCard";
@@ -60,6 +61,8 @@ export default function RelatorioFinanceiroCliente() {
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [situacaoFilter, setSituacaoFilter] = useState<string>("todos");
   const [searchInad, setSearchInad] = useState("");
+  const [enviados, setEnviados] = useState<Record<string, boolean>>({});
+  const [selecionados, setSelecionados] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (!factoryId) return;
@@ -152,8 +155,9 @@ export default function RelatorioFinanceiroCliente() {
     return { totalComandas, totalVendido, totalOriginal, totalPago, totalDescontos, totalAbatimentos, saldoDevedor, comandasEmAberto, consistente };
   }, [vendasCliente]);
 
-  const inadimplentes = useMemo(() => {
-    const map: Record<string, { cliente: Cliente; saldo: number; abertas: number }> = {};
+  // Detalhamento por cliente com saldo pendente (usado na cobrança em massa)
+  const inadimplentesDetalhado = useMemo(() => {
+    const map: Record<string, { cliente: Cliente; saldo: number; abertas: number; comandas: { numero: string; data: string; venc: string | null; saldo: number }[] }> = {};
     vendas.forEach((v) => {
       if (v.status === "paga") return;
       const pagoAbat = (abatPorVenda[v.id] || []).reduce((s, a) => s + Number(a.valor || 0), 0);
@@ -162,14 +166,66 @@ export default function RelatorioFinanceiroCliente() {
       if (saldo <= 0) return;
       const c = clientes.find((x) => x.id === v.cliente_id);
       if (!c) return;
-      if (!map[c.id]) map[c.id] = { cliente: c, saldo: 0, abertas: 0 };
+      if (!map[c.id]) map[c.id] = { cliente: c, saldo: 0, abertas: 0, comandas: [] };
       map[c.id].saldo += saldo;
       map[c.id].abertas += 1;
+      map[c.id].comandas.push({
+        numero: `#${v.numero_pedido ?? v.id.slice(0, 6)}`,
+        data: dt(v.created_at),
+        venc: v.data_vencimento,
+        saldo,
+      });
     });
     return Object.values(map)
-      .filter((x) => !searchInad || x.cliente.nome.toLowerCase().includes(searchInad.toLowerCase()))
+      .map((x) => ({ ...x, comandas: x.comandas.sort((a, b) => a.numero.localeCompare(b.numero)) }))
       .sort((a, b) => b.saldo - a.saldo);
-  }, [vendas, abatPorVenda, clientes, searchInad]);
+  }, [vendas, abatPorVenda, clientes]);
+
+  const inadimplentes = useMemo(
+    () => inadimplentesDetalhado.filter((x) => !searchInad || x.cliente.nome.toLowerCase().includes(searchInad.toLowerCase())),
+    [inadimplentesDetalhado, searchInad],
+  );
+
+  // ---------- Cobrança em massa ----------
+  function buildMensagemCobranca(item: (typeof inadimplentesDetalhado)[number]) {
+    const hoje = new Date().toLocaleDateString("pt-BR");
+    const linhas = [
+      `Olá, ${item.cliente.nome}! 👋`,
+      "",
+      `Segue seu *resumo financeiro* atualizado em ${hoje}:`,
+      "",
+      ...item.comandas.map((c) => `• ${c.numero} — ${c.data}${c.venc ? ` (vence ${dt(c.venc)})` : ""}: ${brl(c.saldo)}`),
+      "",
+      `❗ *Saldo devedor total: ${brl(item.saldo)}* (${item.abertas} comanda(s) em aberto)`,
+      "",
+      "Qualquer dúvida estamos à disposição. Obrigado! 🙏",
+    ];
+    return linhas.join("\n");
+  }
+
+  function abrirWhatsApp(item: (typeof inadimplentesDetalhado)[number]) {
+    const telefone = (item.cliente.telefone || "").replace(/\D/g, "");
+    const base = telefone ? `https://wa.me/55${telefone}` : "https://wa.me/";
+    window.open(`${base}?text=${encodeURIComponent(buildMensagemCobranca(item))}`, "_blank");
+    setEnviados((p) => ({ ...p, [item.cliente.id]: true }));
+  }
+
+  function pdfCobranca(item: (typeof inadimplentesDetalhado)[number]) {
+    exportToPDF(
+      `Relatório Financeiro - ${item.cliente.nome}`,
+      ["Comanda", "Data", "Vencimento", "Saldo"],
+      item.comandas.map((c) => [c.numero, c.data, dt(c.venc), brl(c.saldo)]),
+      `financeiro_${item.cliente.nome.replace(/\s+/g, "_")}`,
+      [
+        { label: "Comandas em aberto", value: String(item.abertas) },
+        { label: "Saldo Devedor", value: brl(item.saldo) },
+      ],
+      undefined,
+      undefined,
+      [{ label: "(=) Saldo Devedor", value: brl(item.saldo) }],
+    );
+  }
+
 
   function buildRows() {
     const headers = ["Comanda", "Data", "Unid.", "Status", "Valor Original", "Desconto", "Abatimentos", "Saldo Devedor"];
@@ -248,6 +304,7 @@ export default function RelatorioFinanceiroCliente() {
         <TabsList>
           <TabsTrigger value="individual" className="gap-2"><User className="h-4 w-4" /> Individual</TabsTrigger>
           <TabsTrigger value="inadimplencia" className="gap-2"><AlertTriangle className="h-4 w-4" /> Inadimplência</TabsTrigger>
+          <TabsTrigger value="cobranca" className="gap-2"><Send className="h-4 w-4" /> Cobrança em Massa</TabsTrigger>
         </TabsList>
 
         <TabsContent value="individual" className="space-y-4">
@@ -435,6 +492,107 @@ export default function RelatorioFinanceiroCliente() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="cobranca" className="space-y-4">
+          <Card>
+            <CardContent className="p-4 space-y-3">
+              <div className="text-sm text-muted-foreground">
+                Fila de cobrança semanal — {inadimplentesDetalhado.length} cliente(s) pendente(s), total{" "}
+                <span className="font-bold text-foreground">{brl(inadimplentesDetalhado.reduce((s, x) => s + x.saldo, 0))}</span>.
+                Marque os clientes e envie um a um; cada mensagem já vem pronta com as comandas em aberto.
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    setSelecionados(Object.fromEntries(inadimplentesDetalhado.map((x) => [x.cliente.id, true])))
+                  }
+                >
+                  Selecionar todos
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setSelecionados({})}>Limpar seleção</Button>
+                <Button size="sm" variant="outline" onClick={() => setEnviados({})}>
+                  <RotateCcw className="h-4 w-4 mr-1" /> Reiniciar fila
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    inadimplentesDetalhado.filter((x) => selecionados[x.cliente.id]).forEach(pdfCobranca)
+                  }
+                >
+                  <FileText className="h-4 w-4 mr-1" /> Baixar PDFs selecionados
+                </Button>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Enviados nesta sessão: {Object.values(enviados).filter(Boolean).length} / {inadimplentesDetalhado.length}
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            {inadimplentesDetalhado.map((x) => (
+              <Card key={x.cliente.id} className={enviados[x.cliente.id] ? "border-emerald-600/50" : undefined}>
+                <CardContent className="p-4 space-y-2">
+                  <div className="flex items-start gap-2">
+                    <Checkbox
+                      checked={!!selecionados[x.cliente.id]}
+                      onCheckedChange={(c) => setSelecionados((p) => ({ ...p, [x.cliente.id]: !!c }))}
+                      className="mt-1"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium flex items-center gap-2">
+                        <span className="truncate">{x.cliente.nome}</span>
+                        {enviados[x.cliente.id] && <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {x.cliente.telefone || "sem telefone"} · {x.abertas} comanda(s)
+                      </div>
+                    </div>
+                    <div className="text-right font-bold text-destructive whitespace-nowrap">{brl(x.saldo)}</div>
+                  </div>
+
+                  <div className="text-xs text-muted-foreground space-y-0.5 pl-7">
+                    {x.comandas.slice(0, 4).map((c) => (
+                      <div key={c.numero} className="flex justify-between">
+                        <span>{c.numero} — {c.data}</span>
+                        <span>{brl(c.saldo)}</span>
+                      </div>
+                    ))}
+                    {x.comandas.length > 4 && <div>+ {x.comandas.length - 4} comanda(s)…</div>}
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 pl-7">
+                    <Button
+                      size="sm"
+                      className="bg-emerald-600 text-primary-foreground hover:bg-emerald-700"
+                      onClick={() => abrirWhatsApp(x)}
+                    >
+                      <MessageCircle className="h-4 w-4 mr-1" /> WhatsApp
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => pdfCobranca(x)}>
+                      <FileText className="h-4 w-4 mr-1" /> PDF
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => navigator.clipboard.writeText(buildMensagemCobranca(x))}
+                    >
+                      Copiar texto
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setSelectedClienteId(x.cliente.id)}>
+                      Detalhes
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            {inadimplentesDetalhado.length === 0 && (
+              <Card><CardContent className="p-6 text-center text-muted-foreground">Nenhuma pendência 🎉</CardContent></Card>
+            )}
+          </div>
+        </TabsContent>
+
       </Tabs>
     </div>
   );
