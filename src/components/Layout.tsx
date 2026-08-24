@@ -6,7 +6,7 @@ import {
   ShoppingBag, Database, LogOut, Shield, Brain, MapPin, Map, Target,
   HardDrive, UserCheck, Crown, MessageCircle, Settings, CalendarDays,
   ChevronDown, ChevronRight, Menu, X, PanelLeftClose, PanelLeftOpen, Wallet, History, TrendingUp, Home
-  , UserX, Route as RouteIcon, Camera, ClipboardCheck, AlertTriangle, Award, Truck
+  , UserX, Route as RouteIcon, Camera, ClipboardCheck, AlertTriangle, Award, Truck, Send
 } from "lucide-react";
 import PaymentBanner from "@/components/PaymentBanner";
 import { cn } from "@/lib/utils";
