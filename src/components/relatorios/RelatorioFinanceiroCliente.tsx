@@ -49,6 +49,17 @@ type Cliente = {
 const brl = (n: number) => (n || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const dt = (s: string | null) => (s ? new Date(s).toLocaleDateString("pt-BR") : "—");
 
+/** Segunda-feira da semana corrente (referência do disparo semanal). */
+function segundaDaSemana(base = new Date()) {
+  const d = new Date(base);
+  d.setHours(0, 0, 0, 0);
+  const diff = (d.getDay() + 6) % 7; // 0 = segunda
+  d.setDate(d.getDate() - diff);
+  return d;
+}
+const semanaKey = (d = segundaDaSemana()) => d.toISOString().slice(0, 10);
+
+
 export default function RelatorioFinanceiroCliente() {
   const { factoryId } = useAuth();
   const [clientes, setClientes] = useState<Cliente[]>([]);
