@@ -60,7 +60,7 @@ function segundaDaSemana(base = new Date()) {
 const semanaKey = (d = segundaDaSemana()) => d.toISOString().slice(0, 10);
 
 
-export default function RelatorioFinanceiroCliente() {
+export default function RelatorioFinanceiroCliente({ initialTab = "individual" }: { initialTab?: string }) {
   const { factoryId, factoryName, branding } = useAuth();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [vendas, setVendas] = useState<Venda[]>([]);
@@ -404,7 +404,7 @@ export default function RelatorioFinanceiroCliente() {
 
   return (
     <div className="space-y-4">
-      <Tabs defaultValue="individual">
+      <Tabs defaultValue={initialTab}>
         <TabsList>
           <TabsTrigger value="individual" className="gap-2"><User className="h-4 w-4" /> Individual</TabsTrigger>
           <TabsTrigger value="inadimplencia" className="gap-2"><AlertTriangle className="h-4 w-4" /> Inadimplência</TabsTrigger>
