@@ -492,6 +492,107 @@ export default function RelatorioFinanceiroCliente() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="cobranca" className="space-y-4">
+          <Card>
+            <CardContent className="p-4 space-y-3">
+              <div className="text-sm text-muted-foreground">
+                Fila de cobrança semanal — {inadimplentesDetalhado.length} cliente(s) pendente(s), total{" "}
+                <span className="font-bold text-foreground">{brl(inadimplentesDetalhado.reduce((s, x) => s + x.saldo, 0))}</span>.
+                Marque os clientes e envie um a um; cada mensagem já vem pronta com as comandas em aberto.
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    setSelecionados(Object.fromEntries(inadimplentesDetalhado.map((x) => [x.cliente.id, true])))
+                  }
+                >
+                  Selecionar todos
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setSelecionados({})}>Limpar seleção</Button>
+                <Button size="sm" variant="outline" onClick={() => setEnviados({})}>
+                  <RotateCcw className="h-4 w-4 mr-1" /> Reiniciar fila
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    inadimplentesDetalhado.filter((x) => selecionados[x.cliente.id]).forEach(pdfCobranca)
+                  }
+                >
+                  <FileText className="h-4 w-4 mr-1" /> Baixar PDFs selecionados
+                </Button>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Enviados nesta sessão: {Object.values(enviados).filter(Boolean).length} / {inadimplentesDetalhado.length}
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            {inadimplentesDetalhado.map((x) => (
+              <Card key={x.cliente.id} className={enviados[x.cliente.id] ? "border-emerald-600/50" : undefined}>
+                <CardContent className="p-4 space-y-2">
+                  <div className="flex items-start gap-2">
+                    <Checkbox
+                      checked={!!selecionados[x.cliente.id]}
+                      onCheckedChange={(c) => setSelecionados((p) => ({ ...p, [x.cliente.id]: !!c }))}
+                      className="mt-1"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium flex items-center gap-2">
+                        <span className="truncate">{x.cliente.nome}</span>
+                        {enviados[x.cliente.id] && <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {x.cliente.telefone || "sem telefone"} · {x.abertas} comanda(s)
+                      </div>
+                    </div>
+                    <div className="text-right font-bold text-destructive whitespace-nowrap">{brl(x.saldo)}</div>
+                  </div>
+
+                  <div className="text-xs text-muted-foreground space-y-0.5 pl-7">
+                    {x.comandas.slice(0, 4).map((c) => (
+                      <div key={c.numero} className="flex justify-between">
+                        <span>{c.numero} — {c.data}</span>
+                        <span>{brl(c.saldo)}</span>
+                      </div>
+                    ))}
+                    {x.comandas.length > 4 && <div>+ {x.comandas.length - 4} comanda(s)…</div>}
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 pl-7">
+                    <Button
+                      size="sm"
+                      className="bg-emerald-600 text-primary-foreground hover:bg-emerald-700"
+                      onClick={() => abrirWhatsApp(x)}
+                    >
+                      <MessageCircle className="h-4 w-4 mr-1" /> WhatsApp
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => pdfCobranca(x)}>
+                      <FileText className="h-4 w-4 mr-1" /> PDF
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => navigator.clipboard.writeText(buildMensagemCobranca(x))}
+                    >
+                      Copiar texto
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setSelectedClienteId(x.cliente.id)}>
+                      Detalhes
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            {inadimplentesDetalhado.length === 0 && (
+              <Card><CardContent className="p-6 text-center text-muted-foreground">Nenhuma pendência 🎉</CardContent></Card>
+            )}
+          </div>
+        </TabsContent>
+
       </Tabs>
     </div>
   );
