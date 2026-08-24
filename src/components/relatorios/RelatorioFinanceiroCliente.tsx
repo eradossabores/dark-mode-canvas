@@ -60,6 +60,8 @@ export default function RelatorioFinanceiroCliente() {
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [situacaoFilter, setSituacaoFilter] = useState<string>("todos");
   const [searchInad, setSearchInad] = useState("");
+  const [enviados, setEnviados] = useState<Record<string, boolean>>({});
+  const [selecionados, setSelecionados] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (!factoryId) return;
