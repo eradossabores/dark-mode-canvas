@@ -677,6 +677,8 @@ export default function RelatorioFinanceiroCliente() {
                       size="sm"
                       className="bg-emerald-600 text-primary-foreground hover:bg-emerald-700"
                       onClick={() => abrirWhatsApp(x)}
+                      disabled={!confirmado}
+                      title={confirmado ? "Enviar cobrança" : "Confirme a prévia da semana para liberar o envio"}
                     >
                       <MessageCircle className="h-4 w-4 mr-1" /> WhatsApp
                     </Button>
