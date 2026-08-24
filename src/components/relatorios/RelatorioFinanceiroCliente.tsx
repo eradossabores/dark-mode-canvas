@@ -295,19 +295,38 @@ export default function RelatorioFinanceiroCliente() {
     setEnviados((p) => ({ ...p, [item.cliente.id]: true }));
   }
 
+  /** PDF detalhado no mesmo padrão do relatório individual (KPIs + tabela + resumo + branding). */
   function pdfCobranca(item: (typeof inadimplentesDetalhado)[number]) {
     exportToPDF(
       `Relatório Financeiro - ${item.cliente.nome}`,
-      ["Comanda", "Data", "Vencimento", "Saldo"],
-      item.comandas.map((c) => [c.numero, c.data, dt(c.venc), brl(c.saldo)]),
+      ["Comanda", "Data", "Vencimento", "Unid.", "Status", "Valor Original", "Desconto", "Abatimentos", "Saldo Devedor"],
+      item.comandas.map((c) => [
+        c.numero,
+        c.data,
+        dt(c.venc),
+        String(c.unidades),
+        "Em aberto",
+        brl(c.valorOriginal),
+        brl(c.desconto),
+        brl(c.pago),
+        brl(c.saldo),
+      ]),
       `financeiro_${item.cliente.nome.replace(/\s+/g, "_")}`,
       [
-        { label: "Comandas em aberto", value: String(item.abertas) },
+        { label: "Comandas", value: String(item.abertas) },
+        { label: "Unidades", value: String(item.unidades) },
+        { label: "Em Aberto", value: String(item.abertas) },
+        { label: "Total Original", value: brl(item.totalOriginal) },
         { label: "Saldo Devedor", value: brl(item.saldo) },
       ],
       undefined,
-      undefined,
-      [{ label: "(=) Saldo Devedor", value: brl(item.saldo) }],
+      { factoryName: factoryName || undefined, factoryLogoUrl: branding?.logoUrl },
+      [
+        { label: "Total Original", value: brl(item.totalOriginal) },
+        { label: "(-) Descontos", value: brl(item.descontos) },
+        { label: "(-) Abatimentos/Pagamentos", value: brl(item.pagos) },
+        { label: "(=) Saldo Devedor", value: brl(item.saldo) },
+      ],
     );
   }
 
