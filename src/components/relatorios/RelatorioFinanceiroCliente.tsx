@@ -296,8 +296,8 @@ export default function RelatorioFinanceiroCliente({ initialTab = "individual" }
   }
 
   /** PDF detalhado no mesmo padrão do relatório individual (KPIs + tabela + resumo + branding). */
-  function pdfCobranca(item: (typeof inadimplentesDetalhado)[number]) {
-    exportToPDF(
+  function gerarPdfCobranca(item: (typeof inadimplentesDetalhado)[number], save = true) {
+    return exportToPDF(
       `Relatório Financeiro - ${item.cliente.nome}`,
       ["Comanda", "Data", "Vencimento", "Unid.", "Status", "Valor Original", "Desconto", "Abatimentos", "Saldo Devedor"],
       item.comandas.map((c) => [
@@ -327,7 +327,37 @@ export default function RelatorioFinanceiroCliente({ initialTab = "individual" }
         { label: "(-) Abatimentos/Pagamentos", value: brl(item.pagos) },
         { label: "(=) Saldo Devedor", value: brl(item.saldo) },
       ],
+      { save },
     );
+  }
+
+  function pdfCobranca(item: (typeof inadimplentesDetalhado)[number]) {
+    gerarPdfCobranca(item);
+  }
+
+  /** Gera o PDF detalhado e compartilha direto no WhatsApp com a mensagem pré-definida do cliente. */
+  async function compartilharPdfCobranca(item: (typeof inadimplentesDetalhado)[number]) {
+    const doc = await gerarPdfCobranca(item, false);
+    const blob = doc.output("blob");
+    const fileName = `financeiro_${item.cliente.nome.replace(/\s+/g, "_")}.pdf`;
+    const file = new File([blob], fileName, { type: "application/pdf" });
+    const msg = buildMensagemCobranca(item);
+
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      try {
+        // Abre o compartilhamento nativo (ex.: WhatsApp) já com o PDF anexado
+        // e a mensagem pré-definida — sem vazamento do blob URL no texto.
+        await navigator.share({ text: msg, files: [file] });
+        return;
+      } catch (e) {
+        // Compartilhamento cancelado/indisponível → cai no wa.me
+      }
+    }
+
+    const telefone = (item.cliente.telefone || "").replace(/\D/g, "");
+    const base = telefone ? `https://wa.me/55${telefone}` : "https://wa.me/";
+    window.open(`${base}?text=${encodeURIComponent(msg)}`, "_blank");
+    doc.save(fileName);
   }
 
 
