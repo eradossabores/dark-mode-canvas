@@ -26,6 +26,7 @@ const Funcionarios = lazy(() => import("@/pages/Funcionarios"));
 const Sabores = lazy(() => import("@/pages/Sabores"));
 const Auditoria = lazy(() => import("@/pages/Auditoria"));
 const Relatorios = lazy(() => import("@/pages/Relatorios"));
+const CobrancaMassa = lazy(() => import("@/pages/CobrancaMassa"));
 const Faturamento = lazy(() => import("@/pages/Faturamento"));
 const ImportarPlanilha = lazy(() => import("@/pages/ImportarPlanilha"));
 const AReceber = lazy(() => import("@/pages/AReceber"));
@@ -127,6 +128,7 @@ const App = () => (
               <Route path="/painel/funcionarios" element={<AdminRoute><Funcionarios /></AdminRoute>} />
               <Route path="/painel/sabores" element={<AdminRoute><Sabores /></AdminRoute>} />
               <Route path="/painel/relatorios" element={<AdminRoute><Relatorios /></AdminRoute>} />
+              <Route path="/painel/cobranca" element={<AdminRoute><CobrancaMassa /></AdminRoute>} />
               <Route path="/painel/importar-planilha" element={<AdminRoute><ImportarPlanilha /></AdminRoute>} />
               <Route path="/painel/auditoria" element={<AdminRoute><Auditoria /></AdminRoute>} />
               <Route path="/painel/diagnostico" element={<AdminRoute><Diagnostico /></AdminRoute>} />
