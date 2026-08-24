@@ -51,7 +51,8 @@ export async function exportToPDF(
   totals?: { label: string; value: string }[],
   chartContainerId?: string,
   branding?: PDFBranding,
-  summary?: { label: string; value: string }[]
+  summary?: { label: string; value: string }[],
+  options?: { save?: boolean }
 ) {
   const doc = new jsPDF();
   const PAGE_W = 210;
@@ -285,7 +286,11 @@ export async function exportToPDF(
     doc.setTextColor(0);
   }
 
+  if (options?.save === false) {
+    return doc;
+  }
   doc.save(`${filename}.pdf`);
+  return doc;
 }
 
 export function exportToExcel(
