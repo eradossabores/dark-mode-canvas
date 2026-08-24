@@ -772,6 +772,14 @@ export default function RelatorioFinanceiroCliente({ initialTab = "individual" }
                     </Button>
                     <Button
                       size="sm"
+                      className="bg-emerald-600 text-primary-foreground hover:bg-emerald-700"
+                      onClick={() => compartilharPdfCobranca(x)}
+                      title="Gera o PDF e abre o WhatsApp com a mensagem pré-definida"
+                    >
+                      <Share2 className="h-4 w-4 mr-1" /> Compartilhar PDF
+                    </Button>
+                    <Button
+                      size="sm"
                       variant="ghost"
                       onClick={() => navigator.clipboard.writeText(buildMensagemCobranca(x))}
                     >
