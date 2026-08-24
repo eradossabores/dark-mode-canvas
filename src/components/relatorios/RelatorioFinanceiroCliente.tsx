@@ -363,7 +363,7 @@ export default function RelatorioFinanceiroCliente() {
         { label: "Saldo Devedor", value: brl(resumo.saldoDevedor) },
       ],
       undefined,
-      undefined,
+      { factoryName: factoryName || undefined, factoryLogoUrl: branding?.logoUrl },
       [
         { label: "Total Original", value: brl(resumo.totalOriginal) },
         { label: "(-) Descontos", value: brl(resumo.totalDescontos) },
