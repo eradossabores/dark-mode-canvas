@@ -251,7 +251,7 @@ export default function RelatorioFinanceiroCliente() {
     return Object.values(map)
       .map((x) => ({ ...x, comandas: x.comandas.sort((a, b) => a.numero.localeCompare(b.numero)) }))
       .sort((a, b) => b.saldo - a.saldo);
-  }, [vendas, abatPorVenda, clientes]);
+  }, [vendas, abatPorVenda, clientes, unidadesPorVenda]);
 
   const inadimplentes = useMemo(
     () => inadimplentesDetalhado.filter((x) => !searchInad || x.cliente.nome.toLowerCase().includes(searchInad.toLowerCase())),
