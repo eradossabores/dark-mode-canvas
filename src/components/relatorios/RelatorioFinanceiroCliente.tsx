@@ -530,6 +530,67 @@ export default function RelatorioFinanceiroCliente() {
         </TabsContent>
 
         <TabsContent value="cobranca" className="space-y-4">
+          {/* Dry-run: prévia obrigatória da rodada semanal antes de liberar os envios */}
+          <Card className={confirmado ? "border-emerald-600/50" : "border-amber-500/60"}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                {confirmado ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <AlertTriangle className="h-4 w-4 text-amber-500" />}
+                Disparo da semana de {segunda.toLocaleDateString("pt-BR")}
+                <Badge variant={confirmado ? "default" : "secondary"}>
+                  {confirmado ? "Envio liberado" : "Prévia (dry-run)"}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="text-sm text-muted-foreground">
+                {confirmado
+                  ? "Você já revisou e confirmou esta rodada. Os envios estão liberados até a próxima segunda-feira."
+                  : "Revise abaixo os clientes e as mensagens que seriam enviadas. Nada é disparado enquanto você não confirmar."}
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                <div><div className="text-xs text-muted-foreground">Clientes na fila</div><div className="font-bold">{previaItens.length}</div></div>
+                <div><div className="text-xs text-muted-foreground">Comandas em aberto</div><div className="font-bold">{previaItens.reduce((s, x) => s + x.abertas, 0)}</div></div>
+                <div><div className="text-xs text-muted-foreground">Total a cobrar</div><div className="font-bold text-destructive">{brl(previaItens.reduce((s, x) => s + x.saldo, 0))}</div></div>
+                <div><div className="text-xs text-muted-foreground">Sem telefone</div><div className="font-bold text-amber-600">{semTelefone.length}</div></div>
+              </div>
+              {semTelefone.length > 0 && (
+                <div className="text-xs text-amber-600">
+                  Sem telefone cadastrado: {semTelefone.map((x) => x.cliente.nome).join(", ")}
+                </div>
+              )}
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" onClick={() => setPreviaAberta((p) => !p)}>
+                  {previaAberta ? "Ocultar mensagens" : "Ver mensagens da prévia"}
+                </Button>
+                {!confirmado ? (
+                  <Button size="sm" onClick={confirmarEnvio} disabled={previaItens.length === 0}>
+                    <CheckCircle2 className="h-4 w-4 mr-1" /> Confirmar e liberar envio
+                  </Button>
+                ) : (
+                  <Button size="sm" variant="outline" onClick={reabrirPrevia}>
+                    <RotateCcw className="h-4 w-4 mr-1" /> Voltar para a prévia
+                  </Button>
+                )}
+              </div>
+
+              {previaAberta && (
+                <div className="space-y-2 max-h-96 overflow-y-auto rounded-md border p-2">
+                  {previaItens.map((x) => (
+                    <div key={x.cliente.id} className="rounded-md bg-muted/40 p-2">
+                      <div className="text-xs font-medium mb-1">
+                        {x.cliente.nome} · {x.cliente.telefone || "sem telefone"}
+                      </div>
+                      <pre className="text-xs whitespace-pre-wrap font-sans text-muted-foreground">{buildMensagemCobranca(x)}</pre>
+                    </div>
+                  ))}
+                  {previaItens.length === 0 && (
+                    <div className="text-center text-sm text-muted-foreground py-4">Nenhuma pendência para esta semana.</div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardContent className="p-4 space-y-3">
               <div className="text-sm text-muted-foreground">
