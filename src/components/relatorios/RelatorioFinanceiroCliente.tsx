@@ -251,6 +251,8 @@ export default function RelatorioFinanceiroCliente() {
   }
 
   function abrirWhatsApp(item: (typeof inadimplentesDetalhado)[number]) {
+    // Dry-run: nada é aberto/enviado antes da confirmação da prévia semanal.
+    if (!confirmado) return;
     const telefone = (item.cliente.telefone || "").replace(/\D/g, "");
     const base = telefone ? `https://wa.me/55${telefone}` : "https://wa.me/";
     window.open(`${base}?text=${encodeURIComponent(buildMensagemCobranca(item))}`, "_blank");
