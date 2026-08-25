@@ -171,6 +171,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const [temFrete, setTemFrete] = useState(false);
   const [tipoFrete, setTipoFrete] = useState("sedex");
   const [valorFrete, setValorFrete] = useState("");
+  const [valorIpi, setValorIpi] = useState("");
   
 
   const [itemUnits, setItemUnits] = useState<Record<string, string>>({});
@@ -261,7 +262,8 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const valorTotal = parseBRL(valorTotalInput);
   const unitPrice = totalQty > 0 ? valorTotal / totalQty : 0;
   const freight = temFrete ? parseBRL(valorFrete) : 0;
-  const custoTotalComFrete = valorTotal + freight;
+  const ipi = parseBRL(valorIpi);
+  const custoTotalComFrete = valorTotal + freight + ipi;
   const custoUnitarioComFrete = totalQty > 0 ? custoTotalComFrete / totalQty : 0;
 
   const filledItems = [
@@ -340,6 +342,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
         valor_unitario: unitPrice,
         valor_total: +(valorTotal * proportion).toFixed(2),
         tem_frete: temFrete, valor_frete: +(freight * proportion).toFixed(2),
+        valor_ipi: +(ipi * proportion).toFixed(2),
         custo_total_com_frete: +(custoTotalComFrete * proportion).toFixed(2),
         custo_unitario_com_frete: +custoUnitarioComFrete.toFixed(2),
         observacoes: obs || null, factory_id: factoryId,
@@ -456,7 +459,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     const rawQty = parseFloat(editQuantidade) || 0;
     const qty = (tipo === "insumo" && editUnidade === "kg") ? rawQty * 1000 : rawQty;
     const up = qty > 0 ? valorTotal / qty : 0;
-    const ctf = valorTotal + freight;
+    const ctf = valorTotal + freight + ipi;
     const cuf = qty > 0 ? ctf / qty : 0;
     setSaving(true);
     const { error } = await (supabase as any).from("compras").update({
@@ -465,6 +468,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
       unidade: editUnidade,
       valor_unitario: up, valor_total: valorTotal,
       tem_frete: temFrete, valor_frete: freight,
+      valor_ipi: ipi,
       custo_total_com_frete: ctf, custo_unitario_com_frete: cuf,
       observacoes: obs || null,
       created_at: new Date(dataCompra + "T12:00:00").toISOString(),
