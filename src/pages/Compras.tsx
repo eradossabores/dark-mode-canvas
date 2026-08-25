@@ -290,7 +290,36 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     }),
   ];
 
+  /**
+   * Guarda de sanidade: compara o preço unitário desta compra com o histórico
+   * dos mesmos itens (mesma unidade). Erros clássicos de escala (digitar o preço
+   * por kg com a quantidade em gramas) geram desvios de ~1000x.
+   */
+  const anomaliaPreco = useMemo(() => {
+    if (unitPrice <= 0 || filledItems.length === 0) return null;
+    const nomes = new Set(filledItems.map(i => i.nome));
+    const historicos = compras
+      .filter(c => nomes.has(c.item_nome) && Number(c.valor_unitario) > 0)
+      .map(c => Number(c.valor_unitario))
+      .sort((a, b) => a - b);
+    if (historicos.length < 3) return null;
+    const mediana = historicos[Math.floor(historicos.length / 2)];
+    const fator = unitPrice / mediana;
+    if (fator >= 10) return { fator, mediana };
+    return null;
+  }, [unitPrice, filledItems, compras]);
+
   const handleSave = async () => {
+    if (anomaliaPreco && !confirmAnomalia) {
+      setConfirmAnomalia(true);
+      return;
+    }
+    await executarSalvamento();
+  };
+
+  const executarSalvamento = async () => {
+    setConfirmAnomalia(false);
+
     if (!factoryId || filledItems.length === 0 || valorTotal <= 0) {
       toast.error("Preencha ao menos um item com quantidade e o valor total");
       return;
