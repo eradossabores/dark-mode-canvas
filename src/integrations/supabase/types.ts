@@ -687,6 +687,7 @@ export type Database = {
           unidade: string | null
           updated_at: string
           valor_frete: number
+          valor_ipi: number
           valor_total: number
           valor_unitario: number
         }
@@ -715,6 +716,7 @@ export type Database = {
           unidade?: string | null
           updated_at?: string
           valor_frete?: number
+          valor_ipi?: number
           valor_total?: number
           valor_unitario?: number
         }
@@ -743,6 +745,7 @@ export type Database = {
           unidade?: string | null
           updated_at?: string
           valor_frete?: number
+          valor_ipi?: number
           valor_total?: number
           valor_unitario?: number
         }

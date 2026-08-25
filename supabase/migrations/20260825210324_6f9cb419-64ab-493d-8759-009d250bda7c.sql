@@ -1,0 +1,1 @@
+ALTER TABLE public.compras ADD COLUMN IF NOT EXISTS valor_ipi numeric NOT NULL DEFAULT 0;
