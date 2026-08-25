@@ -961,11 +961,22 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                   </CardContent>
                 </Card>
               )}
+              {anomaliaPreco && !viewingId && (
+                <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                  <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                  <span>
+                    Preço unitário {anomaliaPreco.fator.toFixed(0)}x acima do histórico
+                    (R$ {anomaliaPreco.mediana.toFixed(4)}). Confira se o valor foi digitado
+                    por <strong>kg</strong> enquanto a quantidade está em <strong>g</strong>.
+                  </span>
+                </div>
+              )}
               {!viewingId && (
                 <Button onClick={editingId ? handleEditSave : handleSave} disabled={saving} className="w-full">
                   {saving ? "Salvando..." : editingId ? "Salvar Alterações" : "Registrar Compra"}
                 </Button>
               )}
+
               {viewingId && (
                 <Button onClick={() => setOpen(false)} variant="outline" className="w-full">
                   Fechar
