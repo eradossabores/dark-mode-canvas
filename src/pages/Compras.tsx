@@ -985,6 +985,26 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
             </div>
           </DialogContent>
         </Dialog>
+        <AlertDialog open={confirmAnomalia} onOpenChange={setConfirmAnomalia}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Valor muito acima do histórico</AlertDialogTitle>
+              <AlertDialogDescription>
+                O preço unitário desta compra (R$ {unitPrice.toFixed(4)}) está cerca de{" "}
+                {anomaliaPreco?.fator.toFixed(0)}x acima da média histórica destes itens
+                (R$ {anomaliaPreco?.mediana.toFixed(4)}). Isso costuma indicar valor digitado
+                por kg com quantidade em gramas. Deseja registrar mesmo assim?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Revisar valores</AlertDialogCancel>
+              <AlertDialogAction onClick={() => executarSalvamento()}>
+                Registrar mesmo assim
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         <Select value={filterTipo} onValueChange={setFilterTipo}>
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
           <SelectContent>
