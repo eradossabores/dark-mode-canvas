@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -180,6 +182,8 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
   const [dataPrevistaChegada, setDataPrevistaChegada] = useState("");
   const [transportadora, setTransportadora] = useState("");
   const [saving, setSaving] = useState(false);
+  const [confirmAnomalia, setConfirmAnomalia] = useState(false);
+
   const [filterTipo, setFilterTipo] = useState("todos");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);
@@ -290,7 +294,36 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     }),
   ];
 
+  /**
+   * Guarda de sanidade: compara o preço unitário desta compra com o histórico
+   * dos mesmos itens (mesma unidade). Erros clássicos de escala (digitar o preço
+   * por kg com a quantidade em gramas) geram desvios de ~1000x.
+   */
+  const anomaliaPreco = useMemo(() => {
+    if (unitPrice <= 0 || filledItems.length === 0) return null;
+    const nomes = new Set(filledItems.map(i => i.nome));
+    const historicos = compras
+      .filter(c => nomes.has(c.item_nome) && Number(c.valor_unitario) > 0)
+      .map(c => Number(c.valor_unitario))
+      .sort((a, b) => a - b);
+    if (historicos.length < 3) return null;
+    const mediana = historicos[Math.floor(historicos.length / 2)];
+    const fator = unitPrice / mediana;
+    if (fator >= 10) return { fator, mediana };
+    return null;
+  }, [unitPrice, filledItems, compras]);
+
   const handleSave = async () => {
+    if (anomaliaPreco && !confirmAnomalia) {
+      setConfirmAnomalia(true);
+      return;
+    }
+    await executarSalvamento();
+  };
+
+  const executarSalvamento = async () => {
+    setConfirmAnomalia(false);
+
     if (!factoryId || filledItems.length === 0 || valorTotal <= 0) {
       toast.error("Preencha ao menos um item com quantidade e o valor total");
       return;
@@ -930,11 +963,22 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                   </CardContent>
                 </Card>
               )}
+              {anomaliaPreco && !viewingId && (
+                <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                  <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                  <span>
+                    Preço unitário {anomaliaPreco.fator.toFixed(0)}x acima do histórico
+                    (R$ {anomaliaPreco.mediana.toFixed(4)}). Confira se o valor foi digitado
+                    por <strong>kg</strong> enquanto a quantidade está em <strong>g</strong>.
+                  </span>
+                </div>
+              )}
               {!viewingId && (
                 <Button onClick={editingId ? handleEditSave : handleSave} disabled={saving} className="w-full">
                   {saving ? "Salvando..." : editingId ? "Salvar Alterações" : "Registrar Compra"}
                 </Button>
               )}
+
               {viewingId && (
                 <Button onClick={() => setOpen(false)} variant="outline" className="w-full">
                   Fechar
@@ -943,6 +987,26 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
             </div>
           </DialogContent>
         </Dialog>
+        <AlertDialog open={confirmAnomalia} onOpenChange={setConfirmAnomalia}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Valor muito acima do histórico</AlertDialogTitle>
+              <AlertDialogDescription>
+                O preço unitário desta compra (R$ {unitPrice.toFixed(4)}) está cerca de{" "}
+                {anomaliaPreco?.fator.toFixed(0)}x acima da média histórica destes itens
+                (R$ {anomaliaPreco?.mediana.toFixed(4)}). Isso costuma indicar valor digitado
+                por kg com quantidade em gramas. Deseja registrar mesmo assim?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Revisar valores</AlertDialogCancel>
+              <AlertDialogAction onClick={() => executarSalvamento()}>
+                Registrar mesmo assim
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         <Select value={filterTipo} onValueChange={setFilterTipo}>
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
           <SelectContent>
