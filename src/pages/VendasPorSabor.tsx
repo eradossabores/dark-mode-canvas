@@ -108,7 +108,7 @@ export default function VendasPorSabor() {
     try {
       let q = (supabase as any)
         .from("venda_itens")
-        .select(sel("quantidade, sabor_id, sabores(nome), vendas!inner(created_at, status)"))
+        .select(sel("quantidade, sabor_id, sabores(nome), vendas!inner(created_at, status, clientes(nome))"))
         .gte("vendas.created_at", inicio.toISOString())
         .lte("vendas.created_at", fim.toISOString())
         .neq("vendas.status", "cancelada")
