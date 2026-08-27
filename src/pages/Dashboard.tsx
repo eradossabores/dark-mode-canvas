@@ -199,6 +199,28 @@ export default function Dashboard() {
     return getDailyMessage(user?.id || "default");
   }, [user?.id]);
 
+  // Top 5 sabores conforme o período selecionado (semana / mês / total)
+  const topSabores = useMemo(() => {
+    const agora = new Date();
+    let limite: Date | null = null;
+    if (saborPeriodo === "semana") {
+      limite = new Date(agora); limite.setDate(limite.getDate() - 7);
+    } else if (saborPeriodo === "mes") {
+      limite = new Date(agora); limite.setDate(limite.getDate() - 30);
+    }
+    const mapa: Record<string, { nome: string; total: number }> = {};
+    saborItens.forEach((item: any) => {
+      const dataVenda = item.vendas?.created_at ? new Date(item.vendas.created_at) : null;
+      if (limite && (!dataVenda || dataVenda < limite)) return;
+      const id = item.sabor_id;
+      if (!mapa[id]) mapa[id] = { nome: item.sabores?.nome || "?", total: 0 };
+      mapa[id].total += item.quantidade;
+    });
+    return Object.values(mapa).sort((a, b) => b.total - a.total).slice(0, 5);
+  }, [saborItens, saborPeriodo]);
+
+
+
   // Auto-rotate alerts every 5 seconds
   useEffect(() => {
     if (alertasEstoque.length <= 1) return;
