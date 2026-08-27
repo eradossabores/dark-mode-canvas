@@ -494,6 +494,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     setValorTotalInput(numberToBRL(c.valor_total));
     setTemFrete(c.tem_frete);
     setValorFrete(numberToBRL(c.valor_frete));
+    setValorIpi(numberToBRL(Number((c as any).valor_ipi) || 0));
     setObs(c.observacoes || "");
     setDataCompra(format(new Date(c.created_at), "yyyy-MM-dd"));
     setNumeroLote(c.numero_lote || "");
@@ -514,6 +515,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     setValorTotalInput(numberToBRL(c.valor_total));
     setTemFrete(c.tem_frete);
     setValorFrete(numberToBRL(c.valor_frete));
+    setValorIpi(numberToBRL(Number((c as any).valor_ipi) || 0));
     setObs(c.observacoes || "");
     setDataCompra(format(new Date(c.created_at), "yyyy-MM-dd"));
     setNumeroLote(c.numero_lote || "");
@@ -526,7 +528,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
 
   const resetForm = () => {
     setTipo("insumo"); setFornecedorId(""); setValorTotalInput("");
-    setTemFrete(false); setTipoFrete("sedex"); setValorFrete(""); setItemUnits({}); setObs("");
+    setTemFrete(false); setTipoFrete("sedex"); setValorFrete(""); setValorIpi(""); setItemUnits({}); setObs("");
     setDataCompra(format(new Date(), "yyyy-MM-dd"));
     setNumeroLote(""); setDataFabricacao(""); setDataVencimento("");
     setDataPrevistaChegada(""); setTransportadora("");
