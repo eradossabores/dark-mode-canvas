@@ -161,7 +161,8 @@ export default function Dashboard() {
     totalProducoes: 0, faturamento: 0, clientesInativos: 0,
     faturamentoSemanal: 0, faturamentoMensal: 0, faturamentoAnual: 0,
   });
-  const [topSabores, setTopSabores] = useState<any[]>([]);
+  const [saborItens, setSaborItens] = useState<any[]>([]);
+  const [saborPeriodo, setSaborPeriodo] = useState<"semana" | "mes" | "total">("semana");
   const [vendasPorDia, setVendasPorDia] = useState<any[]>([]);
   const [producaoPorDia, setProducaoPorDia] = useState<any[]>([]);
   const [alertasEstoque, setAlertasEstoque] = useState<any[]>([]);
@@ -197,6 +198,28 @@ export default function Dashboard() {
   const dailyMessage = useMemo(() => {
     return getDailyMessage(user?.id || "default");
   }, [user?.id]);
+
+  // Top 5 sabores conforme o período selecionado (semana / mês / total)
+  const topSabores = useMemo(() => {
+    const agora = new Date();
+    let limite: Date | null = null;
+    if (saborPeriodo === "semana") {
+      limite = new Date(agora); limite.setDate(limite.getDate() - 7);
+    } else if (saborPeriodo === "mes") {
+      limite = new Date(agora); limite.setDate(limite.getDate() - 30);
+    }
+    const mapa: Record<string, { nome: string; total: number }> = {};
+    saborItens.forEach((item: any) => {
+      const dataVenda = item.vendas?.created_at ? new Date(item.vendas.created_at) : null;
+      if (limite && (!dataVenda || dataVenda < limite)) return;
+      const id = item.sabor_id;
+      if (!mapa[id]) mapa[id] = { nome: item.sabores?.nome || "?", total: 0 };
+      mapa[id].total += item.quantidade;
+    });
+    return Object.values(mapa).sort((a, b) => b.total - a.total).slice(0, 5);
+  }, [saborItens, saborPeriodo]);
+
+
 
   // Auto-rotate alerts every 5 seconds
   useEffect(() => {
@@ -269,17 +292,15 @@ export default function Dashboard() {
         .filter((v: any) => new Date(v.created_at).getFullYear() === anoAtual)
         .reduce((s: number, v: any) => s + Number(v.total), 0);
 
-      // Top sabores vendidos
-      let topQuery = (supabase as any).from("venda_itens").select("sabor_id, quantidade, sabores(nome)");
+      // Top sabores vendidos (mantém a data da venda para permitir filtro por período)
+      let topQuery = (supabase as any)
+        .from("venda_itens")
+        .select("sabor_id, quantidade, sabores(nome), vendas!inner(created_at, status)")
+        .neq("vendas.status", "cancelada");
       if (factoryId) topQuery = topQuery.eq("factory_id", factoryId);
       const { data: topData } = await topQuery;
-      const saborMap: Record<string, { nome: string; total: number }> = {};
-      (topData || []).forEach((item: any) => {
-        const id = item.sabor_id;
-        if (!saborMap[id]) saborMap[id] = { nome: item.sabores?.nome || "?", total: 0 };
-        saborMap[id].total += item.quantidade;
-      });
-      setTopSabores(Object.values(saborMap).sort((a, b) => b.total - a.total).slice(0, 5));
+      setSaborItens(topData || []);
+
 
       // Store raw data for dynamic filtering
       const validVendas = (vendas.data || []).filter((v: any) => v.status !== "cancelada");
@@ -847,13 +868,45 @@ export default function Dashboard() {
           <GlowingEffect spread={20} glow disabled={false} proximity={40} inactiveZone={0.2} borderWidth={3} />
           <Card className="relative border-0 bg-background">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Top 5 Sabores Vendidos</CardTitle>
+              <div className="flex items-start justify-between gap-2">
+                <CardTitle className="text-sm">
+                  Top 5 Sabores Vendidos
+                  <span className="block text-[10px] font-normal text-muted-foreground">
+                    {saborPeriodo === "semana" ? "Últimos 7 dias" : saborPeriodo === "mes" ? "Últimos 30 dias" : "Todo o período"}
+                  </span>
+                </CardTitle>
+                <div className="flex flex-wrap gap-1 justify-end">
+                  {([
+                    { value: "semana", label: "Semana" },
+                    { value: "mes", label: "Mês" },
+                    { value: "total", label: "Total" },
+                  ] as const).map(({ value, label }) => (
+                    <button
+                      key={value}
+                      onClick={() => setSaborPeriodo(value)}
+                      className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
+                        saborPeriodo === value
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {topSabores.length === 0 ? (
-                <p className="text-muted-foreground text-sm">Nenhuma venda registrada ainda.</p>
+                <p className="text-muted-foreground text-sm">Nenhuma venda registrada no período.</p>
               ) : (
-                <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => navigate("/painel/vendas-por-sabor")}
+                  aria-label="Abrir análise detalhada de vendas por sabor"
+                  className="w-full text-left flex items-center gap-4 rounded-lg transition-transform hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+
                   <ResponsiveContainer width="50%" height={200}>
                     <PieChart>
                       <Pie data={topSabores} dataKey="total" nameKey="nome" cx="50%" cy="50%" outerRadius={80} label={false}>
@@ -872,8 +925,9 @@ export default function Dashboard() {
                         <span className="text-muted-foreground ml-auto">{s.total}</span>
                       </div>
                     ))}
+                    <p className="text-[10px] text-primary pt-1">Ver análise detalhada →</p>
                   </div>
-                </div>
+                </button>
               )}
             </CardContent>
           </Card>

@@ -56,6 +56,7 @@ const menuGroups: MenuGroup[] = [
           { path: "/painel/plano-semanal", label: "Plano Semanal", icon: CalendarDays },
         ]
       },
+      { path: "/painel/vendas-por-sabor", label: "Vendas por Sabor", icon: BarChart3 },
       { path: "/painel/producao", label: "Produção", icon: Factory },
       { path: "/painel/monitor-producao", label: "Monitor", icon: Monitor },
       { path: "/painel/presenca", label: "Presença", icon: UserCheck },
