@@ -42,7 +42,7 @@ interface ItemVenda {
   quantidade: number;
   sabor_id: string;
   sabores: { nome: string } | null;
-  vendas: { created_at: string; status: string } | null;
+  vendas: { created_at: string; status: string; clientes: { nome: string } | null } | null;
 }
 
 /** Evita o parsing pesado do literal de select pelo supabase-js. */
