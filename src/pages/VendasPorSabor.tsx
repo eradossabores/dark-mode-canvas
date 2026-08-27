@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { IceCream, TrendingUp, CalendarRange, Factory, Loader2 } from "lucide-react";
+import { IceCream, TrendingUp, CalendarRange, Factory, Loader2, Users } from "lucide-react";
 import {
   Bar,
   BarChart,
