@@ -161,7 +161,8 @@ export default function Dashboard() {
     totalProducoes: 0, faturamento: 0, clientesInativos: 0,
     faturamentoSemanal: 0, faturamentoMensal: 0, faturamentoAnual: 0,
   });
-  const [topSabores, setTopSabores] = useState<any[]>([]);
+  const [saborItens, setSaborItens] = useState<any[]>([]);
+  const [saborPeriodo, setSaborPeriodo] = useState<"semana" | "mes" | "total">("semana");
   const [vendasPorDia, setVendasPorDia] = useState<any[]>([]);
   const [producaoPorDia, setProducaoPorDia] = useState<any[]>([]);
   const [alertasEstoque, setAlertasEstoque] = useState<any[]>([]);
@@ -269,17 +270,15 @@ export default function Dashboard() {
         .filter((v: any) => new Date(v.created_at).getFullYear() === anoAtual)
         .reduce((s: number, v: any) => s + Number(v.total), 0);
 
-      // Top sabores vendidos
-      let topQuery = (supabase as any).from("venda_itens").select("sabor_id, quantidade, sabores(nome)");
+      // Top sabores vendidos (mantém a data da venda para permitir filtro por período)
+      let topQuery = (supabase as any)
+        .from("venda_itens")
+        .select("sabor_id, quantidade, sabores(nome), vendas!inner(created_at, status)")
+        .neq("vendas.status", "cancelada");
       if (factoryId) topQuery = topQuery.eq("factory_id", factoryId);
       const { data: topData } = await topQuery;
-      const saborMap: Record<string, { nome: string; total: number }> = {};
-      (topData || []).forEach((item: any) => {
-        const id = item.sabor_id;
-        if (!saborMap[id]) saborMap[id] = { nome: item.sabores?.nome || "?", total: 0 };
-        saborMap[id].total += item.quantidade;
-      });
-      setTopSabores(Object.values(saborMap).sort((a, b) => b.total - a.total).slice(0, 5));
+      setSaborItens(topData || []);
+
 
       // Store raw data for dynamic filtering
       const validVendas = (vendas.data || []).filter((v: any) => v.status !== "cancelada");
