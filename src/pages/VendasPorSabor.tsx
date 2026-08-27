@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { IceCream, TrendingUp, CalendarRange, Factory, Loader2 } from "lucide-react";
+import { IceCream, TrendingUp, CalendarRange, Factory, Loader2, Users } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -42,7 +42,7 @@ interface ItemVenda {
   quantidade: number;
   sabor_id: string;
   sabores: { nome: string } | null;
-  vendas: { created_at: string; status: string } | null;
+  vendas: { created_at: string; status: string; clientes: { nome: string } | null } | null;
 }
 
 /** Evita o parsing pesado do literal de select pelo supabase-js. */
@@ -108,7 +108,7 @@ export default function VendasPorSabor() {
     try {
       let q = (supabase as any)
         .from("venda_itens")
-        .select(sel("quantidade, sabor_id, sabores(nome), vendas!inner(created_at, status)"))
+        .select(sel("quantidade, sabor_id, sabores(nome), vendas!inner(created_at, status, clientes(nome))"))
         .gte("vendas.created_at", inicio.toISOString())
         .lte("vendas.created_at", fim.toISOString())
         .neq("vendas.status", "cancelada")
@@ -205,6 +205,23 @@ export default function VendasPorSabor() {
       })
       .sort((a, b) => b.total - a.total);
   }, [itensFiltrados, semanas.length, margem]);
+
+  /** Totais por cliente, com detalhamento por sabor. */
+  const porCliente = useMemo(() => {
+    const map = new Map<string, { nome: string; total: number; porSabor: Record<string, number> }>();
+    itensFiltrados.forEach((it) => {
+      const nome = it.vendas?.clientes?.nome || "Sem cliente";
+      if (!map.has(nome)) map.set(nome, { nome, total: 0, porSabor: {} });
+      const b = map.get(nome)!;
+      const sab = it.sabores?.nome || "Sem sabor";
+      b.total += it.quantidade;
+      b.porSabor[sab] = (b.porSabor[sab] || 0) + it.quantidade;
+    });
+    const total = Array.from(map.values()).reduce((s, c) => s + c.total, 0) || 1;
+    return Array.from(map.values())
+      .map((c) => ({ ...c, participacao: (c.total / total) * 100 }))
+      .sort((a, b) => b.total - a.total);
+  }, [itensFiltrados]);
 
   const totalUnidades = porSabor.reduce((s, p) => s + p.total, 0);
   const mediaSemanalGeral = semanas.length ? totalUnidades / semanas.length : 0;
@@ -447,6 +464,43 @@ export default function VendasPorSabor() {
                           {s.sugestao.toLocaleString("pt-BR")} un.
                         </Badge>
                       </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          {/* Clientes */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Users className="h-4 w-4" /> Clientes que compraram {saborFiltro === "todos" ? "no período" : "este sabor"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Cliente</TableHead>
+                    {topNomes.map((n) => (
+                      <TableHead key={n} className="text-right whitespace-nowrap">{n}</TableHead>
+                    ))}
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead className="text-right">%</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {porCliente.map((c) => (
+                    <TableRow key={c.nome}>
+                      <TableCell className="font-medium whitespace-nowrap">{c.nome}</TableCell>
+                      {topNomes.map((n) => (
+                        <TableCell key={n} className="text-right">
+                          {(c.porSabor[n] || 0).toLocaleString("pt-BR")}
+                        </TableCell>
+                      ))}
+                      <TableCell className="text-right font-bold">{c.total.toLocaleString("pt-BR")}</TableCell>
+                      <TableCell className="text-right text-muted-foreground">{c.participacao.toFixed(1)}%</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
