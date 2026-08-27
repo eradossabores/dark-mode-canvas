@@ -925,8 +925,9 @@ export default function Dashboard() {
                         <span className="text-muted-foreground ml-auto">{s.total}</span>
                       </div>
                     ))}
+                    <p className="text-[10px] text-primary pt-1">Ver análise detalhada →</p>
                   </div>
-                </div>
+                </button>
               )}
             </CardContent>
           </Card>
