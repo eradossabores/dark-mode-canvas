@@ -494,6 +494,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     setValorTotalInput(numberToBRL(c.valor_total));
     setTemFrete(c.tem_frete);
     setValorFrete(numberToBRL(c.valor_frete));
+    setValorIpi(numberToBRL(Number((c as any).valor_ipi) || 0));
     setObs(c.observacoes || "");
     setDataCompra(format(new Date(c.created_at), "yyyy-MM-dd"));
     setNumeroLote(c.numero_lote || "");
@@ -514,6 +515,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
     setValorTotalInput(numberToBRL(c.valor_total));
     setTemFrete(c.tem_frete);
     setValorFrete(numberToBRL(c.valor_frete));
+    setValorIpi(numberToBRL(Number((c as any).valor_ipi) || 0));
     setObs(c.observacoes || "");
     setDataCompra(format(new Date(c.created_at), "yyyy-MM-dd"));
     setNumeroLote(c.numero_lote || "");
@@ -526,7 +528,7 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
 
   const resetForm = () => {
     setTipo("insumo"); setFornecedorId(""); setValorTotalInput("");
-    setTemFrete(false); setTipoFrete("sedex"); setValorFrete(""); setItemUnits({}); setObs("");
+    setTemFrete(false); setTipoFrete("sedex"); setValorFrete(""); setValorIpi(""); setItemUnits({}); setObs("");
     setDataCompra(format(new Date(), "yyyy-MM-dd"));
     setNumeroLote(""); setDataFabricacao(""); setDataVencimento("");
     setDataPrevistaChegada(""); setTransportadora("");
@@ -872,6 +874,19 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                     </div>
                   )}
 
+                  <div className="pt-1 border-t border-border/50">
+                    <Label>IPI (R$) — opcional</Label>
+                    <CurrencyInput
+                      value={ipi}
+                      onValueChange={(n) => setValorIpi(numberToBRL(n))}
+                      max={9_999_999.99}
+                      disabled={!!viewingId}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Informe o valor do IPI destacado na nota, se houver. Ele é somado ao custo total.
+                    </p>
+                  </div>
+
                 </CardContent>
               </Card>
               <div>
@@ -961,7 +976,10 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                       {temFrete && <>
                         <div>Frete:</div><div className="font-bold text-right">R$ {freight.toFixed(2)}</div>
                       </>}
-                      <div className="font-semibold">Custo Total c/ Frete:</div><div className="font-bold text-right text-primary">R$ {custoTotalComFrete.toFixed(2)}</div>
+                      {ipi > 0 && <>
+                        <div>IPI:</div><div className="font-bold text-right">R$ {ipi.toFixed(2)}</div>
+                      </>}
+                      <div className="font-semibold">Custo Total c/ Frete + IPI:</div><div className="font-bold text-right text-primary">R$ {custoTotalComFrete.toFixed(2)}</div>
                       <div className="font-semibold">Custo Unit. c/ Frete:</div><div className="font-bold text-right text-primary">R$ {custoUnitarioComFrete.toFixed(2)}</div>
                     </div>
                   </CardContent>
