@@ -874,6 +874,19 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                     </div>
                   )}
 
+                  <div className="pt-1 border-t border-border/50">
+                    <Label>IPI (R$) — opcional</Label>
+                    <CurrencyInput
+                      value={ipi}
+                      onValueChange={(n) => setValorIpi(numberToBRL(n))}
+                      max={9_999_999.99}
+                      disabled={!!viewingId}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Informe o valor do IPI destacado na nota, se houver. Ele é somado ao custo total.
+                    </p>
+                  </div>
+
                 </CardContent>
               </Card>
               <div>
