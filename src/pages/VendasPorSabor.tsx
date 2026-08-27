@@ -206,6 +206,23 @@ export default function VendasPorSabor() {
       .sort((a, b) => b.total - a.total);
   }, [itensFiltrados, semanas.length, margem]);
 
+  /** Totais por cliente, com detalhamento por sabor. */
+  const porCliente = useMemo(() => {
+    const map = new Map<string, { nome: string; total: number; porSabor: Record<string, number> }>();
+    itensFiltrados.forEach((it) => {
+      const nome = it.vendas?.clientes?.nome || "Sem cliente";
+      if (!map.has(nome)) map.set(nome, { nome, total: 0, porSabor: {} });
+      const b = map.get(nome)!;
+      const sab = it.sabores?.nome || "Sem sabor";
+      b.total += it.quantidade;
+      b.porSabor[sab] = (b.porSabor[sab] || 0) + it.quantidade;
+    });
+    const total = Array.from(map.values()).reduce((s, c) => s + c.total, 0) || 1;
+    return Array.from(map.values())
+      .map((c) => ({ ...c, participacao: (c.total / total) * 100 }))
+      .sort((a, b) => b.total - a.total);
+  }, [itensFiltrados]);
+
   const totalUnidades = porSabor.reduce((s, p) => s + p.total, 0);
   const mediaSemanalGeral = semanas.length ? totalUnidades / semanas.length : 0;
   const ultimaSemana = semanas.length ? semanas[semanas.length - 1].total : 0;
