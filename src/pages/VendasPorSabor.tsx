@@ -471,6 +471,43 @@ export default function VendasPorSabor() {
             </CardContent>
           </Card>
 
+          {/* Clientes */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Users className="h-4 w-4" /> Clientes que compraram {saborFiltro === "todos" ? "no período" : "este sabor"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Cliente</TableHead>
+                    {topNomes.map((n) => (
+                      <TableHead key={n} className="text-right whitespace-nowrap">{n}</TableHead>
+                    ))}
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead className="text-right">%</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {porCliente.map((c) => (
+                    <TableRow key={c.nome}>
+                      <TableCell className="font-medium whitespace-nowrap">{c.nome}</TableCell>
+                      {topNomes.map((n) => (
+                        <TableCell key={n} className="text-right">
+                          {(c.porSabor[n] || 0).toLocaleString("pt-BR")}
+                        </TableCell>
+                      ))}
+                      <TableCell className="text-right font-bold">{c.total.toLocaleString("pt-BR")}</TableCell>
+                      <TableCell className="text-right text-muted-foreground">{c.participacao.toFixed(1)}%</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
           {/* Detalhe semana a semana */}
           <Card>
             <CardHeader className="pb-2">
