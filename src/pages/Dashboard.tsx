@@ -868,13 +868,45 @@ export default function Dashboard() {
           <GlowingEffect spread={20} glow disabled={false} proximity={40} inactiveZone={0.2} borderWidth={3} />
           <Card className="relative border-0 bg-background">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Top 5 Sabores Vendidos</CardTitle>
+              <div className="flex items-start justify-between gap-2">
+                <CardTitle className="text-sm">
+                  Top 5 Sabores Vendidos
+                  <span className="block text-[10px] font-normal text-muted-foreground">
+                    {saborPeriodo === "semana" ? "Últimos 7 dias" : saborPeriodo === "mes" ? "Últimos 30 dias" : "Todo o período"}
+                  </span>
+                </CardTitle>
+                <div className="flex flex-wrap gap-1 justify-end">
+                  {([
+                    { value: "semana", label: "Semana" },
+                    { value: "mes", label: "Mês" },
+                    { value: "total", label: "Total" },
+                  ] as const).map(({ value, label }) => (
+                    <button
+                      key={value}
+                      onClick={() => setSaborPeriodo(value)}
+                      className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
+                        saborPeriodo === value
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {topSabores.length === 0 ? (
-                <p className="text-muted-foreground text-sm">Nenhuma venda registrada ainda.</p>
+                <p className="text-muted-foreground text-sm">Nenhuma venda registrada no período.</p>
               ) : (
-                <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => navigate("/painel/vendas-por-sabor")}
+                  aria-label="Abrir análise detalhada de vendas por sabor"
+                  className="w-full text-left flex items-center gap-4 rounded-lg transition-transform hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+
                   <ResponsiveContainer width="50%" height={200}>
                     <PieChart>
                       <Pie data={topSabores} dataKey="total" nameKey="nome" cx="50%" cy="50%" outerRadius={80} label={false}>
