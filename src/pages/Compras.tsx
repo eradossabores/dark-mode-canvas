@@ -976,7 +976,10 @@ function ComprasTab({ factoryId, fornecedores, fornecedorMap, compras, operador,
                       {temFrete && <>
                         <div>Frete:</div><div className="font-bold text-right">R$ {freight.toFixed(2)}</div>
                       </>}
-                      <div className="font-semibold">Custo Total c/ Frete:</div><div className="font-bold text-right text-primary">R$ {custoTotalComFrete.toFixed(2)}</div>
+                      {ipi > 0 && <>
+                        <div>IPI:</div><div className="font-bold text-right">R$ {ipi.toFixed(2)}</div>
+                      </>}
+                      <div className="font-semibold">Custo Total c/ Frete + IPI:</div><div className="font-bold text-right text-primary">R$ {custoTotalComFrete.toFixed(2)}</div>
                       <div className="font-semibold">Custo Unit. c/ Frete:</div><div className="font-bold text-right text-primary">R$ {custoUnitarioComFrete.toFixed(2)}</div>
                     </div>
                   </CardContent>
