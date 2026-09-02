@@ -110,6 +110,10 @@ export default function Vendas() {
   const [geloCuboPrecos, setGeloCuboPrecos] = useState<Record<string, number>>({});
   const [geloCuboItens, setGeloCuboItens] = useState<{ tamanho: string; quantidade: number }[]>([]);
 
+  // Bebidas (catálogo, sem controle de estoque)
+  const [bebidasCatalogo, setBebidasCatalogo] = useState<{ id: string; nome: string; preco: number }[]>([]);
+  const [bebidaItens, setBebidaItens] = useState<{ bebida_id: string; quantidade: number }[]>([]);
+
   // Saco config from factory
   const [factoryUsaSacos, setFactoryUsaSacos] = useState(false);
   const [factoryUnidadesPorSaco, setFactoryUnidadesPorSaco] = useState(50);
