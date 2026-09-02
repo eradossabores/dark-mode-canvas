@@ -579,7 +579,7 @@ export default function Vendas() {
           .filter((bi) => bi.bebida_id && bi.quantidade > 0)
           .map((bi) => {
             const b = bebidasCatalogo.find((x) => x.id === bi.bebida_id);
-            return { ...bi, nome: b?.nome || "Bebida", preco: b?.preco || 0 };
+            return { ...bi, nome: b?.nome || "Bebida", preco: precoBebida(b, bi.tipo_venda) };
           });
         const bebidasSubtotal = bebidasValidas.reduce((s, b) => s + b.preco * b.quantidade, 0);
         const totalVendaCalc = totalProdutos + freteCliente + geloCuboSubtotal + bebidasSubtotal;
