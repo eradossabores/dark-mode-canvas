@@ -1317,7 +1317,7 @@ export default function Vendas() {
                         const frete = parseDecimal(valorFrete) || 0;
                         const freteNaComanda = fretePagoPor === "cliente" ? frete : fretePagoPor === "ambos" ? Math.round(frete / 2 * 100) / 100 : 0;
                         const geloCuboTotal = geloCuboItens.reduce((s, it) => s + (geloCuboPrecos[it.tamanho] || 0) * it.quantidade, 0);
-                        const bebidasTotal = bebidaItens.reduce((s, bi) => s + (bebidasCatalogo.find((b) => b.id === bi.bebida_id)?.preco || 0) * (bi.quantidade || 0), 0);
+                        const bebidasTotal = subtotalBebidas();
                         return (subtotalProd + freteNaComanda + geloCuboTotal + bebidasTotal).toFixed(2);
                       })()}</span>
                     </div>
@@ -1615,7 +1615,7 @@ export default function Vendas() {
                     const frete = parseDecimal(valorFrete) || 0;
                     const freteNaComanda = fretePagoPor === "cliente" ? frete : fretePagoPor === "ambos" ? Math.round(frete / 2 * 100) / 100 : 0;
                     const geloCuboTotal = geloCuboItens.reduce((s, it) => s + (geloCuboPrecos[it.tamanho] || 0) * it.quantidade, 0);
-                    const bebidasTotal = bebidaItens.reduce((s, bi) => s + (bebidasCatalogo.find((b) => b.id === bi.bebida_id)?.preco || 0) * (bi.quantidade || 0), 0);
+                    const bebidasTotal = subtotalBebidas();
                     return (subtotalProd + freteNaComanda + geloCuboTotal + bebidasTotal).toFixed(2);
                   })()}</span>
                 </div>
