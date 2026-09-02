@@ -1497,6 +1497,70 @@ export default function Vendas() {
                   )}
                 </div>
               )}
+
+              {/* Bebidas */}
+              {bebidasCatalogo.length > 0 && (
+                <div className="space-y-2 p-3 border-2 rounded-lg bg-muted/30 border-amber-500/20">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-bold">🥤 Bebidas</Label>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 text-xs gap-1"
+                      onClick={() => setBebidaItens([...bebidaItens, { bebida_id: bebidasCatalogo[0].id, quantidade: 1 }])}
+                    >
+                      <Plus className="h-3 w-3" /> Incluir bebida
+                    </Button>
+                  </div>
+                  {bebidaItens.map((item, i) => {
+                    const bebida = bebidasCatalogo.find((b) => b.id === item.bebida_id);
+                    return (
+                      <div key={i} className="flex gap-2 items-center">
+                        <Select
+                          value={item.bebida_id}
+                          onValueChange={(v) => { const u = [...bebidaItens]; u[i].bebida_id = v; setBebidaItens(u); }}
+                        >
+                          <SelectTrigger className="flex-1 min-w-0"><SelectValue placeholder="Bebida" /></SelectTrigger>
+                          <SelectContent>
+                            {bebidasCatalogo.map((b) => (
+                              <SelectItem key={b.id} value={b.id}>
+                                {b.nome} — R$ {b.preco.toFixed(2)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          type="number"
+                          min={1}
+                          className="w-20"
+                          value={item.quantidade}
+                          onChange={(e) => { const u = [...bebidaItens]; u[i].quantidade = Number(e.target.value); setBebidaItens(u); }}
+                          placeholder="Qtd"
+                        />
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          R$ {((bebida?.preco || 0) * (item.quantidade || 0)).toFixed(2)}
+                        </span>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-destructive"
+                          onClick={() => setBebidaItens(bebidaItens.filter((_, idx) => idx !== i))}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                  {bebidaItens.length > 0 && (
+                    <div className="text-xs font-medium text-right pt-1 border-t">
+                      Subtotal Bebidas: R$ {bebidaItens.reduce((s, bi) => s + (bebidasCatalogo.find((b) => b.id === bi.bebida_id)?.preco || 0) * (bi.quantidade || 0), 0).toFixed(2)}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div><Label>Observações</Label><Input value={observacoes} onChange={(e) => setObservacoes(e.target.value)} /></div>
               <div className="flex items-start space-x-2">
                 <Checkbox id="ignorar-estoque" checked={ignorarEstoque} onCheckedChange={(v) => setIgnorarEstoque(!!v)} className="mt-0.5" />
