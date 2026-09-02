@@ -301,8 +301,14 @@ export default function Vendas() {
 
       // Load bebidas ativas do catálogo
       const { data: bebidasData } = await (supabase as any)
-        .from("bebidas").select("id, nome, preco").eq("factory_id", factoryId).eq("ativo", true).order("nome");
-      setBebidasCatalogo((bebidasData || []).map((b: any) => ({ id: b.id, nome: b.nome, preco: Number(b.preco) })));
+        .from("bebidas").select("id, nome, preco, preco_fardo, unidades_fardo").eq("factory_id", factoryId).eq("ativo", true).order("nome");
+      setBebidasCatalogo((bebidasData || []).map((b: any) => ({
+        id: b.id,
+        nome: b.nome,
+        preco: Number(b.preco),
+        preco_fardo: b.preco_fardo != null ? Number(b.preco_fardo) : null,
+        unidades_fardo: Number(b.unidades_fardo) || 6,
+      })));
     }
 
     let cQ = (supabase as any).from("clientes").select("id, nome, preco_unidade_avista, preco_unidade_aprazo, limite_credito, saldo_devedor_atual, conversao_automatica_prazo").eq("status", "ativo").order("nome");
