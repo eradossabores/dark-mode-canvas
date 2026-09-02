@@ -113,6 +113,20 @@ export default function Vendas() {
   // Bebidas (catálogo, sem controle de estoque)
   const [bebidasCatalogo, setBebidasCatalogo] = useState<{ id: string; nome: string; preco: number; preco_fardo: number | null; unidades_fardo: number }[]>([]);
   const [bebidaItens, setBebidaItens] = useState<{ bebida_id: string; quantidade: number; tipo_venda: "unidade" | "fardo" }[]>([]);
+  /** Preço aplicado à linha de bebida conforme o tipo (unidade ou fardo). */
+  const precoBebida = (
+    b: { preco: number; preco_fardo: number | null; unidades_fardo: number } | undefined,
+    tipo: "unidade" | "fardo",
+  ): number => {
+    if (!b) return 0;
+    if (tipo === "fardo") return b.preco_fardo != null && b.preco_fardo > 0 ? b.preco_fardo : b.preco * (b.unidades_fardo || 6);
+    return b.preco;
+  };
+  const subtotalBebidas = () =>
+    bebidaItens.reduce(
+      (s, bi) => s + precoBebida(bebidasCatalogo.find((b) => b.id === bi.bebida_id), bi.tipo_venda) * (bi.quantidade || 0),
+      0,
+    );
 
   // Saco config from factory
   const [factoryUsaSacos, setFactoryUsaSacos] = useState(false);
