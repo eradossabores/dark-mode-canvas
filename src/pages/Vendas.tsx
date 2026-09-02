@@ -111,8 +111,8 @@ export default function Vendas() {
   const [geloCuboItens, setGeloCuboItens] = useState<{ tamanho: string; quantidade: number }[]>([]);
 
   // Bebidas (catálogo, sem controle de estoque)
-  const [bebidasCatalogo, setBebidasCatalogo] = useState<{ id: string; nome: string; preco: number }[]>([]);
-  const [bebidaItens, setBebidaItens] = useState<{ bebida_id: string; quantidade: number }[]>([]);
+  const [bebidasCatalogo, setBebidasCatalogo] = useState<{ id: string; nome: string; preco: number; preco_fardo: number | null; unidades_fardo: number }[]>([]);
+  const [bebidaItens, setBebidaItens] = useState<{ bebida_id: string; quantidade: number; tipo_venda: "unidade" | "fardo" }[]>([]);
 
   // Saco config from factory
   const [factoryUsaSacos, setFactoryUsaSacos] = useState(false);
