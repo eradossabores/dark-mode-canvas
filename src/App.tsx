@@ -25,6 +25,7 @@ const ClientesSemCompra = lazy(() => import("@/pages/ClientesSemCompra"));
 const VendasPorSabor = lazy(() => import("@/pages/VendasPorSabor"));
 const Funcionarios = lazy(() => import("@/pages/Funcionarios"));
 const Sabores = lazy(() => import("@/pages/Sabores"));
+const Bebidas = lazy(() => import("@/pages/Bebidas"));
 const Auditoria = lazy(() => import("@/pages/Auditoria"));
 const Relatorios = lazy(() => import("@/pages/Relatorios"));
 const CobrancaMassa = lazy(() => import("@/pages/CobrancaMassa"));
