@@ -228,7 +228,8 @@ export default function NovoPedido() {
         itensValidos.push({ sabor_id: b.sabor_id, quantidade: Number(b.quantidade), preco_unitario: "0", preco_auto: false });
       }
     });
-    if (itensValidos.length === 0) return toast({ title: "Adicione ao menos um gelo com quantidade", variant: "destructive" });
+    const temGeloCubo = geloCuboItens.some((it) => it.quantidade > 0);
+    if (itensValidos.length === 0 && !temGeloCubo) return toast({ title: "Adicione ao menos um produto à comanda", variant: "destructive" });
     if (!clienteId) return toast({ title: "Selecione o cliente", variant: "destructive" });
 
     setLoading(true);
