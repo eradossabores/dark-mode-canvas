@@ -82,6 +82,7 @@ const menuGroups: MenuGroup[] = [
       { path: "/painel/clientes-sem-compra", label: "Clientes sem Compra", icon: UserX },
       { path: "/painel/funcionarios", label: "Colaboradores", icon: UserCog },
       { path: "/painel/sabores", label: "Sabores", icon: Package },
+      { path: "/painel/bebidas", label: "Bebidas", icon: CupSoda },
     ],
   },
   {
