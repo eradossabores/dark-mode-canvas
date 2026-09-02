@@ -24,6 +24,8 @@ export interface Bebida {
   nome: string;
   descricao: string | null;
   preco: number;
+  preco_fardo: number | null;
+  unidades_fardo: number;
   ativo: boolean;
 }
 
@@ -36,6 +38,8 @@ export default function Bebidas() {
   const [nome, setNome] = useState("");
   const [descricao, setDescricao] = useState("");
   const [preco, setPreco] = useState("");
+  const [precoFardo, setPrecoFardo] = useState("");
+  const [unidadesFardo, setUnidadesFardo] = useState("6");
   const [ativo, setAtivo] = useState(true);
   const [saving, setSaving] = useState(false);
   const [removendo, setRemovendo] = useState<Bebida | null>(null);
@@ -70,6 +74,8 @@ export default function Bebidas() {
     setNome("");
     setDescricao("");
     setPreco("");
+    setPrecoFardo("");
+    setUnidadesFardo("6");
     setAtivo(true);
     setOpen(true);
   }
@@ -79,6 +85,8 @@ export default function Bebidas() {
     setNome(b.nome);
     setDescricao(b.descricao || "");
     setPreco(numberToBRL(Number(b.preco)));
+    setPrecoFardo(b.preco_fardo != null ? numberToBRL(Number(b.preco_fardo)) : "");
+    setUnidadesFardo(String(b.unidades_fardo ?? 6));
     setAtivo(b.ativo);
     setOpen(true);
   }
@@ -95,6 +103,8 @@ export default function Bebidas() {
         nome: nome.trim(),
         descricao: descricao.trim() || null,
         preco: valor,
+        preco_fardo: parseBRL(precoFardo) > 0 ? parseBRL(precoFardo) : null,
+        unidades_fardo: Math.max(1, Number(unidadesFardo) || 6),
         ativo,
         factory_id: factoryId,
       };
@@ -174,7 +184,14 @@ export default function Bebidas() {
               </CardHeader>
               <CardContent className="space-y-3">
                 {b.descricao && <p className="text-xs text-muted-foreground">{b.descricao}</p>}
-                <p className="text-xl font-bold">R$ {Number(b.preco).toFixed(2)}</p>
+                <div>
+                  <p className="text-xl font-bold">R$ {Number(b.preco).toFixed(2)} <span className="text-xs font-normal text-muted-foreground">/ unidade</span></p>
+                  {b.preco_fardo != null && (
+                    <p className="text-sm font-semibold text-primary">
+                      R$ {Number(b.preco_fardo).toFixed(2)} <span className="text-xs font-normal text-muted-foreground">/ fardo ({b.unidades_fardo ?? 6} un)</span>
+                    </p>
+                  )}
+                </div>
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" className="gap-1" onClick={() => abrirEdicao(b)}>
                     <Pencil className="h-3 w-3" /> Editar
@@ -204,7 +221,7 @@ export default function Bebidas() {
               <Input value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Ex.: Lata gelada" />
             </div>
             <div>
-              <Label>Preço de venda</Label>
+              <Label>Preço por unidade</Label>
               <Input
                 inputMode="decimal"
                 value={preco}
@@ -212,6 +229,31 @@ export default function Bebidas() {
                 placeholder="0,00"
               />
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Preço do fardo (opcional)</Label>
+                <Input
+                  inputMode="decimal"
+                  value={precoFardo}
+                  onChange={(e) => setPrecoFardo(maskBRL(e.target.value))}
+                  placeholder="0,00"
+                />
+              </div>
+              <div>
+                <Label>Unidades por fardo</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={unidadesFardo}
+                  onChange={(e) => setUnidadesFardo(e.target.value)}
+                  placeholder="6"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Sem preço de fardo informado, o sistema calcula preço unitário × unidades por fardo.
+            </p>
+
             <div className="flex items-center justify-between rounded-lg border p-3">
               <div>
                 <Label className="text-sm">Disponível para venda</Label>

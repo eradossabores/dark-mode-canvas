@@ -264,6 +264,8 @@ export type Database = {
           id: string
           nome: string
           preco: number
+          preco_fardo: number | null
+          unidades_fardo: number
           updated_at: string
         }
         Insert: {
@@ -274,6 +276,8 @@ export type Database = {
           id?: string
           nome: string
           preco?: number
+          preco_fardo?: number | null
+          unidades_fardo?: number
           updated_at?: string
         }
         Update: {
@@ -284,6 +288,8 @@ export type Database = {
           id?: string
           nome?: string
           preco?: number
+          preco_fardo?: number | null
+          unidades_fardo?: number
           updated_at?: string
         }
         Relationships: []
@@ -3130,6 +3136,7 @@ export type Database = {
           preco_unitario: number
           quantidade: number
           subtotal: number
+          tipo_venda: string
           updated_at: string
           venda_id: string
         }
@@ -3142,6 +3149,7 @@ export type Database = {
           preco_unitario?: number
           quantidade?: number
           subtotal?: number
+          tipo_venda?: string
           updated_at?: string
           venda_id: string
         }
@@ -3154,6 +3162,7 @@ export type Database = {
           preco_unitario?: number
           quantidade?: number
           subtotal?: number
+          tipo_venda?: string
           updated_at?: string
           venda_id?: string
         }

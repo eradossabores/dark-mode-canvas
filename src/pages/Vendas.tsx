@@ -111,8 +111,22 @@ export default function Vendas() {
   const [geloCuboItens, setGeloCuboItens] = useState<{ tamanho: string; quantidade: number }[]>([]);
 
   // Bebidas (catálogo, sem controle de estoque)
-  const [bebidasCatalogo, setBebidasCatalogo] = useState<{ id: string; nome: string; preco: number }[]>([]);
-  const [bebidaItens, setBebidaItens] = useState<{ bebida_id: string; quantidade: number }[]>([]);
+  const [bebidasCatalogo, setBebidasCatalogo] = useState<{ id: string; nome: string; preco: number; preco_fardo: number | null; unidades_fardo: number }[]>([]);
+  const [bebidaItens, setBebidaItens] = useState<{ bebida_id: string; quantidade: number; tipo_venda: "unidade" | "fardo" }[]>([]);
+  /** Preço aplicado à linha de bebida conforme o tipo (unidade ou fardo). */
+  const precoBebida = (
+    b: { preco: number; preco_fardo: number | null; unidades_fardo: number } | undefined,
+    tipo: "unidade" | "fardo",
+  ): number => {
+    if (!b) return 0;
+    if (tipo === "fardo") return b.preco_fardo != null && b.preco_fardo > 0 ? b.preco_fardo : b.preco * (b.unidades_fardo || 6);
+    return b.preco;
+  };
+  const subtotalBebidas = () =>
+    bebidaItens.reduce(
+      (s, bi) => s + precoBebida(bebidasCatalogo.find((b) => b.id === bi.bebida_id), bi.tipo_venda) * (bi.quantidade || 0),
+      0,
+    );
 
   // Saco config from factory
   const [factoryUsaSacos, setFactoryUsaSacos] = useState(false);
@@ -301,8 +315,14 @@ export default function Vendas() {
 
       // Load bebidas ativas do catálogo
       const { data: bebidasData } = await (supabase as any)
-        .from("bebidas").select("id, nome, preco").eq("factory_id", factoryId).eq("ativo", true).order("nome");
-      setBebidasCatalogo((bebidasData || []).map((b: any) => ({ id: b.id, nome: b.nome, preco: Number(b.preco) })));
+        .from("bebidas").select("id, nome, preco, preco_fardo, unidades_fardo").eq("factory_id", factoryId).eq("ativo", true).order("nome");
+      setBebidasCatalogo((bebidasData || []).map((b: any) => ({
+        id: b.id,
+        nome: b.nome,
+        preco: Number(b.preco),
+        preco_fardo: b.preco_fardo != null ? Number(b.preco_fardo) : null,
+        unidades_fardo: Number(b.unidades_fardo) || 6,
+      })));
     }
 
     let cQ = (supabase as any).from("clientes").select("id, nome, preco_unidade_avista, preco_unidade_aprazo, limite_credito, saldo_devedor_atual, conversao_automatica_prazo").eq("status", "ativo").order("nome");
@@ -559,7 +579,7 @@ export default function Vendas() {
           .filter((bi) => bi.bebida_id && bi.quantidade > 0)
           .map((bi) => {
             const b = bebidasCatalogo.find((x) => x.id === bi.bebida_id);
-            return { ...bi, nome: b?.nome || "Bebida", preco: b?.preco || 0 };
+            return { ...bi, nome: b?.nome || "Bebida", preco: precoBebida(b, bi.tipo_venda) };
           });
         const bebidasSubtotal = bebidasValidas.reduce((s, b) => s + b.preco * b.quantidade, 0);
         const totalVendaCalc = totalProdutos + freteCliente + geloCuboSubtotal + bebidasSubtotal;
@@ -615,7 +635,8 @@ export default function Vendas() {
               venda_id: vendaId,
               bebida_id: b.bebida_id,
               factory_id: factoryId,
-              nome: b.nome,
+              nome: b.tipo_venda === "fardo" ? `${b.nome} (Fardo)` : b.nome,
+              tipo_venda: b.tipo_venda,
               quantidade: b.quantidade,
               preco_unitario: b.preco,
               subtotal: b.preco * b.quantidade,
@@ -1296,7 +1317,7 @@ export default function Vendas() {
                         const frete = parseDecimal(valorFrete) || 0;
                         const freteNaComanda = fretePagoPor === "cliente" ? frete : fretePagoPor === "ambos" ? Math.round(frete / 2 * 100) / 100 : 0;
                         const geloCuboTotal = geloCuboItens.reduce((s, it) => s + (geloCuboPrecos[it.tamanho] || 0) * it.quantidade, 0);
-                        const bebidasTotal = bebidaItens.reduce((s, bi) => s + (bebidasCatalogo.find((b) => b.id === bi.bebida_id)?.preco || 0) * (bi.quantidade || 0), 0);
+                        const bebidasTotal = subtotalBebidas();
                         return (subtotalProd + freteNaComanda + geloCuboTotal + bebidasTotal).toFixed(2);
                       })()}</span>
                     </div>
@@ -1509,15 +1530,16 @@ export default function Vendas() {
                       size="sm"
                       variant="ghost"
                       className="h-6 text-xs gap-1"
-                      onClick={() => setBebidaItens([...bebidaItens, { bebida_id: bebidasCatalogo[0].id, quantidade: 1 }])}
+                      onClick={() => setBebidaItens([...bebidaItens, { bebida_id: bebidasCatalogo[0].id, quantidade: 1, tipo_venda: "unidade" }])}
                     >
                       <Plus className="h-3 w-3" /> Incluir bebida
                     </Button>
                   </div>
                   {bebidaItens.map((item, i) => {
                     const bebida = bebidasCatalogo.find((b) => b.id === item.bebida_id);
+                    const precoLinha = precoBebida(bebida, item.tipo_venda);
                     return (
-                      <div key={i} className="flex gap-2 items-center">
+                      <div key={i} className="flex flex-wrap gap-2 items-center">
                         <Select
                           value={item.bebida_id}
                           onValueChange={(v) => { const u = [...bebidaItens]; u[i].bebida_id = v; setBebidaItens(u); }}
@@ -1531,6 +1553,16 @@ export default function Vendas() {
                             ))}
                           </SelectContent>
                         </Select>
+                        <Select
+                          value={item.tipo_venda}
+                          onValueChange={(v) => { const u = [...bebidaItens]; u[i].tipo_venda = v as "unidade" | "fardo"; setBebidaItens(u); }}
+                        >
+                          <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="unidade">Unidade</SelectItem>
+                            <SelectItem value="fardo">Fardo ({bebida?.unidades_fardo || 6}un)</SelectItem>
+                          </SelectContent>
+                        </Select>
                         <Input
                           type="number"
                           min={1}
@@ -1540,7 +1572,7 @@ export default function Vendas() {
                           placeholder="Qtd"
                         />
                         <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          R$ {((bebida?.preco || 0) * (item.quantidade || 0)).toFixed(2)}
+                          R$ {precoLinha.toFixed(2)} × {item.quantidade || 0} = R$ {(precoLinha * (item.quantidade || 0)).toFixed(2)}
                         </span>
                         <Button
                           type="button"
@@ -1556,7 +1588,7 @@ export default function Vendas() {
                   })}
                   {bebidaItens.length > 0 && (
                     <div className="text-xs font-medium text-right pt-1 border-t">
-                      Subtotal Bebidas: R$ {bebidaItens.reduce((s, bi) => s + (bebidasCatalogo.find((b) => b.id === bi.bebida_id)?.preco || 0) * (bi.quantidade || 0), 0).toFixed(2)}
+                      Subtotal Bebidas: R$ {subtotalBebidas().toFixed(2)}
                     </div>
                   )}
                 </div>
@@ -1583,7 +1615,7 @@ export default function Vendas() {
                     const frete = parseDecimal(valorFrete) || 0;
                     const freteNaComanda = fretePagoPor === "cliente" ? frete : fretePagoPor === "ambos" ? Math.round(frete / 2 * 100) / 100 : 0;
                     const geloCuboTotal = geloCuboItens.reduce((s, it) => s + (geloCuboPrecos[it.tamanho] || 0) * it.quantidade, 0);
-                    const bebidasTotal = bebidaItens.reduce((s, bi) => s + (bebidasCatalogo.find((b) => b.id === bi.bebida_id)?.preco || 0) * (bi.quantidade || 0), 0);
+                    const bebidasTotal = subtotalBebidas();
                     return (subtotalProd + freteNaComanda + geloCuboTotal + bebidasTotal).toFixed(2);
                   })()}</span>
                 </div>
