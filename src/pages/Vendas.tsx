@@ -110,6 +110,10 @@ export default function Vendas() {
   const [geloCuboPrecos, setGeloCuboPrecos] = useState<Record<string, number>>({});
   const [geloCuboItens, setGeloCuboItens] = useState<{ tamanho: string; quantidade: number }[]>([]);
 
+  // Bebidas (catálogo, sem controle de estoque)
+  const [bebidasCatalogo, setBebidasCatalogo] = useState<{ id: string; nome: string; preco: number }[]>([]);
+  const [bebidaItens, setBebidaItens] = useState<{ bebida_id: string; quantidade: number }[]>([]);
+
   // Saco config from factory
   const [factoryUsaSacos, setFactoryUsaSacos] = useState(false);
   const [factoryUnidadesPorSaco, setFactoryUnidadesPorSaco] = useState(50);
@@ -294,6 +298,11 @@ export default function Vendas() {
           setGeloCuboPrecos(map);
         }
       }
+
+      // Load bebidas ativas do catálogo
+      const { data: bebidasData } = await (supabase as any)
+        .from("bebidas").select("id, nome, preco").eq("factory_id", factoryId).eq("ativo", true).order("nome");
+      setBebidasCatalogo((bebidasData || []).map((b: any) => ({ id: b.id, nome: b.nome, preco: Number(b.preco) })));
     }
 
     let cQ = (supabase as any).from("clientes").select("id, nome, preco_unidade_avista, preco_unidade_aprazo, limite_credito, saldo_devedor_atual, conversao_automatica_prazo").eq("status", "ativo").order("nome");
@@ -545,7 +554,15 @@ export default function Vendas() {
         const freteEmpresa = fretePagoPor === "empresa" ? freteTotal : fretePagoPor === "ambos" ? Math.round(freteTotal / 2 * 100) / 100 : 0;
         // Add gelo cubo subtotal
         const geloCuboSubtotal = geloCuboItens.reduce((s, it) => s + (geloCuboPrecos[it.tamanho] || 0) * it.quantidade, 0);
-        const totalVendaCalc = totalProdutos + freteCliente + geloCuboSubtotal;
+        // Add bebidas subtotal (catálogo, sem baixa de estoque)
+        const bebidasValidas = bebidaItens
+          .filter((bi) => bi.bebida_id && bi.quantidade > 0)
+          .map((bi) => {
+            const b = bebidasCatalogo.find((x) => x.id === bi.bebida_id);
+            return { ...bi, nome: b?.nome || "Bebida", preco: b?.preco || 0 };
+          });
+        const bebidasSubtotal = bebidasValidas.reduce((s, b) => s + b.preco * b.quantidade, 0);
+        const totalVendaCalc = totalProdutos + freteCliente + geloCuboSubtotal + bebidasSubtotal;
         const vPix = detalhePgto === "pix" ? totalVendaCalc : detalhePgto === "misto" ? parseBRL(detalhePix) : 0;
         const vEsp = detalhePgto === "especie" ? totalVendaCalc : detalhePgto === "misto" ? parseBRL(detalheEspecie) : 0;
         // "misto" é mapeado para "dinheiro" no DB para manter compatibilidade com relatórios existentes
@@ -590,6 +607,22 @@ export default function Vendas() {
             }
           }
         }
+
+        // Save bebidas da comanda (somente registro, sem estoque)
+        if (bebidasValidas.length > 0) {
+          await (supabase as any).from("venda_bebida_itens").insert(
+            bebidasValidas.map((b) => ({
+              venda_id: vendaId,
+              bebida_id: b.bebida_id,
+              factory_id: factoryId,
+              nome: b.nome,
+              quantidade: b.quantidade,
+              preco_unitario: b.preco,
+              subtotal: b.preco * b.quantidade,
+            })),
+          );
+        }
+
 
         // Se empresa paga frete (total ou parcial), registrar despesa
         if (freteEmpresa > 0) {
@@ -686,7 +719,7 @@ export default function Vendas() {
         }
       }
 
-      setOpen(false); setItens([]); setClienteId(""); setFormaPagamento("dinheiro"); setObservacoes(""); setNumeroNf(""); setDataVenda(new Date()); setValorTotal(""); setValorEntrada(""); setValorRestante(""); setDataVencimento(undefined); setIgnorarEstoque(false); setStatusVenda("pendente"); setDetalhePgto("especie"); setDetalhePix(""); setDetalheEspecie(""); setValorFrete(""); setFretePagoPor("cliente"); setBrindes([]); setVendaPorPacote(false); setGeloCuboItens([]);
+      setOpen(false); setItens([]); setClienteId(""); setFormaPagamento("dinheiro"); setObservacoes(""); setNumeroNf(""); setDataVenda(new Date()); setValorTotal(""); setValorEntrada(""); setValorRestante(""); setDataVencimento(undefined); setIgnorarEstoque(false); setStatusVenda("pendente"); setDetalhePgto("especie"); setDetalhePix(""); setDetalheEspecie(""); setValorFrete(""); setFretePagoPor("cliente"); setBrindes([]); setVendaPorPacote(false); setGeloCuboItens([]); setBebidaItens([]);
       loadData();
     } catch (e: any) {
       toast({ title: "Erro na venda", description: e.message, variant: "destructive" });
@@ -1263,7 +1296,8 @@ export default function Vendas() {
                         const frete = parseDecimal(valorFrete) || 0;
                         const freteNaComanda = fretePagoPor === "cliente" ? frete : fretePagoPor === "ambos" ? Math.round(frete / 2 * 100) / 100 : 0;
                         const geloCuboTotal = geloCuboItens.reduce((s, it) => s + (geloCuboPrecos[it.tamanho] || 0) * it.quantidade, 0);
-                        return (subtotalProd + freteNaComanda + geloCuboTotal).toFixed(2);
+                        const bebidasTotal = bebidaItens.reduce((s, bi) => s + (bebidasCatalogo.find((b) => b.id === bi.bebida_id)?.preco || 0) * (bi.quantidade || 0), 0);
+                        return (subtotalProd + freteNaComanda + geloCuboTotal + bebidasTotal).toFixed(2);
                       })()}</span>
                     </div>
                     {brindes.filter(b => Number(b.quantidade) > 0 && b.sabor_id).map((b, i) => (
@@ -1464,6 +1498,70 @@ export default function Vendas() {
                   )}
                 </div>
               )}
+
+              {/* Bebidas */}
+              {bebidasCatalogo.length > 0 && (
+                <div className="space-y-2 p-3 border-2 rounded-lg bg-muted/30 border-amber-500/20">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-bold">🥤 Bebidas</Label>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 text-xs gap-1"
+                      onClick={() => setBebidaItens([...bebidaItens, { bebida_id: bebidasCatalogo[0].id, quantidade: 1 }])}
+                    >
+                      <Plus className="h-3 w-3" /> Incluir bebida
+                    </Button>
+                  </div>
+                  {bebidaItens.map((item, i) => {
+                    const bebida = bebidasCatalogo.find((b) => b.id === item.bebida_id);
+                    return (
+                      <div key={i} className="flex gap-2 items-center">
+                        <Select
+                          value={item.bebida_id}
+                          onValueChange={(v) => { const u = [...bebidaItens]; u[i].bebida_id = v; setBebidaItens(u); }}
+                        >
+                          <SelectTrigger className="flex-1 min-w-0"><SelectValue placeholder="Bebida" /></SelectTrigger>
+                          <SelectContent>
+                            {bebidasCatalogo.map((b) => (
+                              <SelectItem key={b.id} value={b.id}>
+                                {b.nome} — R$ {b.preco.toFixed(2)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          type="number"
+                          min={1}
+                          className="w-20"
+                          value={item.quantidade}
+                          onChange={(e) => { const u = [...bebidaItens]; u[i].quantidade = Number(e.target.value); setBebidaItens(u); }}
+                          placeholder="Qtd"
+                        />
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          R$ {((bebida?.preco || 0) * (item.quantidade || 0)).toFixed(2)}
+                        </span>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-destructive"
+                          onClick={() => setBebidaItens(bebidaItens.filter((_, idx) => idx !== i))}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                  {bebidaItens.length > 0 && (
+                    <div className="text-xs font-medium text-right pt-1 border-t">
+                      Subtotal Bebidas: R$ {bebidaItens.reduce((s, bi) => s + (bebidasCatalogo.find((b) => b.id === bi.bebida_id)?.preco || 0) * (bi.quantidade || 0), 0).toFixed(2)}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div><Label>Observações</Label><Input value={observacoes} onChange={(e) => setObservacoes(e.target.value)} /></div>
               <div className="flex items-start space-x-2">
                 <Checkbox id="ignorar-estoque" checked={ignorarEstoque} onCheckedChange={(v) => setIgnorarEstoque(!!v)} className="mt-0.5" />
@@ -1485,7 +1583,8 @@ export default function Vendas() {
                     const frete = parseDecimal(valorFrete) || 0;
                     const freteNaComanda = fretePagoPor === "cliente" ? frete : fretePagoPor === "ambos" ? Math.round(frete / 2 * 100) / 100 : 0;
                     const geloCuboTotal = geloCuboItens.reduce((s, it) => s + (geloCuboPrecos[it.tamanho] || 0) * it.quantidade, 0);
-                    return (subtotalProd + freteNaComanda + geloCuboTotal).toFixed(2);
+                    const bebidasTotal = bebidaItens.reduce((s, bi) => s + (bebidasCatalogo.find((b) => b.id === bi.bebida_id)?.preco || 0) * (bi.quantidade || 0), 0);
+                    return (subtotalProd + freteNaComanda + geloCuboTotal + bebidasTotal).toFixed(2);
                   })()}</span>
                 </div>
               )}

@@ -6,7 +6,7 @@ import {
   ShoppingBag, Database, LogOut, Shield, Brain, MapPin, Map, Target,
   HardDrive, UserCheck, Crown, MessageCircle, Settings, CalendarDays,
   ChevronDown, ChevronRight, Menu, X, PanelLeftClose, PanelLeftOpen, Wallet, History, TrendingUp, Home
-  , UserX, Route as RouteIcon, Camera, ClipboardCheck, AlertTriangle, Award, Truck, Send
+  , UserX, Route as RouteIcon, Camera, ClipboardCheck, AlertTriangle, Award, Truck, Send, CupSoda
 } from "lucide-react";
 import PaymentBanner from "@/components/PaymentBanner";
 import { cn } from "@/lib/utils";
@@ -82,6 +82,7 @@ const menuGroups: MenuGroup[] = [
       { path: "/painel/clientes-sem-compra", label: "Clientes sem Compra", icon: UserX },
       { path: "/painel/funcionarios", label: "Colaboradores", icon: UserCog },
       { path: "/painel/sabores", label: "Sabores", icon: Package },
+      { path: "/painel/bebidas", label: "Bebidas", icon: CupSoda },
     ],
   },
   {

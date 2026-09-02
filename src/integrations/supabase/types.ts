@@ -255,6 +255,39 @@ export type Database = {
           },
         ]
       }
+      bebidas: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          factory_id: string
+          id: string
+          nome: string
+          preco: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          factory_id: string
+          id?: string
+          nome: string
+          preco?: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          factory_id?: string
+          id?: string
+          nome?: string
+          preco?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bonus_metas_vendedor: {
         Row: {
           created_at: string
@@ -3083,6 +3116,60 @@ export type Database = {
             columns: ["factory_id"]
             isOneToOne: false
             referencedRelation: "factories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venda_bebida_itens: {
+        Row: {
+          bebida_id: string | null
+          created_at: string
+          factory_id: string
+          id: string
+          nome: string
+          preco_unitario: number
+          quantidade: number
+          subtotal: number
+          updated_at: string
+          venda_id: string
+        }
+        Insert: {
+          bebida_id?: string | null
+          created_at?: string
+          factory_id: string
+          id?: string
+          nome: string
+          preco_unitario?: number
+          quantidade?: number
+          subtotal?: number
+          updated_at?: string
+          venda_id: string
+        }
+        Update: {
+          bebida_id?: string | null
+          created_at?: string
+          factory_id?: string
+          id?: string
+          nome?: string
+          preco_unitario?: number
+          quantidade?: number
+          subtotal?: number
+          updated_at?: string
+          venda_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venda_bebida_itens_bebida_id_fkey"
+            columns: ["bebida_id"]
+            isOneToOne: false
+            referencedRelation: "bebidas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venda_bebida_itens_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vendas"
             referencedColumns: ["id"]
           },
         ]
