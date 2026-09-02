@@ -1530,15 +1530,16 @@ export default function Vendas() {
                       size="sm"
                       variant="ghost"
                       className="h-6 text-xs gap-1"
-                      onClick={() => setBebidaItens([...bebidaItens, { bebida_id: bebidasCatalogo[0].id, quantidade: 1 }])}
+                      onClick={() => setBebidaItens([...bebidaItens, { bebida_id: bebidasCatalogo[0].id, quantidade: 1, tipo_venda: "unidade" }])}
                     >
                       <Plus className="h-3 w-3" /> Incluir bebida
                     </Button>
                   </div>
                   {bebidaItens.map((item, i) => {
                     const bebida = bebidasCatalogo.find((b) => b.id === item.bebida_id);
+                    const precoLinha = precoBebida(bebida, item.tipo_venda);
                     return (
-                      <div key={i} className="flex gap-2 items-center">
+                      <div key={i} className="flex flex-wrap gap-2 items-center">
                         <Select
                           value={item.bebida_id}
                           onValueChange={(v) => { const u = [...bebidaItens]; u[i].bebida_id = v; setBebidaItens(u); }}
@@ -1552,6 +1553,16 @@ export default function Vendas() {
                             ))}
                           </SelectContent>
                         </Select>
+                        <Select
+                          value={item.tipo_venda}
+                          onValueChange={(v) => { const u = [...bebidaItens]; u[i].tipo_venda = v as "unidade" | "fardo"; setBebidaItens(u); }}
+                        >
+                          <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="unidade">Unidade</SelectItem>
+                            <SelectItem value="fardo">Fardo ({bebida?.unidades_fardo || 6}un)</SelectItem>
+                          </SelectContent>
+                        </Select>
                         <Input
                           type="number"
                           min={1}
@@ -1561,7 +1572,7 @@ export default function Vendas() {
                           placeholder="Qtd"
                         />
                         <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          R$ {((bebida?.preco || 0) * (item.quantidade || 0)).toFixed(2)}
+                          R$ {precoLinha.toFixed(2)} × {item.quantidade || 0} = R$ {(precoLinha * (item.quantidade || 0)).toFixed(2)}
                         </span>
                         <Button
                           type="button"
@@ -1577,7 +1588,7 @@ export default function Vendas() {
                   })}
                   {bebidaItens.length > 0 && (
                     <div className="text-xs font-medium text-right pt-1 border-t">
-                      Subtotal Bebidas: R$ {bebidaItens.reduce((s, bi) => s + (bebidasCatalogo.find((b) => b.id === bi.bebida_id)?.preco || 0) * (bi.quantidade || 0), 0).toFixed(2)}
+                      Subtotal Bebidas: R$ {subtotalBebidas().toFixed(2)}
                     </div>
                   )}
                 </div>
