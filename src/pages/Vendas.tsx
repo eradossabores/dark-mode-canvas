@@ -298,6 +298,11 @@ export default function Vendas() {
           setGeloCuboPrecos(map);
         }
       }
+
+      // Load bebidas ativas do catálogo
+      const { data: bebidasData } = await (supabase as any)
+        .from("bebidas").select("id, nome, preco").eq("factory_id", factoryId).eq("ativo", true).order("nome");
+      setBebidasCatalogo((bebidasData || []).map((b: any) => ({ id: b.id, nome: b.nome, preco: Number(b.preco) })));
     }
 
     let cQ = (supabase as any).from("clientes").select("id, nome, preco_unidade_avista, preco_unidade_aprazo, limite_credito, saldo_devedor_atual, conversao_automatica_prazo").eq("status", "ativo").order("nome");
