@@ -554,7 +554,15 @@ export default function Vendas() {
         const freteEmpresa = fretePagoPor === "empresa" ? freteTotal : fretePagoPor === "ambos" ? Math.round(freteTotal / 2 * 100) / 100 : 0;
         // Add gelo cubo subtotal
         const geloCuboSubtotal = geloCuboItens.reduce((s, it) => s + (geloCuboPrecos[it.tamanho] || 0) * it.quantidade, 0);
-        const totalVendaCalc = totalProdutos + freteCliente + geloCuboSubtotal;
+        // Add bebidas subtotal (catálogo, sem baixa de estoque)
+        const bebidasValidas = bebidaItens
+          .filter((bi) => bi.bebida_id && bi.quantidade > 0)
+          .map((bi) => {
+            const b = bebidasCatalogo.find((x) => x.id === bi.bebida_id);
+            return { ...bi, nome: b?.nome || "Bebida", preco: b?.preco || 0 };
+          });
+        const bebidasSubtotal = bebidasValidas.reduce((s, b) => s + b.preco * b.quantidade, 0);
+        const totalVendaCalc = totalProdutos + freteCliente + geloCuboSubtotal + bebidasSubtotal;
         const vPix = detalhePgto === "pix" ? totalVendaCalc : detalhePgto === "misto" ? parseBRL(detalhePix) : 0;
         const vEsp = detalhePgto === "especie" ? totalVendaCalc : detalhePgto === "misto" ? parseBRL(detalheEspecie) : 0;
         // "misto" é mapeado para "dinheiro" no DB para manter compatibilidade com relatórios existentes
