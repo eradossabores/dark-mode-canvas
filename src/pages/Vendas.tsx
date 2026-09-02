@@ -608,6 +608,22 @@ export default function Vendas() {
           }
         }
 
+        // Save bebidas da comanda (somente registro, sem estoque)
+        if (bebidasValidas.length > 0) {
+          await (supabase as any).from("venda_bebida_itens").insert(
+            bebidasValidas.map((b) => ({
+              venda_id: vendaId,
+              bebida_id: b.bebida_id,
+              factory_id: factoryId,
+              nome: b.nome,
+              quantidade: b.quantidade,
+              preco_unitario: b.preco,
+              subtotal: b.preco * b.quantidade,
+            })),
+          );
+        }
+
+
         // Se empresa paga frete (total ou parcial), registrar despesa
         if (freteEmpresa > 0) {
           const clienteNomeFrete = clientes.find(c => c.id === clienteId)?.nome || "?";
