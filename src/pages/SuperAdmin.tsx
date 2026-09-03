@@ -593,7 +593,7 @@ export default function SuperAdmin() {
       headStyles: { fillColor: [30, 58, 95] },
     });
 
-    doc.save(`fabricas-macuxi-ice-${format(new Date(), "yyyyMMdd")}.pdf`);
+    doc.save(`fabricas-dpraia-ice-${format(new Date(), "yyyyMMdd")}.pdf`);
   }
 
   function getStatusBadge(sub: FactoryRow["subscription"]) {
