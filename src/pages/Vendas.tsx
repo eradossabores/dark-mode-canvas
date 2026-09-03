@@ -1541,51 +1541,63 @@ export default function Vendas() {
                     const bebida = bebidasCatalogo.find((b) => b.id === item.bebida_id);
                     const precoLinha = precoBebida(bebida, item.tipo_venda);
                     return (
-                      <div key={i} className="flex flex-wrap gap-2 items-center">
-                        <Select
-                          value={item.bebida_id}
-                          onValueChange={(v) => { const u = [...bebidaItens]; u[i].bebida_id = v; setBebidaItens(u); }}
-                        >
-                          <SelectTrigger className="flex-1 min-w-0"><SelectValue placeholder="Bebida" /></SelectTrigger>
-                          <SelectContent>
-                            {bebidasCatalogo.map((b) => (
-                              <SelectItem key={b.id} value={b.id}>
-                                {b.nome} — R$ {b.preco.toFixed(2)}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Select
-                          value={item.tipo_venda}
-                          onValueChange={(v) => { const u = [...bebidaItens]; u[i].tipo_venda = v as "unidade" | "fardo"; setBebidaItens(u); }}
-                        >
-                          <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="unidade">Unidade</SelectItem>
-                            <SelectItem value="fardo">Fardo ({bebida?.unidades_fardo || 6}un)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Input
-                          type="number"
-                          min={1}
-                          className="w-20"
-                          value={item.quantidade}
-                          onChange={(e) => { const u = [...bebidaItens]; u[i].quantidade = Number(e.target.value); setBebidaItens(u); }}
-                          placeholder="Qtd"
-                        />
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          R$ {precoLinha.toFixed(2)} × {item.quantidade || 0} = R$ {(precoLinha * (item.quantidade || 0)).toFixed(2)}
-                        </span>
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8 text-destructive"
-                          onClick={() => setBebidaItens(bebidaItens.filter((_, idx) => idx !== i))}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                      <div key={i} className="rounded-md border bg-background/60 p-2 space-y-2">
+                        <div className="flex gap-2 items-center">
+                          <Select
+                            value={item.bebida_id}
+                            onValueChange={(v) => { const u = [...bebidaItens]; u[i].bebida_id = v; setBebidaItens(u); }}
+                          >
+                            <SelectTrigger className="flex-1 min-w-0"><SelectValue placeholder="Bebida" /></SelectTrigger>
+                            <SelectContent>
+                              {bebidasCatalogo.map((b) => (
+                                <SelectItem key={b.id} value={b.id}>
+                                  {b.nome} — R$ {b.preco.toFixed(2)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 shrink-0 text-destructive"
+                            onClick={() => setBebidaItens(bebidaItens.filter((_, idx) => idx !== i))}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-[10px] text-muted-foreground">Tipo de venda</Label>
+                            <Select
+                              value={item.tipo_venda}
+                              onValueChange={(v) => { const u = [...bebidaItens]; u[i].tipo_venda = v as "unidade" | "fardo"; setBebidaItens(u); }}
+                            >
+                              <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="unidade">Unidade</SelectItem>
+                                <SelectItem value="fardo">Fardo ({bebida?.unidades_fardo || 6}un)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="text-[10px] text-muted-foreground">Quantidade</Label>
+                            <Input
+                              type="number"
+                              inputMode="numeric"
+                              min={1}
+                              className="w-full"
+                              value={item.quantidade}
+                              onChange={(e) => { const u = [...bebidaItens]; u[i].quantidade = Number(e.target.value); setBebidaItens(u); }}
+                              placeholder="Qtd"
+                            />
+                          </div>
+                        </div>
+                        <div className="text-xs text-muted-foreground text-right">
+                          R$ {precoLinha.toFixed(2)} × {item.quantidade || 0} = <span className="font-semibold text-foreground">R$ {(precoLinha * (item.quantidade || 0)).toFixed(2)}</span>
+                        </div>
                       </div>
+
                     );
                   })}
                   {bebidaItens.length > 0 && (
