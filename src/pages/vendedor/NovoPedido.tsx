@@ -386,12 +386,8 @@ export default function NovoPedido() {
           valor_pago: statusVenda === "paga" ? totalVenda : 0,
           valor_frete: parseDecimal(valorFrete) || 0,
           frete_pago_por: fretePagoPor,
-          itens: (itensData || []).map((it: any) => ({
-            sabor_nome: it.sabores?.nome || "?",
-            quantidade: it.quantidade,
-            preco_unitario: Number(it.preco_unitario),
-            subtotal: Number(it.subtotal),
-          })),
+          itens: itensRecibo,
+
         });
         setReciboOpen(true);
       }
