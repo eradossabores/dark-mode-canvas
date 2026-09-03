@@ -115,13 +115,15 @@ export async function fetchReciboItens(vendaId: string): Promise<ReciboItemLinha
   for (const it of bebidas.data || []) {
     const qtd = Number(it.quantidade || 0);
     const unit = Number(it.preco_unitario ?? 0);
+    const sufixo = it.tipo_venda === "fardo" ? " (Fardo)" : "";
     linhas.push({
-      sabor_nome: it.nome || "Bebida",
+      sabor_nome: `${it.nome || "Bebida"}${sufixo}`,
       quantidade: qtd,
       preco_unitario: unit,
       subtotal: Number(it.subtotal ?? unit * qtd),
     });
   }
+
 
   return linhas;
 }
