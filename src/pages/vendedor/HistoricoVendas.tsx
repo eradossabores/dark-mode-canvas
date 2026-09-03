@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchReciboItens } from "@/lib/supabase-helpers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -176,7 +177,8 @@ export default function HistoricoVendas() {
     return colors[status] || "bg-muted text-muted-foreground";
   }
 
-  function handleView(v: any) {
+  async function handleView(v: any) {
+    const itensRecibo = await fetchReciboItens(v.id);
     const enderecoCompleto = [v.clientes?.endereco, v.clientes?.bairro, v.clientes?.cidade].filter(Boolean).join(", ") || undefined;
     setReciboData({
       cliente_nome: v.clientes?.nome || "?",
@@ -191,12 +193,7 @@ export default function HistoricoVendas() {
       valor_pago: Number(v.valor_pago || 0),
       valor_frete: Number(v.valor_frete || 0),
       frete_pago_por: v.frete_pago_por,
-      itens: (v.venda_itens || []).map((it: any) => ({
-        sabor_nome: it.sabores?.nome || "?",
-        quantidade: it.quantidade,
-        preco_unitario: Number(it.preco_unitario || 0),
-        subtotal: Number(it.subtotal || 0),
-      })),
+      itens: itensRecibo,
     });
     setReciboOpen(true);
   }
