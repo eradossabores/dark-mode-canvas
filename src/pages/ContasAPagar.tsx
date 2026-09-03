@@ -601,7 +601,7 @@ export default function ContasAPagar() {
   async function gerarComprovante(descricao: string, valor: number, formaLabel: string, tipo: "fixo" | "parcelado", parcelaInfo?: string) {
     const doc = new jsPDF({ unit: "mm", format: [80, 160] });
     const W = 80;
-    const displayName = factoryName || "MACUXI ICE";
+    const displayName = factoryName || "D'PRAIA ICE";
     const useLogo = branding?.logoUrl || logoUrl;
 
     let y = 8;

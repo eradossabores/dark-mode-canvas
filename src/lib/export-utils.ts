@@ -61,7 +61,7 @@ export async function exportToPDF(
   const CONTENT_W = PAGE_W - MARGIN * 2;
 
   const useLogo = branding?.factoryLogoUrl || logoUrl;
-  const displayName = branding?.factoryName || "MACUXI ICE";
+  const displayName = branding?.factoryName || "D'PRAIA ICE";
 
   // ── Header com logo ──
   try {

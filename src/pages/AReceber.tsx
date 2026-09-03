@@ -126,7 +126,7 @@ export default function AReceber() {
     } catch { y += 4; }
 
     doc.setFontSize(7);
-    doc.text(factoryName || "MACUXI ICE", w / 2, y, { align: "center" });
+    doc.text(factoryName || "D'PRAIA ICE", w / 2, y, { align: "center" });
     y += 5;
 
     doc.setLineWidth(0.3);
@@ -227,7 +227,7 @@ export default function AReceber() {
     const restante = p.total - p.valorPago;
     const statusLine = p.quitou ? "Pagamento Completo!" : (p.valorPago > 0 ? `Pagamento Parcial (Restante: R$ ${restante.toFixed(2)})` : `Valor Pendente: R$ ${restante.toFixed(2)}`);
     const pagoLine = p.valorPago > 0 ? `\nPago: R$ ${p.valorPago.toFixed(2)}` : "";
-    const displayName = factoryName || "MACUXI ICE";
+    const displayName = factoryName || "D'PRAIA ICE";
     const msg = `*${displayName}*\n\n${statusLine}\n\nCliente: ${p.clienteNome}\nValor: R$ ${p.total.toFixed(2)}${pagoLine}`;
 
     if (doc) {
@@ -479,7 +479,7 @@ export default function AReceber() {
     doc.setFontSize(6.5);
     doc.setTextColor(80, 80, 80);
     doc.setFont("helvetica", "italic");
-    doc.text(factoryName || "MACUXI ICE", w / 2, y, { align: "center" });
+    doc.text(factoryName || "D'PRAIA ICE", w / 2, y, { align: "center" });
     y += 4;
 
     // Decorative double line
@@ -727,7 +727,7 @@ export default function AReceber() {
     const fileName = `recibo-${clienteNome.replace(/\s+/g, "-")}.pdf`;
 
     const pagoLine = pago > 0 ? `\nPago: R$ ${pago.toFixed(2)}` : "";
-    const displayName2 = factoryName || "MACUXI ICE";
+    const displayName2 = factoryName || "D'PRAIA ICE";
     // Busca a forma de pagamento do último abatimento (reflete pgto real, não o original da venda)
     const { data: ultimosAbat } = await (supabase as any)
       .from("abatimentos_historico")

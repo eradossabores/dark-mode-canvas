@@ -145,7 +145,7 @@ export default function Pedir() {
   const [addedAnimation, setAddedAnimation] = useState<string | null>(null);
 
   useEffect(() => {
-    document.title = "Faça seu Pedido | MACUXI ICE";
+    document.title = "Faça seu Pedido | D'PRAIA ICE";
 
     let description = document.head.querySelector("meta[name='description']") as HTMLMetaElement | null;
     if (!description) {
@@ -289,7 +289,7 @@ export default function Pedir() {
       .join("\n");
 
     const msg = [
-      `🧊 *NOVO PEDIDO — MACUXI ICE*`,
+      `🧊 *NOVO PEDIDO — D'PRAIA ICE*`,
       ``,
       `👤 *Cliente:* ${nome.trim()}`,
       `📞 *Contato:* ${telefone.trim()}`,
@@ -330,7 +330,7 @@ export default function Pedir() {
         <header className="sticky top-0 z-50 border-b border-border/50 bg-card/90 backdrop-blur-xl shadow-sm">
           <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-2.5">
             <Link to="/" className="flex items-center gap-2">
-              <img src={logo} alt="MACUXI ICE" className="h-10"  loading="lazy" decoding="async" />
+              <img src={logo} alt="D'PRAIA ICE" className="h-10"  loading="lazy" decoding="async" />
             </Link>
             {step !== "hero" && totalItens > 0 && step === "catalogo" && (
               <Button
