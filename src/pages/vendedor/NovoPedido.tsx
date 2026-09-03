@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { realizarVenda } from "@/lib/supabase-helpers";
+import { realizarVenda, fetchReciboItens } from "@/lib/supabase-helpers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -367,8 +367,7 @@ export default function NovoPedido() {
       if (vendaId) {
         const { data: clienteFull } = await (supabase as any)
           .from("clientes").select("telefone, endereco, bairro, cidade").eq("id", clienteId).single();
-        const { data: itensData } = await (supabase as any)
-          .from("venda_itens").select("*, sabores(nome)").eq("venda_id", vendaId);
+        const itensRecibo = await fetchReciboItens(vendaId);
         const brindeSaborIdsAudit = brindes.filter((b) => Number(b.quantidade) > 0 && b.sabor_id).map((b) => b.sabor_id);
         const totalVenda = itensValidos.filter((i) => !brindeSaborIdsAudit.includes(i.sabor_id))
           .reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0);
