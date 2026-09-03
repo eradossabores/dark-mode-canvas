@@ -90,7 +90,7 @@ function ProgressRing({ progress, color, size = 52 }: { progress: number; color:
   );
 }
 
-// Escala fixa - APENAS para a fábrica "MACUXI ICE"
+// Escala fixa - APENAS para a fábrica "D'PRAIA ICE"
 const ERA_DOS_SABORES_ID = "00000000-0000-0000-0000-000000000001";
 const ESCALA_ERA_DOS_SABORES: Record<number, string[]> = {
   0: [], 1: [], 2: ["aghata", "maria"],

@@ -573,7 +573,7 @@ export default function SuperAdmin() {
     const date = format(new Date(), "dd/MM/yyyy HH:mm");
 
     doc.setFontSize(16);
-    doc.text("MACUXI ICE — Lista de Fábricas", 14, 18);
+    doc.text("D'PRAIA ICE — Lista de Fábricas", 14, 18);
     doc.setFontSize(10);
     doc.text(`Gerado em: ${date} | Total: ${factories.length} fábricas`, 14, 26);
 
@@ -593,7 +593,7 @@ export default function SuperAdmin() {
       headStyles: { fillColor: [30, 58, 95] },
     });
 
-    doc.save(`fabricas-macuxi-ice-${format(new Date(), "yyyyMMdd")}.pdf`);
+    doc.save(`fabricas-dpraia-ice-${format(new Date(), "yyyyMMdd")}.pdf`);
   }
 
   function getStatusBadge(sub: FactoryRow["subscription"]) {

@@ -102,7 +102,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     doc.setFontSize(6.5);
     doc.setTextColor(80, 80, 80);
     doc.setFont("helvetica", "italic");
-    doc.text(factoryName || "MACUXI ICE", w / 2, y, { align: "center" });
+    doc.text(factoryName || "D'PRAIA ICE", w / 2, y, { align: "center" });
     y += 4;
 
     // Decorative double line
@@ -350,7 +350,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(0, 100, 160);
-    doc.text(factoryName || "MACUXI ICE", M + logoW + 6, y + 10);
+    doc.text(factoryName || "D'PRAIA ICE", M + logoW + 6, y + 10);
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(90, 90, 90);
@@ -522,7 +522,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(8);
     doc.setFont("helvetica", "italic");
-    doc.text(`${factoryName || "MACUXI ICE"} — Obrigado pela preferência!`, W / 2, pageH - 2, { align: "center" });
+    doc.text(`${factoryName || "D'PRAIA ICE"} — Obrigado pela preferência!`, W / 2, pageH - 2, { align: "center" });
 
     return doc;
   }
@@ -547,7 +547,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     const fileName = `recibo-${data.cliente_nome.replace(/\s+/g, "-")}.pdf`;
     const file = new File([pdfBlob], fileName, { type: "application/pdf" });
 
-    const displayName = factoryName || "MACUXI ICE";
+    const displayName = factoryName || "D'PRAIA ICE";
     const vencLine = data.data_vencimento ? `\nVencimento: ${data.data_vencimento}` : "";
     const msg = `*${displayName}*\n\nOlá ${data.cliente_nome}, segue seu recibo.\n\nTotal: R$ ${totalExibido.toFixed(2)}\nData: ${data.data}\nPagamento: ${data.forma_pagamento}${vencLine}`;
 
@@ -578,7 +578,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
         <div className="space-y-3 text-sm">
           <div className="text-center border-b pb-3">
             <img src={factoryLogo} alt={factoryName || "Logo"} className="h-28 mx-auto mb-1"  loading="lazy" decoding="async" />
-            <p className="text-muted-foreground text-xs font-semibold">{factoryName || "MACUXI ICE"}</p>
+            <p className="text-muted-foreground text-xs font-semibold">{factoryName || "D'PRAIA ICE"}</p>
           </div>
 
           <div className="space-y-1">
