@@ -105,7 +105,7 @@ export async function fetchReciboItens(vendaId: string): Promise<ReciboItemLinha
     const qtd = Number(it.quantidade || 0);
     const unit = Number(it.preco_unitario ?? 0);
     linhas.push({
-      sabor_nome: it.nome || `Gelo Cubo ${it.peso_kg ? `${it.peso_kg}kg` : ""}`.trim(),
+      sabor_nome: `Gelo Cubo Filtrado${it.tamanho ? ` ${it.tamanho}` : ""}`,
       quantidade: qtd,
       preco_unitario: unit,
       subtotal: Number(it.subtotal ?? unit * qtd),
