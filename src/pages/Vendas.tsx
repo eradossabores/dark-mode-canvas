@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { realizarVenda } from "@/lib/supabase-helpers";
+import { realizarVenda, fetchReciboItens } from "@/lib/supabase-helpers";
 import { toast } from "@/hooks/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -254,8 +254,7 @@ export default function Vendas() {
   }
 
   async function openRecibo(v: any) {
-    const { data: itensData } = await (supabase as any)
-      .from("venda_itens").select("*, sabores(nome)").eq("venda_id", v.id);
+    const itensRecibo = await fetchReciboItens(v.id);
     const { data: clienteData } = await (supabase as any)
       .from("clientes").select("telefone, endereco, bairro, cidade").eq("id", v.cliente_id).single();
     const enderecoCompleto = [clienteData?.endereco, clienteData?.bairro, clienteData?.cidade].filter(Boolean).join(", ") || undefined;
@@ -274,12 +273,7 @@ export default function Vendas() {
       valor_frete: Number(v.valor_frete || 0),
       frete_pago_por: v.frete_pago_por || undefined,
       data_vencimento: v.data_vencimento ? new Date(v.data_vencimento + "T00:00:00").toLocaleDateString("pt-BR") : undefined,
-      itens: (itensData || []).map((it: any) => ({
-        sabor_nome: it.sabores?.nome || "?",
-        quantidade: it.quantidade,
-        preco_unitario: Number(it.preco_unitario),
-        subtotal: Number(it.subtotal),
-      })),
+      itens: itensRecibo,
     });
     setReciboOpen(true);
   }
@@ -712,8 +706,7 @@ export default function Vendas() {
         const { data: clienteFull } = await (supabase as any)
           .from("clientes").select("telefone, endereco, bairro, cidade").eq("id", clienteId).single();
         if (clienteFull?.telefone) {
-          const { data: itensData } = await (supabase as any)
-            .from("venda_itens").select("*, sabores(nome)").eq("venda_id", vendaId);
+          const itensRecibo = await fetchReciboItens(vendaId);
           const enderecoCompleto = [clienteFull?.endereco, clienteFull?.bairro, clienteFull?.cidade].filter(Boolean).join(", ") || undefined;
           setReciboData({
             cliente_nome: clienteObj?.nome || "?",
@@ -731,12 +724,7 @@ export default function Vendas() {
             data_vencimento: (formaPagamento === "boleto" || formaPagamento === "parcelado" || formaPagamento === "fiado") && dataVencimento
               ? format(dataVencimento, "dd/MM/yyyy")
               : undefined,
-            itens: (itensData || []).map((it: any) => ({
-              sabor_nome: it.sabores?.nome || "?",
-              quantidade: it.quantidade,
-              preco_unitario: Number(it.preco_unitario),
-              subtotal: Number(it.subtotal),
-            })),
+            itens: itensRecibo,
           });
           setReciboOpen(true);
         }
