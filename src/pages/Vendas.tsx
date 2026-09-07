@@ -336,6 +336,21 @@ export default function Vendas() {
         chunks.map((ids) => (supabase as any).from("venda_itens").select("venda_id, quantidade").in("venda_id", ids))
       );
       vi = { data: results.flatMap((r: any) => r.data || []) };
+      // Bebidas (unidade/fardo) e gelo em cubo também contam na coluna "Unidades"
+      const [resBeb, resCubo] = await Promise.all([
+        Promise.all(
+          chunks.map((ids) =>
+            (supabase as any).from("venda_bebida_itens").select("venda_id, quantidade, tipo_venda, bebidas(unidades_fardo)").in("venda_id", ids)
+          )
+        ),
+        Promise.all(
+          chunks.map((ids) =>
+            (supabase as any).from("venda_gelo_cubo_itens").select("venda_id, quantidade").in("venda_id", ids)
+          )
+        ),
+      ]);
+      viBeb = { data: resBeb.flatMap((r: any) => r.data || []) };
+      viCubo = { data: resCubo.flatMap((r: any) => r.data || []) };
     }
     setClientes(c.data || []);
     setSabores(s.data || []);
