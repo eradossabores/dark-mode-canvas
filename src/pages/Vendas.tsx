@@ -328,6 +328,8 @@ export default function Vendas() {
     // Fetch venda_itens scoped to the returned vendas to avoid the 1000-row default limit
     const vendaIds = (v.data || []).map((vd: any) => vd.id);
     let vi: any = { data: [] };
+    let viBeb: any = { data: [] };
+    let viCubo: any = { data: [] };
     if (vendaIds.length > 0) {
       // chunk into batches of 200 to keep URL length safe
       const chunks: string[][] = [];
@@ -380,6 +382,15 @@ export default function Vendas() {
     // Build units map per venda
     const unitsMap: Record<string, number> = {};
     (vi.data || []).forEach((it: any) => {
+      unitsMap[it.venda_id] = (unitsMap[it.venda_id] || 0) + it.quantidade;
+    });
+    // Bebidas: fardo conta como quantidade × unidades do fardo (padrão 6)
+    (viBeb.data || []).forEach((it: any) => {
+      const unFardo = Number(it.bebidas?.unidades_fardo) || 6;
+      const qtd = it.tipo_venda === "fardo" ? it.quantidade * unFardo : it.quantidade;
+      unitsMap[it.venda_id] = (unitsMap[it.venda_id] || 0) + qtd;
+    });
+    (viCubo.data || []).forEach((it: any) => {
       unitsMap[it.venda_id] = (unitsMap[it.venda_id] || 0) + it.quantidade;
     });
     // Build pedido status map per venda
