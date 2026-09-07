@@ -1921,17 +1921,21 @@ export default function Vendas() {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50">
-                      <TableHead className="text-xs font-semibold">Sabor</TableHead>
+                      <TableHead className="text-xs font-semibold">Item</TableHead>
                       <TableHead className="text-xs font-semibold text-center">Qtd</TableHead>
                       <TableHead className="text-xs font-semibold text-right">Preço Un.</TableHead>
                       <TableHead className="text-xs font-semibold text-right">Subtotal</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {detailItens.map((it) => (
-                      <TableRow key={it.id}>
-                        <TableCell className="font-medium text-sm">{it.sabores?.nome}</TableCell>
+                    {detailItens.length === 0 && (
+                      <TableRow><TableCell colSpan={4} className="text-center text-sm text-muted-foreground py-4">Nenhum item registrado</TableCell></TableRow>
+                    )}
+                    {detailItens.map((it: any, idx: number) => (
+                      <TableRow key={it.id ?? `${it.sabor_nome}-${idx}`}>
+                        <TableCell className="font-medium text-sm">{it.sabor_nome ?? it.sabores?.nome}</TableCell>
                         <TableCell className="text-center text-sm">
+
                           {it.quantidade}
                           {factoryUsaSacos && factoryUnidadesPorSaco > 0 && it.quantidade >= factoryUnidadesPorSaco && (
                             <span className="text-xs text-muted-foreground ml-1">
