@@ -328,6 +328,8 @@ export default function Vendas() {
     // Fetch venda_itens scoped to the returned vendas to avoid the 1000-row default limit
     const vendaIds = (v.data || []).map((vd: any) => vd.id);
     let vi: any = { data: [] };
+    let viBeb: any = { data: [] };
+    let viCubo: any = { data: [] };
     if (vendaIds.length > 0) {
       // chunk into batches of 200 to keep URL length safe
       const chunks: string[][] = [];
@@ -336,6 +338,21 @@ export default function Vendas() {
         chunks.map((ids) => (supabase as any).from("venda_itens").select("venda_id, quantidade").in("venda_id", ids))
       );
       vi = { data: results.flatMap((r: any) => r.data || []) };
+      // Bebidas (unidade/fardo) e gelo em cubo também contam na coluna "Unidades"
+      const [resBeb, resCubo] = await Promise.all([
+        Promise.all(
+          chunks.map((ids) =>
+            (supabase as any).from("venda_bebida_itens").select("venda_id, quantidade, tipo_venda, bebidas(unidades_fardo)").in("venda_id", ids)
+          )
+        ),
+        Promise.all(
+          chunks.map((ids) =>
+            (supabase as any).from("venda_gelo_cubo_itens").select("venda_id, quantidade").in("venda_id", ids)
+          )
+        ),
+      ]);
+      viBeb = { data: resBeb.flatMap((r: any) => r.data || []) };
+      viCubo = { data: resCubo.flatMap((r: any) => r.data || []) };
     }
     setClientes(c.data || []);
     setSabores(s.data || []);
@@ -365,6 +382,15 @@ export default function Vendas() {
     // Build units map per venda
     const unitsMap: Record<string, number> = {};
     (vi.data || []).forEach((it: any) => {
+      unitsMap[it.venda_id] = (unitsMap[it.venda_id] || 0) + it.quantidade;
+    });
+    // Bebidas: fardo conta como quantidade × unidades do fardo (padrão 6)
+    (viBeb.data || []).forEach((it: any) => {
+      const unFardo = Number(it.bebidas?.unidades_fardo) || 6;
+      const qtd = it.tipo_venda === "fardo" ? it.quantidade * unFardo : it.quantidade;
+      unitsMap[it.venda_id] = (unitsMap[it.venda_id] || 0) + qtd;
+    });
+    (viCubo.data || []).forEach((it: any) => {
       unitsMap[it.venda_id] = (unitsMap[it.venda_id] || 0) + it.quantidade;
     });
     // Build pedido status map per venda
