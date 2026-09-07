@@ -889,10 +889,12 @@ export default function Vendas() {
 
   async function openDetailDialog(v: any) {
     setDetailVenda(v);
-    const { data } = await (supabase as any).from("venda_itens").select("*, sabores(nome)").eq("venda_id", v.id);
-    setDetailItens(data || []);
+    // Inclui gelos saborizados, gelo em cubo e bebidas
+    const linhas = await fetchReciboItens(v.id);
+    setDetailItens(linhas || []);
     setDetailOpen(true);
   }
+
 
   async function duplicarVenda(v: any) {
     const { data: vendaItens } = await (supabase as any).from("venda_itens").select("*, sabores(nome)").eq("venda_id", v.id);
