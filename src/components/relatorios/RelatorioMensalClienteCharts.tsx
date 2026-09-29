@@ -30,7 +30,7 @@ export default function RelatorioMensalClienteCharts({ ranking }: RelatorioMensa
               <XAxis type="number" allowDecimals={false} />
               <YAxis dataKey="nome" type="category" width={92} tickLine={false} axisLine={false} />
               <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-              <Bar dataKey="quantidade" fill="var(--color-quantidade)" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="quantidade" fill="var(--color-quantidade)" radius={[0, 4, 4, 0]} isAnimationActive={false} />
             </BarChart>
           </ChartContainer>
         </CardContent>
@@ -42,7 +42,7 @@ export default function RelatorioMensalClienteCharts({ ranking }: RelatorioMensa
           <ChartContainer config={chartConfig} className="h-[280px] w-full">
             <PieChart>
               <ChartTooltip content={<ChartTooltipContent nameKey="nome" />} />
-              <Pie data={principais} dataKey="quantidade" nameKey="nome" innerRadius={54} outerRadius={94} paddingAngle={2}>
+              <Pie data={principais} dataKey="quantidade" nameKey="nome" innerRadius={54} outerRadius={94} paddingAngle={2} isAnimationActive={false}>
                 {principais.map((sabor, index) => <Cell key={sabor.nome} fill={fillValues[index % fillTokens.length]} />)}
               </Pie>
             </PieChart>
