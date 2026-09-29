@@ -1,5 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Factory, Warehouse, ShoppingCart, AlertTriangle, Users, FileBarChart, Receipt, DollarSign, RefreshCw, TrendingUp, ShieldAlert, BarChart3, UserCheck, Truck } from "lucide-react";
+import { Factory, Warehouse, ShoppingCart, AlertTriangle, Users, FileBarChart, Receipt, DollarSign, RefreshCw, TrendingUp, ShieldAlert, BarChart3, UserCheck, Truck, Medal } from "lucide-react";
 import RelatorioCompleto from "@/components/relatorios/RelatorioCompleto";
 import RelatorioProducao from "@/components/relatorios/RelatorioProducao";
 import RelatorioEstoque from "@/components/relatorios/RelatorioEstoque";
@@ -15,6 +15,7 @@ import RelatorioRecorrencia from "@/components/relatorios/RelatorioRecorrencia";
 import RelatorioInadimplenciaPreditiva from "@/components/relatorios/RelatorioInadimplenciaPreditiva";
 import RelatorioFinanceiroCliente from "@/components/relatorios/RelatorioFinanceiroCliente";
 import RelatorioEntregas from "@/components/relatorios/RelatorioEntregas";
+import RelatorioMensalCliente from "@/components/relatorios/RelatorioMensalCliente";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function Relatorios() {
@@ -32,6 +33,7 @@ export default function Relatorios() {
           <TabsTrigger value="entregas" className="gap-2"><Truck className="h-4 w-4" /> Entregas</TabsTrigger>
           <TabsTrigger value="inadimplencia" className="gap-2"><AlertTriangle className="h-4 w-4" /> Inadimplência</TabsTrigger>
           <TabsTrigger value="financeiro_cliente" className="gap-2"><UserCheck className="h-4 w-4" /> Financeiro por Cliente</TabsTrigger>
+          <TabsTrigger value="mensal_cliente" className="gap-2"><Medal className="h-4 w-4" /> Mensal por Cliente</TabsTrigger>
           <TabsTrigger value="colaboradores" className="gap-2"><Users className="h-4 w-4" /> Colaboradores</TabsTrigger>
           <TabsTrigger value="despesas" className="gap-2"><Receipt className="h-4 w-4" /> Despesas</TabsTrigger>
           <TabsTrigger value="dre" className="gap-2"><BarChart3 className="h-4 w-4" /> DRE</TabsTrigger>
@@ -48,6 +50,7 @@ export default function Relatorios() {
         <TabsContent value="entregas"><RelatorioEntregas /></TabsContent>
         <TabsContent value="inadimplencia"><RelatorioInadimplencia /></TabsContent>
         <TabsContent value="financeiro_cliente"><RelatorioFinanceiroCliente /></TabsContent>
+        <TabsContent value="mensal_cliente"><RelatorioMensalCliente /></TabsContent>
         <TabsContent value="colaboradores"><RelatorioColaboradores /></TabsContent>
         <TabsContent value="despesas"><RelatorioDespesas /></TabsContent>
         <TabsContent value="dre"><RelatorioDRE factoryId={factoryId} /></TabsContent>

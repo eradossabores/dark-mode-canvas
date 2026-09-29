@@ -52,7 +52,10 @@ export async function exportToPDF(
   chartContainerId?: string,
   branding?: PDFBranding,
   summary?: { label: string; value: string }[],
-  options?: { save?: boolean }
+  options?: {
+    save?: boolean;
+    extraTables?: { title: string; headers: string[]; rows: (string | number)[][] }[];
+  }
 ) {
   const doc = new jsPDF();
   const PAGE_W = 210;
@@ -267,6 +270,26 @@ export async function exportToPDF(
     });
 
     doc.setTextColor(0);
+  }
+
+  if (options?.extraTables?.length) {
+    for (const table of options.extraTables) {
+      doc.addPage();
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.setTextColor(0, 80, 140);
+      doc.text(table.title, MARGIN, 18);
+      doc.setTextColor(0);
+      autoTable(doc, {
+        head: [table.headers],
+        body: table.rows,
+        startY: 24,
+        margin: { left: MARGIN, right: MARGIN, bottom: 20 },
+        styles: { fontSize: 7.5, cellPadding: 2.5, lineColor: [220, 220, 220], lineWidth: 0.2, overflow: "linebreak" },
+        headStyles: { fillColor: [0, 100, 160], textColor: 255, fontStyle: "bold" },
+        alternateRowStyles: { fillColor: [245, 248, 255] },
+      });
+    }
   }
 
 
