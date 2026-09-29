@@ -72,7 +72,7 @@ export default function RelatorioMensalCliente() {
       resumo.ranking.map((sabor, index) => [index + 1, sabor.nome, sabor.quantidade, `${sabor.participacao.toFixed(1)}%`, brl(sabor.precoMedio), brl(sabor.economia)]),
       `compras_${cliente.nome.replace(/[^a-z0-9]+/gi, "_")}_${competencia}`,
       [
-        { label: "Período", value: periodoLabel }, { label: "Pedidos", value: String(resumo.totalPedidos) },
+        { label: "Período", value: periodoLabel }, { label: "Entregas", value: String(resumo.totalEntregas) },
         { label: "Gelos", value: String(resumo.totalUnidades) }, { label: "Economia", value: brl(resumo.totalEconomia) },
       ],
       "relatorio-mensal-cliente-graficos",
@@ -80,11 +80,18 @@ export default function RelatorioMensalCliente() {
       [{ label: "Preço de referência", value: brl(PRECO_REFERENCIA_GELO) }, { label: "Valor pago", value: brl(resumo.totalPago) }, { label: "Economia no mês", value: brl(resumo.totalEconomia) }],
       {
         save: salvar,
-        extraTables: [{
-          title: "Detalhamento das compras",
-          headers: ["Data", "Comanda", "Sabor", "Quantidade", "Preço unit.", "Valor pago", "Economia"],
-          rows: resumo.itens.map((item) => [new Date(item.data).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }), item.numeroPedido ? `#${item.numeroPedido}` : "—", item.sabor, item.quantidade, item.brinde ? "Brinde" : brl(item.precoUnitario), brl(item.valorPago), brl(item.economia)]),
-        }],
+        extraTables: [
+          {
+            title: "Entregas realizadas no mês",
+            headers: ["Data", "Comanda", "Gelos entregues", "Valor pago"],
+            rows: resumo.entregas.map((entrega) => [new Date(entrega.data).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }), entrega.numeroPedido ? `#${entrega.numeroPedido}` : "—", entrega.quantidade, brl(entrega.valorPago)]),
+          },
+          {
+            title: "Detalhamento das compras",
+            headers: ["Data", "Comanda", "Sabor", "Quantidade", "Preço unit.", "Valor pago", "Economia"],
+            rows: resumo.itens.map((item) => [new Date(item.data).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }), item.numeroPedido ? `#${item.numeroPedido}` : "—", item.sabor, item.quantidade, item.brinde ? "Brinde" : brl(item.precoUnitario), brl(item.valorPago), brl(item.economia)]),
+          },
+        ],
       },
     );
   };
@@ -95,7 +102,7 @@ export default function RelatorioMensalCliente() {
     if (!doc) return;
     const nomeArquivo = `compras_${cliente.nome.replace(/[^a-z0-9]+/gi, "_")}_${competencia}.pdf`;
     const file = new File([doc.output("blob")], nomeArquivo, { type: "application/pdf" });
-    const mensagem = `Olá, ${cliente.nome}! Segue seu relatório de ${periodoLabel}: ${resumo.totalUnidades} gelos saborizados em ${resumo.totalPedidos} pedido(s). Você economizou ${brl(resumo.totalEconomia)} em relação ao valor padrão de ${brl(PRECO_REFERENCIA_GELO)} por unidade.`;
+    const mensagem = `Olá, ${cliente.nome}! Segue seu relatório de ${periodoLabel}: ${resumo.totalUnidades} gelos saborizados em ${resumo.totalEntregas} entrega(s). Você economizou ${brl(resumo.totalEconomia)} em relação ao valor padrão de ${brl(PRECO_REFERENCIA_GELO)} por unidade.`;
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
       try { await navigator.share({ text: mensagem, files: [file] }); return; } catch { /* compartilhamento cancelado */ }
     }
@@ -119,9 +126,10 @@ export default function RelatorioMensalCliente() {
         : resumo.itens.length === 0 ? <Card><CardContent className="py-14 text-center"><Package className="mx-auto mb-3 h-10 w-10 text-muted-foreground" /><p className="font-medium">Nenhum gelo saborizado comprado em {periodoLabel}</p></CardContent></Card>
         : <>
           <div><h2 className="text-lg font-semibold">{cliente.nome}</h2><p className="text-sm capitalize text-muted-foreground">Resumo de {periodoLabel} · Referência: {brl(PRECO_REFERENCIA_GELO)} por unidade</p></div>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4"><KpiCard title="Gelos Comprados" value={String(resumo.totalUnidades)} icon={Package} subtitle={`${resumo.totalBrindes} brinde(s)`} /><KpiCard title="Pedidos no Mês" value={String(resumo.totalPedidos)} icon={ShoppingBag} /><KpiCard title="Valor Pago" value={brl(resumo.totalPago)} icon={Wallet} subtitle={`Média: ${brl(resumo.precoMedio)}/un`} /><KpiCard title="Economia" value={brl(resumo.totalEconomia)} icon={Gift} subtitle={`Comparado a ${brl(PRECO_REFERENCIA_GELO)}/un`} /></div>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4"><KpiCard title="Gelos Comprados" value={String(resumo.totalUnidades)} icon={Package} subtitle={`${resumo.totalBrindes} brinde(s)`} /><KpiCard title="Entregas no Mês" value={String(resumo.totalEntregas)} icon={ShoppingBag} subtitle="Vendas realizadas" /><KpiCard title="Valor Pago" value={brl(resumo.totalPago)} icon={Wallet} subtitle={`Média: ${brl(resumo.precoMedio)}/un`} /><KpiCard title="Economia" value={brl(resumo.totalEconomia)} icon={Gift} subtitle={`Comparado a ${brl(PRECO_REFERENCIA_GELO)}/un`} /></div>
           <RelatorioMensalClienteCharts ranking={resumo.ranking} />
           <Card><CardHeader><CardTitle className="text-base">Ranking mensal por sabores</CardTitle></CardHeader><CardContent className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>#</TableHead><TableHead>Sabor</TableHead><TableHead className="text-right">Unidades</TableHead><TableHead className="text-right">Participação</TableHead><TableHead className="text-right">Preço médio</TableHead><TableHead className="text-right">Economia</TableHead></TableRow></TableHeader><TableBody>{resumo.ranking.map((sabor, index) => <TableRow key={sabor.nome}><TableCell className="font-semibold">{index + 1}</TableCell><TableCell>{sabor.nome}</TableCell><TableCell className="text-right">{sabor.quantidade}</TableCell><TableCell className="text-right">{sabor.participacao.toFixed(1)}%</TableCell><TableCell className="text-right">{brl(sabor.precoMedio)}</TableCell><TableCell className="text-right font-medium text-primary">{brl(sabor.economia)}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
+          <Card><CardHeader><CardTitle className="text-base">Entregas realizadas no mês</CardTitle></CardHeader><CardContent className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Comanda</TableHead><TableHead className="text-right">Gelos entregues</TableHead><TableHead className="text-right">Valor pago</TableHead></TableRow></TableHeader><TableBody>{resumo.entregas.map((entrega) => <TableRow key={entrega.vendaId}><TableCell>{new Date(entrega.data).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}</TableCell><TableCell>{entrega.numeroPedido ? `#${entrega.numeroPedido}` : "—"}</TableCell><TableCell className="text-right">{entrega.quantidade}</TableCell><TableCell className="text-right">{brl(entrega.valorPago)}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
           <Card><CardHeader><CardTitle className="text-base">Compras do mês</CardTitle></CardHeader><CardContent className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Comanda</TableHead><TableHead>Sabor</TableHead><TableHead className="text-right">Qtd.</TableHead><TableHead className="text-right">Preço unit.</TableHead><TableHead className="text-right">Economia</TableHead></TableRow></TableHeader><TableBody>{resumo.itens.map((item) => <TableRow key={item.id}><TableCell>{new Date(item.data).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}</TableCell><TableCell>{item.numeroPedido ? `#${item.numeroPedido}` : "—"}</TableCell><TableCell>{item.sabor}</TableCell><TableCell className="text-right">{item.quantidade}</TableCell><TableCell className="text-right">{item.brinde ? "Brinde" : brl(item.precoUnitario)}</TableCell><TableCell className="text-right">{brl(item.economia)}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
         </>}
     </div>

@@ -13,6 +13,9 @@ describe("analisarComprasMensais", () => {
     const resultado = analisarComprasMensais(itens);
     expect(resultado.totalUnidades).toBe(160);
     expect(resultado.totalPedidos).toBe(2);
+    expect(resultado.totalEntregas).toBe(2);
+    expect(resultado.entregas).toHaveLength(2);
+    expect(resultado.entregas.find((entrega) => entrega.vendaId === "v2")).toMatchObject({ quantidade: 60, valorPago: 99.5 });
     expect(resultado.totalPago).toBe(284.5);
     expect(resultado.totalEconomia).toBe(14);
     expect(resultado.totalBrindes).toBe(10);
