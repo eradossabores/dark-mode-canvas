@@ -12,13 +12,9 @@ const chartConfig = {
   participacao: { label: "Participação", color: "hsl(var(--chart-2))" },
 } satisfies ChartConfig;
 
-const fillTokens = [
-  "hsl(var(--chart-1))",
-  "hsl(var(--chart-2))",
-  "hsl(var(--chart-3))",
-  "hsl(var(--chart-4))",
-  "hsl(var(--chart-5))",
-];
+const fillTokens = ["chart-1", "chart-2", "chart-3", "chart-4", "chart-5"] as const;
+const fillValues = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
+const dotClasses = ["bg-[hsl(var(--chart-1))]", "bg-[hsl(var(--chart-2))]", "bg-[hsl(var(--chart-3))]", "bg-[hsl(var(--chart-4))]", "bg-[hsl(var(--chart-5))]"];
 
 export default function RelatorioMensalClienteCharts({ ranking }: RelatorioMensalClienteChartsProps) {
   const principais = ranking.slice(0, 8);
@@ -47,14 +43,14 @@ export default function RelatorioMensalClienteCharts({ ranking }: RelatorioMensa
             <PieChart>
               <ChartTooltip content={<ChartTooltipContent nameKey="nome" />} />
               <Pie data={principais} dataKey="quantidade" nameKey="nome" innerRadius={54} outerRadius={94} paddingAngle={2}>
-                {principais.map((sabor, index) => <Cell key={sabor.nome} fill={fillTokens[index % fillTokens.length]} />)}
+                {principais.map((sabor, index) => <Cell key={sabor.nome} fill={fillValues[index % fillTokens.length]} />)}
               </Pie>
             </PieChart>
           </ChartContainer>
           <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
             {principais.map((sabor, index) => (
               <div key={sabor.nome} className="flex min-w-0 items-center gap-2">
-                <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: fillTokens[index % fillTokens.length] }} />
+                <span className={`h-2.5 w-2.5 shrink-0 rounded-sm ${dotClasses[index % dotClasses.length]}`} />
                 <span className="truncate">{sabor.nome} · {sabor.participacao.toFixed(1)}%</span>
               </div>
             ))}
