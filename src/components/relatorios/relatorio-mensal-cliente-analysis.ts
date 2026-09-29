@@ -37,11 +37,21 @@ export interface SaborMensal {
   brindes: number;
 }
 
+export interface EntregaMensal {
+  vendaId: string;
+  numeroPedido: number | null;
+  data: string;
+  quantidade: number;
+  valorPago: number;
+}
+
 export interface ResumoMensalCliente {
   itens: ItemMensalDetalhado[];
   ranking: SaborMensal[];
+  entregas: EntregaMensal[];
   totalUnidades: number;
   totalPedidos: number;
+  totalEntregas: number;
   totalPago: number;
   totalEconomia: number;
   totalBrindes: number;
@@ -111,11 +121,29 @@ export function analisarComprasMensais(itensRaw: ItemMensalRaw[]): ResumoMensalC
     }))
     .sort((a, b) => b.quantidade - a.quantidade || a.nome.localeCompare(b.nome, "pt-BR"));
 
+  const entregasPorVenda = new Map<string, EntregaMensal>();
+  itens.forEach((item) => {
+    const atual = entregasPorVenda.get(item.vendaId) ?? {
+      vendaId: item.vendaId,
+      numeroPedido: item.numeroPedido,
+      data: item.data,
+      quantidade: 0,
+      valorPago: 0,
+    };
+    atual.quantidade += item.quantidade;
+    atual.valorPago = moeda(atual.valorPago + item.valorPago);
+    entregasPorVenda.set(item.vendaId, atual);
+  });
+  const entregas = [...entregasPorVenda.values()]
+    .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
+
   return {
     itens: itens.sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()),
     ranking,
+    entregas,
     totalUnidades,
-    totalPedidos: new Set(itens.map((item) => item.vendaId)).size,
+    totalPedidos: entregas.length,
+    totalEntregas: entregas.length,
     totalPago: moeda(totalPago),
     totalEconomia: moeda(totalEconomia),
     totalBrindes,
