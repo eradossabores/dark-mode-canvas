@@ -40,7 +40,7 @@ async function buscarDados(factoryId: string, clienteId: string, competencia: st
   const [clientesResult, itensResult] = await Promise.all([
     supabase.from("clientes").select("id,nome,telefone").eq("factory_id", factoryId).eq("status", "ativo").order("nome"),
     clienteId
-      ? (supabase as any).from("venda_itens")
+      ? supabase.from("venda_itens")
         .select("id,venda_id,quantidade,preco_unitario,subtotal,sabores(nome),vendas!inner(id,numero_pedido,created_at,status,cliente_id)")
         .eq("factory_id", factoryId).eq("vendas.cliente_id", clienteId).neq("vendas.status", "cancelada")
         .gte("vendas.created_at", periodo.inicio).lt("vendas.created_at", periodo.fim).limit(10000)
