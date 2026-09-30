@@ -24,6 +24,23 @@ describe("analisarComposicaoVendas", () => {
     expect(resultado.ajustes).toBe(0);
   });
 
+  it("separa brindes e não reduz o preço médio das unidades pagas", () => {
+    const resultado = analisarComposicaoVendas(
+      [{ id: "v1", total: 199 }],
+      [
+        { venda_id: "v1", quantidade: 100, subtotal: 199 },
+        { venda_id: "v1", quantidade: 10, subtotal: 0 },
+      ],
+      [],
+      [],
+    );
+
+    expect(resultado.gelosSaborizados).toBe(110);
+    expect(resultado.gelosPagos).toBe(100);
+    expect(resultado.gelosBrinde).toBe(10);
+    expect(resultado.precoMedioGelosSaborizados).toBe(1.99);
+  });
+
   it("expõe diferença entre produtos, frete e total como ajuste", () => {
     const resultado = analisarComposicaoVendas(
       [{ id: "v1", total: 190, valor_frete: 0 }],

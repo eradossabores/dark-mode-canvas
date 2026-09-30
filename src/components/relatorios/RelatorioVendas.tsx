@@ -266,7 +266,7 @@ export default function RelatorioVendas() {
             { label: "Faturamento Total", value: `R$ ${faturamento.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
             { label: "Total de Vendas", value: totalVendas.toString() },
             { label: "Ticket Médio", value: `R$ ${ticketMedio.toFixed(2)}` },
-            { label: "Gelos Saborizados", value: totalUnidades.toLocaleString("pt-BR") },
+            { label: "Gelos Saborizados", value: `${totalUnidades.toLocaleString("pt-BR")} (${composicao.gelosPagos.toLocaleString("pt-BR")} pagos + ${composicao.gelosBrinde.toLocaleString("pt-BR")} brindes)` },
             { label: "Valor dos Gelos", value: `R$ ${composicao.valorGelosSaborizados.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
             { label: "Preço Médio dos Gelos", value: `R$ ${composicao.precoMedioGelosSaborizados.toFixed(2)}` },
             { label: "Bebidas (unidades reais)", value: composicao.bebidasUnidadesReais.toLocaleString("pt-BR") },
@@ -317,7 +317,7 @@ export default function RelatorioVendas() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <KpiCard title="Ticket Médio" value={`R$ ${ticketMedio.toFixed(2)}`} icon={TrendingUp} />
-            <KpiCard title="Gelos Saborizados" value={totalUnidades.toLocaleString("pt-BR")} icon={Package} subtitle={`${`R$ ${composicao.valorGelosSaborizados.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} · média R$ ${composicao.precoMedioGelosSaborizados.toFixed(2)}/un`} />
+            <KpiCard title="Gelos Saborizados" value={totalUnidades.toLocaleString("pt-BR")} icon={Package} subtitle={`${composicao.gelosPagos.toLocaleString("pt-BR")} pagos + ${composicao.gelosBrinde.toLocaleString("pt-BR")} brindes · R$ ${composicao.valorGelosSaborizados.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} · média R$ ${composicao.precoMedioGelosSaborizados.toFixed(2)}/un paga`} />
             <KpiCard title="Total Abatido" value={`R$ ${totalAbatido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={CreditCard} />
             <KpiCard title="Total Frete" value={`R$ ${totalFrete.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={Truck} />
           </div>
@@ -373,7 +373,7 @@ export default function RelatorioVendas() {
                         <TableCell className="text-sm tabular-nums">{new Date(v.created_at).toLocaleDateString("pt-BR")}</TableCell>
                         <TableCell className="text-sm font-medium">{v.numero_pedido ? `#${v.numero_pedido}` : "—"}</TableCell>
                         <TableCell className="text-sm font-medium">{v.clientes?.nome || "-"}</TableCell>
-                        <TableCell className="text-sm text-right tabular-nums">{detalhe?.gelosSaborizados.toLocaleString("pt-BR") || "—"}</TableCell>
+                        <TableCell className="text-sm text-right tabular-nums">{detalhe?.gelosSaborizados ? <span>{detalhe.gelosSaborizados.toLocaleString("pt-BR")}{detalhe.gelosBrinde > 0 && <span className="block text-xs text-muted-foreground">{detalhe.gelosBrinde} brinde(s)</span>}</span> : "—"}</TableCell>
                         <TableCell className="text-sm text-right tabular-nums">{detalhe?.gelosSaborizados ? `R$ ${detalhe.precoMedioGelosSaborizados.toFixed(2)}` : "—"}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{outrosProdutos}</TableCell>
                         <TableCell className="text-sm text-right tabular-nums">R$ {Number(detalhe?.subtotalProdutos || 0).toFixed(2)}</TableCell>

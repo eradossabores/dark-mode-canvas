@@ -26,6 +26,8 @@ export interface GeloCuboRelatorioItem {
 
 export interface ComposicaoVenda {
   gelosSaborizados: number;
+  gelosPagos: number;
+  gelosBrinde: number;
   valorGelosSaborizados: number;
   precoMedioGelosSaborizados: number;
   bebidasVolumes: number;
@@ -57,6 +59,8 @@ export function analisarComposicaoVendas(
   vendas.forEach((venda) => {
     porVenda.set(venda.id, {
       gelosSaborizados: 0,
+      gelosPagos: 0,
+      gelosBrinde: 0,
       valorGelosSaborizados: 0,
       precoMedioGelosSaborizados: 0,
       bebidasVolumes: 0,
@@ -76,6 +80,8 @@ export function analisarComposicaoVendas(
     if (!composicao) return;
     composicao.gelosSaborizados += numero(item.quantidade);
     composicao.valorGelosSaborizados += numero(item.subtotal);
+    if (numero(item.subtotal) > 0) composicao.gelosPagos += numero(item.quantidade);
+    else composicao.gelosBrinde += numero(item.quantidade);
   });
 
   bebidas.forEach((item) => {
@@ -102,14 +108,16 @@ export function analisarComposicaoVendas(
     composicao.subtotalProdutos = moeda(
       composicao.valorGelosSaborizados + composicao.valorBebidas + composicao.valorGeloCubo,
     );
-    composicao.precoMedioGelosSaborizados = composicao.gelosSaborizados > 0
-      ? moeda(composicao.valorGelosSaborizados / composicao.gelosSaborizados)
+    composicao.precoMedioGelosSaborizados = composicao.gelosPagos > 0
+      ? moeda(composicao.valorGelosSaborizados / composicao.gelosPagos)
       : 0;
     composicao.ajustes = moeda(composicao.totalNota - composicao.subtotalProdutos - composicao.frete);
   });
 
   const totais = [...porVenda.values()].reduce<Omit<ResumoComposicaoVendas, "porVenda">>((total, item) => ({
     gelosSaborizados: total.gelosSaborizados + item.gelosSaborizados,
+    gelosPagos: total.gelosPagos + item.gelosPagos,
+    gelosBrinde: total.gelosBrinde + item.gelosBrinde,
     valorGelosSaborizados: moeda(total.valorGelosSaborizados + item.valorGelosSaborizados),
     precoMedioGelosSaborizados: 0,
     bebidasVolumes: total.bebidasVolumes + item.bebidasVolumes,
@@ -123,6 +131,8 @@ export function analisarComposicaoVendas(
     totalNota: moeda(total.totalNota + item.totalNota),
   }), {
     gelosSaborizados: 0,
+    gelosPagos: 0,
+    gelosBrinde: 0,
     valorGelosSaborizados: 0,
     precoMedioGelosSaborizados: 0,
     bebidasVolumes: 0,
@@ -136,8 +146,8 @@ export function analisarComposicaoVendas(
     totalNota: 0,
   });
 
-  totais.precoMedioGelosSaborizados = totais.gelosSaborizados > 0
-    ? moeda(totais.valorGelosSaborizados / totais.gelosSaborizados)
+  totais.precoMedioGelosSaborizados = totais.gelosPagos > 0
+    ? moeda(totais.valorGelosSaborizados / totais.gelosPagos)
     : 0;
 
   return { ...totais, porVenda };
