@@ -7,12 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
-import { DollarSign, ShoppingCart, TrendingUp, Target, Truck, CreditCard } from "lucide-react";
+import { DollarSign, ShoppingCart, TrendingUp, Target, Truck, CreditCard, Package, Wine } from "lucide-react";
 import DateRangeFilter from "./DateRangeFilter";
 import KpiCard from "./KpiCard";
 import ExportButtons from "./ExportButtons";
 import { exportToPDF, exportToExcel } from "@/lib/export-utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { analisarComposicaoVendas } from "./relatorio-vendas-analysis";
 
 const COLORS = ["hsl(200,98%,39%)", "hsl(213,93%,67%)", "hsl(38,92%,50%)", "hsl(142,71%,45%)", "hsl(215,20%,65%)", "hsl(0,72%,50%)"];
 
@@ -42,6 +43,8 @@ export default function RelatorioVendas() {
   const { factoryId, factoryName, branding } = useAuth();
   const [vendas, setVendas] = useState<any[]>([]);
   const [itens, setItens] = useState<any[]>([]);
+  const [bebidaItens, setBebidaItens] = useState<any[]>([]);
+  const [cuboItens, setCuboItens] = useState<any[]>([]);
   const [abatimentos, setAbatimentos] = useState<any[]>([]);
   const [startDate, setStartDate] = useState<Date | undefined>(
     new Date(new Date().getFullYear(), new Date().getMonth(), 1)
@@ -59,22 +62,32 @@ export default function RelatorioVendas() {
 
   async function loadData() {
     let vQ = (supabase as any).from("vendas").select("*, clientes(nome)").order("created_at", { ascending: false });
-    let iQ = (supabase as any).from("venda_itens").select("*, sabores(nome)");
-    if (factoryId) { vQ = vQ.eq("factory_id", factoryId); iQ = iQ.eq("factory_id", factoryId); }
-    const [v, it] = await Promise.all([vQ, iQ]);
+    if (factoryId) vQ = vQ.eq("factory_id", factoryId);
+    const v = await vQ;
     const vendasData = v.data || [];
     setVendas(vendasData);
-    setItens(it.data || []);
 
-    // Buscar abatimentos pelas vendas (não por factory_id, pois pode ser null)
     if (vendasData.length > 0) {
       const vendaIds = vendasData.map((vd: any) => vd.id);
-      const { data: abData } = await (supabase as any)
-        .from("abatimentos_historico")
-        .select("*")
-        .in("venda_id", vendaIds);
-      setAbatimentos(abData || []);
+      const chunks: string[][] = [];
+      for (let index = 0; index < vendaIds.length; index += 200) chunks.push(vendaIds.slice(index, index + 200));
+      const resultados = await Promise.all(chunks.map(async (ids) => {
+        const [gelos, bebidas, cubos, abats] = await Promise.all([
+          (supabase as any).from("venda_itens").select("*, sabores(nome)").in("venda_id", ids),
+          (supabase as any).from("venda_bebida_itens").select("venda_id,quantidade,subtotal,tipo_venda,bebidas(unidades_fardo)").in("venda_id", ids),
+          (supabase as any).from("venda_gelo_cubo_itens").select("venda_id,quantidade,subtotal").in("venda_id", ids),
+          (supabase as any).from("abatimentos_historico").select("*").in("venda_id", ids),
+        ]);
+        return { gelos, bebidas, cubos, abats };
+      }));
+      setItens(resultados.flatMap(({ gelos }) => gelos.data || []));
+      setBebidaItens(resultados.flatMap(({ bebidas }) => bebidas.data || []));
+      setCuboItens(resultados.flatMap(({ cubos }) => cubos.data || []));
+      setAbatimentos(resultados.flatMap(({ abats }) => abats.data || []));
     } else {
+      setItens([]);
+      setBebidaItens([]);
+      setCuboItens([]);
       setAbatimentos([]);
     }
   }
@@ -99,7 +112,14 @@ export default function RelatorioVendas() {
 
   const filteredIds = new Set(filtered.map((v) => v.id));
   const filteredItens = itens.filter((i) => filteredIds.has(i.venda_id));
+  const filteredBebidaItens = bebidaItens.filter((i) => filteredIds.has(i.venda_id));
+  const filteredCuboItens = cuboItens.filter((i) => filteredIds.has(i.venda_id));
   const filteredAbatimentos = abatimentos.filter((a) => filteredIds.has(a.venda_id));
+
+  const composicao = useMemo(
+    () => analisarComposicaoVendas(filtered, filteredItens, filteredBebidaItens, filteredCuboItens),
+    [filtered, filteredItens, filteredBebidaItens, filteredCuboItens],
+  );
 
   const abatimentosPorVenda = useMemo(() => {
     const map: Record<string, number> = {};
@@ -113,7 +133,7 @@ export default function RelatorioVendas() {
   const totalFrete = filtered.reduce((s, v) => s + Number(v.valor_frete || 0), 0);
   const totalVendas = filtered.length;
   const ticketMedio = totalVendas > 0 ? faturamento / totalVendas : 0;
-  const totalUnidades = filteredItens.reduce((s, i) => s + i.quantidade, 0);
+  const totalUnidades = composicao.gelosSaborizados;
   const totalAbatido = filteredAbatimentos.reduce((s, a) => s + Number(a.valor), 0);
 
   // Total recebido = vendas pagas (total integral) + abatimentos em vendas não-pagas
@@ -159,19 +179,26 @@ export default function RelatorioVendas() {
     return Object.entries(map).map(([name, value]) => ({ name, value })).reverse();
   }, [filtered]);
 
-  const headers = ["Data", "Cliente", "Total", "Recebido", "Saldo", "Frete", "Pagamento", "Status", "Operador"];
+  const headers = ["Data", "Comanda", "Cliente", "Gelos Saborizados", "Preço Médio Gelo", "Bebidas", "Gelo em Cubo", "Valor dos Produtos", "Frete/Ajustes", "Total da Nota", "Recebido", "Saldo", "Pagamento", "Status", "Operador"];
   const rows = [
     ...filtered.map((v) => {
       const abatido = abatimentosPorVenda[v.id] || 0;
       const recebido = v.status === "paga" ? Number(v.total) : abatido;
       const saldo = Number(v.total) - recebido;
+      const detalhe = composicao.porVenda.get(v.id);
       return [
         new Date(v.created_at).toLocaleDateString("pt-BR"),
+        v.numero_pedido ? `#${v.numero_pedido}` : "-",
         v.clientes?.nome || "-",
+        detalhe?.gelosSaborizados || "-",
+        detalhe?.gelosSaborizados ? `R$ ${detalhe.precoMedioGelosSaborizados.toFixed(2)}` : "-",
+        detalhe?.bebidasUnidadesReais || "-",
+        detalhe?.geloCuboPacotes || "-",
+        `R$ ${Number(detalhe?.subtotalProdutos || 0).toFixed(2)}`,
+        `R$ ${Number((detalhe?.frete || 0) + (detalhe?.ajustes || 0)).toFixed(2)}`,
         `R$ ${Number(v.total).toFixed(2)}`,
         recebido > 0 ? `R$ ${recebido.toFixed(2)}` : "-",
         saldo > 0.01 ? `R$ ${saldo.toFixed(2)}` : "Quitado",
-        Number(v.valor_frete || 0) > 0 ? `R$ ${Number(v.valor_frete).toFixed(2)} (${v.frete_pago_por || "cliente"})` : "-",
         displayFormaPagamento(v.forma_pagamento),
         v.status,
         v.operador,
@@ -179,12 +206,17 @@ export default function RelatorioVendas() {
     }),
     [
       "",
+      "",
       "TOTAIS:",
+      totalUnidades.toLocaleString("pt-BR"),
+      totalUnidades > 0 ? `R$ ${composicao.precoMedioGelosSaborizados.toFixed(2)}` : "-",
+      composicao.bebidasUnidadesReais.toLocaleString("pt-BR"),
+      composicao.geloCuboPacotes.toLocaleString("pt-BR"),
+      `R$ ${composicao.subtotalProdutos.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
+      `R$ ${(composicao.frete + composicao.ajustes).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
       `R$ ${faturamento.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
       `R$ ${totalRecebido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
       saldoPendente <= 0.01 ? "Quitado" : `R$ ${saldoPendente.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
-      `R$ ${totalFrete.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
-      "",
       "",
       "",
     ],
@@ -234,7 +266,11 @@ export default function RelatorioVendas() {
             { label: "Faturamento Total", value: `R$ ${faturamento.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
             { label: "Total de Vendas", value: totalVendas.toString() },
             { label: "Ticket Médio", value: `R$ ${ticketMedio.toFixed(2)}` },
-            { label: "Unidades Vendidas", value: totalUnidades.toLocaleString("pt-BR") },
+            { label: "Gelos Saborizados", value: totalUnidades.toLocaleString("pt-BR") },
+            { label: "Valor dos Gelos", value: `R$ ${composicao.valorGelosSaborizados.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
+            { label: "Preço Médio dos Gelos", value: `R$ ${composicao.precoMedioGelosSaborizados.toFixed(2)}` },
+            { label: "Bebidas (unidades reais)", value: composicao.bebidasUnidadesReais.toLocaleString("pt-BR") },
+            { label: "Valor das Bebidas", value: `R$ ${composicao.valorBebidas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
             { label: "Total Abatido", value: `R$ ${totalAbatido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
             { label: "Total Frete", value: `R$ ${totalFrete.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
             { label: "Período", value: periodoLabel },
@@ -281,10 +317,18 @@ export default function RelatorioVendas() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <KpiCard title="Ticket Médio" value={`R$ ${ticketMedio.toFixed(2)}`} icon={TrendingUp} />
-            <KpiCard title="Unidades Vendidas" value={totalUnidades.toLocaleString("pt-BR")} icon={ShoppingCart} />
+            <KpiCard title="Gelos Saborizados" value={totalUnidades.toLocaleString("pt-BR")} icon={Package} subtitle={`${`R$ ${composicao.valorGelosSaborizados.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} · média R$ ${composicao.precoMedioGelosSaborizados.toFixed(2)}/un`} />
             <KpiCard title="Total Abatido" value={`R$ ${totalAbatido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={CreditCard} />
             <KpiCard title="Total Frete" value={`R$ ${totalFrete.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={Truck} />
           </div>
+
+          {(composicao.bebidasUnidadesReais > 0 || composicao.geloCuboPacotes > 0 || Math.abs(composicao.ajustes) > 0.01) && (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <KpiCard title="Bebidas" value={`${composicao.bebidasUnidadesReais.toLocaleString("pt-BR")} un`} icon={Wine} subtitle={`${composicao.bebidasVolumes.toLocaleString("pt-BR")} volume(s) · R$ ${composicao.valorBebidas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} />
+              <KpiCard title="Gelo em Cubo" value={`${composicao.geloCuboPacotes.toLocaleString("pt-BR")} pacote(s)`} icon={Package} subtitle={`R$ ${composicao.valorGeloCubo.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} />
+              <KpiCard title="Frete e Ajustes" value={`R$ ${(composicao.frete + composicao.ajustes).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={Truck} subtitle="Diferença até o total das notas" />
+            </div>
+          )}
 
           <Card className="overflow-hidden">
             <CardHeader className="pb-3">
@@ -299,7 +343,12 @@ export default function RelatorioVendas() {
                 <TableHeader>
                   <TableRow className="bg-muted/40 hover:bg-muted/40">
                     <TableHead className="text-xs font-semibold uppercase tracking-wider w-[100px]">Data</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider">Comanda</TableHead>
                     <TableHead className="text-xs font-semibold uppercase tracking-wider">Cliente</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-right">Gelos</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-right">Média/un</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider">Outros produtos</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-right">Produtos</TableHead>
                     <TableHead className="text-xs font-semibold uppercase tracking-wider text-right">Total</TableHead>
                     <TableHead className="text-xs font-semibold uppercase tracking-wider text-right">Recebido</TableHead>
                     <TableHead className="text-xs font-semibold uppercase tracking-wider text-center">Saldo</TableHead>
@@ -314,10 +363,20 @@ export default function RelatorioVendas() {
                     const abatido = abatimentosPorVenda[v.id] || 0;
                     const recebido = v.status === "paga" ? Number(v.total) : abatido;
                     const saldo = Number(v.total) - recebido;
+                    const detalhe = composicao.porVenda.get(v.id);
+                    const outrosProdutos = [
+                      detalhe?.bebidasUnidadesReais ? `${detalhe.bebidasUnidadesReais} bebida(s)` : "",
+                      detalhe?.geloCuboPacotes ? `${detalhe.geloCuboPacotes} cubo(s)` : "",
+                    ].filter(Boolean).join(" · ") || "—";
                     return (
                       <TableRow key={v.id} className="transition-colors">
                         <TableCell className="text-sm tabular-nums">{new Date(v.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                        <TableCell className="text-sm font-medium">{v.numero_pedido ? `#${v.numero_pedido}` : "—"}</TableCell>
                         <TableCell className="text-sm font-medium">{v.clientes?.nome || "-"}</TableCell>
+                        <TableCell className="text-sm text-right tabular-nums">{detalhe?.gelosSaborizados.toLocaleString("pt-BR") || "—"}</TableCell>
+                        <TableCell className="text-sm text-right tabular-nums">{detalhe?.gelosSaborizados ? `R$ ${detalhe.precoMedioGelosSaborizados.toFixed(2)}` : "—"}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{outrosProdutos}</TableCell>
+                        <TableCell className="text-sm text-right tabular-nums">R$ {Number(detalhe?.subtotalProdutos || 0).toFixed(2)}</TableCell>
                         <TableCell className="text-sm font-semibold text-right tabular-nums">R$ {Number(v.total).toFixed(2)}</TableCell>
                         <TableCell className="text-right tabular-nums">
                           {recebido > 0
@@ -357,7 +416,11 @@ export default function RelatorioVendas() {
                 </TableBody>
                 <tfoot>
                   <tr className="border-t-2 border-primary/20 bg-primary/5">
-                    <TableCell colSpan={2} className="text-right text-sm font-bold py-3">Totais:</TableCell>
+                    <TableCell colSpan={3} className="text-right text-sm font-bold py-3">Totais:</TableCell>
+                    <TableCell className="text-sm font-bold text-right tabular-nums py-3">{totalUnidades.toLocaleString("pt-BR")}</TableCell>
+                    <TableCell className="text-sm font-bold text-right tabular-nums py-3">R$ {composicao.precoMedioGelosSaborizados.toFixed(2)}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground py-3">{composicao.bebidasUnidadesReais > 0 ? `${composicao.bebidasUnidadesReais} bebida(s)` : "—"}</TableCell>
+                    <TableCell className="text-sm font-bold text-right tabular-nums py-3">R$ {composicao.subtotalProdutos.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
                     <TableCell className="text-sm font-bold text-right tabular-nums py-3">R$ {faturamento.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
                     <TableCell className="text-sm font-bold text-right tabular-nums text-emerald-600 dark:text-emerald-400 py-3">R$ {totalRecebido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
                     <TableCell className="text-center py-3">
