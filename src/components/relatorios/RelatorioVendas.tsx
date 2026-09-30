@@ -219,6 +219,7 @@ export default function RelatorioVendas() {
       saldoPendente <= 0.01 ? "Quitado" : `R$ ${saldoPendente.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
       "",
       "",
+      "",
     ],
   ];
 
