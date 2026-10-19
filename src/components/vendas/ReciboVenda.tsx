@@ -553,7 +553,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
 
     // iPhone: o WhatsApp costuma descartar o texto quando há arquivo anexo.
     // Copiamos a mensagem antes para o usuário só colar na conversa.
-    try { await navigator.clipboard?.writeText(msg); } catch { /* sem permissão */ }
+    navigator.clipboard?.writeText(msg).catch(() => { /* sem permissão */ });
 
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
       try {
