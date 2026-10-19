@@ -144,8 +144,16 @@ export default function Clientes() {
     if (!form.nome) return toast({ title: "Nome obrigatório", variant: "destructive" });
     try {
       const payload: any = { ...form };
-      if (!payload.preco_padrao_personalizado) payload.preco_padrao_personalizado = null;
-      else payload.preco_padrao_personalizado = Number(payload.preco_padrao_personalizado);
+      // Aceita vírgula ou ponto (ex.: "1,40" ou "1.40")
+      const precoPadraoRaw = String(payload.preco_padrao_personalizado ?? "").trim().replace(/\s/g, "").replace(",", ".");
+      if (!precoPadraoRaw) payload.preco_padrao_personalizado = null;
+      else {
+        const precoPadrao = Number(precoPadraoRaw);
+        if (!Number.isFinite(precoPadrao) || precoPadrao < 0) {
+          return toast({ title: "Preço padrão inválido", description: "Use um valor como 1,40", variant: "destructive" });
+        }
+        payload.preco_padrao_personalizado = Math.round(precoPadrao * 100) / 100;
+      }
       if (!payload.cpf_cnpj) payload.cpf_cnpj = null;
       payload.latitude = payload.latitude ? Number(payload.latitude) : null;
       payload.longitude = payload.longitude ? Number(payload.longitude) : null;
@@ -343,7 +351,7 @@ export default function Clientes() {
             {form.possui_freezer && (
               <div><Label>ID do Freezer</Label><Input value={form.freezer_identificacao} onChange={(e) => setForm({ ...form, freezer_identificacao: e.target.value })} /></div>
             )}
-            <div><Label>Preço Padrão Personalizado (R$)</Label><Input type="number" step="0.01" value={form.preco_padrao_personalizado} onChange={(e) => setForm({ ...form, preco_padrao_personalizado: e.target.value })} /></div>
+            <div><Label>Preço Padrão Personalizado (R$)</Label><Input type="text" inputMode="decimal" placeholder="Ex.: 1,40" value={form.preco_padrao_personalizado} onChange={(e) => setForm({ ...form, preco_padrao_personalizado: e.target.value.replace(/[^0-9.,]/g, "") })} /></div>
 
             {/* Configuração Financeira */}
             <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
