@@ -551,12 +551,18 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     const vencLine = data.data_vencimento ? `\nVencimento: ${data.data_vencimento}` : "";
     const msg = `*${displayName}*\n\nOlá ${data.cliente_nome}, segue seu recibo.\n\nTotal: R$ ${totalExibido.toFixed(2)}\nData: ${data.data}\nPagamento: ${data.forma_pagamento}${vencLine}`;
 
+    // iPhone: o WhatsApp costuma descartar o texto quando há arquivo anexo.
+    // Copiamos a mensagem antes para o usuário só colar na conversa.
+    try { await navigator.clipboard?.writeText(msg); } catch { /* sem permissão */ }
+
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
       try {
-        await navigator.share({ text: msg, files: [file] });
+        await navigator.share({ title: fileName, text: msg, files: [file] });
         return;
       } catch (e) {
-        console.log("Share cancelled, falling back to wa.me");
+        // Usuário cancelou: não abre nada extra
+        if ((e as DOMException)?.name === "AbortError") return;
+        console.warn("Compartilhamento com arquivo indisponível:", e);
       }
     }
 
