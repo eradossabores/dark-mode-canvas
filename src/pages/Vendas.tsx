@@ -740,11 +740,11 @@ export default function Vendas() {
             data: dataVenda.toLocaleDateString("pt-BR"),
             forma_pagamento: FORMAS_PAGAMENTO.find(f => f.value === formaPagamento)?.label || formaPagamento,
             numero_nf: numeroNf.trim() || undefined,
-            total: totalVenda,
+            total: totalVendaFinal,
             observacoes: observacoes || undefined,
             telefone: clienteFull.telefone,
             status: statusVenda as "pendente" | "paga" | "cancelada",
-            valor_pago: statusVenda === "paga" ? totalVenda : (statusVenda === "pendente" ? 0 : totalVenda),
+            valor_pago: statusVenda === "paga" ? totalVendaFinal : (statusVenda === "pendente" ? 0 : totalVendaFinal),
             valor_frete: parseDecimal(valorFrete) || 0,
             frete_pago_por: fretePagoPor,
             data_vencimento: (formaPagamento === "boleto" || formaPagamento === "parcelado" || formaPagamento === "fiado") && dataVencimento
