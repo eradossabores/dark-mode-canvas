@@ -569,6 +569,7 @@ export default function Vendas() {
         p_ignorar_estoque: ignorarEstoque,
       });
 
+      let totalVendaFinal = 0;
       const { data: latestVenda } = await (supabase as any)
         .from("vendas").select("id").eq("cliente_id", clienteId)
         .eq("factory_id", factoryId)
@@ -586,10 +587,10 @@ export default function Vendas() {
             .in("sabor_id", brindeSaborIds);
         }
 
-        // Recalculate total excluding brindes
-        const totalProdutos = itensValidos
-          .filter(i => !brindeSaborIds.includes(i.sabor_id))
-          .reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0);
+        // Recalcular total a partir dos itens gravados no banco (preço oficial aplicado na venda, brindes já zerados)
+        const { data: itensDb } = await (supabase as any)
+          .from("venda_itens").select("subtotal").eq("venda_id", vendaId);
+        const totalProdutos = (itensDb || []).reduce((s: number, r: any) => s + Number(r.subtotal || 0), 0);
         const freteTotal = parseDecimal(valorFrete) || 0;
         // Frete: cliente paga → soma no total; empresa paga → despesa; ambos → 50/50
         const freteCliente = fretePagoPor === "cliente" ? freteTotal : fretePagoPor === "ambos" ? Math.round(freteTotal / 2 * 100) / 100 : 0;
