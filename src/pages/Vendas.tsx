@@ -569,6 +569,7 @@ export default function Vendas() {
         p_ignorar_estoque: ignorarEstoque,
       });
 
+      let totalVendaFinal = 0;
       const { data: latestVenda } = await (supabase as any)
         .from("vendas").select("id").eq("cliente_id", clienteId)
         .eq("factory_id", factoryId)
@@ -586,10 +587,10 @@ export default function Vendas() {
             .in("sabor_id", brindeSaborIds);
         }
 
-        // Recalculate total excluding brindes
-        const totalProdutos = itensValidos
-          .filter(i => !brindeSaborIds.includes(i.sabor_id))
-          .reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0);
+        // Recalcular total a partir dos itens gravados no banco (preço oficial aplicado na venda, brindes já zerados)
+        const { data: itensDb } = await (supabase as any)
+          .from("venda_itens").select("subtotal").eq("venda_id", vendaId);
+        const totalProdutos = (itensDb || []).reduce((s: number, r: any) => s + Number(r.subtotal || 0), 0);
         const freteTotal = parseDecimal(valorFrete) || 0;
         // Frete: cliente paga → soma no total; empresa paga → despesa; ambos → 50/50
         const freteCliente = fretePagoPor === "cliente" ? freteTotal : fretePagoPor === "ambos" ? Math.round(freteTotal / 2 * 100) / 100 : 0;
@@ -605,6 +606,7 @@ export default function Vendas() {
           });
         const bebidasSubtotal = bebidasValidas.reduce((s, b) => s + b.preco * b.quantidade, 0);
         const totalVendaCalc = totalProdutos + freteCliente + geloCuboSubtotal + bebidasSubtotal;
+        totalVendaFinal = totalVendaCalc;
         const vPix = detalhePgto === "pix" ? totalVendaCalc : detalhePgto === "misto" ? parseBRL(detalhePix) : 0;
         const vEsp = detalhePgto === "especie" ? totalVendaCalc : detalhePgto === "misto" ? parseBRL(detalheEspecie) : 0;
         // "misto" é mapeado para "dinheiro" no DB para manter compatibilidade com relatórios existentes
@@ -700,14 +702,12 @@ export default function Vendas() {
 
       // Auditoria - lançamento de venda
       const clienteNome = clientes.find(c => c.id === clienteId)?.nome || "?";
-      const brindeSaborIdsAudit = brindes.filter(b => Number(b.quantidade) > 0 && b.sabor_id).map(b => b.sabor_id);
-      const totalVenda = itensValidos.filter(i => !brindeSaborIdsAudit.includes(i.sabor_id)).reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0);
       await (supabase as any).from("auditoria").insert({
         usuario_nome: "sistema",
         modulo: "vendas",
         acao: "venda_registrada",
         registro_afetado: latestVenda?.[0]?.id || null,
-        descricao: `Venda para ${clienteNome} - R$ ${totalVenda.toFixed(2)} (${formaPagamento}) - ${itensValidos.length} item(ns)`,
+        descricao: `Venda para ${clienteNome} - R$ ${totalVendaFinal.toFixed(2)} (${formaPagamento}) - ${itensValidos.length} item(ns)`,
       });
 
       // Deduct sacos if selling by package
@@ -740,11 +740,11 @@ export default function Vendas() {
             data: dataVenda.toLocaleDateString("pt-BR"),
             forma_pagamento: FORMAS_PAGAMENTO.find(f => f.value === formaPagamento)?.label || formaPagamento,
             numero_nf: numeroNf.trim() || undefined,
-            total: totalVenda,
+            total: totalVendaFinal,
             observacoes: observacoes || undefined,
             telefone: clienteFull.telefone,
             status: statusVenda as "pendente" | "paga" | "cancelada",
-            valor_pago: statusVenda === "paga" ? totalVenda : (statusVenda === "pendente" ? 0 : totalVenda),
+            valor_pago: statusVenda === "paga" ? totalVendaFinal : (statusVenda === "pendente" ? 0 : totalVendaFinal),
             valor_frete: parseDecimal(valorFrete) || 0,
             frete_pago_por: fretePagoPor,
             data_vencimento: (formaPagamento === "boleto" || formaPagamento === "parcelado" || formaPagamento === "fiado") && dataVencimento
