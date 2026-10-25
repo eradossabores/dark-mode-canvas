@@ -606,6 +606,7 @@ export default function Vendas() {
           });
         const bebidasSubtotal = bebidasValidas.reduce((s, b) => s + b.preco * b.quantidade, 0);
         const totalVendaCalc = totalProdutos + freteCliente + geloCuboSubtotal + bebidasSubtotal;
+        totalVendaFinal = totalVendaCalc;
         const vPix = detalhePgto === "pix" ? totalVendaCalc : detalhePgto === "misto" ? parseBRL(detalhePix) : 0;
         const vEsp = detalhePgto === "especie" ? totalVendaCalc : detalhePgto === "misto" ? parseBRL(detalheEspecie) : 0;
         // "misto" é mapeado para "dinheiro" no DB para manter compatibilidade com relatórios existentes
@@ -701,14 +702,12 @@ export default function Vendas() {
 
       // Auditoria - lançamento de venda
       const clienteNome = clientes.find(c => c.id === clienteId)?.nome || "?";
-      const brindeSaborIdsAudit = brindes.filter(b => Number(b.quantidade) > 0 && b.sabor_id).map(b => b.sabor_id);
-      const totalVenda = itensValidos.filter(i => !brindeSaborIdsAudit.includes(i.sabor_id)).reduce((s, i) => s + (Number(i.preco_unitario) || 0) * i.quantidade, 0);
       await (supabase as any).from("auditoria").insert({
         usuario_nome: "sistema",
         modulo: "vendas",
         acao: "venda_registrada",
         registro_afetado: latestVenda?.[0]?.id || null,
-        descricao: `Venda para ${clienteNome} - R$ ${totalVenda.toFixed(2)} (${formaPagamento}) - ${itensValidos.length} item(ns)`,
+        descricao: `Venda para ${clienteNome} - R$ ${totalVendaFinal.toFixed(2)} (${formaPagamento}) - ${itensValidos.length} item(ns)`,
       });
 
       // Deduct sacos if selling by package
