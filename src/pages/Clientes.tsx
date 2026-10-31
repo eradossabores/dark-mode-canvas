@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { geocodeClienteAddress, hasAddressForGeocoding } from "@/lib/geocoding";
+import { geocodeClienteAddress, shouldGeocodeClienteAddress } from "@/lib/geocoding";
 import { toast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, History, Map, ClipboardCheck } from "lucide-react";
 import HistoricoCompras from "@/components/clientes/HistoricoCompras";
@@ -161,8 +161,14 @@ export default function Clientes() {
       payload.preco_unidade_aprazo = payload.preco_unidade_aprazo ? Number(String(payload.preco_unidade_aprazo).replace(",", ".")) : 2.05;
       payload.limite_credito = payload.limite_credito ? Number(String(payload.limite_credito).replace(",", ".")) : 0;
 
-      if (hasAddressForGeocoding(payload)) {
-        const coords = await geocodeClienteAddress(payload);
+      const previousCliente = editingId ? clientes.find((cliente) => cliente.id === editingId) : undefined;
+      if (shouldGeocodeClienteAddress(payload, previousCliente)) {
+        // Map lookup is optional and must never prevent saving customer prices.
+        let timeoutId: ReturnType<typeof setTimeout> | undefined;
+        const coords = await Promise.race([
+          geocodeClienteAddress(payload),
+          new Promise<null>((resolve) => { timeoutId = setTimeout(() => resolve(null), 8000); }),
+        ]).catch(() => null).finally(() => { if (timeoutId) clearTimeout(timeoutId); });
         if (coords) {
           payload.latitude = coords.lat;
           payload.longitude = coords.lng;
@@ -175,8 +181,6 @@ export default function Clientes() {
       let clienteId = editingId;
 
       const { data: userData } = await supabase.auth.getUser();
-      const isVendedor = (supabase as any).from("user_roles").select("roles(name)").eq("user_id", userData.user?.id).single();
-      
       if (editingId) {
         const { error } = await (supabase as any).from("clientes").update(payload).eq("id", editingId);
         if (error) throw error;
