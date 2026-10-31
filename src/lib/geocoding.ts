@@ -16,6 +16,17 @@ export function hasAddressForGeocoding(input: ClienteGeocodeInput) {
   return Boolean(input.endereco?.trim());
 }
 
+/** Price-only edits must not depend on an external address lookup. */
+export function shouldGeocodeClienteAddress(
+  input: ClienteGeocodeInput,
+  previous?: ClienteGeocodeInput,
+): boolean {
+  if (!hasAddressForGeocoding(input)) return false;
+  if (!previous) return true;
+  const fields = ["endereco", "bairro", "cidade", "estado"] as const;
+  return fields.some((field) => (input[field] ?? "").trim() !== (previous[field] ?? "").trim());
+}
+
 export async function geocodeClienteAddress(input: ClienteGeocodeInput): Promise<ClienteCoordinates | null> {
   if (!hasAddressForGeocoding(input)) return null;
 
