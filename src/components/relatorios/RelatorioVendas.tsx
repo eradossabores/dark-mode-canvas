@@ -60,30 +60,48 @@ export default function RelatorioVendas() {
 
   useEffect(() => { setPreviewLoaded(false); }, [startDate, endDate, filtroPagamento, filtroStatus, filtroCliente, filtroOperador]);
 
+  /**
+   * Busca TODAS as linhas paginando de 1000 em 1000.
+   * O banco devolve no máximo 1000 linhas por consulta; sem paginar, itens
+   * eram cortados silenciosamente e as unidades/valores ficavam inconsistentes.
+   */
+  async function fetchAll(build: () => any): Promise<any[]> {
+    const page = 1000;
+    const out: any[] = [];
+    for (let from = 0; ; from += page) {
+      const { data, error } = await build().range(from, from + page - 1);
+      if (error) throw error;
+      out.push(...(data || []));
+      if (!data || data.length < page) break;
+    }
+    return out;
+  }
+
   async function loadData() {
-    let vQ = (supabase as any).from("vendas").select("*, clientes(nome)").order("created_at", { ascending: false });
-    if (factoryId) vQ = vQ.eq("factory_id", factoryId);
-    const v = await vQ;
-    const vendasData = v.data || [];
+    const vendasData = await fetchAll(() => {
+      let q = (supabase as any).from("vendas").select("*, clientes(nome)").order("created_at", { ascending: false }).order("id");
+      if (factoryId) q = q.eq("factory_id", factoryId);
+      return q;
+    });
     setVendas(vendasData);
 
     if (vendasData.length > 0) {
       const vendaIds = vendasData.map((vd: any) => vd.id);
       const chunks: string[][] = [];
-      for (let index = 0; index < vendaIds.length; index += 200) chunks.push(vendaIds.slice(index, index + 200));
+      for (let index = 0; index < vendaIds.length; index += 100) chunks.push(vendaIds.slice(index, index + 100));
       const resultados = await Promise.all(chunks.map(async (ids) => {
         const [gelos, bebidas, cubos, abats] = await Promise.all([
-          (supabase as any).from("venda_itens").select("*, sabores(nome)").in("venda_id", ids),
-          (supabase as any).from("venda_bebida_itens").select("venda_id,quantidade,subtotal,tipo_venda,bebidas(unidades_fardo)").in("venda_id", ids),
-          (supabase as any).from("venda_gelo_cubo_itens").select("venda_id,quantidade,subtotal").in("venda_id", ids),
-          (supabase as any).from("abatimentos_historico").select("*").in("venda_id", ids),
+          fetchAll(() => (supabase as any).from("venda_itens").select("*, sabores(nome)").in("venda_id", ids).order("id")),
+          fetchAll(() => (supabase as any).from("venda_bebida_itens").select("id,venda_id,quantidade,subtotal,tipo_venda,bebidas(unidades_fardo)").in("venda_id", ids).order("id")),
+          fetchAll(() => (supabase as any).from("venda_gelo_cubo_itens").select("id,venda_id,quantidade,subtotal").in("venda_id", ids).order("id")),
+          fetchAll(() => (supabase as any).from("abatimentos_historico").select("*").in("venda_id", ids).order("id")),
         ]);
         return { gelos, bebidas, cubos, abats };
       }));
-      setItens(resultados.flatMap(({ gelos }) => gelos.data || []));
-      setBebidaItens(resultados.flatMap(({ bebidas }) => bebidas.data || []));
-      setCuboItens(resultados.flatMap(({ cubos }) => cubos.data || []));
-      setAbatimentos(resultados.flatMap(({ abats }) => abats.data || []));
+      setItens(resultados.flatMap(({ gelos }) => gelos));
+      setBebidaItens(resultados.flatMap(({ bebidas }) => bebidas));
+      setCuboItens(resultados.flatMap(({ cubos }) => cubos));
+      setAbatimentos(resultados.flatMap(({ abats }) => abats));
     } else {
       setItens([]);
       setBebidaItens([]);
