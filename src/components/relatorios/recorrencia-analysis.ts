@@ -41,7 +41,8 @@ function itensDaVenda(venda: VendaRecorrenciaRaw): { nome: string; quantidade: n
   }));
   const bebidas = (venda.venda_bebida_itens ?? []).map((item) => {
     const fardo = item.tipo_venda === "fardo";
-    const unidades = fardo ? Number(item.bebidas?.unidades_fardo ?? 1) : 1;
+    const tamanho = Number(item.bebidas?.unidades_fardo ?? 6);
+    const unidades = fardo ? (tamanho > 0 ? tamanho : 6) : 1;
     return {
       nome: `${item.nome}${fardo && !/\(fardo\)/i.test(item.nome) ? " (Fardo)" : ""}`,
       quantidade: Number(item.quantidade ?? 0) * unidades,
