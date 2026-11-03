@@ -166,3 +166,22 @@ html {
   text-size-adjust: 100%;
   touch-action: manipulation;
 }
+
+@keyframes logo-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+img.mix-blend-screen {
+  animation: logo-float 3s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  img.mix-blend-screen {
+    animation: none;
+  }
+}
