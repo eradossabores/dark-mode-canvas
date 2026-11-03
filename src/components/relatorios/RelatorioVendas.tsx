@@ -39,6 +39,12 @@ const STATUS_VENDA = [
   { value: "cancelada", label: "Cancelada" },
 ];
 
+const PRODUTOS_FILTRO = [
+  { value: "ambos", label: "Ambos (Gelos + Bebidas)" },
+  { value: "gelos", label: "Gelos Saborizados" },
+  { value: "bebidas", label: "Bebidas" },
+];
+
 export default function RelatorioVendas() {
   const { factoryId, factoryName, branding } = useAuth();
   const [vendas, setVendas] = useState<any[]>([]);
@@ -54,11 +60,12 @@ export default function RelatorioVendas() {
   const [filtroStatus, setFiltroStatus] = useState("todos");
   const [filtroCliente, setFiltroCliente] = useState("");
   const [filtroOperador, setFiltroOperador] = useState("todos");
+  const [filtroProduto, setFiltroProduto] = useState("ambos");
   const [previewLoaded, setPreviewLoaded] = useState(false);
 
   useEffect(() => { loadData(); }, [factoryId]);
 
-  useEffect(() => { setPreviewLoaded(false); }, [startDate, endDate, filtroPagamento, filtroStatus, filtroCliente, filtroOperador]);
+  useEffect(() => { setPreviewLoaded(false); }, [startDate, endDate, filtroPagamento, filtroStatus, filtroCliente, filtroOperador, filtroProduto]);
 
   /**
    * Busca TODAS as linhas paginando de 1000 em 1000.
