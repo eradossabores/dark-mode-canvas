@@ -121,7 +121,7 @@ export default function Login() {
         <img
           src={icetechLogo.url}
           alt="ICETECH"
-          className="h-28 w-28 sm:h-36 sm:w-36 object-contain drop-shadow-2xl"
+          className="h-28 w-28 sm:h-36 sm:w-36 object-contain drop-shadow-2xl mix-blend-screen"
         />
       </div>
 
