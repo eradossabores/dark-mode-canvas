@@ -50,9 +50,9 @@ async function carregar(clienteId: string) {
       bebidas.push({ venda_id: r.venda_id, nome: r.nome, quantidade: r.quantidade, subtotal: r.subtotal, tipo_venda: r.tipo_venda, unidades_fardo: r.bebidas?.unidades_fardo ?? null });
     }
   }
-  let factory: { nome: string | null; logo_url: string | null } | null = null;
+  let factory: { name: string | null; logo_url: string | null } | null = null;
   if (cliente?.factory_id) {
-    const { data: f } = await supabase.from("factories").select("nome,logo_url").eq("id", cliente.factory_id).maybeSingle();
+    const { data: f } = await supabase.from("factories").select("name,logo_url").eq("id", cliente.factory_id).maybeSingle();
     factory = (f as typeof factory) ?? null;
   }
   return { cliente, vendas, itens, bebidas, factory };
@@ -96,7 +96,7 @@ export default function ClientePerfil() {
         `perfil-${String(data.cliente.nome).toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${ini}-a-${fimEf}`,
         [{ label: "TOTAL DO PERÍODO", value: brl(totalValor) }],
         undefined,
-        data.factory ? { factoryName: data.factory.nome ?? undefined, factoryLogoUrl: data.factory.logo_url ?? undefined } : undefined,
+        data.factory ? { factoryName: data.factory.name ?? undefined, factoryLogoUrl: data.factory.logo_url ?? undefined } : undefined,
         [
           { label: "Período", value: `${fmtD(ini)} a ${fmtD(fimEf)}` },
           { label: "Comandas", value: String(filtradas.length) },
