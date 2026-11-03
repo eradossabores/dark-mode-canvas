@@ -41,6 +41,11 @@ export default function Login() {
       return;
     }
 
+    if (role === "auxiliar_externo") {
+      navigate("/painel/operacao-externa", { replace: true });
+      return;
+    }
+
     navigate("/painel", { replace: true });
   }, [authLoading, user, role, factoryId, navigate]);
 
