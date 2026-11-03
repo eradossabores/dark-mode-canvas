@@ -138,3 +138,33 @@ export function resumoBebidas(vendas: VendaPerfilRaw[], bebidas: BebidaPerfilRaw
   }
   return [...mapa.values()].sort((a, b) => b.unidades - a.unidades);
 }
+
+export interface ItemPrecoRaw {
+  venda_id: string;
+  quantidade: number | null;
+  preco_unitario: number | null;
+}
+
+/**
+ * Economia do cliente frente ao preço de referência.
+ * Brindes (preço ≤ 0) e itens a preço ≥ referência não contam.
+ */
+export function calcularEconomia(vendas: VendaPerfilRaw[], itens: ItemPrecoRaw[], referencia: number): number {
+  const ids = new Set(vendas.map((v) => v.id));
+  let total = 0;
+  for (const i of itens) {
+    if (!ids.has(i.venda_id)) continue;
+    const p = Number(i.preco_unitario ?? 0);
+    if (p <= 0 || p >= referencia) continue;
+    total += Number(i.quantidade ?? 0) * (referencia - p);
+  }
+  return Math.round(total * 100) / 100;
+}
+
+/** Intervalo médio, em dias, entre compras consecutivas (null se < 2 compras). */
+export function intervaloMedioDias(vendas: VendaPerfilRaw[]): number | null {
+  const dias = [...new Set(vendas.map((v) => dataBR(v.created_at)))].sort();
+  if (dias.length < 2) return null;
+  const ms = Date.parse(dias[dias.length - 1]) - Date.parse(dias[0]);
+  return Math.round(ms / 86_400_000 / (dias.length - 1));
+}

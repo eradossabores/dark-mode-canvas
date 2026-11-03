@@ -43,3 +43,24 @@ describe("resumoBebidas", () => {
     expect(r).toEqual([{ nome: "Brisa", unidades: 14, valor: 590 }]);
   });
 });
+
+import { calcularEconomia, intervaloMedioDias } from "@/components/clientes/perfil-cliente-analysis";
+describe("calcularEconomia", () => {
+  const vendas = [{ id: "a", created_at: "2026-10-01T15:00:00Z", total: 0, status: "paga" }];
+  it("600 un a R$ 1,40 com referência R$ 1,99 economiza R$ 354,00", () => {
+    expect(calcularEconomia(vendas, [{ venda_id: "a", quantidade: 600, preco_unitario: 1.4 }], 1.99)).toBe(354);
+  });
+  it("ignora brindes e preços iguais ou acima da referência", () => {
+    expect(calcularEconomia(vendas, [
+      { venda_id: "a", quantidade: 10, preco_unitario: 0 },
+      { venda_id: "a", quantidade: 10, preco_unitario: 1.99 },
+      { venda_id: "a", quantidade: 10, preco_unitario: 2.05 },
+    ], 1.99)).toBe(0);
+  });
+});
+describe("intervaloMedioDias", () => {
+  it("compras em 01, 08 e 15 têm intervalo médio de 7 dias", () => {
+    const v = ["2026-10-01", "2026-10-08", "2026-10-15"].map((d, i) => ({ id: String(i), created_at: `${d}T15:00:00Z`, total: 1, status: "paga" }));
+    expect(intervaloMedioDias(v)).toBe(7);
+  });
+});
