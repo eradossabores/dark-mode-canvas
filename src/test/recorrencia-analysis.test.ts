@@ -30,6 +30,8 @@ describe("analisarRecorrencia", () => {
 
     expect(cliente.frequenciaMedia).toBe(10);
     expect(cliente.totalUnidades).toBe(30);
+    expect(cliente.unidadesGelosSaborizados).toBe(15);
+    expect(cliente.unidadesBebidas).toBe(12);
     expect(cliente.mediaUnidades).toBe(15);
     expect(cliente.status).toBe("em_breve");
     expect(cliente.diasParaProxima).toBe(2);
@@ -42,6 +44,19 @@ describe("analisarRecorrencia", () => {
 
     expect(cliente.status).toBe("atrasado");
     expect(cliente.diasAtraso).toBe(4);
+  });
+
+  it("separa bebidas avulsas e fardos de seis sem incluir gelo em cubo", () => {
+    const [cliente] = analisarRecorrencia([{ id: "c1", nome: "Cliente A" }], [{
+      ...vendas[0],
+      venda_bebida_itens: [
+        { nome: "Bebida", quantidade: 2, tipo_venda: "unidade" },
+        { nome: "Bebida", quantidade: 2, tipo_venda: "fardo" },
+      ],
+      venda_gelo_cubo_itens: [{ quantidade: 3, tamanho: "3kg" }],
+    }]);
+    expect(cliente.unidadesGelosSaborizados).toBe(10);
+    expect(cliente.unidadesBebidas).toBe(14);
   });
 
   it("ignora clientes sem compras e classifica compra única como nova", () => {

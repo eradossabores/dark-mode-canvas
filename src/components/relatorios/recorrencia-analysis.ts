@@ -41,7 +41,8 @@ function itensDaVenda(venda: VendaRecorrenciaRaw): { nome: string; quantidade: n
   }));
   const bebidas = (venda.venda_bebida_itens ?? []).map((item) => {
     const fardo = item.tipo_venda === "fardo";
-    const unidades = fardo ? Number(item.bebidas?.unidades_fardo ?? 1) : 1;
+    const tamanho = Number(item.bebidas?.unidades_fardo ?? 6);
+    const unidades = fardo ? (tamanho > 0 ? tamanho : 6) : 1;
     return {
       nome: `${item.nome}${fardo && !/\(fardo\)/i.test(item.nome) ? " (Fardo)" : ""}`,
       quantidade: Number(item.quantidade ?? 0) * unidades,
@@ -108,6 +109,12 @@ export function analisarRecorrencia(clientes: ClienteRaw[], vendas: VendaRecorre
       compras,
       totalCompras: compras.length,
       totalUnidades,
+      unidadesGelosSaborizados: vendasCliente.reduce((total, venda) => total + (venda.venda_itens ?? []).reduce((soma, item) => soma + Number(item.quantidade ?? 0), 0), 0),
+      unidadesBebidas: vendasCliente.reduce((total, venda) => total + (venda.venda_bebida_itens ?? []).reduce((soma, item) => {
+        const tamanho = Number(item.bebidas?.unidades_fardo ?? 6);
+        const multiplicador = item.tipo_venda === "fardo" ? (tamanho > 0 ? tamanho : 6) : 1;
+        return soma + Number(item.quantidade ?? 0) * multiplicador;
+      }, 0), 0),
       mediaUnidades: totalUnidades / compras.length,
       totalGasto,
       ticketMedio: totalGasto / compras.length,
