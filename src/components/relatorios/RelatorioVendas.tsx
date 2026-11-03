@@ -60,30 +60,48 @@ export default function RelatorioVendas() {
 
   useEffect(() => { setPreviewLoaded(false); }, [startDate, endDate, filtroPagamento, filtroStatus, filtroCliente, filtroOperador]);
 
+  /**
+   * Busca TODAS as linhas paginando de 1000 em 1000.
+   * O banco devolve no máximo 1000 linhas por consulta; sem paginar, itens
+   * eram cortados silenciosamente e as unidades/valores ficavam inconsistentes.
+   */
+  async function fetchAll(build: () => any): Promise<any[]> {
+    const page = 1000;
+    const out: any[] = [];
+    for (let from = 0; ; from += page) {
+      const { data, error } = await build().range(from, from + page - 1);
+      if (error) throw error;
+      out.push(...(data || []));
+      if (!data || data.length < page) break;
+    }
+    return out;
+  }
+
   async function loadData() {
-    let vQ = (supabase as any).from("vendas").select("*, clientes(nome)").order("created_at", { ascending: false });
-    if (factoryId) vQ = vQ.eq("factory_id", factoryId);
-    const v = await vQ;
-    const vendasData = v.data || [];
+    const vendasData = await fetchAll(() => {
+      let q = (supabase as any).from("vendas").select("*, clientes(nome)").order("created_at", { ascending: false }).order("id");
+      if (factoryId) q = q.eq("factory_id", factoryId);
+      return q;
+    });
     setVendas(vendasData);
 
     if (vendasData.length > 0) {
       const vendaIds = vendasData.map((vd: any) => vd.id);
       const chunks: string[][] = [];
-      for (let index = 0; index < vendaIds.length; index += 200) chunks.push(vendaIds.slice(index, index + 200));
+      for (let index = 0; index < vendaIds.length; index += 100) chunks.push(vendaIds.slice(index, index + 100));
       const resultados = await Promise.all(chunks.map(async (ids) => {
         const [gelos, bebidas, cubos, abats] = await Promise.all([
-          (supabase as any).from("venda_itens").select("*, sabores(nome)").in("venda_id", ids),
-          (supabase as any).from("venda_bebida_itens").select("venda_id,quantidade,subtotal,tipo_venda,bebidas(unidades_fardo)").in("venda_id", ids),
-          (supabase as any).from("venda_gelo_cubo_itens").select("venda_id,quantidade,subtotal").in("venda_id", ids),
-          (supabase as any).from("abatimentos_historico").select("*").in("venda_id", ids),
+          fetchAll(() => (supabase as any).from("venda_itens").select("*, sabores(nome)").in("venda_id", ids).order("id")),
+          fetchAll(() => (supabase as any).from("venda_bebida_itens").select("id,venda_id,quantidade,subtotal,tipo_venda,bebidas(unidades_fardo)").in("venda_id", ids).order("id")),
+          fetchAll(() => (supabase as any).from("venda_gelo_cubo_itens").select("id,venda_id,quantidade,subtotal").in("venda_id", ids).order("id")),
+          fetchAll(() => (supabase as any).from("abatimentos_historico").select("*").in("venda_id", ids).order("id")),
         ]);
         return { gelos, bebidas, cubos, abats };
       }));
-      setItens(resultados.flatMap(({ gelos }) => gelos.data || []));
-      setBebidaItens(resultados.flatMap(({ bebidas }) => bebidas.data || []));
-      setCuboItens(resultados.flatMap(({ cubos }) => cubos.data || []));
-      setAbatimentos(resultados.flatMap(({ abats }) => abats.data || []));
+      setItens(resultados.flatMap(({ gelos }) => gelos));
+      setBebidaItens(resultados.flatMap(({ bebidas }) => bebidas));
+      setCuboItens(resultados.flatMap(({ cubos }) => cubos));
+      setAbatimentos(resultados.flatMap(({ abats }) => abats));
     } else {
       setItens([]);
       setBebidaItens([]);
@@ -101,9 +119,13 @@ export default function RelatorioVendas() {
     return vendas.filter((v) => {
       const d = new Date(v.created_at);
       if (startDate && d < startDate) return false;
-      if (endDate && d > new Date(endDate.getTime() + 86400000)) return false;
+      if (endDate) {
+        const fim = new Date(endDate); fim.setHours(23, 59, 59, 999);
+        if (d > fim) return false;
+      }
       if (filtroPagamento !== "todos" && v.forma_pagamento !== filtroPagamento) return false;
-      if (filtroStatus !== "todos" && v.status !== filtroStatus) return false;
+      // Canceladas nunca entram nos totais, salvo se o filtro pedir explicitamente.
+      if (filtroStatus === "todos" ? v.status === "cancelada" : v.status !== filtroStatus) return false;
       if (filtroCliente.trim() && !(v.clientes?.nome || "").toLowerCase().includes(filtroCliente.toLowerCase())) return false;
       if (filtroOperador !== "todos" && v.operador !== filtroOperador) return false;
       return true;
@@ -309,6 +331,18 @@ export default function RelatorioVendas() {
             {filtroCliente.trim() && <Badge variant="outline" className="ml-2">Cliente: {filtroCliente}</Badge>}
             {filtroOperador !== "todos" && <Badge variant="outline" className="ml-2">Op: {filtroOperador}</Badge>}
           </div>
+
+          <Card className="border-primary/40 bg-primary/5">
+            <CardContent className="py-4 text-sm leading-relaxed text-foreground">
+              Foram vendidos <strong>{totalUnidades.toLocaleString("pt-BR")} gelos saborizados</strong>
+              {composicao.gelosBrinde > 0 && <> ({composicao.gelosPagos.toLocaleString("pt-BR")} pagos + {composicao.gelosBrinde.toLocaleString("pt-BR")} brindes)</>}
+              {" "}que equivalem a <strong>R$ {composicao.valorGelosSaborizados.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
+              {composicao.bebidasUnidadesReais > 0 && <>, com a venda de <strong>{composicao.bebidasUnidadesReais.toLocaleString("pt-BR")} bebidas</strong> (R$ {composicao.valorBebidas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})</>}
+              {composicao.geloCuboPacotes > 0 && <>, <strong>{composicao.geloCuboPacotes.toLocaleString("pt-BR")} pacotes de gelo em cubo</strong> (R$ {composicao.valorGeloCubo.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})</>}
+              {Math.abs(composicao.frete + composicao.ajustes) > 0.01 && <>, frete/ajustes de R$ {(composicao.frete + composicao.ajustes).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</>}
+              {" "}— <strong>total de R$ {faturamento.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong> em {totalVendas} comanda(s).
+            </CardContent>
+          </Card>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <KpiCard title="Faturamento" value={`R$ ${faturamento.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={DollarSign} />
