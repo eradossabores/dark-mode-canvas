@@ -135,9 +135,12 @@ export default function RelatorioVendas() {
       if (filtroStatus === "todos" ? v.status === "cancelada" : v.status !== filtroStatus) return false;
       if (filtroCliente.trim() && !(v.clientes?.nome || "").toLowerCase().includes(filtroCliente.toLowerCase())) return false;
       if (filtroOperador !== "todos" && v.operador !== filtroOperador) return false;
+      // Filtro por produto: mantém apenas comandas que contêm a categoria escolhida.
+      if (filtroProduto === "gelos" && !itens.some((i) => i.venda_id === v.id)) return false;
+      if (filtroProduto === "bebidas" && !bebidaItens.some((i) => i.venda_id === v.id)) return false;
       return true;
     });
-  }, [vendas, startDate, endDate, filtroPagamento, filtroStatus, filtroCliente, filtroOperador]);
+  }, [vendas, startDate, endDate, filtroPagamento, filtroStatus, filtroCliente, filtroOperador, filtroProduto, itens, bebidaItens]);
 
   const filteredIds = new Set(filtered.map((v) => v.id));
   const filteredItens = itens.filter((i) => filteredIds.has(i.venda_id));
