@@ -318,6 +318,15 @@ export default function RelatorioVendas() {
           </Select>
         </div>
         <div>
+          <Label className="text-xs mb-1 block">Produto</Label>
+          <Select value={filtroProduto} onValueChange={setFiltroProduto}>
+            <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {PRODUTOS_FILTRO.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
           <Label className="text-xs mb-1 block">Cliente</Label>
           <Input placeholder="Buscar cliente..." value={filtroCliente} onChange={e => setFiltroCliente(e.target.value)} className="w-[160px]" />
         </div>
