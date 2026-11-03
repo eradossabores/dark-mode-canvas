@@ -456,7 +456,7 @@ export default function Clientes() {
               return (
                 <div key={c.id} className="rounded-lg border bg-card p-3 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-sm truncate max-w-[60%]">{c.nome}</span>
+                    <button type="button" className="font-semibold text-sm truncate max-w-[60%] text-left hover:text-primary underline-offset-2 hover:underline" onClick={() => navigate(`/painel/clientes/${c.id}`)}>{c.nome}</button>
                     <Badge
                       variant={c.status === "ativo" ? "default" : "destructive"}
                       className="cursor-pointer text-[10px]"
@@ -512,7 +512,9 @@ export default function Clientes() {
                 const dias = diasSemComprar(c.ultima_compra);
                 return (
                   <TableRow key={c.id}>
-                    <TableCell className="font-medium">{c.nome}</TableCell>
+                    <TableCell className="font-medium">
+                      <button type="button" className="text-left hover:text-primary hover:underline" onClick={() => navigate(`/painel/clientes/${c.id}`)}>{c.nome}</button>
+                    </TableCell>
                     <TableCell>{c.telefone || "-"}</TableCell>
                     <TableCell>
                       <Badge

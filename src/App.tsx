@@ -22,6 +22,7 @@ const Vendas = lazy(() => import("@/pages/Vendas"));
 const Estoque = lazy(() => import("@/pages/Estoque"));
 const Clientes = lazy(() => import("@/pages/Clientes"));
 const ClientesSemCompra = lazy(() => import("@/pages/ClientesSemCompra"));
+const ClientePerfil = lazy(() => import("@/pages/ClientePerfil"));
 const VendasPorSabor = lazy(() => import("@/pages/VendasPorSabor"));
 const Funcionarios = lazy(() => import("@/pages/Funcionarios"));
 const Sabores = lazy(() => import("@/pages/Sabores"));
@@ -126,6 +127,7 @@ const App = () => (
               <Route path="/painel/contas-a-pagar" element={<AdminRoute><ContasAPagar /></AdminRoute>} />
               <Route path="/painel/compras" element={<AdminRoute><Compras /></AdminRoute>} />
               <Route path="/painel/clientes" element={<AdminRoute><Clientes /></AdminRoute>} />
+              <Route path="/painel/clientes/:id" element={<AdminRoute><ClientePerfil /></AdminRoute>} />
               <Route path="/painel/clientes-sem-compra" element={<AdminRoute><ClientesSemCompra /></AdminRoute>} />
               <Route path="/painel/vendas-por-sabor" element={<AdminRoute><VendasPorSabor /></AdminRoute>} />
               <Route path="/painel/funcionarios" element={<AdminRoute><Funcionarios /></AdminRoute>} />
