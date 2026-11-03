@@ -100,3 +100,41 @@ export function topSabores(vendas: VendaPerfilRaw[], itens: ItemPerfilRaw[], lim
     .sort((a, b) => b.unidades - a.unidades)
     .slice(0, limite);
 }
+
+export interface BebidaPerfilRaw {
+  venda_id: string;
+  nome: string | null;
+  quantidade: number | null;
+  subtotal: number | null;
+  tipo_venda: string | null;
+  unidades_fardo: number | null;
+}
+
+export interface BebidaRanking {
+  nome: string;
+  unidades: number;
+  valor: number;
+}
+
+/** Unidades reais de uma linha de bebida: fardo = quantidade × unidades_fardo (padrão 6). */
+export function unidadesBebida(b: BebidaPerfilRaw): number {
+  const q = Number(b.quantidade ?? 0);
+  if (b.tipo_venda !== "fardo") return q;
+  const t = Number(b.unidades_fardo ?? 6);
+  return q * (t > 0 ? t : 6);
+}
+
+/** Ranking de bebidas das vendas válidas, com unidades reais e valor. */
+export function resumoBebidas(vendas: VendaPerfilRaw[], bebidas: BebidaPerfilRaw[]): BebidaRanking[] {
+  const ids = new Set(vendas.map((v) => v.id));
+  const mapa = new Map<string, BebidaRanking>();
+  for (const b of bebidas) {
+    if (!ids.has(b.venda_id)) continue;
+    const nome = b.nome || "Bebida";
+    const r = mapa.get(nome) ?? { nome, unidades: 0, valor: 0 };
+    r.unidades += unidadesBebida(b);
+    r.valor += Number(b.subtotal ?? 0);
+    mapa.set(nome, r);
+  }
+  return [...mapa.values()].sort((a, b) => b.unidades - a.unidades);
+}

@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Phone, MapPin, Snowflake, Trophy } from "lucide-react";
+import { ArrowLeft, Phone, MapPin, Snowflake, Trophy, Wine, FileDown, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { exportToPDF } from "@/lib/export-utils";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Agrupamento, ItemPerfilRaw, VendaPerfilRaw, agruparVendas, dataBR, topSabores, vendasValidas,
+  Agrupamento, BebidaPerfilRaw, ItemPerfilRaw, resumoBebidas, VendaPerfilRaw, agruparVendas, dataBR, topSabores, vendasValidas,
 } from "@/components/clientes/perfil-cliente-analysis";
 
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -39,7 +41,21 @@ async function carregar(clienteId: string) {
       itens.push({ venda_id: r.venda_id, quantidade: r.quantidade, subtotal: r.subtotal, sabor: r.sabores?.nome ?? null });
     }
   }
-  return { cliente, vendas, itens };
+  const bebidas: BebidaPerfilRaw[] = [];
+  for (let i = 0; i < ids.length; i += 200) {
+    const { data, error: e } = await supabase.from("venda_bebida_itens")
+      .select("venda_id,nome,quantidade,subtotal,tipo_venda,bebidas(unidades_fardo)").in("venda_id", ids.slice(i, i + 200));
+    if (e) throw e;
+    for (const r of (data ?? []) as Array<{ venda_id: string; nome: string | null; quantidade: number; subtotal: number; tipo_venda: string | null; bebidas: { unidades_fardo: number | null } | null }>) {
+      bebidas.push({ venda_id: r.venda_id, nome: r.nome, quantidade: r.quantidade, subtotal: r.subtotal, tipo_venda: r.tipo_venda, unidades_fardo: r.bebidas?.unidades_fardo ?? null });
+    }
+  }
+  let factory: { name: string | null; logo_url: string | null } | null = null;
+  if (cliente?.factory_id) {
+    const { data: f } = await supabase.from("factories").select("name,logo_url").eq("id", cliente.factory_id).maybeSingle();
+    factory = (f as typeof factory) ?? null;
+  }
+  return { cliente, vendas, itens, bebidas, factory };
 }
 
 export default function ClientePerfil() {
@@ -62,6 +78,45 @@ export default function ClientePerfil() {
   const top5 = useMemo(() => (data ? topSabores(filtradas, data.itens) : []), [filtradas, data]);
   const totalValor = filtradas.reduce((s, v) => s + Number(v.total ?? 0), 0);
   const totalUn = pontos.reduce((s, p) => s + p.unidades, 0);
+  const bebidasRank = useMemo(() => (data ? resumoBebidas(filtradas, data.bebidas) : []), [filtradas, data]);
+  const totalBebUn = bebidasRank.reduce((s, b) => s + b.unidades, 0);
+  const totalBebValor = bebidasRank.reduce((s, b) => s + b.valor, 0);
+  const [gerando, setGerando] = useState(false);
+  const fmtD = (d: string) => d.split("-").reverse().join("/");
+
+  async function baixarPdf() {
+    if (!data?.cliente) return;
+    setGerando(true);
+    try {
+      const nomeAg = agrupamento === "mes" ? "Mês" : agrupamento === "semana" ? "Semana" : "Quinzena";
+      await exportToPDF(
+        `Perfil do Cliente — ${data.cliente.nome}`,
+        [nomeAg, "Comandas", "Gelos Saborizados (un)", "Valor"],
+        pontos.map((p) => [p.rotulo, p.comandas, p.unidades.toLocaleString("pt-BR"), brl(p.valor)]),
+        `perfil-${String(data.cliente.nome).toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${ini}-a-${fimEf}`,
+        [{ label: "TOTAL DO PERÍODO", value: brl(totalValor) }],
+        undefined,
+        data.factory ? { factoryName: data.factory.name ?? undefined, factoryLogoUrl: data.factory.logo_url ?? undefined } : undefined,
+        [
+          { label: "Período", value: `${fmtD(ini)} a ${fmtD(fimEf)}` },
+          { label: "Comandas", value: String(filtradas.length) },
+          { label: "Gelos Saborizados", value: `${totalUn.toLocaleString("pt-BR")} un` },
+          { label: "Bebidas", value: `${totalBebUn.toLocaleString("pt-BR")} un (${brl(totalBebValor)})` },
+          { label: "Ticket médio", value: brl(filtradas.length ? totalValor / filtradas.length : 0) },
+        ],
+        {
+          extraTables: [
+            { title: "Top 5 Sabores", headers: ["#", "Sabor", "Unidades", "Valor", "%"], rows: top5.map((s, i) => [`${i + 1}º`, s.sabor, s.unidades.toLocaleString("pt-BR"), brl(s.valor), `${s.percentual.toFixed(1)}%`]) },
+            ...(bebidasRank.length ? [{ title: "Bebidas", headers: ["Bebida", "Unidades", "Valor"], rows: bebidasRank.map((b) => [b.nome, b.unidades.toLocaleString("pt-BR"), brl(b.valor)]) }] : []),
+          ],
+        },
+      );
+    } catch (e) {
+      toast.error("Não foi possível gerar o PDF", { description: e instanceof Error ? e.message : undefined });
+    } finally {
+      setGerando(false);
+    }
+  }
 
   if (isLoading) return <div className="space-y-4"><Skeleton className="h-24" /><Skeleton className="h-80" /></div>;
   if (error || !data?.cliente) return <p className="text-muted-foreground">Cliente não encontrado.</p>;
@@ -69,7 +124,12 @@ export default function ClientePerfil() {
 
   return (
     <div className="space-y-4">
-      <Button variant="ghost" size="sm" onClick={() => navigate("/painel/clientes")}><ArrowLeft className="h-4 w-4 mr-1" />Clientes</Button>
+      <div className="flex items-center justify-between gap-2">
+        <Button variant="ghost" size="sm" onClick={() => navigate("/painel/clientes")}><ArrowLeft className="h-4 w-4 mr-1" />Clientes</Button>
+        <Button size="sm" onClick={baixarPdf} disabled={gerando || filtradas.length === 0}>
+          {gerando ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <FileDown className="h-4 w-4 mr-1" />}Exportar PDF
+        </Button>
+      </div>
 
       <Card>
         <CardContent className="pt-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -104,10 +164,11 @@ export default function ClientePerfil() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         {[
           ["Faturamento", brl(totalValor)],
           ["Gelos Saborizados", `${totalUn.toLocaleString("pt-BR")} un`],
+          ["Bebidas", `${totalBebUn.toLocaleString("pt-BR")} un · ${brl(totalBebValor)}`],
           ["Comandas", String(filtradas.length)],
           ["Ticket médio", brl(filtradas.length ? totalValor / filtradas.length : 0)],
         ].map(([t, v]) => (
@@ -144,6 +205,18 @@ export default function ClientePerfil() {
                 <span className="text-muted-foreground">{s.unidades.toLocaleString("pt-BR")} un · {brl(s.valor)} · {s.percentual.toFixed(1)}%</span>
               </div>
               <div className="h-2 rounded-full bg-muted"><div className="h-2 rounded-full bg-primary" style={{ width: `${s.percentual}%` }} /></div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Wine className="h-4 w-4" />Bebidas</CardTitle></CardHeader>
+        <CardContent className="space-y-2">
+          {bebidasRank.length === 0 && <p className="text-sm text-muted-foreground">Nenhuma bebida no período.</p>}
+          {bebidasRank.map((b) => (
+            <div key={b.nome} className="flex justify-between text-sm border-b border-border pb-1 last:border-0">
+              <span className="font-medium">{b.nome}</span>
+              <span className="text-muted-foreground">{b.unidades.toLocaleString("pt-BR")} un · {brl(b.valor)}</span>
             </div>
           ))}
         </CardContent>

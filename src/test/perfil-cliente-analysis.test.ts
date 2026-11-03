@@ -30,3 +30,16 @@ describe("perfil do cliente", () => {
     expect(top.find((t) => t.sabor === "Uva")).toBeUndefined();
   });
 });
+
+import { resumoBebidas } from "@/components/clientes/perfil-cliente-analysis";
+describe("resumoBebidas", () => {
+  it("converte fardo em unidades (padrão 6) e ignora vendas fora do filtro", () => {
+    const vendas = [{ id: "a", created_at: "2026-10-01T15:00:00Z", total: 100, status: "paga" }];
+    const r = resumoBebidas(vendas, [
+      { venda_id: "a", nome: "Brisa", quantidade: 2, subtotal: 90, tipo_venda: "unidade", unidades_fardo: 6 },
+      { venda_id: "a", nome: "Brisa", quantidade: 2, subtotal: 500, tipo_venda: "fardo", unidades_fardo: null },
+      { venda_id: "x", nome: "Brisa", quantidade: 9, subtotal: 9, tipo_venda: "unidade", unidades_fardo: 6 },
+    ]);
+    expect(r).toEqual([{ nome: "Brisa", unidades: 14, valor: 590 }]);
+  });
+});
