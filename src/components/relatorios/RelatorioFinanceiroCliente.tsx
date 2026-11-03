@@ -103,24 +103,32 @@ export default function RelatorioFinanceiroCliente({ initialTab = "individual" }
   useEffect(() => {
     if (!factoryId) return;
     (async () => {
-      const [c, v, a] = await Promise.all([
-        supabase.from("clientes").select("id,nome,telefone,created_at,saldo_devedor_atual,status_financeiro").eq("factory_id", factoryId).order("nome"),
-        supabase.from("vendas").select("id,numero_pedido,created_at,status,status_entrega,forma_pagamento_tipo,data_vencimento,total,valor_original,valor_pago,cliente_id").eq("factory_id", factoryId).neq("status", "cancelada"),
-        supabase.from("abatimentos_historico").select("id,venda_id,valor,forma_pagamento,created_at").eq("factory_id", factoryId),
+      // Pagina de 1000 em 1000: o banco corta silenciosamente acima disso.
+      const fetchAll = async <T,>(build: () => any): Promise<T[]> => {
+        const out: T[] = [];
+        for (let from = 0; ; from += 1000) {
+          const { data, error } = await build().range(from, from + 999);
+          if (error) throw error;
+          out.push(...((data as T[]) || []));
+          if (!data || data.length < 1000) break;
+        }
+        return out;
+      };
+      const [cData, vData, aData] = await Promise.all([
+        fetchAll<Cliente>(() => supabase.from("clientes").select("id,nome,telefone,created_at,saldo_devedor_atual,status_financeiro").eq("factory_id", factoryId).order("nome").order("id")),
+        fetchAll<Venda>(() => supabase.from("vendas").select("id,numero_pedido,created_at,status,status_entrega,forma_pagamento_tipo,data_vencimento,total,valor_original,valor_pago,cliente_id").eq("factory_id", factoryId).neq("status", "cancelada").order("id")),
+        fetchAll<Abatimento>(() => supabase.from("abatimentos_historico").select("id,venda_id,valor,forma_pagamento,created_at").eq("factory_id", factoryId).order("id")),
       ]);
-      setClientes((c.data as Cliente[]) || []);
-      setVendas((v.data as Venda[]) || []);
-      setAbatimentos((a.data as Abatimento[]) || []);
+      setClientes(cData);
+      setVendas(vData);
+      setAbatimentos(aData);
       const map: Record<string, number> = {};
-      const vendaIds = ((v.data as Venda[]) || []).map((x) => x.id);
-      for (let i = 0; i < vendaIds.length; i += 200) {
-        const chunk = vendaIds.slice(i, i + 200);
-        if (chunk.length === 0) continue;
-        const { data: viData } = await supabase
-          .from("venda_itens")
-          .select("venda_id,quantidade")
-          .in("venda_id", chunk);
-        ((viData as { venda_id: string; quantidade: number }[]) || []).forEach((it) => {
+      const vendaIds = vData.map((x) => x.id);
+      for (let i = 0; i < vendaIds.length; i += 100) {
+        const chunk = vendaIds.slice(i, i + 100);
+        const viData = await fetchAll<{ venda_id: string; quantidade: number }>(() =>
+          supabase.from("venda_itens").select("id,venda_id,quantidade").in("venda_id", chunk).order("id"));
+        viData.forEach((it) => {
           map[it.venda_id] = (map[it.venda_id] || 0) + Number(it.quantidade || 0);
         });
       }
