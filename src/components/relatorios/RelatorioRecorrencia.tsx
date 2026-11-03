@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarClock, FileSpreadsheet, FileText, Package, Search, ShoppingCart, Users } from "lucide-react";
+import { CalendarClock, FileSpreadsheet, FileText, Package, Search, ShoppingCart, Users, Wine } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -98,7 +98,8 @@ export default function RelatorioRecorrencia() {
 
   const regulares = analise.filter((cliente) => cliente.status === "regular" || cliente.status === "em_breve").length;
   const atrasados = analise.filter((cliente) => cliente.status === "atrasado").length;
-  const totalUnidades = analise.reduce((total, cliente) => total + cliente.totalUnidades, 0);
+  const unidadesGelos = filtrados.reduce((total, cliente) => total + cliente.unidadesGelosSaborizados, 0);
+  const unidadesBebidas = filtrados.reduce((total, cliente) => total + cliente.unidadesBebidas, 0);
   const frequencias = analise.filter((cliente) => cliente.frequenciaMedia > 0).map((cliente) => cliente.frequenciaMedia);
   const frequenciaGeral = frequencias.length > 0 ? Math.round(frequencias.reduce((total, dias) => total + dias, 0) / frequencias.length) : 0;
 
@@ -106,6 +107,8 @@ export default function RelatorioRecorrencia() {
     cliente.nome,
     cliente.totalCompras,
     formatarQuantidade(cliente.totalUnidades),
+    formatarQuantidade(cliente.unidadesGelosSaborizados),
+    formatarQuantidade(cliente.unidadesBebidas),
     formatarQuantidade(cliente.mediaUnidades),
     cliente.frequenciaMedia || "-",
     formatarData(cliente.ultimaCompra),
@@ -114,7 +117,7 @@ export default function RelatorioRecorrencia() {
     statusLabels[cliente.status],
     cliente.produtosFavoritos[0]?.nome ?? "-",
   ]);
-  const cabecalhos = ["Cliente", "Compras", "Unidades", "Média/pedido", "Frequência (dias)", "Última compra", "Próxima prevista", "Dias atraso", "Situação", "Produto favorito"];
+  const cabecalhos = ["Cliente", "Compras", "Total de produtos", "Gelos Saborizados (un)", "Bebidas (un)", "Média/pedido", "Frequência (dias)", "Última compra", "Próxima prevista", "Dias atraso", "Situação", "Produto favorito"];
 
   const exportarPDF = () => exportToPDF(
     `Recorrência de Clientes - ${factoryName}`,
@@ -124,7 +127,8 @@ export default function RelatorioRecorrencia() {
     [
       { label: "Clientes analisados", value: String(analise.length) },
       { label: "Clientes atrasados", value: String(atrasados) },
-      { label: "Unidades vendidas", value: formatarQuantidade(totalUnidades) },
+      { label: "Gelos Saborizados (un)", value: formatarQuantidade(unidadesGelos) },
+      { label: "Bebidas vendidas (un)", value: formatarQuantidade(unidadesBebidas) },
       { label: "Intervalo médio", value: frequenciaGeral ? `${frequenciaGeral} dias` : "-" },
     ],
     undefined,
@@ -164,12 +168,13 @@ export default function RelatorioRecorrencia() {
         <Card><CardContent className="py-10 text-center"><p className="font-medium text-destructive">Não foi possível carregar a recorrência.</p><p className="mt-1 text-sm text-muted-foreground">Tente novamente em instantes.</p></CardContent></Card>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
             <KpiCard title="Clientes Analisados" value={String(analise.length)} icon={Users} />
             <KpiCard title="Regulares / Em Breve" value={String(regulares)} icon={ShoppingCart} />
             <KpiCard title="Atrasados" value={String(atrasados)} icon={CalendarClock} />
-            <KpiCard title="Unidades Vendidas" value={formatarQuantidade(totalUnidades)} icon={Package} />
-            <div className="col-span-2 lg:col-span-1"><KpiCard title="Intervalo Médio Geral" value={frequenciaGeral ? `${frequenciaGeral} dias` : "—"} icon={CalendarClock} /></div>
+            <KpiCard title="Gelos Saborizados Vendidos" value={formatarQuantidade(unidadesGelos)} subtitle="Unidades" icon={Package} />
+            <KpiCard title="Bebidas Vendidas" value={formatarQuantidade(unidadesBebidas)} subtitle="Unidades · fardos convertidos" icon={Wine} />
+            <KpiCard title="Intervalo Médio Geral" value={frequenciaGeral ? `${frequenciaGeral} dias` : "—"} icon={CalendarClock} />
           </div>
 
           <Card>

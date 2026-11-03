@@ -16,6 +16,8 @@ export interface ClienteRecorrencia {
   compras: CompraRecorrencia[];
   totalCompras: number;
   totalUnidades: number;
+  unidadesGelosSaborizados: number;
+  unidadesBebidas: number;
   mediaUnidades: number;
   totalGasto: number;
   ticketMedio: number;
