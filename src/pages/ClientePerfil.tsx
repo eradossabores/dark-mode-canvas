@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Phone, MapPin, Snowflake, Trophy, Wine, FileDown, Loader2 } from "lucide-react";
+import { ArrowLeft, Phone, MapPin, Snowflake, Trophy, Wine, FileDown, Loader2, Share2, PiggyBank } from "lucide-react";
 import { toast } from "sonner";
 import { exportToPDF } from "@/lib/export-utils";
+import { PRECO_REFERENCIA_GELO } from "@/components/relatorios/relatorio-mensal-cliente-analysis";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Agrupamento, BebidaPerfilRaw, ItemPerfilRaw, resumoBebidas, VendaPerfilRaw, agruparVendas, dataBR, topSabores, vendasValidas,
+  Agrupamento, BebidaPerfilRaw, ItemPerfilRaw, ItemPrecoRaw, calcularEconomia, intervaloMedioDias, resumoBebidas, VendaPerfilRaw, agruparVendas, dataBR, topSabores, vendasValidas,
 } from "@/components/clientes/perfil-cliente-analysis";
 
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -32,13 +33,15 @@ async function carregar(clienteId: string) {
     if (!data || data.length < 1000) break;
   }
   const itens: ItemPerfilRaw[] = [];
+  const precos: ItemPrecoRaw[] = [];
   const ids = vendas.map((v) => v.id);
   for (let i = 0; i < ids.length; i += 200) {
     const { data, error: e } = await supabase.from("venda_itens")
-      .select("venda_id,quantidade,subtotal,sabores(nome)").in("venda_id", ids.slice(i, i + 200));
+      .select("venda_id,quantidade,subtotal,preco_unitario,sabores(nome)").in("venda_id", ids.slice(i, i + 200));
     if (e) throw e;
-    for (const r of (data ?? []) as Array<{ venda_id: string; quantidade: number; subtotal: number; sabores: { nome: string } | null }>) {
+    for (const r of (data ?? []) as Array<{ venda_id: string; quantidade: number; subtotal: number; preco_unitario: number | null; sabores: { nome: string } | null }>) {
       itens.push({ venda_id: r.venda_id, quantidade: r.quantidade, subtotal: r.subtotal, sabor: r.sabores?.nome ?? null });
+      precos.push({ venda_id: r.venda_id, quantidade: r.quantidade, preco_unitario: r.preco_unitario });
     }
   }
   const bebidas: BebidaPerfilRaw[] = [];
@@ -55,7 +58,7 @@ async function carregar(clienteId: string) {
     const { data: f } = await supabase.from("factories").select("name,logo_url").eq("id", cliente.factory_id).maybeSingle();
     factory = (f as typeof factory) ?? null;
   }
-  return { cliente, vendas, itens, bebidas, factory };
+  return { cliente, vendas, itens, precos, bebidas, factory };
 }
 
 export default function ClientePerfil() {
@@ -82,20 +85,32 @@ export default function ClientePerfil() {
   const totalBebUn = bebidasRank.reduce((s, b) => s + b.unidades, 0);
   const totalBebValor = bebidasRank.reduce((s, b) => s + b.valor, 0);
   const [gerando, setGerando] = useState(false);
+  // Economia só aparece para clientes com preço personalizado abaixo da referência
+  const precoPers = Number(data?.cliente?.preco_padrao_personalizado ?? 0);
+  const temPrecoPers = precoPers > 0 && precoPers < PRECO_REFERENCIA_GELO;
+  const economia = useMemo(() => (data && temPrecoPers ? calcularEconomia(filtradas, data.precos, PRECO_REFERENCIA_GELO) : 0), [data, filtradas, temPrecoPers]);
+  const intervalo = useMemo(() => intervaloMedioDias(filtradas), [filtradas]);
+  const melhorPeriodo = useMemo(() => pontos.reduce<typeof pontos[number] | null>((m, p) => (!m || p.unidades > m.unidades ? p : m), null), [pontos]);
   const fmtD = (d: string) => d.split("-").reverse().join("/");
 
-  async function baixarPdf() {
-    if (!data?.cliente) return;
+  async function gerarPdf(save: boolean) {
+    if (!data?.cliente) return null;
     setGerando(true);
     try {
       const nomeAg = agrupamento === "mes" ? "Mês" : agrupamento === "semana" ? "Semana" : "Quinzena";
-      await exportToPDF(
+      const destaques: { label: string; value: string }[] = [
+        ...(economia > 0 ? [{ label: "Você economizou", value: `${brl(economia)} (preço padrão ${brl(PRECO_REFERENCIA_GELO)}/un)` }] : []),
+        ...(top5[0] ? [{ label: "Sabor favorito", value: `${top5[0].sabor} (${top5[0].unidades.toLocaleString("pt-BR")} un)` }] : []),
+        ...(melhorPeriodo ? [{ label: `Melhor ${nomeAg.toLowerCase()}`, value: `${melhorPeriodo.rotulo} — ${melhorPeriodo.unidades.toLocaleString("pt-BR")} un` }] : []),
+        ...(intervalo ? [{ label: "Compra em média a cada", value: `${intervalo} dia(s)` }] : []),
+      ];
+      return await exportToPDF(
         `Perfil do Cliente — ${data.cliente.nome}`,
         [nomeAg, "Comandas", "Gelos Saborizados (un)", "Valor"],
         pontos.map((p) => [p.rotulo, p.comandas, p.unidades.toLocaleString("pt-BR"), brl(p.valor)]),
         `perfil-${String(data.cliente.nome).toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${ini}-a-${fimEf}`,
-        [{ label: "TOTAL DO PERÍODO", value: brl(totalValor) }],
-        undefined,
+        [{ label: "TOTAL DO PERÍODO", value: brl(totalValor) }, ...(economia > 0 ? [{ label: "ECONOMIA NO PERÍODO", value: brl(economia) }] : [])],
+        "perfil-grafico",
         data.factory ? { factoryName: data.factory.name ?? undefined, factoryLogoUrl: data.factory.logo_url ?? undefined } : undefined,
         [
           { label: "Período", value: `${fmtD(ini)} a ${fmtD(fimEf)}` },
@@ -103,8 +118,10 @@ export default function ClientePerfil() {
           { label: "Gelos Saborizados", value: `${totalUn.toLocaleString("pt-BR")} un` },
           { label: "Bebidas", value: `${totalBebUn.toLocaleString("pt-BR")} un (${brl(totalBebValor)})` },
           { label: "Ticket médio", value: brl(filtradas.length ? totalValor / filtradas.length : 0) },
+          ...destaques,
         ],
         {
+          save,
           extraTables: [
             { title: "Top 5 Sabores", headers: ["#", "Sabor", "Unidades", "Valor", "%"], rows: top5.map((s, i) => [`${i + 1}º`, s.sabor, s.unidades.toLocaleString("pt-BR"), brl(s.valor), `${s.percentual.toFixed(1)}%`]) },
             ...(bebidasRank.length ? [{ title: "Bebidas", headers: ["Bebida", "Unidades", "Valor"], rows: bebidasRank.map((b) => [b.nome, b.unidades.toLocaleString("pt-BR"), brl(b.valor)]) }] : []),
@@ -113,9 +130,38 @@ export default function ClientePerfil() {
       );
     } catch (e) {
       toast.error("Não foi possível gerar o PDF", { description: e instanceof Error ? e.message : undefined });
+      return null;
     } finally {
       setGerando(false);
     }
+  }
+
+  async function enviarWhatsApp() {
+    if (!data?.cliente) return;
+    const doc = await gerarPdf(false);
+    if (!doc) return;
+    const nome = String(data.cliente.nome);
+    const arquivo = `perfil_${nome.replace(/[^a-z0-9]+/gi, "_")}_${ini}_a_${fimEf}.pdf`;
+    const file = new File([doc.output("blob")], arquivo, { type: "application/pdf" });
+    const linhas = [
+      `Olá, ${nome}! 🧊 Segue seu resumo de compras de ${fmtD(ini)} a ${fmtD(fimEf)}:`,
+      `• ${totalUn.toLocaleString("pt-BR")} gelos saborizados em ${filtradas.length} entrega(s)`,
+      ...(totalBebUn > 0 ? [`• ${totalBebUn.toLocaleString("pt-BR")} bebidas`] : []),
+      `• Total: ${brl(totalValor)}`,
+      ...(economia > 0 ? [`💰 Com seu preço especial, você economizou ${brl(economia)}!`] : []),
+      ...(top5[0] ? [`⭐ Seu sabor favorito: ${top5[0].sabor}`] : []),
+      `Obrigado pela parceria!`,
+    ];
+    const mensagem = linhas.join("\n");
+    // iPhone/Android: compartilha o arquivo direto; WhatsApp no iOS ignora texto junto do arquivo, então copiamos
+    try { await navigator.clipboard?.writeText(mensagem); } catch { /* sem permissão de cópia */ }
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      try { await navigator.share({ text: mensagem, files: [file] }); toast.success("Mensagem copiada — cole junto ao PDF se não aparecer."); return; } catch { /* cancelado */ }
+    }
+    doc.save(arquivo);
+    const tel = String(data.cliente.telefone ?? "").replace(/\D/g, "");
+    window.open(`https://wa.me/${tel ? `55${tel}` : ""}?text=${encodeURIComponent(mensagem)}`, "_blank", "noopener,noreferrer");
+    toast.info("O PDF foi baixado para você anexar no WhatsApp.");
   }
 
   if (isLoading) return <div className="space-y-4"><Skeleton className="h-24" /><Skeleton className="h-80" /></div>;
@@ -126,9 +172,14 @@ export default function ClientePerfil() {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
         <Button variant="ghost" size="sm" onClick={() => navigate("/painel/clientes")}><ArrowLeft className="h-4 w-4 mr-1" />Clientes</Button>
-        <Button size="sm" onClick={baixarPdf} disabled={gerando || filtradas.length === 0}>
-          {gerando ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <FileDown className="h-4 w-4 mr-1" />}Exportar PDF
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => void gerarPdf(true)} disabled={gerando || filtradas.length === 0}>
+            {gerando ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <FileDown className="h-4 w-4 mr-1" />}PDF
+          </Button>
+          <Button size="sm" onClick={() => void enviarWhatsApp()} disabled={gerando || filtradas.length === 0}>
+            <Share2 className="h-4 w-4 mr-1" />WhatsApp
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -176,7 +227,19 @@ export default function ClientePerfil() {
         ))}
       </div>
 
-      <Card>
+      {economia > 0 && (
+        <Card className="border-primary/40 bg-primary/5">
+          <CardContent className="pt-4 flex items-center gap-3">
+            <PiggyBank className="h-8 w-8 text-primary" />
+            <div>
+              <p className="text-sm text-muted-foreground">Economia com o preço personalizado ({brl(precoPers)}/un vs {brl(PRECO_REFERENCIA_GELO)}/un)</p>
+              <p className="text-xl font-bold text-primary">{brl(economia)}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card id="perfil-grafico">
         <CardHeader><CardTitle className="text-base">Vendas por {agrupamento === "mes" ? "mês" : agrupamento}</CardTitle></CardHeader>
         <CardContent className="h-72">
           {pontos.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma venda no período.</p> : (
@@ -186,8 +249,8 @@ export default function ClientePerfil() {
                 <XAxis dataKey="rotulo" fontSize={11} />
                 <YAxis fontSize={11} />
                 <Tooltip formatter={(v: number, n: string) => (n === "valor" ? brl(v) : `${v} un`)} labelClassName="text-foreground" />
-                <Bar dataKey="valor" name="valor" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="unidades" name="unidades" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="valor" name="valor" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                <Bar dataKey="unidades" name="unidades" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} isAnimationActive={false} />
               </BarChart>
             </ResponsiveContainer>
           )}
