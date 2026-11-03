@@ -347,6 +347,7 @@ export default function RelatorioVendas() {
             { label: "Período", value: periodoLabel },
             ...(filtroPagamento !== "todos" ? [{ label: "Filtro Pagamento", value: filtroPagamento.toUpperCase() }] : []),
             ...(filtroStatus !== "todos" ? [{ label: "Filtro Status", value: filtroStatus }] : []),
+            ...(filtroProduto !== "ambos" ? [{ label: "Filtro Produto", value: filtroProduto === "gelos" ? "Gelos Saborizados" : "Bebidas" }] : []),
           ], undefined, { factoryName: factoryName || undefined, factoryLogoUrl: branding?.logoUrl }, [
             { label: "Faturamento Total", value: `R$ ${faturamento.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
             { label: "Total Recebido", value: `R$ ${totalRecebido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
@@ -391,6 +392,7 @@ export default function RelatorioVendas() {
             {filtroStatus !== "todos" && <Badge variant="outline" className="ml-2">{filtroStatus}</Badge>}
             {filtroCliente.trim() && <Badge variant="outline" className="ml-2">Cliente: {filtroCliente}</Badge>}
             {filtroOperador !== "todos" && <Badge variant="outline" className="ml-2">Op: {filtroOperador}</Badge>}
+            {filtroProduto !== "ambos" && <Badge variant="outline" className="ml-2">{filtroProduto === "gelos" ? "Gelos Saborizados" : "Bebidas"}</Badge>}
           </div>
 
           <Card className="border-primary/40 bg-primary/5">
