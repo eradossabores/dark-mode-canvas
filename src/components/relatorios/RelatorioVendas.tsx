@@ -39,6 +39,12 @@ const STATUS_VENDA = [
   { value: "cancelada", label: "Cancelada" },
 ];
 
+const PRODUTOS_FILTRO = [
+  { value: "ambos", label: "Ambos (Gelos + Bebidas)" },
+  { value: "gelos", label: "Gelos Saborizados" },
+  { value: "bebidas", label: "Bebidas" },
+];
+
 export default function RelatorioVendas() {
   const { factoryId, factoryName, branding } = useAuth();
   const [vendas, setVendas] = useState<any[]>([]);
@@ -54,11 +60,12 @@ export default function RelatorioVendas() {
   const [filtroStatus, setFiltroStatus] = useState("todos");
   const [filtroCliente, setFiltroCliente] = useState("");
   const [filtroOperador, setFiltroOperador] = useState("todos");
+  const [filtroProduto, setFiltroProduto] = useState("ambos");
   const [previewLoaded, setPreviewLoaded] = useState(false);
 
   useEffect(() => { loadData(); }, [factoryId]);
 
-  useEffect(() => { setPreviewLoaded(false); }, [startDate, endDate, filtroPagamento, filtroStatus, filtroCliente, filtroOperador]);
+  useEffect(() => { setPreviewLoaded(false); }, [startDate, endDate, filtroPagamento, filtroStatus, filtroCliente, filtroOperador, filtroProduto]);
 
   /**
    * Busca TODAS as linhas paginando de 1000 em 1000.
@@ -128,9 +135,12 @@ export default function RelatorioVendas() {
       if (filtroStatus === "todos" ? v.status === "cancelada" : v.status !== filtroStatus) return false;
       if (filtroCliente.trim() && !(v.clientes?.nome || "").toLowerCase().includes(filtroCliente.toLowerCase())) return false;
       if (filtroOperador !== "todos" && v.operador !== filtroOperador) return false;
+      // Filtro por produto: mantém apenas comandas que contêm a categoria escolhida.
+      if (filtroProduto === "gelos" && !itens.some((i) => i.venda_id === v.id)) return false;
+      if (filtroProduto === "bebidas" && !bebidaItens.some((i) => i.venda_id === v.id)) return false;
       return true;
     });
-  }, [vendas, startDate, endDate, filtroPagamento, filtroStatus, filtroCliente, filtroOperador]);
+  }, [vendas, startDate, endDate, filtroPagamento, filtroStatus, filtroCliente, filtroOperador, filtroProduto, itens, bebidaItens]);
 
   const filteredIds = new Set(filtered.map((v) => v.id));
   const filteredItens = itens.filter((i) => filteredIds.has(i.venda_id));
@@ -308,6 +318,15 @@ export default function RelatorioVendas() {
           </Select>
         </div>
         <div>
+          <Label className="text-xs mb-1 block">Produto</Label>
+          <Select value={filtroProduto} onValueChange={setFiltroProduto}>
+            <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {PRODUTOS_FILTRO.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
           <Label className="text-xs mb-1 block">Cliente</Label>
           <Input placeholder="Buscar cliente..." value={filtroCliente} onChange={e => setFiltroCliente(e.target.value)} className="w-[160px]" />
         </div>
@@ -328,6 +347,7 @@ export default function RelatorioVendas() {
             { label: "Período", value: periodoLabel },
             ...(filtroPagamento !== "todos" ? [{ label: "Filtro Pagamento", value: filtroPagamento.toUpperCase() }] : []),
             ...(filtroStatus !== "todos" ? [{ label: "Filtro Status", value: filtroStatus }] : []),
+            ...(filtroProduto !== "ambos" ? [{ label: "Filtro Produto", value: filtroProduto === "gelos" ? "Gelos Saborizados" : "Bebidas" }] : []),
           ], undefined, { factoryName: factoryName || undefined, factoryLogoUrl: branding?.logoUrl }, [
             { label: "Faturamento Total", value: `R$ ${faturamento.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
             { label: "Total Recebido", value: `R$ ${totalRecebido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
@@ -372,15 +392,25 @@ export default function RelatorioVendas() {
             {filtroStatus !== "todos" && <Badge variant="outline" className="ml-2">{filtroStatus}</Badge>}
             {filtroCliente.trim() && <Badge variant="outline" className="ml-2">Cliente: {filtroCliente}</Badge>}
             {filtroOperador !== "todos" && <Badge variant="outline" className="ml-2">Op: {filtroOperador}</Badge>}
+            {filtroProduto !== "ambos" && <Badge variant="outline" className="ml-2">{filtroProduto === "gelos" ? "Gelos Saborizados" : "Bebidas"}</Badge>}
           </div>
 
           <Card className="border-primary/40 bg-primary/5">
             <CardContent className="py-4 text-sm leading-relaxed text-foreground">
-              Foram vendidos <strong>{totalUnidades.toLocaleString("pt-BR")} gelos saborizados</strong>
-              {composicao.gelosBrinde > 0 && <> ({composicao.gelosPagos.toLocaleString("pt-BR")} pagos + {composicao.gelosBrinde.toLocaleString("pt-BR")} brindes)</>}
-              {" "}que equivalem a <strong>R$ {composicao.valorGelosSaborizados.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
-              {composicao.bebidasUnidadesReais > 0 && <>, com a venda de <strong>{composicao.bebidasUnidadesReais.toLocaleString("pt-BR")} bebidas</strong> (R$ {composicao.valorBebidas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})</>}
-              {composicao.geloCuboPacotes > 0 && <>, <strong>{composicao.geloCuboPacotes.toLocaleString("pt-BR")} pacotes de gelo em cubo</strong> (R$ {composicao.valorGeloCubo.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})</>}
+              {filtroProduto !== "bebidas" && (
+                <>
+                  Foram vendidos <strong>{totalUnidades.toLocaleString("pt-BR")} gelos saborizados</strong>
+                  {composicao.gelosBrinde > 0 && <> ({composicao.gelosPagos.toLocaleString("pt-BR")} pagos + {composicao.gelosBrinde.toLocaleString("pt-BR")} brindes)</>}
+                  {" "}que equivalem a <strong>R$ {composicao.valorGelosSaborizados.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
+                </>
+              )}
+              {filtroProduto === "ambos" && composicao.bebidasUnidadesReais > 0 && <>, com a venda de <strong>{composicao.bebidasUnidadesReais.toLocaleString("pt-BR")} bebidas</strong> (R$ {composicao.valorBebidas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})</>}
+              {filtroProduto === "bebidas" && (
+                <>
+                  Foram vendidas <strong>{composicao.bebidasUnidadesReais.toLocaleString("pt-BR")} bebidas</strong> que equivalem a <strong>R$ {composicao.valorBebidas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
+                </>
+              )}
+              {filtroProduto === "ambos" && composicao.geloCuboPacotes > 0 && <>, <strong>{composicao.geloCuboPacotes.toLocaleString("pt-BR")} pacotes de gelo em cubo</strong> (R$ {composicao.valorGeloCubo.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})</>}
               {Math.abs(composicao.frete + composicao.ajustes) > 0.01 && <>, frete/ajustes de R$ {(composicao.frete + composicao.ajustes).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</>}
               {" "}— <strong>total de R$ {faturamento.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong> em {totalVendas} comanda(s).
             </CardContent>
@@ -394,14 +424,14 @@ export default function RelatorioVendas() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <KpiCard title="Ticket Médio" value={`R$ ${ticketMedio.toFixed(2)}`} icon={TrendingUp} />
-            <KpiCard title="Gelos Saborizados" value={totalUnidades.toLocaleString("pt-BR")} icon={Package} subtitle={`${composicao.gelosPagos.toLocaleString("pt-BR")} pagos + ${composicao.gelosBrinde.toLocaleString("pt-BR")} brindes · R$ ${composicao.valorGelosSaborizados.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} · média R$ ${composicao.precoMedioGelosSaborizados.toFixed(2)}/un paga`} />
+            {filtroProduto !== "bebidas" && <KpiCard title="Gelos Saborizados" value={totalUnidades.toLocaleString("pt-BR")} icon={Package} subtitle={`${composicao.gelosPagos.toLocaleString("pt-BR")} pagos + ${composicao.gelosBrinde.toLocaleString("pt-BR")} brindes · R$ ${composicao.valorGelosSaborizados.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} · média R$ ${composicao.precoMedioGelosSaborizados.toFixed(2)}/un paga`} />}
             <KpiCard title="Total Abatido" value={`R$ ${totalAbatido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={CreditCard} />
             <KpiCard title="Total Frete" value={`R$ ${totalFrete.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={Truck} />
           </div>
 
           {(composicao.bebidasUnidadesReais > 0 || composicao.geloCuboPacotes > 0 || Math.abs(composicao.ajustes) > 0.01) && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <KpiCard title="Bebidas" value={`${composicao.bebidasUnidadesReais.toLocaleString("pt-BR")} un`} icon={Wine} subtitle={`${composicao.bebidasVolumes.toLocaleString("pt-BR")} volume(s) · R$ ${composicao.valorBebidas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} />
+              {filtroProduto !== "gelos" && <KpiCard title="Bebidas" value={`${composicao.bebidasUnidadesReais.toLocaleString("pt-BR")} un`} icon={Wine} subtitle={`${composicao.bebidasVolumes.toLocaleString("pt-BR")} volume(s) · R$ ${composicao.valorBebidas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} />}
               <KpiCard title="Gelo em Cubo" value={`${composicao.geloCuboPacotes.toLocaleString("pt-BR")} pacote(s)`} icon={Package} subtitle={`R$ ${composicao.valorGeloCubo.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} />
               <KpiCard title="Frete e Ajustes" value={`R$ ${(composicao.frete + composicao.ajustes).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} icon={Truck} subtitle="Diferença até o total das notas" />
             </div>
