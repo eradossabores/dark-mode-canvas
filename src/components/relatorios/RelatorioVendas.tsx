@@ -247,6 +247,35 @@ export default function RelatorioVendas() {
 
   const periodoLabel = `${startDate?.toLocaleDateString("pt-BR") || "—"} a ${endDate?.toLocaleDateString("pt-BR") || "—"}`;
 
+  // O PDF usa menos colunas que a planilha para manter as categorias legíveis no A4.
+  const moedaPDF = (valor: number) => valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const categoriaPDF = (quantidade: number, valor: number, unidade: string) =>
+    `${quantidade.toLocaleString("pt-BR")} ${unidade}\n${moedaPDF(valor)}`;
+  const pdfHeaders = ["Data / Comanda", "Cliente", "Gelos Saborizados\nUnidades / Valor", "Bebidas\nUnidades / Valor", "Gelo em Cubo\nPacotes / Valor", "Frete / Ajustes", "Total da Nota", "Saldo"];
+  const pdfRows = filtered.map((v) => {
+    const detalhe = composicao.porVenda.get(v.id);
+    const recebido = v.status === "paga" ? Number(v.total) : (abatimentosPorVenda[v.id] || 0);
+    const brindes = detalhe?.gelosBrinde || 0;
+    return [
+      `${new Date(v.created_at).toLocaleDateString("pt-BR")}\n${v.numero_pedido ? `#${v.numero_pedido}` : "—"}`,
+      v.clientes?.nome || "—",
+      categoriaPDF(detalhe?.gelosSaborizados || 0, detalhe?.valorGelosSaborizados || 0, "un") + (brindes > 0 ? `\n${brindes} brindes inclusos` : ""),
+      categoriaPDF(detalhe?.bebidasUnidadesReais || 0, detalhe?.valorBebidas || 0, "un"),
+      categoriaPDF(detalhe?.geloCuboPacotes || 0, detalhe?.valorGeloCubo || 0, "pct"),
+      moedaPDF((detalhe?.frete || 0) + (detalhe?.ajustes || 0)),
+      moedaPDF(Number(v.total)),
+      Number(v.total) - recebido <= 0.01 ? "Quitado" : moedaPDF(Number(v.total) - recebido),
+    ];
+  });
+  pdfRows.push([
+    "TOTAIS", "",
+    categoriaPDF(totalUnidades, composicao.valorGelosSaborizados, "un"),
+    categoriaPDF(composicao.bebidasUnidadesReais, composicao.valorBebidas, "un"),
+    categoriaPDF(composicao.geloCuboPacotes, composicao.valorGeloCubo, "pct"),
+    moedaPDF(composicao.frete + composicao.ajustes), moedaPDF(faturamento),
+    saldoPendente <= 0.01 ? "Quitado" : moedaPDF(saldoPendente),
+  ]);
+
   return (
     <div className="space-y-6">
       <DateRangeFilter startDate={startDate} endDate={endDate} onStartChange={setStartDate} onEndChange={setEndDate}>
@@ -285,11 +314,11 @@ export default function RelatorioVendas() {
         <ExportButtons
           onPreview={() => setPreviewLoaded(true)}
           previewLoaded={previewLoaded}
-          onPDF={() => exportToPDF("Relatório de Vendas", headers, rows, "relatorio-vendas", [
+          onPDF={() => exportToPDF("Relatório de Vendas", pdfHeaders, pdfRows, "relatorio-vendas", [
             { label: "Faturamento Total", value: `R$ ${faturamento.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
             { label: "Total de Vendas", value: totalVendas.toString() },
             { label: "Ticket Médio", value: `R$ ${ticketMedio.toFixed(2)}` },
-            { label: "Gelos Saborizados", value: `${totalUnidades.toLocaleString("pt-BR")} (${composicao.gelosPagos.toLocaleString("pt-BR")} pagos + ${composicao.gelosBrinde.toLocaleString("pt-BR")} brindes)` },
+            { label: "Gelos Saborizados (un)", value: totalUnidades.toLocaleString("pt-BR") },
             { label: "Valor dos Gelos", value: `R$ ${composicao.valorGelosSaborizados.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
             { label: "Preço Médio dos Gelos", value: `R$ ${composicao.precoMedioGelosSaborizados.toFixed(2)}` },
             { label: "Bebidas (unidades reais)", value: composicao.bebidasUnidadesReais.toLocaleString("pt-BR") },
@@ -303,7 +332,20 @@ export default function RelatorioVendas() {
             { label: "Faturamento Total", value: `R$ ${faturamento.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
             { label: "Total Recebido", value: `R$ ${totalRecebido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
             { label: "Pendência", value: saldoPendente <= 0.01 ? "Quitado" : `R$ ${saldoPendente.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` },
-          ])}
+          ], {
+            extraTables: [{
+              title: "Composição das Vendas por Categoria",
+              headers: ["Categoria", "Quantidade", "Valor"],
+              rows: [
+                ["Gelos Saborizados", `${totalUnidades.toLocaleString("pt-BR")} un (${composicao.gelosPagos.toLocaleString("pt-BR")} pagos + ${composicao.gelosBrinde.toLocaleString("pt-BR")} brindes)`, moedaPDF(composicao.valorGelosSaborizados)],
+                ["Bebidas (fardos convertidos em unidades)", `${composicao.bebidasUnidadesReais.toLocaleString("pt-BR")} un`, moedaPDF(composicao.valorBebidas)],
+                ["Gelo em Cubo", `${composicao.geloCuboPacotes.toLocaleString("pt-BR")} pacotes`, moedaPDF(composicao.valorGeloCubo)],
+                ["Subtotal dos Produtos", "", moedaPDF(composicao.subtotalProdutos)],
+                ["Frete / Ajustes", "", moedaPDF(composicao.frete + composicao.ajustes)],
+                ["TOTAL DAS NOTAS", `${totalVendas} comandas`, moedaPDF(faturamento)],
+              ],
+            }],
+          })}
           onExcel={() => exportToExcel(headers, rows, "Vendas", "relatorio-vendas")}
         />
       </DateRangeFilter>
