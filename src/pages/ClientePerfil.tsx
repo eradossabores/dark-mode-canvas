@@ -84,7 +84,7 @@ export default function ClientePerfil() {
           <div className="flex flex-wrap gap-2">
             <Badge variant={c.status === "ativo" ? "default" : "destructive"}>{c.status}</Badge>
             {c.preco_padrao_personalizado && <Badge variant="secondary">{brl(Number(c.preco_padrao_personalizado))}/un</Badge>}
-            <Badge variant="outline">Saldo: {brl(Number(c.saldo_devedor ?? 0))}</Badge>
+            <Badge variant="outline">Saldo: {brl(Number(c.saldo_devedor_atual ?? 0))}</Badge>
           </div>
         </CardContent>
       </Card>
