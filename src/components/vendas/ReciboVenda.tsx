@@ -6,7 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import logoRecibo from "@/assets/logo-recibo.webp";
+import { addPdfLogo } from "@/lib/pdf-logo";
+import { usePdfLogo } from "@/hooks/use-pdf-logo";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface ReciboItem {
@@ -42,29 +43,9 @@ interface Props {
 
 export default function ReciboVenda({ open, onOpenChange, data }: Props) {
   const { branding, factoryName } = useAuth();
-  const [factoryLogo, setFactoryLogo] = useState<string>(logoRecibo);
+  const factoryLogo = usePdfLogo(branding?.logoUrl);
   const [formato, setFormato] = useState<"escpos" | "a4">("escpos");
 
-  useEffect(() => {
-    if (branding?.logoUrl) {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          ctx.drawImage(img, 0, 0);
-          setFactoryLogo(canvas.toDataURL("image/png"));
-        }
-      };
-      img.onerror = () => setFactoryLogo(logoRecibo);
-      img.src = branding.logoUrl;
-    } else {
-      setFactoryLogo(logoRecibo);
-    }
-  }, [branding?.logoUrl]);
 
   if (!data) return null;
 
@@ -95,7 +76,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     const logoW = 36;
     const logoH = 28;
     try {
-      doc.addImage(factoryLogo, "PNG", (w - logoW) / 2, y, logoW, logoH);
+      addPdfLogo(doc, factoryLogo, (w - logoW) / 2, y, logoW, logoH);
     } catch { /* fallback: no logo */ }
     y += logoH + 2;
 
@@ -343,7 +324,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
     const logoH = 30;
     const logoW = 40;
     try {
-      doc.addImage(factoryLogo, "PNG", M, y, logoW, logoH);
+      addPdfLogo(doc, factoryLogo, M, y, logoW, logoH);
     } catch { /* ignore */ }
 
     // Header text
@@ -680,10 +661,11 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
             </Select>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <Button onClick={gerarPDF} className="w-full">
+            <Button disabled={!factoryLogo} onClick={gerarPDF} className="w-full">
               <Printer className="h-4 w-4 mr-1" /> Imprimir
             </Button>
             <Button
+              disabled={!factoryLogo}
               onClick={enviarWhatsApp}
               variant="outline"
               className="w-full text-white bg-blue-600 hover:bg-blue-700 border-blue-600"

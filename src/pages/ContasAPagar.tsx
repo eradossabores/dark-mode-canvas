@@ -22,7 +22,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from "recharts";
 import { exportToPDF, exportToExcel } from "@/lib/export-utils";
 import jsPDF from "jspdf";
-import logoUrl from "@/assets/logo.png";
+import { loadPdfLogo, addPdfLogo } from "@/lib/pdf-logo";
 import { maskBRL, parseBRL, numberToBRL } from "@/lib/currency-mask";
 import DespesasSection from "@/components/contas/DespesasSection";
 
@@ -581,33 +581,16 @@ export default function ContasAPagar() {
     loadContas();
   }
 
-  function loadImageAsBase64(url: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext("2d")!;
-        ctx.drawImage(img, 0, 0);
-        resolve(canvas.toDataURL("image/png"));
-      };
-      img.onerror = reject;
-      img.src = url;
-    });
-  }
-
   async function gerarComprovante(descricao: string, valor: number, formaLabel: string, tipo: "fixo" | "parcelado", parcelaInfo?: string) {
     const doc = new jsPDF({ unit: "mm", format: [80, 160] });
     const W = 80;
     const displayName = factoryName || "D'PRAIA ICE";
-    const useLogo = branding?.logoUrl || logoUrl;
+    const useLogo = branding?.logoUrl;
 
     let y = 8;
     try {
-      const base64 = await loadImageAsBase64(useLogo);
-      doc.addImage(base64, "PNG", (W - 18) / 2, y, 18, 18);
+      const base64 = await loadPdfLogo(useLogo);
+      addPdfLogo(doc, base64, (W - 18) / 2, y, 18, 18);
       y += 22;
     } catch { y += 4; }
 
