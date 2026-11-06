@@ -16,6 +16,7 @@ import {
   Bot, Loader2, Brain, Info, FileText, Share2
 } from "lucide-react";
 import { exportToPDF } from "@/lib/export-utils";
+import { loadPdfLogo, addPdfLogo } from "@/lib/pdf-logo";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -576,31 +577,13 @@ export default function PlanoSemanal() {
     const displayName = factoryName || "D'PRAIA ICE";
     const useLogo = branding?.logoUrl || null;
 
-    // ── Load logo ──
-    const loadImg = (url: string): Promise<string> => new Promise((res, rej) => {
-      const img = new Image(); img.crossOrigin = "anonymous";
-      img.onload = () => { const c = document.createElement("canvas"); c.width = img.width; c.height = img.height; c.getContext("2d")!.drawImage(img, 0, 0); res(c.toDataURL("image/png")); };
-      img.onerror = rej; img.src = url;
-    });
-
-    // ── Header ──
     const ACCENT = [0, 100, 160] as const;
     let logoLoaded = false;
-    if (useLogo) {
-      try {
-        const b64 = await loadImg(useLogo);
-        doc.addImage(b64, "PNG", MARGIN, 8, 26, 26);
-        logoLoaded = true;
-      } catch {}
-    }
-    if (!logoLoaded) {
-      try {
-        const { default: defaultLogo } = await import("@/assets/logo.png");
-        const b64 = await loadImg(defaultLogo);
-        doc.addImage(b64, "PNG", MARGIN, 8, 26, 26);
-        logoLoaded = true;
-      } catch {}
-    }
+    try {
+      const image = await loadPdfLogo(useLogo);
+      addPdfLogo(doc, image, MARGIN, 8, 26, 26);
+      logoLoaded = true;
+    } catch { /* Keep the document usable if this factory's logo is unavailable. */ }
 
     const textX = logoLoaded ? 46 : MARGIN;
     doc.setFontSize(17); doc.setFont("helvetica", "bold"); doc.setTextColor(20, 20, 40);

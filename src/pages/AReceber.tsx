@@ -14,34 +14,15 @@ import { DollarSign, CheckCircle, AlertTriangle, MinusCircle, History, Search, M
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import logoRecibo from "@/assets/logo-recibo.webp";
+import { addPdfLogo } from "@/lib/pdf-logo";
+import { usePdfLogo } from "@/hooks/use-pdf-logo";
 import { useAuth } from "@/contexts/AuthContext";
 import { maskBRL, parseBRL } from "@/lib/currency-mask";
 
 export default function AReceber() {
   const { factoryId, role, branding, factoryName } = useAuth();
-  const [factoryLogo, setFactoryLogo] = useState<string>(logoRecibo);
+  const factoryLogo = usePdfLogo(branding?.logoUrl);
 
-  useEffect(() => {
-    if (branding?.logoUrl) {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          ctx.drawImage(img, 0, 0);
-          setFactoryLogo(canvas.toDataURL("image/png"));
-        }
-      };
-      img.onerror = () => setFactoryLogo(logoRecibo);
-      img.src = branding.logoUrl;
-    } else {
-      setFactoryLogo(logoRecibo);
-    }
-  }, [branding?.logoUrl]);
   const [vendas, setVendas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [abaterVenda, setAbaterVenda] = useState<any>(null);
@@ -121,7 +102,7 @@ export default function AReceber() {
     let y = 4;
 
     try {
-      doc.addImage(factoryLogo, "PNG", (w - 40) / 2, y, 40, 32);
+      addPdfLogo(doc, factoryLogo, (w - 40) / 2, y, 40, 32);
       y += 34;
     } catch { y += 4; }
 
@@ -472,7 +453,7 @@ export default function AReceber() {
     y = 6;
 
     try {
-      doc.addImage(factoryLogo, "PNG", (w - 36) / 2, y, 36, 28);
+      addPdfLogo(doc, factoryLogo, (w - 36) / 2, y, 36, 28);
       y += 30;
     } catch { y += 4; }
 

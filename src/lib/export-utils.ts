@@ -2,28 +2,11 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import html2canvas from "html2canvas";
-import logoUrl from "@/assets/logo.png";
+import { loadPdfLogo, addPdfLogo } from "@/lib/pdf-logo";
 
 export interface PDFBranding {
   factoryName?: string;
   factoryLogoUrl?: string | null;
-}
-
-function loadImageAsBase64(url: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext("2d")!;
-      ctx.drawImage(img, 0, 0);
-      resolve(canvas.toDataURL("image/png"));
-    };
-    img.onerror = reject;
-    img.src = url;
-  });
 }
 
 async function captureChartElement(element: HTMLElement): Promise<string | null> {
@@ -63,13 +46,13 @@ export async function exportToPDF(
   const MARGIN = 14;
   const CONTENT_W = PAGE_W - MARGIN * 2;
 
-  const useLogo = branding?.factoryLogoUrl || logoUrl;
+  const useLogo = branding?.factoryLogoUrl;
   const displayName = branding?.factoryName || "D'PRAIA ICE";
 
   // ── Header com logo ──
   try {
-    const base64 = await loadImageAsBase64(useLogo);
-    doc.addImage(base64, "PNG", MARGIN, 8, 28, 28);
+    const base64 = await loadPdfLogo(useLogo);
+    addPdfLogo(doc, base64, MARGIN, 8, 28, 28);
   } catch {
     // sem logo
   }
