@@ -1,10 +1,13 @@
 import type jsPDF from "jspdf";
-import originalLogo from "@/assets/dpraia-ice-original.png.asset.json";
+import originalLogo from "@/assets/dpraia-ice-logo-v2.png.asset.json";
+import legacyOriginalLogo from "@/assets/dpraia-ice-original.png.asset.json";
 import previousLogo from "@/assets/dpraia-ice-logo.png.asset.json";
 
-/** Only replace D'Praia's legacy logo; other factories retain their identity. */
+const LEGACY_URLS = new Set([previousLogo.url, legacyOriginalLogo.url]);
+
+/** Only replace D'Praia's legacy logos; other factories retain their identity. */
 export function resolvePdfLogo(url?: string | null): string {
-  return !url || url.split("?")[0] === previousLogo.url
+  return !url || LEGACY_URLS.has(url.split("?")[0])
     ? originalLogo.url
     : url;
 }
