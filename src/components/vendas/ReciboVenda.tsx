@@ -564,7 +564,7 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
 
         <div className="space-y-3 text-sm">
           <div className="text-center border-b pb-3">
-            <img src={factoryLogo} alt={factoryName || "Logo"} className="h-28 mx-auto mb-1"  loading="lazy" decoding="async" />
+            {factoryLogo && <img src={factoryLogo} alt={factoryName || "Logo"} className="h-28 mx-auto mb-1" loading="lazy" decoding="async" />}
             <p className="text-muted-foreground text-xs font-semibold">{factoryName || "D'PRAIA ICE"}</p>
           </div>
 
@@ -661,14 +661,13 @@ export default function ReciboVenda({ open, onOpenChange, data }: Props) {
             </Select>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <Button disabled={!factoryLogo} onClick={gerarPDF} className="w-full">
+            <Button onClick={gerarPDF} className="w-full">
               <Printer className="h-4 w-4 mr-1" /> Imprimir
             </Button>
             <Button
-              disabled={!factoryLogo}
               onClick={enviarWhatsApp}
-              variant="outline"
-              className="w-full text-white bg-blue-600 hover:bg-blue-700 border-blue-600"
+              variant="secondary"
+              className="w-full"
             >
               <MessageCircle className="h-4 w-4 mr-1" /> WhatsApp
             </Button>
