@@ -14,7 +14,7 @@ import { DollarSign, CheckCircle, AlertTriangle, MinusCircle, History, Search, M
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { addPdfLogo } from "@/lib/pdf-logo";
+import { addPdfLogo, ensurePdfLogo } from "@/lib/pdf-logo";
 import { usePdfLogo } from "@/hooks/use-pdf-logo";
 import { useAuth } from "@/contexts/AuthContext";
 import { maskBRL, parseBRL } from "@/lib/currency-mask";
@@ -93,17 +93,19 @@ export default function AReceber() {
     }
   }
 
-  function gerarPdfRecibo(): jsPDF | null {
+  async function gerarPdfRecibo(): Promise<jsPDF | null> {
     if (!whatsappPrompt) return null;
     const p = whatsappPrompt;
+    // Wait for the logo when the PDF is requested before the background load finished.
+    const logo = await ensurePdfLogo(factoryLogo, branding?.logoUrl);
     const restante = p.total - p.valorPago;
     const doc = new jsPDF({ unit: "mm", format: [80, 220] });
     const w = 80;
     let y = 4;
 
     try {
-      addPdfLogo(doc, factoryLogo, (w - 40) / 2, y, 40, 32);
-      y += 34;
+      addPdfLogo(doc, logo, (w - 40) / 2, y, 40, 32);
+      y += 36;
     } catch { y += 4; }
 
     doc.setFontSize(7);
@@ -204,7 +206,7 @@ export default function AReceber() {
     if (!whatsappPrompt) return;
     const p = whatsappPrompt;
 
-    const doc = gerarPdfRecibo();
+    const doc = await gerarPdfRecibo();
     const restante = p.total - p.valorPago;
     const statusLine = p.quitou ? "Pagamento Completo!" : (p.valorPago > 0 ? `Pagamento Parcial (Restante: R$ ${restante.toFixed(2)})` : `Valor Pendente: R$ ${restante.toFixed(2)}`);
     const pagoLine = p.valorPago > 0 ? `\nPago: R$ ${p.valorPago.toFixed(2)}` : "";
@@ -416,6 +418,8 @@ export default function AReceber() {
   }
 
   async function gerarReciboVenda(v: any, formaOverride?: string) {
+    // Start/await the logo in parallel with the data fetch so the PDF never goes out without it.
+    const logoPromise = ensurePdfLogo(factoryLogo, branding?.logoUrl);
     // Fetch latest venda data from DB
     const { data: vendaAtual } = await (supabase as any)
       .from("vendas")
@@ -453,8 +457,8 @@ export default function AReceber() {
     y = 6;
 
     try {
-      addPdfLogo(doc, factoryLogo, (w - 36) / 2, y, 36, 28);
-      y += 30;
+      addPdfLogo(doc, await logoPromise, (w - 36) / 2, y, 36, 28);
+      y += 33;
     } catch { y += 4; }
 
     doc.setFontSize(6.5);
