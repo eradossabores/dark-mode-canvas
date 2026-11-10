@@ -188,7 +188,8 @@ export async function exportToPDF(
       margin: { left: MARGIN, right: MARGIN },
       styles: {
         fontSize: 8,
-        cellPadding: 3,
+        cellPadding: fixedColumns ? { top: 3, bottom: 3, left: 2, right: 2 } : 3,
+        valign: "middle",
         lineColor: [220, 220, 220],
         lineWidth: 0.2,
         overflow: "linebreak",
@@ -222,6 +223,12 @@ export async function exportToPDF(
         });
         return cs;
       })(),
+      didParseCell: (data: any) => {
+        // Header/total cells follow the alignment of their column.
+        if (fixedColumns && data.section !== "body") {
+          data.cell.styles.halign = fixedColumns[data.column.index]?.align ?? "left";
+        }
+      },
       didDrawPage: (data: any) => {
         // Mini header em páginas adicionais
         if (data.pageNumber > 1) {
