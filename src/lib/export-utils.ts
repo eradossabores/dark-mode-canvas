@@ -199,7 +199,7 @@ export async function exportToPDF(
         textColor: 255,
         fontStyle: "bold",
         fontSize: 8.5,
-        cellPadding: 4,
+        cellPadding: fixedColumns ? { top: 4, bottom: 4, left: 2, right: 2 } : 4,
       },
       alternateRowStyles: {
         fillColor: [245, 248, 255],

@@ -95,10 +95,10 @@ export function montarTabelaFinanceira(
   type Def = ColunaPdf & { key: string; dinheiro?: boolean };
   const defs: Def[] = [
     { key: "numero", header: "Nº", width: 14, align: "left", bold: true },
-    { key: "data", header: "Data", width: 19, align: "center" },
-    { key: "venc", header: "Venc.", width: 19, align: "center" },
-    { key: "gelos", header: "Gelos", width: 14, align: "center" },
-    ...(temBebidas ? [{ key: "bebidas", header: "Bebidas", width: 19, align: "center" as const }] : []),
+    { key: "data", header: "Data", width: 18, align: "center" },
+    { key: "venc", header: "Venc.", width: 18, align: "center" },
+    { key: "gelos", header: "Gelos", width: 16, align: "center" },
+    ...(temBebidas ? [{ key: "bebidas", header: "Bebidas", width: 20, align: "center" as const }] : []),
     { key: "valor", header: "Valor", width: 0, align: "right", dinheiro: true },
     { key: "desconto", header: "Desconto", width: 0, align: "right", dinheiro: true },
     { key: "pago", header: "Pago", width: 0, align: "right", dinheiro: true },
