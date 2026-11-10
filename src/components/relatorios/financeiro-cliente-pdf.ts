@@ -33,8 +33,6 @@ export interface ComandaFinanceira {
   desconto: number;
   pago: number;
   saldo: number;
-  /** Shown only when the report mixes open and settled orders. */
-  situacao?: string;
 }
 
 export type Alinhamento = "left" | "center" | "right";
@@ -77,7 +75,7 @@ export function formatarBebidas(b: BebidasDaVenda): string {
  */
 export function montarTabelaFinanceira(
   comandas: ComandaFinanceira[],
-  opts: { larguraTotal: number; mostrarSituacao?: boolean },
+  opts: { larguraTotal: number; /** Write "Quitada" in the balance of settled orders. */ mostrarSituacao?: boolean },
 ): TabelaFinanceiraPdf {
   const totais = comandas.reduce(
     (t, c) => ({
@@ -101,7 +99,6 @@ export function montarTabelaFinanceira(
     { key: "venc", header: "Venc.", width: 19, align: "center" },
     { key: "gelos", header: "Gelos", width: 14, align: "center" },
     ...(temBebidas ? [{ key: "bebidas", header: "Bebidas", width: 19, align: "center" as const }] : []),
-    ...(mostrarSituacao ? [{ key: "situacao", header: "Situação", width: 18, align: "center" as const }] : []),
     { key: "valor", header: "Valor", width: 0, align: "right", dinheiro: true },
     { key: "desconto", header: "Desconto", width: 0, align: "right", dinheiro: true },
     { key: "pago", header: "Pago", width: 0, align: "right", dinheiro: true },
@@ -119,11 +116,11 @@ export function montarTabelaFinanceira(
       case "venc": return c.vencimento || "—";
       case "gelos": return c.gelos ? int(c.gelos) : "—";
       case "bebidas": return formatarBebidas(c.bebidas);
-      case "situacao": return c.situacao ?? "";
       case "valor": return brl(c.valorOriginal);
       case "desconto": return c.desconto > 0 ? `- ${brl(c.desconto)}` : "—";
       case "pago": return c.pago > 0 ? `- ${brl(c.pago)}` : "—";
-      case "saldo": return brl(c.saldo);
+      // Settled orders read "Quitada" instead of a bare R$ 0,00.
+      case "saldo": return mostrarSituacao && c.saldo <= 0 ? "Quitada" : brl(c.saldo);
       default: return "";
     }
   };
