@@ -53,8 +53,8 @@ export async function exportToPDF(
   try {
     const base64 = await loadPdfLogo(useLogo);
     addPdfLogo(doc, base64, MARGIN, 8, 28, 28);
-  } catch {
-    // sem logo
+  } catch (e) {
+    console.warn("[pdf] logomarca não incluída:", e);
   }
 
   doc.setFontSize(18);
