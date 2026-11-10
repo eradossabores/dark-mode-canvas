@@ -2,8 +2,11 @@ import type jsPDF from "jspdf";
 import originalLogo from "@/assets/dpraia-ice-logo-v2.png.asset.json";
 import legacyOriginalLogo from "@/assets/dpraia-ice-original.png.asset.json";
 import previousLogo from "@/assets/dpraia-ice-logo.png.asset.json";
+// Pre-sized (700px, white background) copy bundled with the app: no 1.8 MB
+// download on the phone, so PDFs never go out without the D'Praia logo.
+import dpraiaPdfLogo from "@/assets/dpraia-ice-logo-pdf.jpg";
 
-const LEGACY_URLS = new Set([previousLogo.url, legacyOriginalLogo.url]);
+const DPRAIA_URLS = new Set([originalLogo.url, previousLogo.url, legacyOriginalLogo.url]);
 
 /**
  * Longest side (px) of the image embedded in PDFs. ~900px is still sharp at
@@ -15,10 +18,10 @@ const MAX_LOGO_PX = 900;
 /** One in-flight/finished load per URL, so pages can reuse the prepared logo. */
 const logoCache = new Map<string, Promise<string>>();
 
-/** Only replace D'Praia's legacy logos; other factories retain their identity. */
+/** Only D'Praia's logos use the bundled copy; other factories retain their identity. */
 export function resolvePdfLogo(url?: string | null): string {
-  return !url || LEGACY_URLS.has(url.split("?")[0])
-    ? originalLogo.url
+  return !url || DPRAIA_URLS.has(url.split("?")[0])
+    ? dpraiaPdfLogo
     : url;
 }
 
