@@ -14,6 +14,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { exportToPDF, exportToExcel } from "@/lib/export-utils";
 import DateRangeFilter from "@/components/relatorios/DateRangeFilter";
 import KpiCard from "@/components/relatorios/KpiCard";
+import { bebidasPorVenda, montarTabelaFinanceira, formatarBebidas, type BebidasDaVenda, type ComandaFinanceira } from "@/components/relatorios/financeiro-cliente-pdf";
+import type { BebidaPerfilRaw } from "@/components/clientes/perfil-cliente-analysis";
+
+/** Largura útil da página A4 retrato nos PDFs (210mm − 2 × 14mm de margem). */
+const PDF_CONTENT_W = 182;
+const SEM_BEBIDAS: BebidasDaVenda = { unidades: 0, fardos: 0 };
 
 type Venda = {
   id: string;
@@ -66,6 +72,7 @@ export default function RelatorioFinanceiroCliente({ initialTab = "individual" }
   const [vendas, setVendas] = useState<Venda[]>([]);
   const [abatimentos, setAbatimentos] = useState<Abatimento[]>([]);
   const [unidadesPorVenda, setUnidadesPorVenda] = useState<Record<string, number>>({});
+  const [bebidasVenda, setBebidasVenda] = useState<Record<string, BebidasDaVenda>>({});
   const [selectedClienteId, setSelectedClienteId] = useState<string>("");
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
@@ -123,16 +130,26 @@ export default function RelatorioFinanceiroCliente({ initialTab = "individual" }
       setVendas(vData);
       setAbatimentos(aData);
       const map: Record<string, number> = {};
+      const bebidasRaw: BebidaPerfilRaw[] = [];
       const vendaIds = vData.map((x) => x.id);
       for (let i = 0; i < vendaIds.length; i += 100) {
         const chunk = vendaIds.slice(i, i + 100);
-        const viData = await fetchAll<{ venda_id: string; quantidade: number }>(() =>
-          supabase.from("venda_itens").select("id,venda_id,quantidade").in("venda_id", chunk).order("id"));
+        const [viData, vbData] = await Promise.all([
+          fetchAll<{ venda_id: string; quantidade: number }>(() =>
+            supabase.from("venda_itens").select("id,venda_id,quantidade").in("venda_id", chunk).order("id")),
+          fetchAll<{ venda_id: string; nome: string | null; quantidade: number; subtotal: number; tipo_venda: string | null; bebidas: { unidades_fardo: number | null } | null }>(() =>
+            (supabase as any).from("venda_bebida_itens").select("id,venda_id,nome,quantidade,subtotal,tipo_venda,bebidas(unidades_fardo)").in("venda_id", chunk).order("id")),
+        ]);
         viData.forEach((it) => {
           map[it.venda_id] = (map[it.venda_id] || 0) + Number(it.quantidade || 0);
         });
+        vbData.forEach((b) => bebidasRaw.push({
+          venda_id: b.venda_id, nome: b.nome, quantidade: b.quantidade, subtotal: b.subtotal,
+          tipo_venda: b.tipo_venda, unidades_fardo: b.bebidas?.unidades_fardo ?? null,
+        }));
       }
       setUnidadesPorVenda(map);
+      setBebidasVenda(bebidasPorVenda(bebidasRaw));
     })();
   }, [factoryId]);
 
@@ -174,7 +191,8 @@ export default function RelatorioFinanceiroCliente({ initialTab = "individual" }
         const pago = Math.max(pagoAbat, pagoDireto, quitadaPorStatus ? valorAtual : 0);
         const saldo = quitadaPorStatus ? 0 : Math.max(0, valorAtual - pago);
         const unidades = unidadesPorVenda[v.id] || 0;
-        return { ...v, abats, pago, valorOriginal, valorAtual, desconto, saldo, unidades };
+        const bebidas = bebidasVenda[v.id] || SEM_BEBIDAS;
+        return { ...v, abats, pago, valorOriginal, valorAtual, desconto, saldo, unidades, bebidas };
       })
       .filter((v) => {
         if (statusFilter !== "todos" && v.status !== statusFilter) return false;
@@ -183,7 +201,7 @@ export default function RelatorioFinanceiroCliente({ initialTab = "individual" }
         return true;
       })
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  }, [vendas, selectedClienteId, abatPorVenda, startDate, endDate, statusFilter, situacaoFilter, unidadesPorVenda]);
+  }, [vendas, selectedClienteId, abatPorVenda, startDate, endDate, statusFilter, situacaoFilter, unidadesPorVenda, bebidasVenda]);
 
   const resumo = useMemo(() => {
     const totalComandas = vendasCliente.length;
@@ -206,6 +224,7 @@ export default function RelatorioFinanceiroCliente({ initialTab = "individual" }
       data: string;
       venc: string | null;
       unidades: number;
+      bebidas: BebidasDaVenda;
       valorOriginal: number;
       desconto: number;
       pago: number;
@@ -250,6 +269,7 @@ export default function RelatorioFinanceiroCliente({ initialTab = "individual" }
         data: dt(v.created_at),
         venc: v.data_vencimento,
         unidades,
+        bebidas: bebidasVenda[v.id] || SEM_BEBIDAS,
         valorOriginal,
         desconto,
         pago,
@@ -259,7 +279,7 @@ export default function RelatorioFinanceiroCliente({ initialTab = "individual" }
     return Object.values(map)
       .map((x) => ({ ...x, comandas: x.comandas.sort((a, b) => a.numero.localeCompare(b.numero)) }))
       .sort((a, b) => b.saldo - a.saldo);
-  }, [vendas, abatPorVenda, clientes, unidadesPorVenda]);
+  }, [vendas, abatPorVenda, clientes, unidadesPorVenda, bebidasVenda]);
 
   const inadimplentes = useMemo(
     () => inadimplentesDetalhado.filter((x) => !searchInad || x.cliente.nome.toLowerCase().includes(searchInad.toLowerCase())),
@@ -303,32 +323,50 @@ export default function RelatorioFinanceiroCliente({ initialTab = "individual" }
     setEnviados((p) => ({ ...p, [item.cliente.id]: true }));
   }
 
-  /** PDF detalhado no mesmo padrão do relatório individual (KPIs + tabela + resumo + branding). */
-  function gerarPdfCobranca(item: (typeof inadimplentesDetalhado)[number], save = true) {
+  /** KPIs do topo do PDF: bebidas só aparecem quando o cliente comprou bebidas. */
+  function kpisPdf(comandas: number, emAberto: number | null, tabela: ReturnType<typeof montarTabelaFinanceira>, totalLabel: string, total: number, saldo: number) {
+    return [
+      { label: "Comandas", value: String(comandas) },
+      ...(emAberto !== null ? [{ label: "Em Aberto", value: String(emAberto) }] : []),
+      { label: "Gelos (un)", value: tabela.totais.gelos.toLocaleString("pt-BR") },
+      ...(tabela.temBebidas ? [{ label: "Bebidas (un)", value: formatarBebidas({ unidades: tabela.totais.bebidas, fardos: tabela.totais.fardos }) }] : []),
+      { label: totalLabel, value: brl(total) },
+      { label: "Saldo Devedor", value: brl(saldo) },
+    ];
+  }
+
+  /** Gera o PDF com tabela de colunas fixas, linha de total e logomarca da fábrica. */
+  function gerarPdfFinanceiro(
+    nomeCliente: string,
+    comandas: ComandaFinanceira[],
+    kpis: (tabela: ReturnType<typeof montarTabelaFinanceira>) => { label: string; value: string }[],
+    resumoFinal: { label: string; value: string }[],
+    opts: { save?: boolean; mostrarSituacao?: boolean } = {},
+  ) {
+    const tabela = montarTabelaFinanceira(comandas, { larguraTotal: PDF_CONTENT_W, mostrarSituacao: opts.mostrarSituacao });
+    const cards = kpis(tabela);
     return exportToPDF(
-      `Relatório Financeiro - ${item.cliente.nome}`,
-      ["Comanda", "Data", "Vencimento", "Unid.", "Status", "Valor Original", "Desconto", "Abatimentos", "Saldo Devedor"],
-      item.comandas.map((c) => [
-        c.numero,
-        c.data,
-        dt(c.venc),
-        String(c.unidades),
-        "Em aberto",
-        brl(c.valorOriginal),
-        brl(c.desconto),
-        brl(c.pago),
-        brl(c.saldo),
-      ]),
-      `financeiro_${item.cliente.nome.replace(/\s+/g, "_")}`,
-      [
-        { label: "Comandas", value: String(item.abertas) },
-        { label: "Unidades", value: String(item.unidades) },
-        { label: "Em Aberto", value: String(item.abertas) },
-        { label: "Total Original", value: brl(item.totalOriginal) },
-        { label: "Saldo Devedor", value: brl(item.saldo) },
-      ],
+      `Relatório Financeiro - ${nomeCliente}`,
+      tabela.colunas.map((c) => c.header),
+      tabela.rows,
+      `financeiro_${nomeCliente.replace(/\s+/g, "_")}`,
+      cards,
       undefined,
       { factoryName: factoryName || undefined, factoryLogoUrl: branding?.logoUrl },
+      resumoFinal,
+      { save: opts.save, columns: tabela.colunas, foot: tabela.foot, kpisPerRow: cards.length <= 5 ? cards.length : 4 },
+    );
+  }
+
+  function gerarPdfCobranca(item: (typeof inadimplentesDetalhado)[number], save = true) {
+    const comandas: ComandaFinanceira[] = item.comandas.map((c) => ({
+      numero: c.numero, data: c.data, vencimento: dt(c.venc), gelos: c.unidades, bebidas: c.bebidas,
+      valorOriginal: c.valorOriginal, desconto: c.desconto, pago: c.pago, saldo: c.saldo,
+    }));
+    return gerarPdfFinanceiro(
+      item.cliente.nome,
+      comandas,
+      (t) => kpisPdf(item.abertas, null, t, "Total Original", item.totalOriginal, item.saldo),
       [
         { label: "Total Original", value: brl(item.totalOriginal) },
         { label: "(-) Descontos", value: brl(item.descontos) },
@@ -370,11 +408,13 @@ export default function RelatorioFinanceiroCliente({ initialTab = "individual" }
 
 
   function buildRows() {
-    const headers = ["Comanda", "Data", "Unid.", "Status", "Valor Original", "Desconto", "Abatimentos", "Saldo Devedor"];
+    const headers = ["Comanda", "Data", "Vencimento", "Gelos (un)", "Bebidas (un)", "Status", "Valor Original", "Desconto", "Abatimentos", "Saldo Devedor"];
     const rows = vendasCliente.map((v) => [
       `#${v.numero_pedido ?? v.id.slice(0, 6)}`,
       dt(v.created_at),
-      String(v.unidades),
+      dt(v.data_vencimento),
+      v.unidades,
+      v.bebidas.unidades,
       v.saldo > 0 ? "Em aberto" : "Quitada",
       brl(v.valorOriginal),
       brl(v.desconto),
@@ -386,28 +426,21 @@ export default function RelatorioFinanceiroCliente({ initialTab = "individual" }
 
   function handlePDF() {
     if (!cliente) return;
-    const { headers, rows } = buildRows();
-    const totalUnidades = vendasCliente.reduce((s, v) => s + v.unidades, 0);
-    exportToPDF(
-      `Relatório Financeiro - ${cliente.nome}`,
-      headers,
-      rows,
-      `financeiro_${cliente.nome.replace(/\s+/g, "_")}`,
-      [
-        { label: "Comandas", value: String(resumo.totalComandas) },
-        { label: "Unidades", value: String(totalUnidades) },
-        { label: "Em Aberto", value: String(resumo.comandasEmAberto) },
-        { label: "Total Vendido", value: brl(resumo.totalVendido) },
-        { label: "Saldo Devedor", value: brl(resumo.saldoDevedor) },
-      ],
-      undefined,
-      { factoryName: factoryName || undefined, factoryLogoUrl: branding?.logoUrl },
+    const comandas: ComandaFinanceira[] = vendasCliente.map((v) => ({
+      numero: `#${v.numero_pedido ?? v.id.slice(0, 6)}`, data: dt(v.created_at), vencimento: dt(v.data_vencimento),
+      gelos: v.unidades, bebidas: v.bebidas, valorOriginal: v.valorOriginal, desconto: v.desconto, pago: v.pago, saldo: v.saldo,
+    }));
+    gerarPdfFinanceiro(
+      cliente.nome,
+      comandas,
+      (t) => kpisPdf(resumo.totalComandas, resumo.comandasEmAberto, t, "Total Vendido", resumo.totalVendido, resumo.saldoDevedor),
       [
         { label: "Total Original", value: brl(resumo.totalOriginal) },
         { label: "(-) Descontos", value: brl(resumo.totalDescontos) },
         { label: "(-) Abatimentos/Pagamentos", value: brl(resumo.totalPago) },
         { label: "(=) Saldo Devedor", value: brl(resumo.saldoDevedor) },
       ],
+      { mostrarSituacao: true },
     );
   }
 
@@ -540,7 +573,8 @@ export default function RelatorioFinanceiroCliente({ initialTab = "individual" }
                         <TableHead>Comanda</TableHead>
                         <TableHead>Data</TableHead>
                         <TableHead>Vencimento</TableHead>
-                        <TableHead className="text-center">Unid.</TableHead>
+                        <TableHead className="text-center">Gelos</TableHead>
+                        <TableHead className="text-center">Bebidas</TableHead>
                         <TableHead className="text-right">Original</TableHead>
                         <TableHead className="text-right">Desconto</TableHead>
                         <TableHead className="text-right">Pagamentos</TableHead>
@@ -550,7 +584,7 @@ export default function RelatorioFinanceiroCliente({ initialTab = "individual" }
                     </TableHeader>
                     <TableBody>
                       {vendasCliente.length === 0 && (
-                        <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-6">Nenhuma comanda encontrada.</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-6">Nenhuma comanda encontrada.</TableCell></TableRow>
                       )}
                       {vendasCliente.map((v) => (
                         <Fragment key={v.id}>
@@ -558,7 +592,8 @@ export default function RelatorioFinanceiroCliente({ initialTab = "individual" }
                             <TableCell className="font-medium">#{v.numero_pedido ?? v.id.slice(0, 6)}</TableCell>
                             <TableCell>{dt(v.created_at)}</TableCell>
                             <TableCell>{dt(v.data_vencimento)}</TableCell>
-                            <TableCell className="text-center">{v.unidades}</TableCell>
+                            <TableCell className="text-center">{v.unidades || "—"}</TableCell>
+                            <TableCell className="text-center">{formatarBebidas(v.bebidas)}</TableCell>
                             <TableCell className="text-right">{brl(v.valorOriginal)}</TableCell>
                             <TableCell className="text-right text-amber-600">{v.desconto > 0 ? `- ${brl(v.desconto)}` : "—"}</TableCell>
                             <TableCell className="text-right text-emerald-600">{v.pago > 0 ? `- ${brl(v.pago)}` : "—"}</TableCell>
@@ -569,7 +604,7 @@ export default function RelatorioFinanceiroCliente({ initialTab = "individual" }
                           </TableRow>
                           {v.abats.length > 0 && (
                             <TableRow className="bg-muted/30">
-                              <TableCell colSpan={9} className="text-xs">
+                              <TableCell colSpan={10} className="text-xs">
                                 <div className="pl-4 space-y-1">
                                   {v.abats.map((a) => (
                                     <div key={a.id} className="flex justify-between max-w-md">

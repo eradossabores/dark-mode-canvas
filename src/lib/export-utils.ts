@@ -38,6 +38,12 @@ export async function exportToPDF(
   options?: {
     save?: boolean;
     extraTables?: { title: string; headers: string[]; rows: (string | number)[][] }[];
+    /** Fixed width (mm) / alignment per column of the main table; widths should add up to the content width. */
+    columns?: { width: number; align: "left" | "center" | "right"; bold?: boolean }[];
+    /** Totals row rendered under the main table. */
+    foot?: string[];
+    /** KPI cards per row at the top (default 4). */
+    kpisPerRow?: number;
   }
 ) {
   const doc = new jsPDF();
@@ -50,27 +56,37 @@ export async function exportToPDF(
   const displayName = branding?.factoryName || "D'PRAIA ICE";
 
   // ── Header com logo ──
+  // Logos are usually wider than tall: a 40×28 box keeps them readable.
+  let textX = MARGIN;
   try {
     const base64 = await loadPdfLogo(useLogo);
-    addPdfLogo(doc, base64, MARGIN, 8, 28, 28);
-  } catch {
-    // sem logo
+    addPdfLogo(doc, base64, MARGIN, 7, 40, 28);
+    textX = MARGIN + 46;
+  } catch (e) {
+    // No blank gap when the logo is unavailable: the title moves left.
+    console.warn("[pdf] logomarca não incluída:", e);
   }
 
-  doc.setFontSize(18);
+  // Long titles shrink to fit beside the logo instead of running off the page.
   doc.setFont("helvetica", "bold");
-  doc.text(title, 48, 18);
+  let titleSize = 18;
+  doc.setFontSize(titleSize);
+  while (titleSize > 11 && doc.getTextWidth(title) > MARGIN + CONTENT_W - textX) {
+    titleSize -= 1;
+    doc.setFontSize(titleSize);
+  }
+  doc.text(title, textX, 18);
 
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(60);
-  doc.text(displayName, 48, 25);
+  doc.text(displayName, textX, 25);
 
   doc.setFontSize(8);
   doc.setTextColor(120);
   doc.text(
     `Gerado em: ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`,
-    48,
+    textX,
     31
   );
   doc.setTextColor(0);
@@ -84,15 +100,16 @@ export async function exportToPDF(
 
   // ── Totais / KPIs no topo ──
   if (totals && totals.length > 0) {
-    const cardW = CONTENT_W / Math.min(totals.length, 4);
+    const perRow = Math.max(1, options?.kpisPerRow ?? 4);
+    const cardW = CONTENT_W / Math.min(totals.length, perRow);
     const cardH = 18;
 
     doc.setDrawColor(220);
     doc.setLineWidth(0.3);
 
     totals.forEach((t, idx) => {
-      const x = MARGIN + (idx % 4) * cardW;
-      const row = Math.floor(idx / 4);
+      const x = MARGIN + (idx % perRow) * cardW;
+      const row = Math.floor(idx / perRow);
       const y = currentY + row * (cardH + 2);
 
       // Card background
@@ -113,7 +130,7 @@ export async function exportToPDF(
     });
 
     doc.setTextColor(0);
-    const totalRows = Math.ceil(totals.length / 4);
+    const totalRows = Math.ceil(totals.length / perRow);
     currentY += totalRows * (cardH + 2) + 6;
   }
 
@@ -161,14 +178,23 @@ export async function exportToPDF(
       currentY = MARGIN;
     }
 
+    const fixedColumns = options?.columns;
     autoTable(doc, {
       head: [headers],
       body: rows,
+      ...(options?.foot ? { foot: [options.foot], showFoot: "lastPage" as const } : {}),
+      footStyles: {
+        fillColor: [225, 236, 248],
+        textColor: [0, 60, 110],
+        fontStyle: "bold",
+        fontSize: 8.5,
+      },
       startY: currentY,
       margin: { left: MARGIN, right: MARGIN },
       styles: {
         fontSize: 8,
-        cellPadding: 3,
+        cellPadding: fixedColumns ? { top: 3, bottom: 3, left: 2, right: 2 } : 3,
+        valign: "middle",
         lineColor: [220, 220, 220],
         lineWidth: 0.2,
         overflow: "linebreak",
@@ -178,13 +204,19 @@ export async function exportToPDF(
         textColor: 255,
         fontStyle: "bold",
         fontSize: 8.5,
-        cellPadding: 4,
+        cellPadding: fixedColumns ? { top: 4, bottom: 4, left: 2, right: 2 } : 4,
       },
       alternateRowStyles: {
         fillColor: [245, 248, 255],
       },
       columnStyles: (() => {
         const cs: Record<number, any> = {};
+        if (fixedColumns) {
+          fixedColumns.forEach((c, i) => {
+            cs[i] = { cellWidth: c.width, halign: c.align, ...(c.bold ? { fontStyle: "bold" } : {}) };
+          });
+          return cs;
+        }
         headers.forEach((h, i) => {
           const lower = h.toLowerCase();
           if (lower.includes("valor") || lower.includes("total") || lower.includes("preço") || lower.includes("preco") || lower.includes("r$")) {
@@ -196,6 +228,12 @@ export async function exportToPDF(
         });
         return cs;
       })(),
+      didParseCell: (data: any) => {
+        // Header/total cells follow the alignment of their column.
+        if (fixedColumns && data.section !== "body") {
+          data.cell.styles.halign = fixedColumns[data.column.index]?.align ?? "left";
+        }
+      },
       didDrawPage: (data: any) => {
         // Mini header em páginas adicionais
         if (data.pageNumber > 1) {
