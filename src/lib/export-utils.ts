@@ -67,10 +67,15 @@ export async function exportToPDF(
     console.warn("[pdf] logomarca não incluída:", e);
   }
 
-  doc.setFontSize(18);
+  // Long titles shrink to fit beside the logo instead of running off the page.
   doc.setFont("helvetica", "bold");
-  const titleLines = doc.splitTextToSize(title, MARGIN + CONTENT_W - textX) as string[];
-  doc.text(titleLines[0] ?? title, textX, 18);
+  let titleSize = 18;
+  doc.setFontSize(titleSize);
+  while (titleSize > 11 && doc.getTextWidth(title) > MARGIN + CONTENT_W - textX) {
+    titleSize -= 1;
+    doc.setFontSize(titleSize);
+  }
+  doc.text(title, textX, 18);
 
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
